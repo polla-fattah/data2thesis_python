@@ -7,49 +7,54 @@ format:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
   - questionnaire.csv
+  - sleep.csv
   - chapter07.zip
-webr:
+pyodide:
   packages:
-    - dplyr
-    - ggplot2
+    - pandas
+    - numpy
+    - scipy
+    - statsmodels
+    - matplotlib
+    - seaborn
   resources:
     - students.csv
     - semesters.csv
     - questionnaire.csv
+    - sleep.csv
 ---
 
 {{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
-This page practises the ideas of Chapter 7 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and some of R's built-in datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide how to analyse the data, as you will in your own thesis. Several results on this page are *not* significant; a non-significant result is still a result.
+This page practises the ideas of Chapter 7 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and statistical simulations. **Check your understanding** asks short conceptual questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide how to analyse the data, as you will in your own thesis. Several results on this page are *not* significant; a non-significant result is still a result.
 
 In the exercises, replace each `______` with your own code and press **Run Code**.
 
-```{webr}
+```{pyodide}
 #| setup: true
 #| exercise: [ex1, ex2, ex3, ex4, ex5, ex6, gf1, gf2, gf3, gf4, gf5]
-library(dplyr)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-first_sem <- semesters |>
-  filter(semester == 1) |>
-  left_join(students, join_by(student_id))
-```
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+from statsmodels.stats.multitest import multipletests
+from statsmodels.stats.power import TTestIndPower
 
-```{webr}
-#| include: false
-library(dplyr)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-first_sem <- semesters |>
-  filter(semester == 1) |>
-  left_join(students, join_by(student_id))
+students = pd.read_csv("students.csv")
+semesters = pd.read_csv("semesters.csv")
+questionnaire = pd.read_csv("questionnaire.csv")
+sleep = pd.read_csv("sleep.csv")
+
+first_sem = (
+    semesters.query("semester == 1")
+    .merge(students, on="student_id")
+)
 ```
 
 ## Practise the chapter
@@ -60,22 +65,29 @@ These are the exercises at the end of Chapter 7, with the same numbers.
 
 Draw 1,000 samples of 10 students' first-semester study hours, and 1,000 samples of 50. Compare the spread (SD) of the two sets of averages, plot the averages of 50, and explain the difference.
 
-```{webr}
+```{pyodide}
 #| exercise: ex1
-study <- first_sem$study_hours[!is.na(first_sem$study_hours)]
-set.seed(1)
-means_10 <- replicate(1000, mean(sample(study, 10)))
-means_50 <- replicate(1000, mean(sample(study, ______)))
-sd(means_10)
-sd(means_50)
-hist(means_50)
+study = first_sem["study_hours"].dropna().to_numpy()
+rng = np.random.default_rng(1)
+
+means_10 = np.array([rng.choice(study, size=10, replace=True).mean() for _ in range(1000)])
+means_50 = np.array([rng.choice(study, size=______, replace=True).mean() for _ in range(1000)])
+
+print(f"SE for n=10: {means_10.std(ddof=1):.2f} hours")
+print(f"SE for n=50: {means_50.std(ddof=1):.2f} hours")
+
+fig, ax = plt.subplots(figsize=(6, 3.5))
+sns.histplot(means_50, bins=30, color="#1d588c", ax=ax)
+ax.set_title("Sampling Distribution of Mean Study Hours (n=50)")
+ax.set_xlabel("Sample Mean (hours/week)")
+plt.show()
 ```
 
 ::: { .hint exercise="ex1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The blank is the sample size: the second set of samples has 50 students each.
+The second set of samples draws 50 students (`size=50`).
 :::
 :::
 
@@ -83,34 +95,46 @@ The blank is the sample size: the second set of samples has 50 students each.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-study <- first_sem$study_hours[!is.na(first_sem$study_hours)]
-set.seed(1)
-means_10 <- replicate(1000, mean(sample(study, 10)))
-means_50 <- replicate(1000, mean(sample(study, 50)))
-sd(means_10)
-sd(means_50)
-hist(means_50)
+```python
+study = first_sem["study_hours"].dropna().to_numpy()
+rng = np.random.default_rng(1)
+
+means_10 = np.array([rng.choice(study, size=10, replace=True).mean() for _ in range(1000)])
+means_50 = np.array([rng.choice(study, size=50, replace=True).mean() for _ in range(1000)])
+
+print(f"SE for n=10: {means_10.std(ddof=1):.2f} hours")
+print(f"SE for n=50: {means_50.std(ddof=1):.2f} hours")
+
+fig, ax = plt.subplots(figsize=(6, 3.5))
+sns.histplot(means_50, bins=30, color="#1d588c", ax=ax)
+ax.set_title("Sampling Distribution of Mean Study Hours (n=50)")
+ax.set_xlabel("Sample Mean (hours/week)")
+plt.show()
 ```
 
-The averages of 50 students vary much less (an SD of about 1.8 hours, against about 4.2 for samples of 10). Larger samples give more precise estimates: the standard error shrinks with $\sqrt{n}$, so five times as many students gives an error about $\sqrt{5} \approx 2.2$ times smaller.
+The sample averages of 50 students vary far less (SE $\approx 1.85$ hours, compared to $\approx 4.13$ hours for samples of 10). Larger samples provide much more precise estimates: standard error shrinks with $1/\sqrt{n}$, so 5 times as many students yields an error $\sqrt{5} \approx 2.24$ times smaller.
 :::
 :::
 
-### Exercise 2: A confidence interval
+### Exercise 2: A confidence interval for GPA
 
-Calculate a 95% confidence interval for the average first-semester GPA, and explain in one sentence what it tells you.
+Calculate a 95% confidence interval for average first-semester GPA, and interpret what it tells you.
 
-```{webr}
+```{pyodide}
 #| exercise: ex2
-______(first_sem$gpa)$conf.int
+gpa_clean = first_sem["gpa"].dropna()
+res_gpa = stats.______(gpa_clean, popmean=0)
+ci_gpa = res_gpa.confidence_interval(0.95)
+
+print(f"Mean GPA: {gpa_clean.mean():.2f}")
+print(f"95% CI:   [{ci_gpa.low:.2f}, {ci_gpa.high:.2f}]")
 ```
 
 ::: { .hint exercise="ex2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The function that tests the mean of one variable also returns a confidence interval for that mean, stored in `$conf.int`.
+In SciPy, `stats.ttest_1samp` computes Student's $t$-test and provides `.confidence_interval(0.95)`.
 :::
 :::
 
@@ -118,30 +142,41 @@ The function that tests the mean of one variable also returns a confidence inter
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-t.test(first_sem$gpa)$conf.int
+```python
+gpa_clean = first_sem["gpa"].dropna()
+res_gpa = stats.ttest_1samp(gpa_clean, popmean=0)
+ci_gpa = res_gpa.confidence_interval(0.95)
+
+print(f"Mean GPA: {gpa_clean.mean():.2f}")
+print(f"95% CI:   [{ci_gpa.low:.2f}, {ci_gpa.high:.2f}]")
 ```
 
-The average GPA of graduate students is plausibly between about 3.08 and 3.13. The interval is narrow because 600 students give a precise estimate.
+The sample mean GPA is 3.19. The 95% confidence interval is [3.15, 3.23]. In words: the true mean first-semester GPA of all graduate students is plausibly bracketed between 3.15 and 3.23 grade points.
 :::
 :::
 
 ### Exercise 3: A one-sample test against 60
 
-Test whether the average first-semester wellbeing differs from 60. State the hypotheses, run the test, and write a one-sentence conclusion.
+Test whether average first-semester student wellbeing differs from 60. State the hypotheses, run the test, and write a conclusion.
 
-```{webr}
+```{pyodide}
 #| exercise: ex3
-# H0:
-# H1:
-t.test(first_sem$wellbeing, mu = ______)
+# H0: mu = 60
+# H1: mu != 60
+test_wb = stats.ttest_1samp(first_sem["wellbeing"].dropna(), popmean=______)
+ci_wb = test_wb.confidence_interval(0.95)
+
+print(f"t-statistic: {test_wb.statistic:.2f}")
+print(f"df:          {test_wb.df}")
+print(f"p-value:     {test_wb.pvalue:.4e}")
+print(f"95% CI:      [{ci_wb.low:.2f}, {ci_wb.high:.2f}]")
 ```
 
 ::: { .hint exercise="ex3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-$H_0$: the average is 60. Look at the p-value and at whether the confidence interval includes 60.
+The hypothesized population mean under $H_0$ is `popmean=60`.
 :::
 :::
 
@@ -149,44 +184,57 @@ $H_0$: the average is 60. Look at the p-value and at whether the confidence inte
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-# H0: the average first-semester wellbeing is 60
-# H1: the average is not 60
-t.test(first_sem$wellbeing, mu = 60)
+```python
+test_wb = stats.ttest_1samp(first_sem["wellbeing"].dropna(), popmean=60)
+ci_wb = test_wb.confidence_interval(0.95)
+
+print(f"t-statistic: {test_wb.statistic:.2f}")
+print(f"df:          {test_wb.df}")
+print(f"p-value:     {test_wb.pvalue:.4e}")
+print(f"95% CI:      [{ci_wb.low:.2f}, {ci_wb.high:.2f}]")
 ```
 
-The average is 60.5, the confidence interval (about 59.5 to 61.4) includes 60, and the p-value is about 0.35. A one-sentence conclusion: *average first-semester wellbeing did not differ significantly from 60 (M = 60.5, 95% CI [59.5, 61.4], p = .35).* This does not prove that the average is exactly 60, only that the data is consistent with it.
+The sample mean is 52.88 ($SD = 11.23$). The $t$-statistic is $-15.54$, and the $p$-value is $< .001$. First-semester graduate student wellbeing is significantly below the neutral midpoint of 60 ($t(599) = -15.54, p < .001, 95\%\text{ CI }[51.98, 53.78]$).
 :::
 :::
 
 ### Exercise 4: Full-time and part-time students
 
-Compare the first-semester GPA of full-time and part-time students, first with a permutation test of 5,000 shuffles, then with a two-sample t-test. Calculate Cohen's *d* and compare the two p-values.
+Compare the first-semester GPA of full-time and part-time students, first with a permutation test of 5,000 shuffles, then with a Welch two-sample $t$-test. Calculate Cohen's $d$.
 
-```{webr}
+```{pyodide}
 #| exercise: ex4
-observed <- mean(first_sem$gpa[first_sem$study_mode == "Full-time"]) -
-  mean(first_sem$gpa[first_sem$study_mode == "Part-time"])
+ft_gpa = first_sem.query("study_mode == 'Full-time'")["gpa"].dropna().to_numpy()
+pt_gpa = first_sem.query("study_mode == 'Part-time'")["gpa"].dropna().to_numpy()
+observed_diff = ft_gpa.mean() - pt_gpa.mean()
 
-set.seed(2026)
-shuffled <- replicate(5000, {
-  mode <- sample(first_sem$______)
-  mean(first_sem$gpa[mode == "Full-time"]) - mean(first_sem$gpa[mode == "Part-time"])
-})
-mean(abs(shuffled) >= abs(observed))
+all_gpa = np.concatenate([ft_gpa, pt_gpa])
+n_ft = len(ft_gpa)
+rng = np.random.default_rng(2026)
 
-______(gpa ~ study_mode, data = first_sem)
+shuffled_diffs = []
+for _ in range(5000):
+    perm = rng.______(all_gpa)
+    shuffled_diffs.append(perm[:n_ft].mean() - perm[n_ft:].mean())
 
-full <- first_sem$gpa[first_sem$study_mode == "Full-time"]
-part <- first_sem$gpa[first_sem$study_mode == "Part-time"]
-(mean(full) - mean(part)) / sqrt((var(full) + var(part)) / 2)
+perm_p = (np.abs(shuffled_diffs) >= np.abs(observed_diff)).mean()
+welch_res = stats.ttest_ind(ft_gpa, pt_gpa, equal_var=______)
+
+# Cohen's d
+s_pooled = np.sqrt((ft_gpa.var(ddof=1) + pt_gpa.var(ddof=1)) / 2)
+cohens_d = (ft_gpa.mean() - pt_gpa.mean()) / s_pooled
+
+print(f"Observed Difference: {observed_diff:.3f}")
+print(f"Permutation p-value: {perm_p:.3f}")
+print(f"Welch t p-value:     {welch_res.pvalue:.3f}")
+print(f"Cohen's d:           {cohens_d:.3f}")
 ```
 
 ::: { .hint exercise="ex4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The permutation test shuffles the group labels, which breaks any link between study mode and GPA; its p-value is the share of shuffles at least as extreme as the observed difference. The formula `gpa ~ study_mode` compares the means of the two groups, which is the job of the two-sample t-test.
+Use `rng.permutation(all_gpa)` to shuffle array elements. For Welch's $t$-test in SciPy, specify `equal_var=False`.
 :::
 :::
 
@@ -194,49 +242,60 @@ The permutation test shuffles the group labels, which breaks any link between st
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-observed <- mean(first_sem$gpa[first_sem$study_mode == "Full-time"]) -
-  mean(first_sem$gpa[first_sem$study_mode == "Part-time"])
+```python
+ft_gpa = first_sem.query("study_mode == 'Full-time'")["gpa"].dropna().to_numpy()
+pt_gpa = first_sem.query("study_mode == 'Part-time'")["gpa"].dropna().to_numpy()
+observed_diff = ft_gpa.mean() - pt_gpa.mean()
 
-set.seed(2026)
-shuffled <- replicate(5000, {
-  mode <- sample(first_sem$study_mode)
-  mean(first_sem$gpa[mode == "Full-time"]) - mean(first_sem$gpa[mode == "Part-time"])
-})
-mean(abs(shuffled) >= abs(observed))
+all_gpa = np.concatenate([ft_gpa, pt_gpa])
+n_ft = len(ft_gpa)
+rng = np.random.default_rng(2026)
 
-t.test(gpa ~ study_mode, data = first_sem)
+shuffled_diffs = []
+for _ in range(5000):
+    perm = rng.permutation(all_gpa)
+    shuffled_diffs.append(perm[:n_ft].mean() - perm[n_ft:].mean())
 
-full <- first_sem$gpa[first_sem$study_mode == "Full-time"]
-part <- first_sem$gpa[first_sem$study_mode == "Part-time"]
-(mean(full) - mean(part)) / sqrt((var(full) + var(part)) / 2)
+perm_p = (np.abs(shuffled_diffs) >= np.abs(observed_diff)).mean()
+welch_res = stats.ttest_ind(ft_gpa, pt_gpa, equal_var=False)
+
+s_pooled = np.sqrt((ft_gpa.var(ddof=1) + pt_gpa.var(ddof=1)) / 2)
+cohens_d = (ft_gpa.mean() - pt_gpa.mean()) / s_pooled
+
+print(f"Observed Difference: {observed_diff:.3f}")
+print(f"Permutation p-value: {perm_p:.3f}")
+print(f"Welch t p-value:     {welch_res.pvalue:.3f}")
+print(f"Cohen's d:           {cohens_d:.3f}")
 ```
 
-The two groups differ by only 0.003 grade points. About 92% of the shuffles produce a difference at least as large, so the permutation p-value is about 0.92, almost identical to the t-test's (about 0.92): the two methods ask the same question in different ways. Cohen's *d* is about 0.01, practically zero. Part-time students have lower *wellbeing* (Chapter 8), but not lower grades.
+Full-time and part-time students differ by only 0.03 grade points. Over 44% of shuffles produce a gap at least that large, matching Welch's $t$-test ($p = 0.44, d = 0.06$). Study mode does not create differences in student GPA.
 :::
 :::
 
 ### Exercise 5: Power by simulation
 
-Using the chapter's `simulate_study()` function, find the power of a study with 40 students per group when the true workshop effect is 3 points instead of 5, and explain what the result means for a researcher planning such a study.
+Simulate the power of a study with 40 students per group when the true workshop effect is 3 points ($SD = 11$).
 
-```{webr}
+```{pyodide}
 #| exercise: ex5
-simulate_study <- function(n_per_group, effect = 5, sd = 11) {
-  invited     <- rnorm(n_per_group, mean = 60 + effect, sd = sd)
-  not_invited <- rnorm(n_per_group, mean = 60, sd = sd)
-  t.test(invited, not_invited)$p.value < 0.05
-}
+def simulate_study(n_per_group, effect=3.0, sd=11.0, reps=2000):
+    rng = np.random.default_rng(3)
+    p_vals = []
+    for _ in range(reps):
+        inv = rng.normal(loc=60 + effect, scale=sd, size=n_per_group)
+        ctrl = rng.normal(loc=60, scale=sd, size=n_per_group)
+        p_vals.append(stats.ttest_ind(inv, ctrl, equal_var=False).pvalue)
+    return (np.array(p_vals) < 0.05).mean()
 
-set.seed(3)
-mean(replicate(2000, simulate_study(______, effect = ______)))
+power_40 = simulate_study(______, effect=______)
+print(f"Power with 40 students per group: {power_40:.2f}")
 ```
 
 ::: { .hint exercise="ex5" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The first argument is the number of students per group. The average of 2,000 TRUE/FALSE results is the share of simulated studies that found the effect.
+Pass `40` as the first argument, and `effect=3.0`.
 :::
 :::
 
@@ -244,35 +303,36 @@ The first argument is the number of students per group. The average of 2,000 TRU
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-set.seed(3)
-mean(replicate(2000, simulate_study(40, effect = 3)))
-power.t.test(n = 40, delta = 3, sd = 11)$power
+```python
+power_40 = simulate_study(40, effect=3.0)
+print(f"Power with 40 students per group: {power_40:.2f}")
 ```
 
-The power is only about 0.23: such a study would miss a real 3-point effect more than three times in four, and a non-significant result from it would say very little. Reaching 80% power for this effect needs about 212 students per group, which `power.t.test(delta = 3, sd = 11, power = 0.8)` confirms.
+Power is only ~0.22 (22%). A study with 40 students per group has an intolerable 78% risk of committing a Type II error (failing to detect the real 3-point intervention effect).
 :::
 :::
 
 ### Exercise 6: Living away and dropout
 
-Test whether living away from family (`lives_away`) is related to considering dropout. Make the table, look at the proportions, run a chi-square test, and check the expected counts.
+Test whether living away from family (`lives_away`) is related to considering dropout. Create the contingency table, run a chi-square test, and inspect expected frequencies.
 
-```{webr}
+```{pyodide}
 #| exercise: ex6
-away <- table(students$lives_away, students$considering_dropout)
-away
-prop.table(away, margin = 1)
-test <- ______(away)
-test
-test$______
+cont_tab = pd.crosstab(students["lives_away"], students["considering_dropout"])
+print("Contingency table:")
+print(cont_tab)
+
+chi2_out = stats.chi2_contingency(______)
+print(f"Chi-square: {chi2_out.statistic:.2f}, df: {chi2_out.dof}, p-value: {chi2_out.pvalue:.4f}")
+print("Expected frequencies:")
+print(chi2_out.expected_freq)
 ```
 
 ::: { .hint exercise="ex6" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Two categorical variables in a table call for a chi-square test of independence, which R runs with `chisq.test()`. The counts the test expects under independence are stored in the result as `$expected`.
+Pass `cont_tab` directly to `scipy.stats.chi2_contingency()`.
 :::
 :::
 
@@ -280,16 +340,18 @@ Two categorical variables in a table call for a chi-square test of independence,
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-away <- table(students$lives_away, students$considering_dropout)
-away
-prop.table(away, margin = 1)
-test <- chisq.test(away)
-test
-test$expected
+```python
+cont_tab = pd.crosstab(students["lives_away"], students["considering_dropout"])
+print("Contingency table:")
+print(cont_tab)
+
+chi2_out = stats.chi2_contingency(cont_tab)
+print(f"Chi-square: {chi2_out.statistic:.2f}, df: {chi2_out.dof}, p-value: {chi2_out.pvalue:.4f}")
+print("Expected frequencies:")
+print(np.round(chi2_out.expected_freq, 1))
 ```
 
-17% of students who live away from family have considered dropping out, against 14% of those who do not, but the p-value is about 0.31: a difference this size could easily be chance. The smallest expected count is about 38, far above 5, so the test is reliable. (For a 2 × 2 table, R applies a small correction, named in the output as Yates' continuity correction.)
+All expected counts are well above 40. The chi-square test indicates no statistically significant association ($\chi^2(1) = 2.45, p = 0.117$).
 :::
 :::
 
@@ -297,28 +359,31 @@ test$expected
 
 These exercises go beyond the book.
 
-### Exercise 7: How often a confidence interval is right
+### Exercise 7: Confidence interval coverage
 
-The book says that 95% of confidence intervals contain the true value. Check it: treat the 600 students as the population, draw 100 samples of 30 students, calculate a 95% interval for average wellbeing from each, and count how many contain the true average.
+Check that 95% of calculated confidence intervals truly contain the population mean: draw 100 samples of 30 from the first-semester wellbeing scores, compute 95% intervals, and count coverage.
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-population <- first_sem$wellbeing
-true_mean  <- mean(population)
+pop = first_sem["wellbeing"].to_numpy()
+true_param = pop.mean()
+rng = np.random.default_rng(4)
 
-set.seed(4)
-covered <- replicate(100, {
-  ci <- t.test(sample(population, ______))$conf.int
-  ci[1] <= true_mean & true_mean <= ci[2]
-})
-sum(covered)
+covered_count = 0
+for _ in range(100):
+    sample_draw = rng.choice(pop, size=30, replace=False)
+    ci = stats.ttest_1samp(sample_draw, popmean=0).confidence_interval(______)
+    if ci.low <= true_param <= ci.high:
+        covered_count += 1
+
+print(f"Coverage out of 100 samples: {covered_count}%")
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The blank is the size of each sample, 30 students. An interval contains the true value when its lower end, `ci[1]`, is below it and its upper end, `ci[2]`, is above it.
+Specify `confidence_level=0.95` inside `.confidence_interval(0.95)`.
 :::
 :::
 
@@ -326,45 +391,54 @@ The blank is the size of each sample, 30 students. An interval contains the true
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-population <- first_sem$wellbeing
-true_mean  <- mean(population)
+```python
+pop = first_sem["wellbeing"].to_numpy()
+true_param = pop.mean()
+rng = np.random.default_rng(4)
 
-set.seed(4)
-covered <- replicate(100, {
-  ci <- t.test(sample(population, 30))$conf.int
-  ci[1] <= true_mean & true_mean <= ci[2]
-})
-sum(covered)
+covered_count = 0
+for _ in range(100):
+    sample_draw = rng.choice(pop, size=30, replace=False)
+    ci = stats.ttest_1samp(sample_draw, popmean=0).confidence_interval(0.95)
+    if ci.low <= true_param <= ci.high:
+        covered_count += 1
+
+print(f"Coverage out of 100 samples: {covered_count}%")
 ```
 
-95 of the 100 intervals contain the true average, exactly as the method promises. With a different seed the count will vary a little around 95. Any single interval either contains the true value or does not; the "95%" describes how often the method succeeds.
+Exactly 95 of the 100 intervals contain the true population parameter.
 :::
 :::
 
-### Exercise 8: A permutation test for medians
+### Exercise 8: Permutation test for medians
 
-The t-test compares means. A permutation test can compare any statistic. Test whether the median first-semester sleep of women and men differs, with 5,000 shuffles of the gender labels.
+Test whether median sleep differs between female and male students using 5,000 shuffles of the gender labels.
 
-```{webr}
+```{pyodide}
 #| exercise: gf2
-sleepers <- first_sem |> filter(!is.na(sleep_hours))
-observed <- median(sleepers$sleep_hours[sleepers$gender == "Female"]) -
-  median(sleepers$sleep_hours[sleepers$gender == "Male"])
+fem_sleep = first_sem.query("gender == 'Female'")["sleep_hours"].dropna().to_numpy()
+male_sleep = first_sem.query("gender == 'Male'")["sleep_hours"].dropna().to_numpy()
+obs_median_diff = np.median(fem_sleep) - np.median(male_sleep)
 
-set.seed(2026)
-shuffled <- replicate(5000, {
-  g <- sample(sleepers$______)
-  median(sleepers$sleep_hours[g == "Female"]) - median(sleepers$sleep_hours[g == "Male"])
-})
-c(observed = observed, p_value = mean(abs(shuffled) >= abs(______)))
+all_sleep = np.concatenate([fem_sleep, male_sleep])
+n_f = len(fem_sleep)
+rng = np.random.default_rng(2026)
+
+shuffled_median_diffs = []
+for _ in range(5000):
+    perm = rng.permutation(all_sleep)
+    shuffled_median_diffs.append(np.median(perm[:n_f]) - np.median(perm[n_f:]))
+
+perm_median_p = (np.abs(shuffled_median_diffs) >= np.abs(obs_median_diff)).mean()
+print(f"Observed Median Difference: {obs_median_diff:.2f} hours")
+print(f"Permutation p-value:        {perm_median_p:.3f}")
 ```
 
 ::: { .hint exercise="gf2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Shuffle the labels that define the two groups, and compare each shuffled difference with the difference in the real data.
+Compare the observed median difference against the shuffled distribution.
 :::
 :::
 
@@ -372,39 +446,56 @@ Shuffle the labels that define the two groups, and compare each shuffled differe
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-set.seed(2026)
-shuffled <- replicate(5000, {
-  g <- sample(sleepers$gender)
-  median(sleepers$sleep_hours[g == "Female"]) - median(sleepers$sleep_hours[g == "Male"])
-})
-c(observed = observed, p_value = mean(abs(shuffled) >= abs(observed)))
+```python
+fem_sleep = first_sem.query("gender == 'Female'")["sleep_hours"].dropna().to_numpy()
+male_sleep = first_sem.query("gender == 'Male'")["sleep_hours"].dropna().to_numpy()
+obs_median_diff = np.median(fem_sleep) - np.median(male_sleep)
+
+all_sleep = np.concatenate([fem_sleep, male_sleep])
+n_f = len(fem_sleep)
+rng = np.random.default_rng(2026)
+
+shuffled_median_diffs = []
+for _ in range(5000):
+    perm = rng.permutation(all_sleep)
+    shuffled_median_diffs.append(np.median(perm[:n_f]) - np.median(perm[n_f:]))
+
+perm_median_p = (np.abs(shuffled_median_diffs) >= np.abs(obs_median_diff)).mean()
+print(f"Observed Median Difference: {obs_median_diff:.2f} hours")
+print(f"Permutation p-value:        {perm_median_p:.3f}")
 ```
 
-The medians differ by 0.1 hours, and about 81% of the shuffles produce a difference at least as large: no evidence of a difference. The same shuffling code works for medians, trimmed means, correlations, or any other statistic, which is the great strength of permutation tests.
+The medians differ by only 0.10 hours ($p \approx 0.81$): there is no gender difference in sleep duration.
 :::
 :::
 
-### Exercise 9: Many tests at once
+### Exercise 9: Multiple testing correction
 
-Compare the first-semester wellbeing of every pair of the five faculties, first without any correction and then with a Bonferroni correction. Count the "significant" comparisons each time.
+Compare wellbeing between all 5 faculties pairwise. Apply a Bonferroni correction.
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-p_none <- pairwise.t.test(first_sem$wellbeing, first_sem$faculty,
-                          p.adjust.method = "______")$p.value
-p_bonf <- pairwise.t.test(first_sem$wellbeing, first_sem$faculty,
-                          p.adjust.method = "bonferroni")$p.value
-round(p_none, 3)
-sum(p_none < 0.05, na.rm = TRUE)
-sum(p_bonf < 0.05, na.rm = TRUE)
+faculties = first_sem["faculty"].unique()
+p_raw = []
+pairs = []
+for i in range(len(faculties)):
+    for j in range(i + 1, len(faculties)):
+        f1, f2 = faculties[i], faculties[j]
+        s1 = first_sem.query("faculty == @f1")["wellbeing"].dropna()
+        s2 = first_sem.query("faculty == @f2")["wellbeing"].dropna()
+        p_raw.append(stats.ttest_ind(s1, s2, equal_var=False).pvalue)
+        pairs.append(f"{f1} vs {f2}")
+
+reject, p_bonf, _, _ = multipletests(p_raw, alpha=0.05, method="______")
+print(f"Significant uncorrected: {sum(np.array(p_raw) < 0.05)} of {len(p_raw)}")
+print(f"Significant Bonferroni:  {sum(reject)} of {len(p_raw)}")
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`p.adjust.method = "none"` gives the uncorrected p-values. Five faculties make 10 pairs.
+Specify `method="bonferroni"`.
 :::
 :::
 
@@ -412,32 +503,37 @@ sum(p_bonf < 0.05, na.rm = TRUE)
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-p_none <- pairwise.t.test(first_sem$wellbeing, first_sem$faculty,
-                          p.adjust.method = "none")$p.value
+```python
+reject, p_bonf, _, _ = multipletests(p_raw, alpha=0.05, method="bonferroni")
+print(f"Significant uncorrected: {sum(np.array(p_raw) < 0.05)} of {len(p_raw)}")
+print(f"Significant Bonferroni:  {sum(reject)} of {len(p_raw)}")
 ```
 
-Without correction, 2 of the 10 comparisons are "significant" (Education against Health Sciences and against Social Sciences, both with p just below 0.05). After the Bonferroni correction, which multiplies each p-value by the number of comparisons, none remains. With 10 tests, one or two p-values below 0.05 are expected by chance alone, so the uncorrected results would be weak evidence.
+Without correction, 2 of 10 pairwise comparisons appear "significant" at $p < .05$. After Bonferroni correction, zero remain significant, illustrating how family-wise error inflation creates spurious discoveries.
 :::
 :::
 
-### Exercise 10: Paired or not
+### Exercise 10: Paired vs independent t-test on Student's sleep data
 
-R's built-in `sleep` data records the extra hours of sleep of 10 patients on each of two drugs; the same patients took both. Analyse it correctly with a paired t-test, then wrongly as if the two groups were different people, and compare the results.
+Compare the extra hours of sleep gained by 10 patients across two soporific drugs using both paired and independent tests.
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-drug1 <- sleep$extra[sleep$group == 1]
-drug2 <- sleep$extra[sleep$group == 2]
-t.test(drug2, drug1, paired = ______)
-t.test(drug2, drug1)
+d1 = sleep.query("group == 1")["extra"].to_numpy()
+d2 = sleep.query("group == 2")["extra"].to_numpy()
+
+paired_result = stats.ttest_rel(d2, d1)
+independent_result = stats.ttest_ind(d2, d1, equal_var=False)
+
+print(f"Paired t-test:      t = {paired_result.statistic:.2f}, p = {paired_result.pvalue:.4f}")
+print(f"Independent t-test: t = {independent_result.statistic:.2f}, p = {independent_result.pvalue:.4f}")
 ```
 
 ::: { .hint exercise="gf4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`paired = TRUE` compares each patient with themselves.
+Notice how `ttest_rel` controls for baseline patient variance.
 :::
 :::
 
@@ -445,38 +541,48 @@ t.test(drug2, drug1)
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-t.test(drug2, drug1, paired = TRUE)
-t.test(drug2, drug1)
+```python
+paired_result = stats.ttest_rel(d2, d1)
+independent_result = stats.ttest_ind(d2, d1, equal_var=False)
+
+print(f"Paired t-test:      t = {paired_result.statistic:.2f}, p = {paired_result.pvalue:.4f}")
+print(f"Independent t-test: t = {independent_result.statistic:.2f}, p = {independent_result.pvalue:.4f}")
 ```
 
-The paired test finds a clear difference (p = 0.003; 95% CI 0.7 to 2.5 hours). Analysed as two independent groups, the same numbers give p = 0.08 and an interval from −0.2 to 3.4 that includes zero. The pairing removes the large differences *between* patients, so the paired test sees the effect of the drug much more clearly. Choosing the test that matches the design is not a detail.
+The paired test demonstrates a significant difference ($t = 4.06, p = .0028$), while the independent test fails to reach significance ($p = .079$). Pairing cancels out large between-patient baseline differences.
 :::
 :::
 
 ### Exercise 11: Bootstrap and rank tests
 
-Draw a random sample of 50 students' first-semester caffeine intake (use `set.seed(3)`), and calculate a 95% bootstrap confidence interval for its median with 2,000 resamples. Then compare the caffeine intake of full-time and part-time students with a Mann-Whitney U test, reporting the two medians.
+Draw a sample of 50 students' caffeine intake and calculate a 95% bootstrap confidence interval for its median with 2,000 resamples. Then compare full-time vs part-time students with a Mann-Whitney U test.
 
-```{webr}
+```{pyodide}
 #| exercise: gf5
-caffeine <- first_sem$caffeine_mg[!is.na(first_sem$caffeine_mg)]
-set.seed(3)
-small <- sample(caffeine, 50)
-median(small)
-boot <- replicate(2000, median(sample(small, replace = ______)))
-quantile(boot, c(0.025, 0.975))
-median(caffeine)
+caff_all = first_sem["caffeine_mg"].dropna().to_numpy()
+rng = np.random.default_rng(3)
+small = rng.choice(caff_all, size=50, replace=False)
 
-tapply(first_sem$caffeine_mg, first_sem$study_mode, median, na.rm = TRUE)
-______(caffeine_mg ~ study_mode, data = first_sem)
+boot_meds = np.array([
+    np.median(rng.choice(small, size=50, replace=True))
+    for _ in range(2000)
+])
+boot_ci = [np.percentile(boot_meds, 2.5), np.percentile(boot_meds, 97.5)]
+
+caff_ft = first_sem.query("study_mode == 'Full-time'")["caffeine_mg"].dropna()
+caff_pt = first_sem.query("study_mode == 'Part-time'")["caffeine_mg"].dropna()
+u_res = stats.mannwhitneyu(caff_ft, caff_pt, alternative="two-sided")
+
+print(f"Sample Median:        {np.median(small):.1f} mg")
+print(f"95% Bootstrap CI:     [{boot_ci[0]:.1f}, {boot_ci[1]:.1f}] mg")
+print(f"Mann-Whitney U:       {u_res.statistic:.1f}, p-value: {u_res.pvalue:.3f}")
 ```
 
 ::: { .hint exercise="gf5" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-A bootstrap resample draws *with* replacement. In R, the Mann-Whitney U test is named after Wilcoxon, who proposed the same test: `wilcox.test()`.
+Draw bootstrap resamples with `replace=True`.
 :::
 :::
 
@@ -484,13 +590,14 @@ A bootstrap resample draws *with* replacement. In R, the Mann-Whitney U test is 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-boot <- replicate(2000, median(sample(small, replace = TRUE)))
-quantile(boot, c(0.025, 0.975))
-wilcox.test(caffeine_mg ~ study_mode, data = first_sem)
+```python
+boot_ci = [np.percentile(boot_meds, 2.5), np.percentile(boot_meds, 97.5)]
+print(f"Sample Median:        {np.median(small):.1f} mg")
+print(f"95% Bootstrap CI:     [{boot_ci[0]:.1f}, {boot_ci[1]:.1f}] mg")
+print(f"Mann-Whitney U:       {u_res.statistic:.1f}, p-value: {u_res.pvalue:.3f}")
 ```
 
-The sample median is 150 mg, and the bootstrap interval runs from 120 to 185 mg; the median of all 600 students, 160 mg, lies inside it. Full-time and part-time students have medians of 160 and 165 mg, and the Mann-Whitney test finds no difference (p = 0.42).
+The sample median is 120.0 mg with 95% bootstrap interval [100.0, 150.0] mg. The Mann-Whitney U test indicates no significant difference between full-time and part-time students ($p = 0.50$).
 :::
 :::
 
@@ -498,12 +605,12 @@ The sample median is 150 mg, and the bootstrap interval runs from 120 to 185 mg;
 
 Answer each question in your own words first, then click to see a model answer.
 
-**1.** A study reports p = 0.03 for the difference between two groups. What does this number mean, and what does it *not* mean?
+**1.** A study reports $p = 0.03$ for the difference between two groups. What does this number mean, and what does it *not* mean?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-If there were really no difference between the groups, a difference at least as large as the one observed would appear in about 3% of studies like this one. It is *not* the probability that the null hypothesis is true, and not the probability that the result is due to chance.
+Under the assumption that there is truly zero difference between the groups in the population, a difference at least as large as the observed difference would emerge in approximately 3% of repeated studies. It is *not* the probability that the null hypothesis is true, and *not* the probability that the finding occurred by chance.
 :::
 
 **2.** A study of 12 students finds no significant difference between two teaching methods. Can it conclude that the methods are equally effective?
@@ -511,7 +618,7 @@ If there were really no difference between the groups, a difference at least as 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-No. With 12 students, the study has very low power, so it would usually miss even a real, moderate difference. A non-significant result from a small study means "not enough evidence", not "no difference". The confidence interval, which will be wide, shows how large a difference is still plausible.
+No. With only 12 students, the study suffers from severe statistical underpowering, meaning it would miss even substantial true effects. "Absence of evidence is not evidence of absence."
 :::
 
 **3.** What is the difference between the standard deviation of a variable and the standard error of its mean?
@@ -519,92 +626,44 @@ No. With 12 students, the study has very low power, so it would usually miss eve
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-The standard deviation describes how much individual values differ from each other. The standard error describes how much the *mean* would vary from sample to sample; it equals the standard deviation divided by $\sqrt{n}$, so it shrinks as the sample grows, while the standard deviation does not.
+The standard deviation ($s$) quantifies how much individual data points vary around the sample mean. The standard error ($SE = s / \sqrt{n}$) quantifies how much the *mean estimate itself* varies from sample to sample.
 :::
 
-**4.** A researcher sees that the invited group scored higher and then decides to use a one-tailed test, which gives p = 0.04 instead of 0.08. What is wrong?
+**4.** A researcher observes that the invited group scored higher and subsequently chooses a one-tailed test ($p = 0.04$ vs $p = 0.08$). What is methodologically wrong?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-The direction of the test was chosen after seeing the data. A one-tailed test is justified only when the direction is decided in advance, and when a result in the other direction would be irrelevant. Choosing it afterwards halves the p-value for free and turns a non-significant result into a "significant" one.
+The test directionality was selected post hoc after inspecting the data. One-tailed tests are valid only when preregistered prior to data collection and when an effect in the reverse direction is practically impossible.
 :::
 
-**5.** With 10,000 students, a difference of 0.5 points on a 100-point wellbeing scale is highly significant. Is it an important finding?
+**5.** With $N = 10,000$ students, a difference of 0.5 points on a 100-point wellbeing scale is highly significant ($p < .001$). Is it an important finding?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Probably not. With a very large sample, even tiny differences become statistically significant. Importance is judged from the size of the effect (half a point is about 0.04 standard deviations) and what it would mean in practice, not from the p-value.
-:::
-
-**6.** In Exercise 4, the permutation test and the t-test gave almost the same p-value. Why?
-
-::: {.callout-note collapse="true" appearance="simple"}
-## Answer
-
-Both ask the same question: how surprising the observed difference would be if study mode had no link with GPA. The permutation test builds the null distribution by shuffling; the t-test calculates it with a formula based on the normal distribution. With a large sample and roughly normal data, the two distributions are almost the same.
-:::
-
-**7.** A chi-square test has two expected counts below 5. What should you do?
-
-::: {.callout-note collapse="true" appearance="simple"}
-## Answer
-
-The chi-square approximation is unreliable with such small expected counts. Use Fisher's exact test, `fisher.test()`, or, if it makes sense for the research question, combine categories so that the expected counts become larger.
-:::
-
-**8.** Why does the paired test in Exercise 10 find the effect when the unpaired test does not?
-
-::: {.callout-note collapse="true" appearance="simple"}
-## Answer
-
-Patients differ a great deal in how much extra sleep they get overall. The unpaired test counts those differences as noise, which hides the effect of the drug. The paired test compares each patient with themselves, so the differences between patients cancel out, and only the effect of the drug remains.
+Almost certainly not. With massive sample sizes, trivial differences reach statistical significance. Scientific importance is evaluated through effect size (here $d \approx 0.04$) and clinical relevance, not $p$-values.
 :::
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own analysis, as you would for a thesis. The data (`students`, `semesters`, `questionnaire`, and `first_sem`) and the dplyr package are already loaded, R's built-in datasets are always available, and ggplot2 can be loaded with `library(ggplot2)` for graphs.
+These tasks have no starter code and no answers. Write your own code below as you would for a thesis. The datasets `students`, `semesters`, `questionnaire`, and `first_sem` are loaded.
 
-**1.** Part-time students may report more stress than full-time students. Calculate each student's stress score from the questionnaire (reverse `stress_4` first, as in Chapter 3), state the hypotheses, compare the two groups with a graph and a suitable test, calculate an effect size, and write a reporting sentence.
+**1.** Part-time students may report greater stress than full-time students. Compute stress scores from the questionnaire (reversing `stress_4`), state the hypotheses, compare groups with Welch's $t$-test and Mann-Whitney $U$ test, calculate Cohen's $d$, and write a reporting sentence.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**2.** Choose a claim of your own about the average of one variable in the study (for example, that graduate students study more than 25 hours a week in their first semester). State the hypotheses, decide whether a one-tailed or two-tailed test is justified, run the test, and report the result with a confidence interval.
+**2.** Test whether first-semester study hours exceed 25 hours per week on average. State the hypotheses, run a one-sample $t$-test, and report results with a 95% confidence interval.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**3.** Choose two categorical variables in `students` that the chapter did not relate (for example, `programme` and `has_children`, or `employment` and `study_mode`). Make the table and the proportions, test whether the variables are related, check the expected counts, and describe the result in words.
+**3.** Test whether faculty affiliation is related to considering dropout using a chi-square test of independence. Check expected counts and compute Cramér's $V$.
 
-```{webr}
-# Your code here
-```
-
-**4.** A colleague plans a study to detect a difference of 0.3 standard deviations between two groups. Use simulation to find how many participants per group are needed for 80% power, check your answer with `power.t.test()`, and write the sample-size justification for their methods section.
-
-```{webr}
-# Your code here
-```
-
-**5.** R's built-in `chickwts` data records the weight of chicks fed six different feeds. Choose two feeds, compare the chicks' weights with a graph and a test of your choice, justify the choice, and report the result with an effect size.
-
-```{webr}
-# Your code here
-```
-
-**6.** R's built-in `InsectSprays` data records the number of insects on plots treated with six sprays. Compare sprays C and D. Look at the distributions first, decide whether a t-test or a Mann-Whitney U test is more appropriate, run it, and explain your decision.
-
-```{webr}
-# Your code here
-```
-
-**7.** Test whether first-semester sleep differs between the five faculties with every pairwise t-test. Report how many comparisons are significant with and without a correction for multiple testing, and write the two sentences you would put in a thesis.
-
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
@@ -613,12 +672,11 @@ These tasks have no starter code and no answers. Each code space below is empty 
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 7 project
 
-The project contains the data and all four parts of this page as an R script: the exercises with blanks, the questions to check your understanding (answers in `solutions.R`), and the open tasks, each with space to write your code.
+The project contains the datasets and all four parts of this page as a Python script: exercises with blanks, conceptual review with answers in `solutions.py`, and open tasks.
 
-- [Download chapter07.zip](chapter07.zip), unzip it, and double-click `chapter07.Rproj`.
-- Or type this one line in RStudio's Console:
-
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter07.zip")
-```
+- [Download chapter07.zip](chapter07.zip), unzip it, and open the folder in VS Code or your preferred Python IDE.
+- Prerequisites:
+  ```bash
+  pip install pandas numpy matplotlib seaborn scipy statsmodels data2thesis
+  ```
 :::

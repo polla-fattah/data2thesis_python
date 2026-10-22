@@ -21,6 +21,7 @@ DATASET_NAMES = [
     "counselling_visits",
     "toothgrowth",
     "faithful",
+    "sleep",
 ]
 
 EXAMPLE_FILES = [
@@ -33,6 +34,7 @@ EXAMPLE_FILES = [
     "counselling_visits.csv",
     "toothgrowth.csv",
     "faithful.csv",
+    "sleep.csv",
     "wellbeing_raw.xlsx",
     "wellbeing.sav",
 ]
@@ -319,6 +321,13 @@ def load_faithful(copy: bool = True) -> pd.DataFrame:
     return _DATA_CACHE["faithful"].copy() if copy else _DATA_CACHE["faithful"]
 
 
+def load_sleep(copy: bool = True) -> pd.DataFrame:
+    """Load Student's 1908 classic sleep dataset (Cushman and Peebles, 1904)."""
+    if "sleep" not in _DATA_CACHE:
+        _DATA_CACHE["sleep"] = _load_csv("sleep.csv")
+    return _DATA_CACHE["sleep"].copy() if copy else _DATA_CACHE["sleep"]
+
+
 def load(name: str, **kwargs: Any) -> pd.DataFrame:
     """Load a dataset by its string name.
 
@@ -327,7 +336,7 @@ def load(name: str, **kwargs: Any) -> pd.DataFrame:
     name : str
         Name of dataset: 'students', 'questionnaire', 'semesters',
         'supervisors', 'open_responses', 'open_responses_coded',
-        'counselling_visits', 'toothgrowth', or 'faithful'.
+        'counselling_visits', 'toothgrowth', 'faithful', or 'sleep'.
     **kwargs : Any
         Passed to the underlying loader function.
 
@@ -345,6 +354,7 @@ def load(name: str, **kwargs: Any) -> pd.DataFrame:
         "counselling_visits": load_counselling_visits,
         "toothgrowth": load_toothgrowth,
         "faithful": load_faithful,
+        "sleep": load_sleep,
     }
     cleaned = name.strip().lower()
     if cleaned not in loaders:

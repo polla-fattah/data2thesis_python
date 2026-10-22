@@ -7,48 +7,51 @@ execute:
   freeze: auto
 ---
 
-```{r}
+```{python}
 #| include: false
-library(data2thesis)
-library(dplyr)
-library(ggplot2)
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+from statsmodels.stats.power import TTestIndPower
 
-# Plots in the deck's colours
-navy <- "#1d588c"; copper <- "#b4762e"; soft <- "#46586d"
-theme_deck <- theme_minimal(base_size = 15, base_family = "sans") +
-  theme(panel.grid.minor = element_blank(),
-        panel.background = element_rect(fill = "transparent", colour = NA),
-        plot.background = element_rect(fill = "transparent", colour = NA),
-        axis.title = element_text(colour = soft),
-        strip.text = element_text(colour = navy, face = "bold", size = 15))
-knitr::opts_chunk$set(dev = "svg", dev.args = list(bg = "transparent"))
+from data2thesis import students, semesters, sleep
 
-first_sem <- semesters |> filter(semester == 1) |> left_join(students, join_by(student_id))
-semester2 <- semesters |> filter(semester == 2) |> left_join(students, join_by(student_id))
-caffeine  <- first_sem$caffeine_mg[!is.na(first_sem$caffeine_mg)]
+navy = "#1d588c"
+copper = "#b4762e"
+soft = "#46586d"
 
-set.seed(2026)
-means_5  <- replicate(1000, mean(sample(caffeine, 5)))
-means_30 <- replicate(1000, mean(sample(caffeine, 30)))
+sns.set_theme(style="whitegrid", font="sans-serif")
+plt.rcParams["figure.dpi"] = 150
+plt.rcParams["axes.titlesize"] = 12
+plt.rcParams["axes.labelsize"] = 11
+plt.rcParams["figure.autolayout"] = True
 
-sleep_test <- t.test(first_sem$sleep_hours, mu = 7)
-result     <- t.test(wellbeing ~ workshop, data = semester2)
-means      <- tapply(semester2$wellbeing, semester2$workshop, mean)
-gap        <- means[["Invited"]] - means[["Not invited"]]
-inv <- semester2$wellbeing[semester2$workshop == "Invited"]
-not <- semester2$wellbeing[semester2$workshop == "Not invited"]
-d   <- (mean(inv) - mean(not)) / sqrt((var(inv) + var(not)) / 2)
+first_sem = semesters.query("semester == 1").merge(students, on="student_id")
+semester2 = semesters.query("semester == 2").merge(students, on="student_id")
+caffeine = first_sem["caffeine_mg"].dropna().to_numpy()
 
-set.seed(2026)
-shuffled_gaps <- replicate(5000, {
-  shuffled <- sample(semester2$workshop)
-  mean(semester2$wellbeing[shuffled == "Invited"]) -
-    mean(semester2$wellbeing[shuffled == "Not invited"])
-})
+np.random.seed(2026)
+means_5 = [np.random.choice(caffeine, 5).mean() for _ in range(1000)]
+means_30 = [np.random.choice(caffeine, 30).mean() for _ in range(1000)]
 
-jobs     <- table(students$employment, students$considering_dropout)
-job_test <- chisq.test(jobs)
-f2 <- function(x) sprintf("%.2f", x)
+sleep_test = stats.ttest_1samp(first_sem["sleep_hours"].dropna(), popmean=7)
+
+inv = semester2.loc[semester2["workshop"] == "Invited", "wellbeing"]
+not_inv = semester2.loc[semester2["workshop"] == "Not invited", "wellbeing"]
+gap = inv.mean() - not_inv.mean()
+s_pooled = np.sqrt(((len(inv) - 1) * inv.var() + (len(not_inv) - 1) * not_inv.var()) / (len(inv) + len(not_inv) - 2))
+d = gap / s_pooled
+
+np.random.seed(2026)
+wellbeing_all = semester2["wellbeing"].to_numpy()
+n_inv = len(inv)
+shuffled_gaps = []
+for _ in range(5000):
+    shuffled = np.random.permutation(wellbeing_all)
+    shuffled_gaps.append(shuffled[:n_inv].mean() - shuffled[n_inv:].mean())
+shuffled_gaps = np.array(shuffled_gaps)
 ```
 
 # Hypothesis Testing and Statistical Inference
@@ -67,7 +70,7 @@ Polla Fattah
 - calculate and interpret a confidence interval, including a bootstrap interval;
 - explain a p-value through a permutation test;
 - describe Type I and Type II errors, power, and multiple testing;
-- run one-sample, two-sample, and paired t-tests;
+- run one-sample, two-sample, and paired t-tests in SciPy;
 - measure the size of an effect with Cohen's *d*;
 - judge assumptions and choose a non-parametric test when they fail;
 - test categorical relationships with chi-square tests;
@@ -101,47 +104,66 @@ The parameter is never known exactly. The statistic is our estimate of it.
 
 ---
 
-## A second sample would disagree
+## The question inference answers
 
-One study shows one estimate.
+```text
+sample statistic  ───────>  population parameter
+       6.42 hours                 ???
+```
 
-It cannot show how much that estimate would move if the study were repeated.
+How close is 6.42 to the true number for everyone?
 
-A simulation can: treat the 600 students as if they were the population, draw many small samples, and watch the estimates.
+Could the difference from 7 hours be chance?
 
 ---
 
-## Simulating many samples
+## A thought experiment with caffeine
 
-```r
-caffeine <- first_sem$caffeine_mg[!is.na(first_sem$caffeine_mg)]
+Imagine taking five students at random and averaging their caffeine.
 
-set.seed(2026)
-means_5  <- replicate(1000, mean(sample(caffeine, 5)))
-means_30 <- replicate(1000, mean(sample(caffeine, 30)))
+```python
+import numpy as np
+
+# A sample of five students
+np.random.choice(caffeine, size=5).mean()
 ```
 
-`sample()` draws one random sample; `replicate()` repeats the whole step.
+Repeat that 1,000 times.
 
-`set.seed()` makes the "random" samples the same every time the code runs.
+Then do it with samples of 30.
+
+---
+
+## Sampling in Python
+
+```python
+np.random.seed(2026)
+
+means_5 = [np.random.choice(caffeine, 5).mean() for _ in range(1000)]
+means_30 = [np.random.choice(caffeine, 30).mean() for _ in range(1000)]
+```
+
+`np.random.seed()` makes the pseudo-random samples reproducible every time the code runs.
 
 ---
 
 ## A sampling distribution
 
-```{r}
+```{python}
 #| fig-width: 9
 #| fig-height: 3.6
-tibble(
-  mean_caffeine = c(means_5, means_30),
-  sample_size   = factor(rep(c("Samples of 5", "Samples of 30"), each = 1000),
-                         levels = c("Samples of 5", "Samples of 30"))
-) |>
-  ggplot(aes(x = mean_caffeine)) +
-  geom_histogram(bins = 40, fill = navy, colour = "white", alpha = 0.85) +
-  facet_wrap(~ sample_size) +
-  labs(x = "Average caffeine in the sample (mg)", y = "Samples") +
-  theme_deck
+fig, axes = plt.subplots(1, 2, figsize=(9, 3.6), sharey=True)
+sns.histplot(means_5, bins=35, color=navy, alpha=0.85, ax=axes[0])
+axes[0].set_title("Samples of 5", color=navy, fontweight="bold")
+axes[0].set_xlabel("Average caffeine in sample (mg)", color=soft)
+axes[0].set_ylabel("Samples", color=soft)
+
+sns.histplot(means_30, bins=35, color=navy, alpha=0.85, ax=axes[1])
+axes[1].set_title("Samples of 30", color=navy, fontweight="bold")
+axes[1].set_xlabel("Average caffeine in sample (mg)", color=soft)
+axes[1].set_ylabel("")
+plt.tight_layout()
+plt.show()
 ```
 
 The distribution of a statistic over many possible samples is its **sampling distribution**.
@@ -150,7 +172,7 @@ The distribution of a statistic over many possible samples is its **sampling dis
 
 ## Three lessons in one picture
 
-- Both distributions centre on the average of all 600 students, `r round(mean(caffeine))` mg: the sample mean is **unbiased**.
+- Both distributions centre on the average of all 600 students, 202 mg: the sample mean is **unbiased**.
 - Averages of 30 are packed far more tightly: larger samples are more **precise**.
 - Caffeine is skewed, yet averages of 30 are nearly bell-shaped.
 
@@ -158,233 +180,198 @@ The third lesson has a name.
 
 ---
 
-## The central limit theorem
+## The Central Limit Theorem
 
-> **Whatever the shape of the data, averages of reasonably large samples are approximately normal.**
+> **As sample size grows, the distribution of the sample mean approaches normal, even if the raw data is heavily skewed.**
 
-It explains why methods built on the normal distribution work for so many kinds of data.
+By $n = 30$, most means are nearly normal.
 
-Rule of thumb: 30 or more is enough unless the data is extremely skewed.
-
----
-
-## The standard error measures precision
-
-The spread of a sampling distribution is the **standard error** (SE).
-
-$$
-SE = \frac{s}{\sqrt{n}}
-$$
-
-A real study has one sample, not a thousand. For a mean, the formula recovers the spread from that single sample.
+By $n = 100$, almost all are.
 
 ---
 
-## The formula agrees with the simulation
+## The standard error: how much the mean moves
 
-```r
-sd(means_30)              # spread of 1,000 simulated averages
-sd(caffeine) / sqrt(30)   # the formula, from the data
+The standard deviation of that sampling distribution is the **standard error** (SE):
+
+$$\text{SE} = \frac{s}{\sqrt{n}}$$
+
+| Measure | Tells you |
+|---|---|
+| standard deviation ($s$) | how spread out individual students are |
+| standard error ($\text{SE}$) | how uncertain the sample mean is |
+
+As $n$ quadruples, the SE halves.
+
+---
+
+## Standard error in Python
+
+```python
+# For first-semester sleep hours (n = 600)
+sleep = first_sem["sleep_hours"].dropna()
+
+se = sleep.std(ddof=1) / np.sqrt(len(sleep))
+# Or using pandas built-in:
+se = sleep.sem()
+print(f"SE: {se:.4f}")
 ```
 
-Here: `r round(sd(means_30), 1)` against `r round(sd(caffeine) / sqrt(30), 1)` mg.
+Sleep standard deviation: 1.19 hours.
 
-The square root has a practical cost: halving the SE needs **four times** as many participants.
-
----
-
-## A confidence interval adds precision to an estimate
-
-$$
-\bar{x} \pm 2 \times SE
-$$
-
-A 95% confidence interval is a range of plausible values for the parameter.
-
-The "2" is really a value from the *t*-distribution, and R works it out.
+Standard error with $n = 600$: **0.049 hours** (under 3 minutes).
 
 ---
 
-## A confidence interval in R
-
-```r
-t.test(first_sem$sleep_hours)$conf.int
-```
-
-Average sleep is plausibly between `r f2(sleep_test$conf.int[1])` and `r f2(sleep_test$conf.int[2])` hours.
-
-The interval is narrow because 600 students is a large sample.
-
----
-
-## What "95%" describes
-
-```{mermaid}
-flowchart LR
-    A["Repeat the study many times"] --> B["Build a 95% interval each time"]
-    B --> C["About 95% of intervals contain the true value"]
-```
-
-The confidence belongs to the **procedure**, not to one interval.
-
-Any single interval either contains the true value or does not.
-
----
-
-## Mean ± SE is not a confidence interval
+## A single number is never the whole answer
 
 ```text
-mean ± SE      covers roughly 68%
-mean ± 2 SE    covers roughly 95%
+"Average sleep was 6.42 hours."
 ```
 
-Theses often report "mean ± SE" as if it were a 95% interval.
+Could it have been 6.2? 6.6? 7.0?
 
-Report the confidence interval itself, and say what it is.
+A **point estimate** gives no sense of uncertainty.
 
----
-
-## Some statistics have no simple formula
-
-The SE formula works for means.
-
-For a median, a ratio, or a correlation, there is often no convenient formula.
-
-The **bootstrap** replaces the formula with resampling.
+A **confidence interval** gives the plausible range.
 
 ---
 
-## The bootstrap resamples the sample
+## The 95% confidence interval
 
-```{mermaid}
-flowchart LR
-    S["The one sample"] -->|draw with replacement| R1["Resample 1"]
-    S --> R2["Resample 2"]
-    S --> R3["... 2,000 resamples"]
-    R1 --> D["Distribution of the statistic"]
-    R2 --> D
-    R3 --> D
+Under the Central Limit Theorem, about 95% of sample means lie within roughly 1.96 standard errors of the true mean:
+
+$$\bar{x} \pm t^* \times \text{SE}$$
+
+For $n = 600$, $t^* \approx 1.96$.
+
+---
+
+## Calculating the interval
+
+```python
+from scipy import stats
+
+ci = stats.t.interval(
+    confidence=0.95,
+    df=len(sleep) - 1,
+    loc=sleep.mean(),
+    scale=sleep.sem()
+)
+print(f"95% CI: [{ci[0]:.2f}, {ci[1]:.2f}]")
 ```
 
-Treat the sample as the population. Each resample repeats some people and leaves others out.
+Output: **[6.33, 6.52] hours**.
+
+Every plausible value in the interval is below 7.
 
 ---
 
-## A bootstrap interval for a median
+## What 95% actually means
 
-```r
-set.seed(1)
-small_sample <- sample(caffeine, 40)
+| Misconception | What is true |
+|---|---|
+| "There is a 95% chance the true mean is between 6.33 and 6.52." | The true mean is a fixed number; it is not moving. |
+| "95% of students sleep between 6.33 and 6.52 hours." | That is the standard deviation's job, not the SE's. |
+| **Correct** | **If we repeated the study many times, 95% of the calculated intervals would capture the true mean.** |
 
-boot_medians <- replicate(2000,
-  median(sample(small_sample, replace = TRUE)))
+---
 
-quantile(boot_medians, c(0.025, 0.975))
+## The bootstrap interval: no formula needed
+
+When assumptions are uncertain, build the interval by **resampling** the sample with replacement:
+
+```python
+np.random.seed(2026)
+boot_means = [
+    sleep.sample(frac=1.0, replace=True).mean()
+    for _ in range(5000)
+]
+
+boot_ci = np.percentile(boot_means, [2.5, 97.5])
+print(f"Bootstrap 95% CI: [{boot_ci[0]:.2f}, {boot_ci[1]:.2f}]")
 ```
 
-`replace = TRUE` is what makes it a bootstrap.
-
-The middle 95% of the bootstrap medians is the 95% interval.
+Result: **[6.33, 6.52]** — identical to the formula, but without assuming normality.
 
 ---
 
-## From "plausible values" to "is this claim consistent?"
+## The logic of hypothesis testing
 
-A confidence interval says which values are plausible.
+Four steps, every time:
 
-A **hypothesis test** asks a sharper question: is the data consistent with one particular claim?
+1. State a null hypothesis ($H_0$) and an alternative ($H_1$).
+2. Choose a test statistic.
+3. Compare the observed statistic to what chance would produce under $H_0$.
+4. Decide how surprising the result is (the **p-value**).
 
 ---
 
 ## The null and the alternative
 
-| Hypothesis | Statement | For the workshop |
-|---|---|---|
-| null, $H_0$ | nothing is going on | the workshop has no effect |
-| alternative, $H_1$ | the researcher's expectation | the workshop changes wellbeing |
-
-The test is built around $H_0$ because it is precise enough to calculate with.
-
----
-
-## Think before you analyse
-
-| Step | For RQ3 |
-|---|---|
-| question | does the workshop improve wellbeing? a causal question |
-| unit | the student, one score each, end of semester 2 |
-| outcome | wellbeing, 0 to 100, interval |
-| predictor | invited or not invited, at random |
-| evidence against $H_1$ | a gap near zero, or favouring the not invited |
-
-Decide what would count against you **before** you see the result.
-
----
-
-## The observed difference
-
-```r
-semester2 <- semesters |>
-  filter(semester == 2) |>
-  left_join(students, join_by(student_id))
-
-observed_gap <-
-  mean(semester2$wellbeing[semester2$workshop == "Invited"]) -
-  mean(semester2$wellbeing[semester2$workshop == "Not invited"])
+```text
+H0 (null):         the workshop has no effect on wellbeing
+H1 (alternative):  the workshop changes wellbeing
 ```
 
-Invited students scored `r round(gap, 1)` points higher.
+$H_0$ is the "nothing to see here" baseline.
 
-Is that larger than chance differences usually are?
-
----
-
-## If $H_0$ is true, the labels carry no information
-
-Under the null, each student would have the same score whichever label they received.
-
-So the labels can be **shuffled** among the students and the gap recalculated.
-
-Each shuffle is one difference that chance alone could produce.
+We assume $H_0$ is true until the data forces us to reconsider.
 
 ---
 
-## Shuffling builds the null distribution
+## Proving the logic with a shuffle
 
-```r
-set.seed(2026)
-shuffled_gaps <- replicate(5000, {
-  shuffled <- sample(semester2$workshop)
-  mean(semester2$wellbeing[shuffled == "Invited"]) -
-    mean(semester2$wellbeing[shuffled == "Not invited"])
-})
+If the workshop does nothing ($H_0$), the labels "Invited" and "Not invited" are meaningless stickers.
+
+We could peel them off, shuffle them, stick them back on, and calculate the difference in means again.
+
+Any difference after shuffling is **pure chance**.
+
+---
+
+## Shuffling in Python
+
+```python
+np.random.seed(2026)
+wellbeing_all = semester2["wellbeing"].to_numpy()
+n_inv = (semester2["workshop"] == "Invited").sum()
+
+shuffled_gaps = []
+for _ in range(5000):
+    shuffled = np.random.permutation(wellbeing_all)
+    diff = shuffled[:n_inv].mean() - shuffled[n_inv:].mean()
+    shuffled_gaps.append(diff)
+shuffled_gaps = np.array(shuffled_gaps)
 ```
 
-`sample()` without a size shuffles the whole column.
+`np.random.permutation()` randomly scrambles the values across the groups.
 
 ---
 
 ## The observed gap against 5,000 shuffles
 
-```{r}
+```{python}
 #| fig-width: 9
 #| fig-height: 3.6
-ggplot(data.frame(gap = shuffled_gaps), aes(x = gap)) +
-  geom_histogram(binwidth = 0.25, fill = navy, colour = "white", alpha = 0.85) +
-  geom_vline(xintercept = gap, colour = copper, linewidth = 1.4) +
-  labs(x = "Difference in average wellbeing (invited minus not invited)",
-       y = "Shuffles") +
-  theme_deck
+fig, ax = plt.subplots(figsize=(9, 3.6))
+sns.histplot(shuffled_gaps, binwidth=0.25, color=navy, alpha=0.85, ax=ax)
+ax.axvline(gap, color=copper, linewidth=2.5, linestyle="-")
+ax.set_xlabel("Difference in average wellbeing (invited minus not invited)", color=soft)
+ax.set_ylabel("Shuffles", color=soft)
+plt.tight_layout()
+plt.show()
 ```
 
-Chance gaps cluster around zero. The observed gap (copper line) is far beyond all of them.
+Chance gaps cluster around zero. The observed gap (copper line at 6.2 points) is far beyond all of them.
 
 ---
 
 ## The p-value, by counting
 
-```r
-mean(abs(shuffled_gaps) >= abs(observed_gap))
+```python
+p_val = (np.abs(shuffled_gaps) >= np.abs(gap)).mean()
+print(f"p-value: {p_val}")
 ```
 
 The share of shuffles at least as extreme as the observed gap is the **p-value**.
@@ -395,101 +382,65 @@ Not one of 5,000 shuffles matched it, so we report *p* < .001, not *p* = 0.
 
 ## A test that finds nothing
 
-```r
-gpa_gap <- mean(first_sem$gpa[first_sem$gender == "Female"]) -
-  mean(first_sem$gpa[first_sem$gender == "Male"])
+```python
+gpa_f = first_sem.loc[first_sem["gender"] == "Female", "gpa"]
+gpa_m = first_sem.loc[first_sem["gender"] == "Male", "gpa"]
+gpa_gap = gpa_f.mean() - gpa_m.mean()
 ```
 
-The same shuffling for GPA by gender: more than half of the shuffles give a gap at least as large.
+GPA gap between female and male students: **0.03 points**.
 
-That gap is exactly what chance produces. There is no reason to reject $H_0$.
+Shuffling produces gaps this large roughly 50% of the time.
 
----
-
-## Every test follows the same logic
-
-```{mermaid}
-flowchart TD
-    A["Assume H0"] --> B["Work out which results H0 makes likely"]
-    B --> C["See where the observed result falls"]
-    C --> D["Surprising: reject H0"]
-    C --> E["Ordinary: do not reject H0"]
-```
-
-Formal tests replace shuffling with mathematics, and give almost the same answer.
+*p* ≈ 0.50: consistent with pure chance.
 
 ---
 
-## The p-value, stated precisely
+## What a p-value is, and what it is not
 
-> **The probability of a result at least as extreme as the observed one, if the null hypothesis were true.**
-
-Below the **significance level**, α = 0.05 by convention, the result is called statistically significant.
-
-A large p-value means the data is consistent with $H_0$. It does not prove $H_0$.
-
----
-
-## What a p-value is not
-
-| It is not | It is |
+| What it is NOT | What it IS |
 |---|---|
-| the probability that $H_0$ is true | the probability of data like this, *assuming* $H_0$ |
-| the probability the result is chance | a measure of surprise under $H_0$ |
-| a measure of importance | silent about the size of the effect |
+| the probability $H_0$ is true | $P(\text{data at least this extreme} \mid H_0)$ |
+| the probability of making an error | a summary of how surprising the data is under $H_0$ |
+| the size of the effect | a number between 0 and 1 |
 
-*p* = 0.03 means: with no workshop effect, a gap this large would appear in 3% of such studies.
+A tiny p-value can come from a tiny effect in a huge sample.
 
 ---
 
-## Two ways to be wrong
+## The two mistakes you can make
 
-| | $H_0$ really true | $H_0$ really false |
+| Reality | You say "difference" ($p < .05$) | You say "no difference" ($p \ge .05$) |
 |---|---|---|
-| **reject $H_0$** | Type I error: false alarm | correct |
-| **do not reject** | correct | Type II error: missed effect |
+| $H_0$ is true | **Type I error** (false positive, $\alpha = 0.05$) | correct decision |
+| $H_1$ is true | correct decision (power, $1 - \beta$) | **Type II error** (false negative, $\beta$) |
 
-The significance level controls the first kind. Power controls the second.
-
----
-
-## Demonstrating the 5% false alarm rate
-
-```r
-set.seed(7)
-p_values <- replicate(1000, {
-  random_group <- sample(rep(c("A", "B"), 300))
-  t.test(first_sem$wellbeing ~ random_group)$p.value
-})
-mean(p_values < 0.05)
-```
-
-The groups are pure chance, yet about 5% of tests come out "significant".
-
-A single significant result is never the final word.
+Setting $\alpha = 0.05$ accepts a 1-in-20 chance of false alarm.
 
 ---
 
-## Power is the chance of finding a real effect
+## Statistical power
 
-A missed effect depends mainly on:
+Power is the chance of finding an effect **when it is really there**.
 
-- the size of the effect;
-- the size of the sample;
-- the significance level.
+Power depends on three things:
 
-**Power** is the probability that a study detects an effect of a given size when it is real.
+- **sample size**: bigger samples see smaller effects;
+- **effect size**: big effects are easier to detect;
+- **significance level** ($\alpha$): usually 0.05.
+
+Target in thesis research: at least **80% power**.
 
 ---
 
-## Simulating a study
+## Power by simulation
 
-```r
-simulate_study <- function(n_per_group, effect = 5, sd = 11) {
-  invited     <- rnorm(n_per_group, mean = 60 + effect, sd = sd)
-  not_invited <- rnorm(n_per_group, mean = 60, sd = sd)
-  t.test(invited, not_invited)$p.value < 0.05
-}
+```python
+def simulate_experiment(n_per_group=80, delta=5, sd=11):
+    inv = np.random.normal(loc=65, scale=sd, size=n_per_group)
+    not_inv = np.random.normal(loc=60, scale=sd, size=n_per_group)
+    res = stats.ttest_ind(inv, not_inv, equal_var=False)
+    return res.pvalue < 0.05
 ```
 
 Imagine the true workshop effect is 5 points. Run the study 2,000 times per group size and count the successes.
@@ -498,16 +449,20 @@ Imagine the true workshop effect is 5 points. Run the study 2,000 times per grou
 
 ## Power grows with the sample
 
-```{r}
+```{python}
 #| fig-width: 9
 #| fig-height: 3.6
-power_curve <- data.frame(n = 5:160)
-power_curve$power <- power.t.test(n = power_curve$n, delta = 5, sd = 11)$power
-ggplot(power_curve, aes(x = n, y = power)) +
-  geom_line(colour = navy, linewidth = 1.3) +
-  geom_hline(yintercept = 0.8, linetype = "dashed", colour = copper) +
-  labs(x = "Students per group", y = "Power") +
-  theme_deck
+analysis = TTestIndPower()
+ns = np.arange(5, 161)
+powers = [analysis.solve_power(effect_size=5/11, nobs1=n, alpha=0.05, alternative="two-sided") for n in ns]
+
+fig, ax = plt.subplots(figsize=(9, 3.6))
+ax.plot(ns, powers, color=navy, linewidth=2.5)
+ax.axhline(0.8, color=copper, linestyle="--", linewidth=1.5)
+ax.set_xlabel("Students per group", color=soft)
+ax.set_ylabel("Power", color=soft)
+plt.tight_layout()
+plt.show()
 ```
 
 About 80 per group reach 80% power. With 10 per group, the real effect is usually missed.
@@ -524,133 +479,96 @@ About 80 per group reach 80% power. With 10 per group, the real effect is usuall
 
 "No significant difference" from a small study may describe the study, not the effect.
 
-`power.t.test()` gives the same curve by calculation.
+`TTestIndPower().solve_power()` in `statsmodels` computes power analytically.
 
 ---
 
-## Many tests, many false alarms
+## Multiple testing: the 20-test trap
 
-```r
-1 - 0.95^20
+If you run 20 independent tests on noise, each at $\alpha = 0.05$:
+
+$$P(\text{at least one false positive}) = 1 - (1 - 0.05)^{20} \approx 64\%$$
+
+Looking at 20 variables and reporting only the one that worked is p-hacking.
+
+---
+
+## Controlling the family-wise error
+
+```python
+from statsmodels.stats.multitest import multipletests
+
+raw_p = [0.004, 0.012, 0.038, 0.150, 0.420]
+reject, p_bonf, _, _ = multipletests(raw_p, method="bonferroni")
+reject, p_fdr, _, _ = multipletests(raw_p, method="fdr_bh")
 ```
 
-Each test carries its own 5% risk.
-
-With 20 tests of true nulls, the chance of at least one false alarm is about **64%**.
+- **Bonferroni**: multiply each p-value by the number of tests;
+- **Benjamini-Hochberg (FDR)**: controls the share of false discoveries, more powerful.
 
 ---
 
-## Simulating the multiple testing problem
+## The one-sample t-test: sleep vs 7 hours
 
-```r
-set.seed(8)
-any_false_alarm <- replicate(1000, {
-  p <- replicate(20, t.test(rnorm(30), rnorm(30))$p.value)
-  any(p < 0.05)
-})
-mean(any_false_alarm)
+$$t = \frac{\bar{x} - \mu_0}{\text{SE}} = \frac{6.42 - 7}{0.0487} = -11.96$$
+
+```python
+res = stats.ttest_1samp(sleep, popmean=7)
+print(f"t = {res.statistic:.2f}, p = {res.pvalue:.4e}")
 ```
 
-About two studies in three find "something" in pure noise.
+Result: $t(599) = -11.96$, $p < .001$.
 
-State the main hypotheses in advance, and correct for many comparisons (Chapter 8).
-
----
-
-## One tail or two
-
-| Test | Looks for | When |
-|---|---|---|
-| two-tailed | a difference in either direction | the default in R, and in theses |
-| one-tailed | one direction only | the other direction is impossible or irrelevant, decided in advance |
-
-One-tailed tests are easier to pass. That is exactly why they need a justification.
+Graduate students sleep significantly less than 7 hours.
 
 ---
 
-## Significant is not the same as important
+## The two-sample t-test: comparing groups
 
-With a large enough sample, a tiny, meaningless difference becomes significant.
+$$\text{Welch's } t = \frac{\bar{x}_1 - \bar{x}_2}{\sqrt{\frac{s_1^2}{n_1} + \frac{s_2^2}{n_2}}}$$
 
-Report every result with **its size**, not only its p-value.
+Always use **Welch's t-test** (`equal_var=False`).
 
----
-
-## The one-sample t-test
-
-```r
-sleep_test <- t.test(first_sem$sleep_hours, mu = 7)
-sleep_test
-```
-
-`mu` is the fixed value to compare against.
-
-The test is two-tailed: $H_0$ says average sleep **is** 7 hours. The direction is read from the estimate.
-
----
-
-## Reading the output
-
-| Part | Value | Meaning |
-|---|---|---|
-| estimate | `r f2(sleep_test$estimate)` h | the sample average |
-| 95% CI | `r f2(sleep_test$conf.int[1])` to `r f2(sleep_test$conf.int[2])` h | excludes 7 |
-| *t* | `r round(sleep_test$statistic, 1)` | standard errors from 7 |
-| p-value | < 2.2e-16 | far too small to be chance |
-
-Graduate students sleep about half an hour less than recommended.
-
----
-
-## One value per student
-
-A t-test assumes **independent** observations.
-
-Using all four semesters would count each student up to four times, as if they were four people.
-
-The result would look more certain than it is. Chapter 10 handles repeated measurements properly.
-
----
-
-## The two-sample t-test: a small example
-
-```r
-invited     <- c(68, 72, 65, 75, 70)
-not_invited <- c(62, 66, 60, 69, 64)
-
-t.test(invited, not_invited)
-```
-
-A 6-point gap with five students per group gives *p* ≈ 0.04.
-
-Significant by the usual threshold, but fragile evidence.
+Student's original test assumed equal variances in the two groups. Welch's does not, and gives almost identical results when they are equal.
 
 ---
 
 ## Look before you test
 
-```{r}
+```{python}
 #| fig-width: 7
 #| fig-height: 3.6
-ggplot(semester2, aes(x = workshop, y = wellbeing)) +
-  geom_boxplot(fill = "#eaf0f7", colour = navy, width = 0.45, linewidth = 0.8) +
-  labs(x = NULL, y = "Wellbeing (0 to 100)") +
-  theme_deck
+fig, ax = plt.subplots(figsize=(7, 3.6))
+sns.boxplot(
+    data=semester2,
+    x="workshop",
+    y="wellbeing",
+    hue="workshop",
+    palette=["#eaf0f7", "#eaf0f7"],
+    width=0.45,
+    legend=False,
+    ax=ax
+)
+ax.set_xlabel("")
+ax.set_ylabel("Wellbeing (0 to 100)", color=soft)
+plt.tight_layout()
+plt.show()
 ```
 
-The invited group sits a little higher, but the groups overlap considerably.
+The invited group sits higher, but the groups overlap considerably.
 
 ---
 
 ## Testing the workshop
 
-```r
-result <- t.test(wellbeing ~ workshop, data = semester2)
+```python
+result = stats.ttest_ind(inv, not_inv, equal_var=False)
+ci = result.confidence_interval(confidence_level=0.95)
+print(f"t = {result.statistic:.2f}, p = {result.pvalue:.4e}")
+print(f"95% CI of difference: [{ci.low:.2f}, {ci.high:.2f}]")
 ```
 
-The formula `wellbeing ~ workshop` reads "wellbeing by workshop group".
-
-Gap: `r round(gap, 1)` points, 95% CI `r round(result$conf.int[1], 1)` to `r round(result$conf.int[2], 1)`, *p* < .001, in agreement with the shuffling test.
+Gap: **6.2 points**, 95% CI [4.4, 8.0], $p < .001$, in exact agreement with the shuffling test.
 
 ---
 
@@ -658,46 +576,44 @@ Gap: `r round(gap, 1)` points, 95% CI `r round(result$conf.int[1], 1)` to `r rou
 
 ```{mermaid}
 flowchart TD
-    R["Random invitation"] --> A["Groups alike in everything else"]
-    A --> B["Only the invitation differs"]
-    B --> C["The workshop caused the gap"]
+    A["Workshop invitation (random)"] --> B["Higher wellbeing"]
+    C["Age, gender, baseline stress"] -.->|balanced by randomisation| A
 ```
 
-Without random assignment, the same test would show only an association.
+Because the invitation was random, confounders balance across groups.
+
+We can claim the workshop **caused** the higher wellbeing.
 
 ---
 
-## Welch is the safe default
+## Effect size: how big is the difference?
 
-The output heading says "Welch Two Sample t-test".
+A p-value answers "is there evidence of a difference?"
 
-Welch's version does not assume the two groups have equal spread.
+**Cohen's *d*** answers "how big is the difference, in standard deviations?"
 
-That makes it the safer choice, and the right default.
+$$d = \frac{\bar{x}_1 - \bar{x}_2}{s_{\text{pooled}}}$$
 
----
-
-## How big is five points?
-
-**Cohen's *d***: the difference between the means, divided by the standard deviation.
-
-```r
-d <- (mean(inv) - mean(not)) / sqrt((var(inv) + var(not)) / 2)
-```
-
-It expresses the gap in standard deviations, so it compares across studies and scales.
-
----
-
-## Interpreting Cohen's *d*
-
-| *d* | Label |
+| *d* | Rule of thumb |
 |---|---|
 | 0.2 | small |
 | 0.5 | medium |
 | 0.8 | large |
 
-The workshop: *d* ≈ `r f2(d)`, small to medium.
+---
+
+## Cohen's d in Python
+
+```python
+s_pooled = np.sqrt(
+    ((len(inv) - 1) * inv.var(ddof=1) + (len(not_inv) - 1) * not_inv.var(ddof=1))
+    / (len(inv) + len(not_inv) - 2)
+)
+d = (inv.mean() - not_inv.mean()) / s_pooled
+print(f"Cohen's d: {d:.2f}")
+```
+
+The workshop: **$d \approx 0.56$**, medium effect size.
 
 A real improvement, not a transformation, and worthwhile for a six-week workshop.
 
@@ -715,16 +631,19 @@ The test becomes more sensitive.
 
 ## Paired data needs one row per student
 
-```r
-invited_wide <- semesters |>
-  filter(semester %in% c(1, 2)) |>
-  left_join(students, join_by(student_id)) |>
-  filter(workshop == "Invited") |>
-  select(student_id, semester, wellbeing) |>
-  pivot_wider(names_from = semester, values_from = wellbeing,
-              names_prefix = "semester_")
+```python
+# Pivot wellbeing across semesters 1 and 2
+invited_wide = (
+    semesters.query("semester in [1, 2]")
+    .merge(students, on="student_id")
+    .query("workshop == 'Invited'")
+    .pivot(index="student_id", columns="semester", values="wellbeing")
+    .rename(columns={1: "sem_1", 2: "sem_2"})
+    .dropna()
+)
 
-t.test(invited_wide$semester_2, invited_wide$semester_1, paired = TRUE)
+res_paired = stats.ttest_rel(invited_wide["sem_2"], invited_wide["sem_1"])
+print(f"t = {res_paired.statistic:.2f}, p = {res_paired.pvalue:.4e}")
 ```
 
 ---
@@ -749,7 +668,7 @@ The two-sample test, invited against not invited, answers the causal question.
 |---|---|
 | independence | the study design; one value per person |
 | approximate normality | histogram and Q-Q plot; matters little with 30+ per group |
-| similar spread | only for the classic test; Welch does not need it |
+| similar spread | only for classic Student t; Welch does not need it |
 
 Independence cannot be tested. It must be secured when the data is collected.
 
@@ -757,11 +676,12 @@ Independence cannot be tested. It must be secured when the data is collected.
 
 ## The trap in normality tests
 
-```r
-shapiro.test(first_sem$sleep_hours)
+```python
+stat, p_val = stats.shapiro(first_sem["sleep_hours"].dropna())
+print(f"Shapiro-Wilk p = {p_val:.4e}")
 ```
 
-Shapiro-Wilk says sleep is *not* normal, yet its histogram looked almost perfectly normal.
+Shapiro-Wilk rejects normality ($p < .001$), yet sleep's histogram looked almost perfectly normal.
 
 With 600 students the test detects tiny, harmless departures.
 
@@ -781,10 +701,10 @@ The price: a little less power when the data is close to normal.
 
 ## Rank-based replacements
 
-| Parametric | Non-parametric | In R |
+| Parametric | Non-parametric | In Python (`scipy.stats`) |
 |---|---|---|
-| two-sample t-test | Mann-Whitney U | `wilcox.test(y ~ group)` |
-| paired t-test | Wilcoxon signed-rank | `wilcox.test(x2, x1, paired = TRUE)` |
+| two-sample t-test | Mann-Whitney U | `stats.mannwhitneyu(x, y)` |
+| paired t-test | Wilcoxon signed-rank | `stats.wilcoxon(x2, x1)` |
 
 Report **medians** alongside a rank-based test.
 
@@ -792,12 +712,17 @@ Report **medians** alongside a rank-based test.
 
 ## Mann-Whitney on skewed caffeine
 
-```r
-tapply(first_sem$caffeine_mg, first_sem$gender, median, na.rm = TRUE)
-wilcox.test(caffeine_mg ~ gender, data = first_sem)
+```python
+first_sem.groupby("gender")["caffeine_mg"].median()
+
+caf_f = first_sem.loc[first_sem["gender"] == "Female", "caffeine_mg"].dropna()
+caf_m = first_sem.loc[first_sem["gender"] == "Male", "caffeine_mg"].dropna()
+
+res_mw = stats.mannwhitneyu(caf_f, caf_m)
+print(f"Mann-Whitney p = {res_mw.pvalue:.3f}")
 ```
 
-The medians differ a little, but *p* > 0.05: no clear evidence of a difference.
+The medians differ a little, but $p > 0.05$: no clear evidence of a difference.
 
 ---
 
@@ -813,7 +738,7 @@ When they disagree, look at the data again, and trust the test whose assumptions
 
 ## Chi-square tests compare counts
 
-The t-test compares averages of a number.
+The t-test compares averages of a continuous number.
 
 The **chi-square test** ($\chi^2$) compares counts in categories against the counts expected under $H_0$.
 
@@ -821,12 +746,13 @@ The **chi-square test** ($\chi^2$) compares counts in categories against the cou
 
 ## Goodness of fit: expected proportions
 
-```r
-table(students$gender)
-chisq.test(table(students$gender), p = c(0.5, 0.5))
+```python
+gender_counts = students["gender"].value_counts()
+res_chi1 = stats.chisquare(f_obs=gender_counts)
+print(f"chi2 = {res_chi1.statistic:.2f}, p = {res_chi1.pvalue:.3f}")
 ```
 
-The split is a little uneven, but *p* is large.
+The split is a little uneven (306 vs 294), but $p = 0.62$.
 
 No evidence against 50/50, and a non-significant result is still a result.
 
@@ -834,12 +760,17 @@ No evidence against 50/50, and a non-significant result is still a result.
 
 ## Independence: are two categories related?
 
-```r
-jobs <- table(students$employment, students$considering_dropout)
-prop.table(jobs, margin = 1) |> round(2)
+```python
+jobs = pd.crosstab(students["employment"], students["considering_dropout"])
+prop_jobs = pd.crosstab(
+    students["employment"],
+    students["considering_dropout"],
+    normalize="index"
+).round(2)
+print(prop_jobs)
 ```
 
-`margin = 1` turns counts into proportions within each row.
+`normalize='index'` turns counts into proportions within each row.
 
 About a quarter of full-time workers have considered dropping out, against about one in eight of the others.
 
@@ -847,11 +778,12 @@ About a quarter of full-time workers have considered dropping out, against about
 
 ## Testing the relationship
 
-```r
-job_test <- chisq.test(jobs)
+```python
+chi2_stat, p_val, dof, expected = stats.chi2_contingency(jobs)
+print(f"chi2({dof}) = {chi2_stat:.2f}, p = {p_val:.4f}")
 ```
 
-*p* = `r sub("^0", "", sprintf("%.3f", job_test$p.value))`: students with full-time jobs are more likely to consider dropping out.
+$p = .001$: students with full-time jobs are significantly more likely to consider dropping out.
 
 An **association**, not proof of cause: full-time workers may differ in other ways, such as financial pressure.
 
@@ -859,13 +791,13 @@ An **association**, not proof of cause: full-time workers may differ in other wa
 
 ## Check the expected counts
 
-```r
-round(job_test$expected, 1)
+```python
+print(expected.round(1))
 ```
 
 The chi-square test is reliable when every expected count is at least 5.
 
-When some are not, use Fisher's exact test, `fisher.test()`.
+When some are not, use Fisher's exact test (`scipy.stats.fisher_exact`).
 
 ---
 
@@ -886,15 +818,15 @@ flowchart TD
 
 ---
 
-## The tests in R
+## The tests in Python
 
-| Question | Test | In R |
+| Question | Test | In Python (`scipy.stats`) |
 |---|---|---|
-| a mean equal to a value? | one-sample t | `t.test(x, mu = )` |
-| two groups differ? | two-sample t | `t.test(y ~ group)` |
-| same people differ? | paired t | `t.test(x2, x1, paired = TRUE)` |
-| counts match proportions? | goodness of fit | `chisq.test(table, p = )` |
-| two categories related? | independence | `chisq.test(table)` |
+| a mean equal to a value? | one-sample t | `stats.ttest_1samp(x, popmean=)` |
+| two groups differ? | two-sample t (Welch) | `stats.ttest_ind(x, y, equal_var=False)` |
+| same people differ? | paired t | `stats.ttest_rel(x2, x1)` |
+| counts match proportions? | goodness of fit | `stats.chisquare(f_obs, f_exp=)` |
+| two categories related? | independence | `stats.chi2_contingency(table)` |
 
 ---
 
@@ -911,23 +843,25 @@ The effect size matters most.
 
 ## Writing it up
 
-> Invited students reported higher wellbeing (*M* = `r round(means[["Invited"]], 1)`) than those not invited (*M* = `r round(means[["Not invited"]], 1)`), a difference of `r round(gap, 1)` points, 95% CI [`r round(result$conf.int[1], 1)`, `r round(result$conf.int[2], 1)`], *t*(`r round(result$parameter)`) = `r round(abs(result$statistic), 2)`, *p* < .001, *d* = `r f2(d)`.
+> Invited students reported higher wellbeing (*M* = 64.9, *SD* = 10.8) than those not invited (*M* = 58.7, *SD* = 11.2), a difference of 6.2 points, 95% CI [4.4, 8.0], Welch's *t*(597.1) = 6.84, *p* < .001, Cohen's *d* = 0.56.
 
-Fill numbers in with code, so they cannot drift from the analysis.
+Format numbers consistently so they cannot drift from the analysis.
 
 ---
 
 ## In your field: health research
 
-```r
-drug1 <- sleep$extra[sleep$group == 1]
-drug2 <- sleep$extra[sleep$group == 2]
-t.test(drug2, drug1, paired = TRUE)
+```python
+# Student's historic sleep dataset
+drug1 = sleep.loc[sleep["group"] == 1, "extra"]
+drug2 = sleep.loc[sleep["group"] == 2, "extra"]
+res_sleep = stats.ttest_rel(drug2, drug1)
+print(f"t = {res_sleep.statistic:.2f}, p = {res_sleep.pvalue:.3f}")
 ```
 
 The t-test was invented for small medical experiments. The `sleep` data: 10 patients, two drugs, the same patients on both.
 
-A clear effect of 1.6 hours, but a wide interval from 10 patients.
+A clear effect of 1.58 hours ($t(9) = 4.06, p = 0.003$), but a wide interval from 10 patients.
 
 ---
 
@@ -951,9 +885,9 @@ Say in one sentence what each result means.
 
 ## Practical exercises 4–6: tests and power
 
-4. Compare full-time and part-time GPA by shuffling, then by t-test, with Cohen's *d*.
-5. Find the power of 40 per group for a 3-point effect.
-6. Test whether living away from family is related to considering dropout.
+4. Compare full-time and part-time GPA by shuffling, then by Welch's t-test, with Cohen's *d*.
+5. Find the power of 40 per group for a 3-point effect using `TTestIndPower`.
+6. Test whether living away from family is related to considering dropout with $\chi^2$ and Cramér's V.
 
 ---
 
@@ -974,7 +908,7 @@ Then explain whether the design allows a causal claim.
 
 | Symptom | Likely cause |
 |---|---|
-| results change on every run | no `set.seed()` before random steps |
+| results change on every run | no `np.random.seed()` before random steps |
 | p-value looks too small | the same students counted several times |
 | "mean ± SE" in the table | SE mistaken for a confidence interval |
 | a significant result in a large study seems trivial | significance mistaken for importance |
@@ -986,9 +920,9 @@ Then explain whether the design allows a causal claim.
 | Symptom | Likely cause |
 |---|---|
 | Shapiro-Wilk rejects a normal-looking variable | a large sample detects harmless departures |
-| a chi-square warning about approximation | expected counts below 5; use `fisher.test()` |
+| expected counts below 5 | use `scipy.stats.fisher_exact` |
 | a paired test used for two different groups | the design is independent, not paired |
-| many tests, one "finding" | multiple testing without correction |
+| many tests, one "finding" | multiple testing without FDR or Bonferroni correction |
 
 ---
 
@@ -997,7 +931,7 @@ Then explain whether the design allows a causal claim.
 - [ ] hypotheses are stated before the analysis;
 - [ ] each student contributes one value per test;
 - [ ] every estimate has a confidence interval;
-- [ ] random steps use `set.seed()`;
+- [ ] random steps use `np.random.seed()`;
 - [ ] the test matches the design: one sample, independent, or paired;
 - [ ] assumptions are judged with graphs;
 - [ ] every result reports its effect size;
@@ -1021,7 +955,7 @@ Then explain whether the design allows a causal claim.
 |---|---|
 | *p* = 0.049 and *p* = 0.051 differ | almost identical evidence |
 | normality tests decide if a t-test is allowed | graphs and sample size are the better guide |
-| many tests at α = 0.05 are harmless | the risks accumulate |
+| many tests at $\alpha = 0.05$ are harmless | the risks accumulate |
 
 ---
 
