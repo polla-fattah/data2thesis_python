@@ -22,6 +22,8 @@ DATASET_NAMES = [
     "toothgrowth",
     "faithful",
     "sleep",
+    "trees",
+    "ucbadmissions",
 ]
 
 EXAMPLE_FILES = [
@@ -35,6 +37,8 @@ EXAMPLE_FILES = [
     "toothgrowth.csv",
     "faithful.csv",
     "sleep.csv",
+    "trees.csv",
+    "ucbadmissions.csv",
     "wellbeing_raw.xlsx",
     "wellbeing.sav",
 ]
@@ -147,7 +151,11 @@ def load_students(copy: bool = True) -> pd.DataFrame:
         - considering_dropout: 'Yes' or 'No' at end of year 1
     """
     if "students" not in _DATA_CACHE:
-        _DATA_CACHE["students"] = _load_csv("students.csv")
+        df = _load_csv("students.csv")
+        # In students.csv, 'None' represents the employment category (no job).
+        # Pandas read_csv parses 'None' as NaN by default, so restore 'None'.
+        df["employment"] = df["employment"].fillna("None")
+        _DATA_CACHE["students"] = df
     return _DATA_CACHE["students"].copy() if copy else _DATA_CACHE["students"]
 
 
@@ -328,6 +336,20 @@ def load_sleep(copy: bool = True) -> pd.DataFrame:
     return _DATA_CACHE["sleep"].copy() if copy else _DATA_CACHE["sleep"]
 
 
+def load_trees(copy: bool = True) -> pd.DataFrame:
+    """Load the black cherry trees timber volume dataset."""
+    if "trees" not in _DATA_CACHE:
+        _DATA_CACHE["trees"] = _load_csv("trees.csv")
+    return _DATA_CACHE["trees"].copy() if copy else _DATA_CACHE["trees"]
+
+
+def load_ucbadmissions(copy: bool = True) -> pd.DataFrame:
+    """Load the 1973 UC Berkeley graduate admissions aggregate dataset."""
+    if "ucbadmissions" not in _DATA_CACHE:
+        _DATA_CACHE["ucbadmissions"] = _load_csv("ucbadmissions.csv")
+    return _DATA_CACHE["ucbadmissions"].copy() if copy else _DATA_CACHE["ucbadmissions"]
+
+
 def load(name: str, **kwargs: Any) -> pd.DataFrame:
     """Load a dataset by its string name.
 
@@ -336,7 +358,8 @@ def load(name: str, **kwargs: Any) -> pd.DataFrame:
     name : str
         Name of dataset: 'students', 'questionnaire', 'semesters',
         'supervisors', 'open_responses', 'open_responses_coded',
-        'counselling_visits', 'toothgrowth', 'faithful', or 'sleep'.
+        'counselling_visits', 'toothgrowth', 'faithful', 'sleep',
+        'trees', or 'ucbadmissions'.
     **kwargs : Any
         Passed to the underlying loader function.
 
@@ -355,6 +378,8 @@ def load(name: str, **kwargs: Any) -> pd.DataFrame:
         "toothgrowth": load_toothgrowth,
         "faithful": load_faithful,
         "sleep": load_sleep,
+        "trees": load_trees,
+        "ucbadmissions": load_ucbadmissions,
     }
     cleaned = name.strip().lower()
     if cleaned not in loaders:

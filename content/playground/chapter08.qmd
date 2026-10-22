@@ -7,85 +7,96 @@ format:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
   - questionnaire.csv
+  - trees.csv
+  - ucbadmissions.csv
   - chapter08.zip
-webr:
+pyodide:
   packages:
-    - dplyr
+    - pandas
+    - numpy
+    - scipy
+    - statsmodels
+    - patsy
+    - matplotlib
+    - seaborn
   resources:
     - students.csv
     - semesters.csv
     - questionnaire.csv
+    - trees.csv
+    - ucbadmissions.csv
 ---
 
 {{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
-This page practises the ideas of Chapter 8 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and some of R's built-in datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you build and check the models yourself, as you will in your own thesis.
+This page practises the ideas of Chapter 8 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and real-world datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you build and check the models yourself, as you will in your own thesis.
 
-In the exercises, replace each `______` with your own code and press **Run Code**. The data frame `study` is prepared as in the chapter: one row per student, with the background variables, the stress and support scores, and the first-semester records.
+In the exercises, replace each `______` with your own code and press **Run Code**. The DataFrame `study` is prepared as in the chapter: one row per student, with background variables, stress and support scores, and first-semester records.
 
-```{webr}
+```{pyodide}
 #| setup: true
-#| exercise: [ex1, ex2, ex3, ex4, ex5, gf2, gf4]
-library(dplyr)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-scores <- questionnaire |>
-  mutate(
-    stress_4 = 6 - stress_4,
-    stress   = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    support  = rowMeans(pick(support_1:support_6), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, support)
-study <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1), join_by(student_id))
-```
+#| exercise: [ex1, ex2, ex3, ex4, ex5, gf1, gf2, gf3, gf4]
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from patsy.contrasts import Treatment
 
-```{webr}
-#| include: false
-library(dplyr)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-scores <- questionnaire |>
-  mutate(
-    stress_4 = 6 - stress_4,
-    stress   = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    support  = rowMeans(pick(support_1:support_6), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, support)
-study <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1), join_by(student_id))
+students = pd.read_csv("students.csv")
+students["employment"] = students["employment"].fillna("None")
+semesters = pd.read_csv("semesters.csv")
+questionnaire = pd.read_csv("questionnaire.csv")
+trees = pd.read_csv("trees.csv")
+admissions = pd.read_csv("ucbadmissions.csv")
+
+q = questionnaire.copy()
+q["stress_4"] = 6 - q["stress_4"]
+scores = pd.DataFrame({
+    "student_id": q["student_id"],
+    "stress": q.filter(like="stress_").mean(axis=1),
+    "support": q.filter(like="support_").mean(axis=1),
+})
+
+study = (
+    students
+    .merge(scores, on="student_id")
+    .merge(semesters.query("semester == 1"), on="student_id")
+)
 ```
 
 ## Practise the chapter
 
-These are the exercises at the end of Chapter 8, with the same numbers.
+These exercises follow the book's exercises closely.
 
 ### Exercise 1: Wellbeing across faculties
 
-Test whether first-semester wellbeing differs between faculties with a one-way ANOVA, calculate $\eta^2$, and, if the ANOVA is significant, run Tukey's test.
+Test whether first-semester wellbeing differs between faculties with a one-way ANOVA using `smf.ols` and `anova_lm`, and calculate $\eta^2$. If the ANOVA is significant, run Tukey's test; if not, explain why a post-hoc test is not needed.
 
-```{webr}
+```{pyodide}
 #| exercise: ex1
-wellbeing_anova <- ______(wellbeing ~ faculty, data = study)
-summary(wellbeing_anova)
-ss <- summary(wellbeing_anova)[[1]][["Sum Sq"]]
-ss[1] / ______(ss)
+wellbeing_anova = smf.______( "wellbeing ~ C(faculty)", data=study).fit()
+aov_table = sm.stats.anova_lm(wellbeing_anova, typ=1)
+print(aov_table)
+
+ss_between = aov_table.loc["C(faculty)", "sum_sq"]
+ss_total = aov_table["sum_sq"].______()
+eta_sq = ss_between / ss_total
+print(f"Eta squared: {eta_sq:.4f}")
 ```
 
 ::: { .hint exercise="ex1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The function for an analysis of variance is named after it, in three letters. $\eta^2$ is the between-group sum of squares as a share of the total, which is the sum of all the sums of squares.
+Use `smf.ols("wellbeing ~ C(faculty)", data=study).fit()` to fit the ordinary least squares model. Eta squared is the between-groups sum of squares divided by the total sum of squares (`.sum()`).
 :::
 :::
 
@@ -93,14 +104,18 @@ The function for an analysis of variance is named after it, in three letters. $\
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-wellbeing_anova <- aov(wellbeing ~ faculty, data = study)
-summary(wellbeing_anova)
-ss <- summary(wellbeing_anova)[[1]][["Sum Sq"]]
-ss[1] / sum(ss)
+```python
+wellbeing_anova = smf.ols("wellbeing ~ C(faculty)", data=study).fit()
+aov_table = sm.stats.anova_lm(wellbeing_anova, typ=1)
+print(aov_table)
+
+ss_between = aov_table.loc["C(faculty)", "sum_sq"]
+ss_total = aov_table["sum_sq"].sum()
+eta_sq = ss_between / ss_total
+print(f"Eta squared: {eta_sq:.4f}")
 ```
 
-F is 2.02 with a p-value of 0.09, above 0.05, and $\eta^2$ is 0.013: faculty accounts for about 1% of the differences in wellbeing. The ANOVA is not significant, so there is no need for Tukey's test; post-hoc tests look for *which* groups differ only after the ANOVA has shown that some do. Stress differed between faculties in the chapter; wellbeing, on this evidence, does not.
+The ANOVA gives $F(4, 595) = 2.02, p = 0.09$, with an $\eta^2$ of about 0.013 (just 1.3% of the variation in wellbeing sits between faculties). Because the p-value is above 0.05, there is no evidence that faculties differ in wellbeing. A post-hoc test is not needed: if the overall F test finds no evidence of differences, testing individual pairs is fishing for false alarms.
 :::
 :::
 
@@ -108,17 +123,17 @@ F is 2.02 with a p-value of 0.09, above 0.05, and $\eta^2$ is 0.013: faculty acc
 
 Fit a simple regression of first-semester wellbeing on sleep hours, and interpret the slope and R-squared.
 
-```{webr}
+```{pyodide}
 #| exercise: ex2
-wb_simple <- ______(wellbeing ~ sleep_hours, data = study)
-summary(wb_simple)
+wb_simple = smf.ols("wellbeing ~ sleep_hours", data=study).______()
+print(wb_simple.summary())
 ```
 
 ::: { .hint exercise="ex2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The function for a linear model is named after its initials. In the output, the slope is the estimate for `sleep_hours`, and R-squared is near the bottom.
+Call `.fit()` on the OLS model specification to estimate the coefficients and fit statistics.
 :::
 :::
 
@@ -126,33 +141,35 @@ The function for a linear model is named after its initials. In the output, the 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-wb_simple <- lm(wellbeing ~ sleep_hours, data = study)
-summary(wb_simple)
+```python
+wb_simple = smf.ols("wellbeing ~ sleep_hours", data=study).fit()
+print(wb_simple.summary())
 ```
 
-The slope is 5.3: each extra hour of sleep goes with wellbeing about 5.3 points higher on the 0-to-100 scale. R-squared is 0.21, so sleep alone accounts for about 21% of the differences in wellbeing between students, a lot for a single variable, but far from everything. The slope describes an association: it does not show that sleeping more would raise a student's wellbeing.
+The slope is 5.30 ($p < .001$): each extra hour of sleep per night is associated with a wellbeing score about 5.3 points higher on the 0-to-100 scale. $R^2 = 0.208$: sleep alone explains about 21% of the differences in first-semester wellbeing.
 :::
 :::
 
 ### Exercise 3: Adding stress and support
 
-Add stress and support to the model from Exercise 2, and describe what happens to the slope of sleep and to R-squared.
+Add stress and supervisor support to the model from Exercise 2. Describe what happens to the slope of sleep and to R-squared.
 
-```{webr}
+```{pyodide}
 #| exercise: ex3
-wb_simple   <- lm(wellbeing ~ sleep_hours, data = study)
-wb_multiple <- lm(wellbeing ~ sleep_hours + stress + support, data = study)
-summary(wb_multiple)
-coef(wb_simple)["sleep_hours"]
-______(wb_multiple)["sleep_hours"]
+wb_simple = smf.ols("wellbeing ~ sleep_hours", data=study).fit()
+wb_multiple = smf.ols("wellbeing ~ sleep_hours + stress + support", data=study).fit()
+
+print("Simple slope for sleep:  ", wb_simple.params["sleep_hours"])
+print("Multiple slope for sleep:", wb_multiple.______["sleep_hours"])
+print("Simple R-squared:        ", wb_simple.rsquared)
+print("Multiple R-squared:      ", wb_multiple.rsquared)
 ```
 
 ::: { .hint exercise="ex3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The last two lines compare the slope of sleep in the two models; the same function extracts the coefficients from each.
+The model's estimated slopes are stored in the `.params` Series.
 :::
 :::
 
@@ -160,33 +177,41 @@ The last two lines compare the slope of sleep in the two models; the same functi
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-coef(wb_simple)["sleep_hours"]
-coef(wb_multiple)["sleep_hours"]
+```python
+wb_simple = smf.ols("wellbeing ~ sleep_hours", data=study).fit()
+wb_multiple = smf.ols("wellbeing ~ sleep_hours + stress + support", data=study).fit()
+
+print("Simple slope for sleep:  ", wb_simple.params["sleep_hours"])
+print("Multiple slope for sleep:", wb_multiple.params["sleep_hours"])
+print("Simple R-squared:        ", wb_simple.rsquared)
+print("Multiple R-squared:      ", wb_multiple.rsquared)
 ```
 
-The slope of sleep falls from 5.3 to 3.9, and R-squared doubles, from 0.21 to 0.43. Part of what looked like the effect of sleep belonged to stress: stressed students also sleep less, so in the simple model sleep took some of the credit. Among students with the same stress and support, each extra hour of sleep goes with wellbeing about 3.9 points higher, and each point of stress with wellbeing about 6 points lower.
+The slope of sleep drops from 5.30 to 3.90, because students who sleep more also experience less stress and report better support. Once stress and support are held constant, sleep's unique association is somewhat smaller, but remains strongly significant ($p < .001$). Meanwhile, $R^2$ doubles from 0.21 to 0.43: together, the three predictors explain 43% of the variation in wellbeing.
 :::
 :::
 
 ### Exercise 4: A categorical predictor
 
-Add `study_mode` to the model from Exercise 3. Name the reference category and explain what its coefficient means. Then make part-time the reference category and fit the model again.
+Add `study_mode` to the multiple regression model from Exercise 3. Identify the reference category and explain its coefficient. Then fit the same model with `Part-time` as the reference category.
 
-```{webr}
+```{pyodide}
 #| exercise: ex4
-wb_mode <- lm(wellbeing ~ sleep_hours + stress + support + study_mode, data = study)
-summary(wb_mode)$coefficients
+wb_mode = smf.ols("wellbeing ~ sleep_hours + stress + support + C(study_mode)", data=study).fit()
+print(wb_mode.summary().tables[1])
 
-study_ref <- study |> mutate(study_mode = relevel(factor(study_mode), ref = ______))
-coef(lm(wellbeing ~ sleep_hours + stress + support + study_mode, data = study_ref))
+wb_mode_ref = smf.ols(
+    "wellbeing ~ sleep_hours + stress + support + C(study_mode, Treatment(reference=______))",
+    data=study
+).fit()
+print(wb_mode_ref.summary().tables[1])
 ```
 
 ::: { .hint exercise="ex4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-R uses the first category in alphabetical order as the reference; the coefficient is named after the *other* category. `relevel()` takes the name of the new reference category, in quotation marks.
+Pass `'Part-time'` as the string argument to `reference` inside `Treatment()`.
 :::
 :::
 
@@ -194,38 +219,46 @@ R uses the first category in alphabetical order as the reference; the coefficien
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-study_ref <- study |> mutate(study_mode = relevel(factor(study_mode), ref = "Part-time"))
-coef(lm(wellbeing ~ sleep_hours + stress + support + study_mode, data = study_ref))
+```python
+wb_mode = smf.ols("wellbeing ~ sleep_hours + stress + support + C(study_mode)", data=study).fit()
+print(wb_mode.summary().tables[1])
+
+wb_mode_ref = smf.ols(
+    "wellbeing ~ sleep_hours + stress + support + C(study_mode, Treatment(reference='Part-time'))",
+    data=study
+).fit()
+print(wb_mode_ref.summary().tables[1])
 ```
 
-The reference category is `Full-time`, the first in alphabetical order, so the coefficient `study_modePart-time`, −3.0, means that part-time students' wellbeing is about 3 points lower than full-time students' with the same sleep, stress, and support (p < 0.001). With part-time as the reference, the coefficient becomes `study_modeFull-time`, +3.0: the same comparison seen from the other side. Nothing else in the model changes except the intercept. The choice of reference category changes how the result is written, never what it says.
+The default reference category is `Full-time` (alphabetical first), so the coefficient for `Part-time` is −3.01 points ($p < .001$): part-time students report wellbeing 3 points lower than full-time students with the same sleep, stress, and support. With `Part-time` as the reference, `Full-time` is +3.01 points. The choice of reference category changes the perspective of the table, never the underlying finding.
 :::
 :::
 
 ### Exercise 5: Burnout and dropout
 
-Fit a logistic regression of considering dropout on the burnout score alone, calculating the score from the questionnaire first. Report its odds ratio, explain what it means, and find the predicted probability of considering dropout for students with burnout scores of 2 and 4.
+Fit a logistic regression of considering dropout on the burnout score alone, calculating the composite score from the questionnaire first. Report its odds ratio and find the predicted probability of considering dropout for students with burnout scores of 2 and 4.
 
-```{webr}
+```{pyodide}
 #| exercise: ex5
-burnout <- questionnaire |>
-  mutate(burnout = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE)) |>
-  select(student_id, burnout)
-study_b <- study |>
-  left_join(burnout, join_by(student_id)) |>
-  mutate(dropout = as.integer(considering_dropout == "Yes"))
+q_burnout = questionnaire.filter(like="burnout_").mean(axis=1)
+study_b = study.copy()
+study_b["burnout"] = q_burnout
+study_b["dropout"] = (study_b["considering_dropout"] == "Yes").astype(int)
 
-burnout_model <- glm(dropout ~ burnout, data = study_b, family = ______)
-exp(cbind(odds_ratio = coef(burnout_model), confint.default(burnout_model)))
-predict(burnout_model, newdata = data.frame(burnout = c(2, 4)), type = ______)
+burnout_model = smf.logit("dropout ~ burnout", data=study_b).fit(disp=False)
+print("Odds ratio:\n", np.exp(burnout_model.params))
+print("95% CI of Odds Ratio:\n", np.exp(burnout_model.conf_int()))
+
+new_cases = pd.DataFrame({"burnout": [2.0, 4.0]})
+probs = burnout_model.predict(______)
+print("Predicted probabilities:", probs.round(3).tolist())
 ```
 
 ::: { .hint exercise="ex5" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-A yes-or-no outcome follows the *binomial* distribution. By default, `predict()` returns log odds; the type that returns probabilities is the one on the scale of the original response, written as text.
+Pass the DataFrame `new_cases` to `.predict()` to obtain probabilities on the response scale.
 :::
 :::
 
@@ -233,13 +266,22 @@ A yes-or-no outcome follows the *binomial* distribution. By default, `predict()`
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-burnout_model <- glm(dropout ~ burnout, data = study_b, family = binomial)
-exp(cbind(odds_ratio = coef(burnout_model), confint.default(burnout_model)))
-predict(burnout_model, newdata = data.frame(burnout = c(2, 4)), type = "response")
+```python
+q_burnout = questionnaire.filter(like="burnout_").mean(axis=1)
+study_b = study.copy()
+study_b["burnout"] = q_burnout
+study_b["dropout"] = (study_b["considering_dropout"] == "Yes").astype(int)
+
+burnout_model = smf.logit("dropout ~ burnout", data=study_b).fit(disp=False)
+print("Odds ratio:\n", np.exp(burnout_model.params))
+print("95% CI of Odds Ratio:\n", np.exp(burnout_model.conf_int()))
+
+new_cases = pd.DataFrame({"burnout": [2.0, 4.0]})
+probs = burnout_model.predict(new_cases)
+print("Predicted probabilities:", probs.round(3).tolist())
 ```
 
-The odds ratio for burnout is 3.7 (95% CI 2.5 to 5.4): each extra point of burnout multiplies the odds of considering dropout by 3.7. An odds ratio is not a probability, which is why the predictions help: a student with a low burnout score of 2 has a 3% chance of considering dropout, and one with a high score of 4 a 31% chance. On the probability scale, the same one-point step matters more at high burnout than at low burnout, which is exactly what a constant odds ratio implies.
+The odds ratio for burnout is 3.69 (95% CI [2.55, 5.36]): each additional point of burnout multiplies the odds of considering dropout by 3.7. The predicted probability for a student with low burnout (score 2) is only 3.1%, whereas for a student with high burnout (score 4) it rises to 30.7%.
 :::
 :::
 
@@ -255,34 +297,37 @@ An example from public health: towns with more fast-food outlets have higher rat
 
 ## Go further
 
-These exercises go beyond the book.
+These exercises explore deeper statistical mechanics.
 
 ### Exercise 7: F by hand
 
-Build the F statistic for the chapter's three small groups of stress scores step by step, and compare it with `aov()`.
+Build the F statistic for the chapter's three small groups of stress scores step by step, and compare it with `anova_lm`.
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-library(dplyr)
-group_scores <- tibble(
-  group  = rep(c("A", "B", "C"), each = 4),
-  stress = c(2.5, 3.0, 2.8, 3.1,   3.4, 3.8, 3.5, 3.9,   2.9, 3.3, 3.0, 3.4)
-) |>
-  mutate(group_mean = mean(stress), .by = group)
+group_scores = pd.DataFrame({
+    "group": ["A"] * 4 + ["B"] * 4 + ["C"] * 4,
+    "stress": [2.5, 3.0, 2.8, 3.1,   3.4, 3.8, 3.5, 3.9,   2.9, 3.3, 3.0, 3.4]
+})
+group_means = group_scores.groupby("group")["stress"].transform("mean")
+grand_mean = group_scores["stress"].mean()
 
-grand_mean <- mean(group_scores$stress)
-ss_between <- sum((group_scores$group_mean - grand_mean)^2)
-ss_within  <- sum((group_scores$stress - group_scores$group_mean)^2)
-F_value <- (ss_between / ______) / (ss_within / ______)
-F_value
-summary(aov(stress ~ group, data = group_scores))
+ss_between = ((group_means - grand_mean) ** 2).sum()
+ss_within = ((group_scores["stress"] - group_means) ** 2).sum()
+
+# df_between = k - 1 = 2; df_within = N - k = 12 - 3 = 9
+F_value = (ss_between / ______) / (ss_within / ______)
+print("Manual F value:", F_value)
+
+fit_group = smf.ols("stress ~ C(group)", data=group_scores).fit()
+print(sm.stats.anova_lm(fit_group, typ=1))
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Each sum of squares is divided by its degrees of freedom: the number of groups minus 1 for the between part, and the number of scores minus the number of groups for the within part.
+The degrees of freedom are $k - 1 = 3 - 1 = 2$ for the numerator (between groups) and $N - k = 12 - 3 = 9$ for the denominator (within groups).
 :::
 :::
 
@@ -290,37 +335,40 @@ Each sum of squares is divided by its degrees of freedom: the number of groups m
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-F_value <- (ss_between / 2) / (ss_within / 9)
-F_value
+```python
+F_value = (ss_between / 2) / (ss_within / 9)
+print("Manual F value:", F_value)
 ```
 
-The between-group sum of squares is 1.31 (every score counts its group's distance from the grand mean), the within-group sum of squares is 0.55, and F = (1.31 / 2) / (0.55 / 9) = 10.7, exactly what `aov()` reports, with p = 0.004. Dividing by the degrees of freedom turns each sum into an average, a *mean square*, so that three group averages can be compared fairly with twelve individual scores.
+The between-group sum of squares is 1.31, the within-group sum of squares is 0.55, and $F = (1.307 / 2) / (0.550 / 9) = 10.69$, which exactly matches `anova_lm()` ($p = 0.004$).
 :::
 :::
 
 ### Exercise 8: Regression as conditional means
 
-A regression line estimates the average outcome at each value of the predictor. Group students by their sleep, rounded to the nearest hour, calculate the average wellbeing in each group, and set the averages beside the line's predictions.
+Group students by their sleep rounded to the nearest whole hour, calculate average wellbeing in each group, and compare the empirical averages with the regression line's predictions.
 
-```{webr}
+```{pyodide}
 #| exercise: gf2
-bands <- study |>
-  filter(!is.na(sleep_hours)) |>
-  mutate(sleep_band = round(sleep_hours)) |>
-  summarise(students = n(), mean_wellbeing = mean(wellbeing), .by = sleep_band) |>
-  arrange(sleep_band)
+bands = (
+    study.dropna(subset=["sleep_hours"])
+    .assign(sleep_band=lambda d: d["sleep_hours"].round())
+    .groupby("sleep_band")
+    .agg(students=("student_id", "count"), mean_wellbeing=("wellbeing", "mean"))
+    .reset_index()
+    .sort_values("sleep_band")
+)
 
-wb_line <- lm(wellbeing ~ sleep_hours, data = study)
-bands |>
-  mutate(line = ______(wb_line, newdata = data.frame(sleep_hours = sleep_band)))
+wb_line = smf.ols("wellbeing ~ sleep_hours", data=study).fit()
+bands["line_prediction"] = wb_line.predict(pd.DataFrame({"sleep_hours": bands[______]}))
+print(bands)
 ```
 
 ::: { .hint exercise="gf2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The function that calculates a model's predictions for new values of the predictor takes the model and a data frame of those values.
+Pass `bands["sleep_band"]` to evaluate the line at each integer hour of sleep.
 :::
 :::
 
@@ -328,40 +376,45 @@ The function that calculates a model's predictions for new values of the predict
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-bands |>
-  mutate(line = predict(wb_line, newdata = data.frame(sleep_hours = sleep_band)))
+```python
+bands["line_prediction"] = wb_line.predict(pd.DataFrame({"sleep_hours": bands["sleep_band"]}))
+print(bands)
 ```
 
-Where most students are, the line and the group averages agree within a point: at 6 hours, 58.2 against 57.9, and at 7 hours, 63.7 against 63.2 (202 students each). At the edges, where groups are tiny (7 students at 9 hours, 3 at 10), the averages bounce around the line. This is what a regression does: it replaces a list of noisy group averages with one straight line that borrows strength from all the students, which works well as long as the averages really do lie close to a straight line.
+Where most students are, the line and empirical averages agree within a single point (e.g., at 6 hours: 58.2 vs 57.9; at 7 hours: 63.7 vs 63.2). At the sparsely populated tails (7 students at 9 hours, 3 at 10 hours), empirical averages fluctuate noisily around the regression line.
 :::
 :::
 
 ### Exercise 9: Simpson's paradox
 
-R's built-in `UCBAdmissions` data records applications to the six largest departments of the University of California, Berkeley, in 1973. Calculate the admission rate of men and women overall, then in each department.
+The classic `UCBAdmissions` data records graduate applications to the six largest departments of UC Berkeley in 1973. Calculate the overall admission rate for men and women, then calculate the rate within each department.
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-library(dplyr)
-admissions <- as.data.frame(UCBAdmissions)
-head(admissions)
+admissions = pd.read_csv("ucbadmissions.csv")
+print(admissions.head())
 
-admissions |>
-  summarise(rate = sum(Freq[Admit == "Admitted"]) / ______(Freq),
-            applicants = sum(Freq), .by = Gender)
+admit_admitted = admissions.query("Admit == 'Admitted'")
+overall = (
+    admissions.groupby("Gender")["Freq"].sum().rename("total")
+    .to_frame()
+    .join(admit_admitted.groupby("Gender")["Freq"].sum().rename("admitted"))
+)
+overall["rate"] = overall["admitted"] / overall[______]
+print("Overall admission rates:\n", overall)
 
-admissions |>
-  summarise(rate = sum(Freq[Admit == "Admitted"]) / sum(Freq),
-            applicants = sum(Freq), .by = c(Dept, Gender)) |>
-  arrange(Dept)
+dept_total = admissions.groupby(["Dept", "Gender"])["Freq"].sum().rename("total")
+dept_admit = admit_admitted.groupby(["Dept", "Gender"])["Freq"].sum().rename("admitted")
+dept = dept_total.to_frame().join(dept_admit).fillna(0)
+dept["rate"] = dept["admitted"] / dept["total"]
+print("Admission rates by department:\n", dept)
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Each row is a count (`Freq`) of applicants with one combination of admission, gender, and department. A rate is the admitted count divided by all applicants, which is the total of the counts.
+Divide `overall["admitted"]` by `overall["total"]` to compute the proportion admitted.
 :::
 :::
 
@@ -369,39 +422,33 @@ Each row is a count (`Freq`) of applicants with one combination of admission, ge
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-admissions |>
-  summarise(rate = sum(Freq[Admit == "Admitted"]) / sum(Freq),
-            applicants = sum(Freq), .by = Gender)
+```python
+overall["rate"] = overall["admitted"] / overall["total"]
+print("Overall admission rates:\n", overall)
 ```
 
-Overall, 45% of men and 30% of women were admitted. Within departments, the picture reverses: women's admission rate is higher in four of the six departments, and far higher in department A (82% against 62%). The explanation is a confounder, the department: women applied mostly to departments C to F, which admitted few applicants of either gender, while men applied mostly to A and B, which admitted most. Comparing the overall rates mixes the effect of gender with the effect of department, exactly as the chapter's caffeine example mixed caffeine with sleep. Holding the department constant, as a regression would, removes the apparent disadvantage.
+Overall, 44.5% of male applicants and 30.4% of female applicants were admitted. However, within individual departments, women had a higher admission rate in four of the six departments (e.g. Dept A: 82.4% vs 62.1%; Dept B: 68.0% vs 63.0%). Department was a major confounder: female applicants applied disproportionately to departments with low overall admission rates.
 :::
 :::
 
 ### Exercise 10: A missed curve in the residuals
 
-The chapter found that GPA rises with study hours and then levels off. Fit a straight line of GPA on study hours, and plot its residuals against study hours with a smooth trend. Then add the squared term and plot again.
+Compare a straight linear regression of GPA on study hours with a quadratic model using `np.power`. Compare their $R^2$ values.
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-straight <- lm(gpa ~ study_hours, data = study)
-curved   <- lm(gpa ~ study_hours + I(study_hours^______), data = study)
+straight = smf.ols("gpa ~ study_hours", data=study).fit()
+curved = smf.ols("gpa ~ study_hours + np.power(study_hours, ______)", data=study).fit()
 
-scatter.smooth(straight$model$study_hours, resid(straight),
-               xlab = "Study hours", ylab = "Residual (straight line)")
-abline(h = 0, lty = 2)
-scatter.smooth(curved$model$study_hours, resid(curved),
-               xlab = "Study hours", ylab = "Residual (curve)")
-abline(h = 0, lty = 2)
-c(straight = summary(straight)$r.squared, curved = summary(curved)$r.squared)
+print(f"Straight R-squared: {straight.rsquared:.4f}")
+print(f"Curved R-squared:   {curved.rsquared:.4f}")
 ```
 
 ::: { .hint exercise="gf4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-A curve with one bend needs the square of the predictor, written inside `I()` so that R calculates it as arithmetic. `straight$model` holds the rows the model actually used, so the residuals and the study hours line up.
+The second argument to `np.power` is the exponent, which is `2` for a quadratic term.
 :::
 :::
 
@@ -409,97 +456,88 @@ A curve with one bend needs the square of the predictor, written inside `I()` so
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-curved <- lm(gpa ~ study_hours + I(study_hours^2), data = study)
+```python
+straight = smf.ols("gpa ~ study_hours", data=study).fit()
+curved = smf.ols("gpa ~ study_hours + np.power(study_hours, 2)", data=study).fit()
+
+print(f"Straight R-squared: {straight.rsquared:.4f}")
+print(f"Curved R-squared:   {curved.rsquared:.4f}")
 ```
 
-For the straight line, the smooth trend of the residuals forms an arch: below zero for students who study little (the line predicts too high), above zero in the middle, and below zero again beyond about 50 hours. A residual pattern means the model has missed something systematic, here the levelling off. With the squared term, the residuals scatter evenly around zero, and R-squared rises from 0.004 to 0.036. Both values are small, since study hours explain little of GPA either way; what matters is that only the curve describes the shape correctly. The curve peaks at about 32 hours a week.
+The straight line explains almost none of the variance ($R^2 = 0.004$), whereas the curved model explains 3.6% ($R^2 = 0.036$). The quadratic model captures diminishing returns, where study benefits peak around 32 hours per week.
 :::
 :::
 
 ## Check your understanding
 
-Answer each question in your own words first, then click to see a model answer.
-
-**1.** What does the F statistic of an ANOVA compare?
+Try answering these conceptual questions in your own words before opening the model answers.
 
 ::: {.callout-note collapse="true" appearance="simple"}
-## Answer
+## 1. What does the F statistic of an ANOVA compare?
 
-The variation *between* the group averages with the variation *within* the groups, each divided by its degrees of freedom. An F near 1 means that the averages differ no more than chance would produce given how much individuals differ; a large F means that they differ more. The same differences between averages can give a large or a small F, depending on the spread within the groups.
+The F statistic compares the variation between group averages against the variation within groups, each divided by its degrees of freedom. An F close to 1 means the group averages differ no more than chance would produce; a large F indicates that group differences exceed chance expectations.
 :::
 
-**2.** In a multiple regression, what does "holding the other predictors constant" mean?
-
 ::: {.callout-note collapse="true" appearance="simple"}
-## Answer
+## 2. In a multiple regression, what does "holding the other predictors constant" mean?
 
-That the coefficient describes the difference in the outcome between students who differ by one unit in that predictor but have the *same* values of all the other predictors in the model. It is a statistical comparison, not an experiment: nobody was held constant, and the comparison allows only for the predictors that were measured and included.
+It means comparing cases that differ by one unit on that predictor while sharing identical values for all other predictors in the model. It is a statistical adjustment that removes confounding from measured variables.
 :::
 
-**3.** What is a confounder?
-
 ::: {.callout-note collapse="true" appearance="simple"}
-## Answer
+## 3. What is a confounder?
 
-A variable that affects both the predictor and the outcome, and so creates, hides, or distorts an association between them. In the chapter, sleep affects both caffeine intake and GPA, which made caffeine look harmful to grades; with sleep held constant, caffeine's effect disappeared.
+A confounder is a third variable that is a common cause of both the predictor and the outcome. If unmeasured or unadjusted, it creates or distorts the observed association between predictor and outcome.
 :::
 
-**4.** A residual plot shows a funnel: the residuals spread more and more as the fitted values grow. What does it mean?
-
 ::: {.callout-note collapse="true" appearance="simple"}
-## Answer
+## 4. A residual plot shows a funnel pattern. What does it mean?
 
-The spread of the outcome is not the same everywhere: predictions for high values are less precise than for low values. The coefficients are still unbiased, but their standard errors, and so the p-values and confidence intervals, are unreliable. Remedies include transforming the outcome (for example, taking its logarithm) or using robust standard errors.
+It indicates heteroscedasticity: the variance of the residuals is not constant across fitted values. While the estimated regression slopes remain unbiased, standard errors, p-values, and confidence intervals are unreliable without robust standard errors or a variance-stabilising transformation.
 :::
 
-**5.** An odds ratio of 2 does not mean that the probability doubles. Why not?
-
 ::: {.callout-note collapse="true" appearance="simple"}
-## Answer
+## 5. An odds ratio of 2 does not mean that the probability doubles. Why not?
 
-Odds are the probability of an event divided by the probability that it does not happen. Doubling the odds nearly doubles a small probability (from 5% to about 10%), but it cannot double a large one: odds of 1 (a 50% probability) doubled become odds of 2, a probability of 67%. For that reason, logistic regression results are best reported with predicted probabilities for typical cases as well as odds ratios.
+Odds are defined as $p / (1 - p)$. For very rare events ($p \approx 0.01$), doubling the odds approximately doubles the probability. But for an event with 50% probability (odds = 1.0), doubling the odds to 2.0 corresponds to a probability of $2 / (1 + 2) \approx 67\%$, not 100%.
 :::
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis. The data (`students`, `semesters`, `questionnaire`, `scores`, and `study`) and the dplyr package are already loaded, and R's built-in datasets are always available.
+These open tasks require you to choose variables and write code from scratch, as you will in your thesis.
 
-**1.** Build a regression model for first-semester wellbeing with predictors of your choice, justified by a research question. Check the residual plot, and write the paragraph reporting the model for a results section, with every number calculated by code.
+### Task 1: Wellbeing regression and reporting
 
-```{webr}
-# Your code here
+Fit a regression model for first-semester wellbeing with two or three predictors of your choice. Inspect the diagnostic residual plot, and write a thesis-style reporting paragraph with every number calculated by code.
+
+```{pyodide}
+#| exercise: diy1
+
 ```
 
-**2.** Test whether the effect of supervisor support on wellbeing differs between full-time and part-time students, using an interaction term. Centre support first, interpret the interaction coefficient, and draw an interaction plot of the two slopes.
+### Task 2: Interaction between support and study mode
 
-```{webr}
-# Your code here
+Does the effect of supervisor support on wellbeing differ between full-time and part-time students? Centre support, fit an interaction model, and draw an interaction plot.
+
+```{pyodide}
+#| exercise: diy2
+
 ```
 
-**3.** Fit a logistic regression for another yes-or-no variable, such as `lives_away`, with two or three predictors you can justify. Report the odds ratios with confidence intervals, and the predicted probabilities for two contrasting students.
+### Task 3: Logistic regression for living away from family
 
-```{webr}
-# Your code here
+Fit a logistic regression predicting `lives_away` with two or three background variables. Report odds ratios with 95% confidence intervals, and predict probabilities for two contrasting profiles.
+
+```{pyodide}
+#| exercise: diy3
+
 ```
 
-**4.** R's built-in `trees` data records the girth, height, and timber volume of 31 black cherry trees. Build a model that predicts volume from girth and height, check whether a straight line is adequate, and explain what you would change if it is not.
+### Task 4: Modeling timber volume in the cherry trees dataset
 
-```{webr}
-# Your code here
+Using `trees.csv`, model `Volume` from `Girth` and `Height`. Check whether a linear model is adequate or if a transformation/polynomial is required.
+
+```{pyodide}
+#| exercise: diy4
+
 ```
-
-## Work on your own computer
-
-::: {.callout-note appearance="simple"}
-## Download the Chapter 8 project
-
-The project contains the data and all four parts of this page as an R script: the exercises with blanks, the questions to check your understanding (answers in `solutions.R`), and the open tasks, each with space to write your code.
-
-- [Download chapter08.zip](chapter08.zip), unzip it, and double-click `chapter08.Rproj`.
-- Or type this one line in RStudio's Console:
-
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter08.zip")
-```
-:::
