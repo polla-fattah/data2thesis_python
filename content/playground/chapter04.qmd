@@ -1,21 +1,23 @@
 ---
 title: "Playground: Chapter 4"
-subtitle: Data Visualization
+subtitle: Data Visualization with Seaborn and Matplotlib
 format:
   live-html:
     theme:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
   - chapter04.zip
-webr:
+pyodide:
   packages:
-    - ggplot2
-    - dplyr
+    - pandas
+    - numpy
+    - matplotlib
+    - seaborn
   resources:
     - students.csv
     - semesters.csv
@@ -23,31 +25,43 @@ webr:
 
 {{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
-This page practises the ideas of Chapter 4 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and some of R's built-in datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide which graph answers the question, as you will in your own thesis.
+This page practises the ideas of Chapter 4 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and datasets. **Check your understanding** asks short conceptual questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide which visualization best answers the research question, as you will in your own thesis.
 
-The first run on this page takes a little longer, because your browser downloads the ggplot2 and dplyr packages. In the exercises, replace each `______` with your own code and press **Run Code**.
+In the exercises, replace each `______` with your own code and press **Run Code**.
 
-```{webr}
+```{pyodide}
 #| setup: true
 #| exercise: [ex1, ex2, ex3, ex4, ex6, gf1, gf2, gf3, gf4]
-library(ggplot2)
-library(dplyr)
-students  <- read.csv("students.csv")
-semesters <- read.csv("semesters.csv")
-first_sem <- semesters |>
-  filter(semester == 1) |>
-  left_join(students, join_by(student_id))
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.set_theme(style="whitegrid", font_scale=1.0)
+
+students = pd.read_csv("students.csv")
+semesters = pd.read_csv("semesters.csv")
+first_sem = (
+    semesters[semesters["semester"] == 1]
+    .merge(students, on="student_id")
+)
 ```
 
-```{webr}
+```{pyodide}
 #| include: false
-library(ggplot2)
-library(dplyr)
-students  <- read.csv("students.csv")
-semesters <- read.csv("semesters.csv")
-first_sem <- semesters |>
-  filter(semester == 1) |>
-  left_join(students, join_by(student_id))
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.set_theme(style="whitegrid", font_scale=1.0)
+
+students = pd.read_csv("students.csv")
+semesters = pd.read_csv("semesters.csv")
+first_sem = (
+    semesters[semesters["semester"] == 1]
+    .merge(students, on="student_id")
+)
 ```
 
 ## Practise the chapter
@@ -56,19 +70,30 @@ These are the exercises at the end of Chapter 4, with the same numbers.
 
 ### Exercise 1: Choosing a binwidth
 
-Draw a histogram of `study_hours` in the first semester. Try binwidths of 1, 5, and 10, and explain which shows the shape best.
+Draw a histogram of `study_hours` in the first semester. Try binwidths of 1, 5, and 10, and explain which shows the distribution shape best.
 
-```{webr}
+```{pyodide}
 #| exercise: ex1
-ggplot(first_sem, aes(x = study_hours)) +
-  geom_histogram(binwidth = ______, colour = "white")
+fig, ax = plt.subplots(figsize=(7, 4))
+sns.histplot(
+    data=first_sem,
+    x="study_hours",
+    binwidth=______,
+    color="steelblue",
+    edgecolor="white",
+    ax=ax
+)
+ax.set_title("Distribution of Study Hours")
+ax.set_xlabel("Weekly Study Hours")
+ax.set_ylabel("Student Count")
+plt.show()
 ```
 
 ::: { .hint exercise="ex1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The binwidth is the width of each bar in hours. Run the code three times with different values and compare the pictures.
+The `binwidth` parameter in `sns.histplot()` determines the width of each bar in hours. Run the code three times with `1`, `5`, and `10` and compare the resulting visualizations.
 :::
 :::
 
@@ -76,32 +101,52 @@ The binwidth is the width of each bar in hours. Run the code three times with di
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-ggplot(first_sem, aes(x = study_hours)) +
-  geom_histogram(binwidth = 5, colour = "white")
+```python
+fig, ax = plt.subplots(figsize=(7, 4))
+sns.histplot(
+    data=first_sem,
+    x="study_hours",
+    binwidth=5,
+    color="steelblue",
+    edgecolor="white",
+    ax=ax
+)
+ax.set_title("Distribution of Study Hours")
+ax.set_xlabel("Weekly Study Hours")
+ax.set_ylabel("Student Count")
+plt.show()
 ```
 
-A binwidth of 5 hours shows the shape best: most students study between about 15 and 40 hours a week, the peak is in the mid-twenties, and a long tail stretches to the right, up to 67 hours. With a binwidth of 1, the bars are jagged and the shape drowns in noise; with 10, only a few bars remain, and the tail almost disappears. There is no correct binwidth, so try several before choosing. (R warns that 8 rows were removed: those students have no study hours recorded.)
+A binwidth of 5 hours shows the shape best: most students study between about 15 and 40 hours a week, the peak is in the mid-twenties, and a long tail stretches to the right up to 67 hours. With a binwidth of 1, the bars are overly jagged and the underlying distribution drowns in sampling noise; with 10, only a few thick bars remain, hiding the right-tail skew.
 :::
 :::
 
 ### Exercise 2: Employment in order, in one colour
 
-Draw a bar chart of how many students have each level of `employment`. Make the bars a single colour of your choice, and order the levels from no job to a full-time job.
+Draw a count bar chart of how many students have each level of `employment`. Make the bars a single colour of your choice, and order the levels from no job to a full-time job.
 
-```{webr}
+```{pyodide}
 #| exercise: ex2
-students |>
-  mutate(employment = factor(employment, levels = ______)) |>
-  ggplot(aes(x = employment)) +
-  geom_bar(fill = ______)
+emp_order = ["None", "Part-time job", "Full-time job"]
+students["employment"] = pd.Categorical(students["employment"], categories=______, ordered=True)
+
+fig, ax = plt.subplots(figsize=(6, 4))
+sns.countplot(
+    data=students,
+    x="employment",
+    color=______,
+    ax=ax
+)
+ax.set_xlabel("Paid Employment Status")
+ax.set_ylabel("Number of Students")
+plt.show()
 ```
 
 ::: { .hint exercise="ex2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The levels are `"None"`, `"Part-time job"`, and `"Full-time job"`, written in the order you want inside `c()`. A fixed colour is *set* outside `aes()`, as a colour name in quotation marks such as `"steelblue"`.
+Pass `emp_order` to `categories` inside `pd.Categorical`. To apply a uniform color without generating an unneeded legend, set `color="steelblue"` (or any single hex/named color) instead of `hue`.
 :::
 :::
 
@@ -109,16 +154,23 @@ The levels are `"None"`, `"Part-time job"`, and `"Full-time job"`, written in th
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-students |>
-  mutate(employment = factor(employment,
-                             levels = c("None", "Part-time job", "Full-time job"))) |>
-  ggplot(aes(x = employment)) +
-  geom_bar(fill = "steelblue") +
-  labs(x = "Paid work", y = "Number of students")
+```python
+emp_order = ["None", "Part-time job", "Full-time job"]
+students["employment"] = pd.Categorical(students["employment"], categories=emp_order, ordered=True)
+
+fig, ax = plt.subplots(figsize=(6, 4))
+sns.countplot(
+    data=students,
+    x="employment",
+    color="steelblue",
+    ax=ax
+)
+ax.set_xlabel("Paid Employment Status")
+ax.set_ylabel("Number of Students")
+plt.show()
 ```
 
-307 students have no job, 196 a part-time job, and 97 a full-time job. Employment is an ordered variable, so the bars should follow its order, not the alphabet, which would put "Full-time job" first. Because the colour is set outside `aes()`, all bars share it and no legend appears.
+307 students have no job, 196 a part-time job, and 97 a full-time job. Employment is an ordinal variable, so ordering the categories ensures the bars follow logical progression rather than alphabetical order. Using `color="steelblue"` paints all bars consistently without generating an extraneous legend.
 :::
 :::
 
@@ -126,18 +178,26 @@ students |>
 
 Draw box plots of first-semester GPA for each faculty, with clear axis labels.
 
-```{webr}
+```{pyodide}
 #| exercise: ex3
-ggplot(first_sem, aes(x = faculty, y = gpa)) +
-  ______() +
-  labs(x = "______", y = "______")
+fig, ax = plt.subplots(figsize=(8, 4))
+sns.______(
+    data=first_sem,
+    x="faculty",
+    y="gpa",
+    color="skyblue",
+    ax=ax
+)
+ax.set_xlabel("______")
+ax.set_ylabel("______")
+plt.show()
 ```
 
 ::: { .hint exercise="ex3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The geom for box plots is named after them. A label says what was measured, in words a reader outside the study understands, with units where there are any.
+Use `sns.boxplot`. Label the axes with meaningful English names including measurement units (e.g. "Grade Point Average (0 to 4)").
 :::
 :::
 
@@ -145,32 +205,49 @@ The geom for box plots is named after them. A label says what was measured, in w
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-ggplot(first_sem, aes(x = faculty, y = gpa)) +
-  geom_boxplot() +
-  labs(x = "Faculty", y = "GPA in semester 1 (0 to 4)")
+```python
+fig, ax = plt.subplots(figsize=(8, 4))
+sns.boxplot(
+    data=first_sem,
+    x="faculty",
+    y="gpa",
+    color="skyblue",
+    ax=ax
+)
+ax.set_xlabel("Faculty")
+ax.set_ylabel("Grade Point Average (GPA, 0 to 4)")
+plt.show()
 ```
 
-The five boxes are almost level, with medians between 3.06 and 3.14, and the boxes overlap almost completely: GPA hardly differs between faculties. Each box holds the middle half of the students, and the points beyond the whiskers are students with unusually high or low GPAs.
+The five boxes are almost identical across faculties, with medians hovering between 3.06 and 3.14. The interquartile ranges overlap heavily, demonstrating that baseline academic performance does not vary systematically by academic division.
 :::
 :::
 
 ### Exercise 4: Caffeine and sleep
 
-Draw a scatter plot of caffeine against sleep in the first semester, with a trend line, and describe what it suggests.
+Draw a scatter plot of caffeine against sleep in the first semester, with a linear regression trend line, and describe what it suggests.
 
-```{webr}
+```{pyodide}
 #| exercise: ex4
-ggplot(first_sem, aes(x = caffeine_mg, y = sleep_hours)) +
-  geom_point(alpha = ______) +
-  geom_smooth(method = ______)
+fig, ax = plt.subplots(figsize=(7, 4))
+sns.regplot(
+    data=first_sem,
+    x="caffeine_mg",
+    y="sleep_hours",
+    scatter_kws={"alpha": ______},
+    line_kws={"color": "darkred"},
+    ax=ax
+)
+ax.set_xlabel("Daily Caffeine Consumption (mg)")
+ax.set_ylabel("Hours of Sleep per Night")
+plt.show()
 ```
 
 ::: { .hint exercise="ex4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`alpha` runs from 0 (invisible) to 1 (solid); with 600 points, a value around 0.3 to 0.5 shows where they pile up. The method for a straight trend line is a linear model, written as text.
+`alpha` ranges from 0 (transparent) to 1 (solid). For 600 points, setting `alpha=0.35` or `0.4` effectively reveals dense clusters of points without blacking out the region.
 :::
 :::
 
@@ -178,55 +255,80 @@ ggplot(first_sem, aes(x = caffeine_mg, y = sleep_hours)) +
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-ggplot(first_sem, aes(x = caffeine_mg, y = sleep_hours)) +
-  geom_point(alpha = 0.4) +
-  geom_smooth(method = "lm") +
-  labs(x = "Caffeine per day (mg)", y = "Hours of sleep per night")
+```python
+fig, ax = plt.subplots(figsize=(7, 4))
+sns.regplot(
+    data=first_sem,
+    x="caffeine_mg",
+    y="sleep_hours",
+    scatter_kws={"alpha": 0.35, "color": "darkblue"},
+    line_kws={"color": "darkred"},
+    ax=ax
+)
+ax.set_xlabel("Daily Caffeine Consumption (mg)")
+ax.set_ylabel("Hours of Sleep per Night")
+plt.show()
 ```
 
-The line falls clearly: students who take more caffeine sleep less, by roughly half an hour for every extra 100 mg, and the points follow the line more closely than in most relationships in the study. The graph cannot say which causes which: caffeine may shorten sleep, or students who sleep little may drink more coffee to get through the day. Chapter 8 returns to this relationship.
+The regression line slopes downward: students consuming higher amounts of caffeine report fewer hours of sleep (roughly half an hour less per extra 100 mg of caffeine). While observational data cannot establish causal direction, the visual association is pronounced.
 :::
 :::
 
-### Exercise 5: Saving a graph
+### Exercise 5: Saving a publication-ready graph
 
-Take any graph from this chapter and save it as a PNG file, 16 cm wide and 10 cm high, at 300 dpi.
+Take any graph from this chapter and save it as a high-resolution PNG file (300 DPI) and as a vector PDF.
 
-Saving a file needs your own computer, so this exercise is in the [download project](#work-on-your-own-computer).
+Saving files to disk requires local file access, so this exercise is in the [download project](#work-on-your-own-computer).
 
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Solution
 
-```r
-p <- ggplot(first_sem, aes(x = sleep_hours)) +
-  geom_histogram(binwidth = 0.5, fill = "steelblue", colour = "white")
-ggsave("sleep.png", plot = p, width = 16, height = 10, units = "cm", dpi = 300)
+```python
+fig, ax = plt.subplots(figsize=(6.3, 3.9))  # ~16 cm x 10 cm
+sns.histplot(data=first_sem, x="sleep_hours", binwidth=0.5, color="steelblue", edgecolor="white", ax=ax)
+ax.set_xlabel("Hours of Sleep per Night")
+ax.set_ylabel("Count")
+
+# Save high-res raster and scalable vector
+fig.savefig("sleep.png", dpi=300, bbox_inches="tight")
+fig.savefig("sleep.pdf", bbox_inches="tight")
+plt.close(fig)
 ```
 
-The file appears in the project folder. Setting the size in centimetres, rather than dragging a window, means the text in the graph has a known size on the printed page, and 300 dpi keeps it sharp.
+Explicitly passing `bbox_inches="tight"` prevents axis labels from being clipped outside figure bounds, and specifying `dpi=300` ensures sharp print reproduction.
 :::
 
 ### Exercise 6: The misleading graph, redrawn
 
-Redraw the book's misleading bar chart of wellbeing by faculty as a bar chart whose axis starts at zero, with the faculties in order. Then compare the three versions in the chapter (the misleading one, the redesigned strip plot, and yours) and explain which you would put in a thesis, and why.
+Redraw the misleading bar chart of wellbeing by faculty with an honest zero baseline (0 to 100), with faculties ordered by average wellbeing.
 
-```{webr}
+```{pyodide}
 #| exercise: ex6
-faculty_means <- first_sem |>
-  summarise(wellbeing = mean(wellbeing), .by = faculty)
+faculty_means = (
+    first_sem.groupby("faculty", as_index=False)["wellbeing"]
+    .mean()
+    .sort_values("wellbeing")
+)
 
-ggplot(faculty_means, aes(x = reorder(faculty, ______), y = wellbeing)) +
-  geom_col(fill = "grey50") +
-  coord_cartesian(ylim = c(______, 100)) +
-  labs(x = NULL, y = "Average wellbeing in semester 1 (0 to 100)")
+fig, ax = plt.subplots(figsize=(7, 4))
+sns.barplot(
+    data=faculty_means,
+    x="faculty",
+    y="wellbeing",
+    color="grey",
+    ax=ax
+)
+ax.set_ylim(______, 100)
+ax.set_xlabel("Faculty")
+ax.set_ylabel("Average Wellbeing in Semester 1 (0 to 100)")
+plt.show()
 ```
 
 ::: { .hint exercise="ex6" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`reorder(faculty, x)` orders the faculties by the values of `x`. A bar's length stands for its value only if the axis starts at the bottom of the scale.
+Bar charts represent values through bar length from the baseline. Therefore, the lower y-limit must start at `0`.
 :::
 :::
 
@@ -234,14 +336,28 @@ ggplot(faculty_means, aes(x = reorder(faculty, ______), y = wellbeing)) +
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-ggplot(faculty_means, aes(x = reorder(faculty, wellbeing), y = wellbeing)) +
-  geom_col(fill = "grey50") +
-  coord_cartesian(ylim = c(0, 100)) +
-  labs(x = NULL, y = "Average wellbeing in semester 1 (0 to 100)")
+```python
+faculty_means = (
+    first_sem.groupby("faculty", as_index=False)["wellbeing"]
+    .mean()
+    .sort_values("wellbeing")
+)
+
+fig, ax = plt.subplots(figsize=(7, 4))
+sns.barplot(
+    data=faculty_means,
+    x="faculty",
+    y="wellbeing",
+    color="grey",
+    ax=ax
+)
+ax.set_ylim(0, 100)
+ax.set_xlabel("Faculty")
+ax.set_ylabel("Average Wellbeing in Semester 1 (0 to 100)")
+plt.show()
 ```
 
-The five bars are now almost the same height, between 58.9 and 61.9, a difference of 3 points on a 100-point scale, and that is the honest picture of the averages. The misleading version made the same 3 points look like a several-fold difference. Of the three, the redesigned strip plot is best for a thesis: like your bar chart, it does not exaggerate, but it also shows every student, and so shows that the differences *within* each faculty are far larger than the differences between them. A bar chart of averages can never show that.
+On an honest 0-to-100 scale, the five faculties differ by only 3 points (58.9 to 61.9). Truncating the axis at 55 had exaggerated this minor variation into an apparent five-fold chasm. An even better thesis alternative is a jittered strip plot with overlaid means, revealing that within-faculty variation dwarfs between-faculty differences.
 :::
 :::
 
@@ -249,37 +365,32 @@ The five bars are now almost the same height, between 58.9 and 61.9, a differenc
 
 These exercises go beyond the book.
 
-### Exercise 7: The same numbers three ways
+### Exercise 7: The same numbers three ways (Dot plot vs Bar plot)
 
-Show the average wellbeing of each faculty as a pie chart, a bar chart, and a dot plot, and decide which makes the comparison easiest.
+Show faculty average wellbeing as a horizontal dot plot. Why does a dot plot allow zooming where a bar chart does not?
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-faculty_means <- first_sem |>
-  summarise(wellbeing = mean(wellbeing), .by = faculty)
+faculty_means = (
+    first_sem.groupby("faculty", as_index=False)["wellbeing"]
+    .mean()
+    .sort_values("wellbeing")
+)
 
-# A pie chart
-ggplot(faculty_means, aes(x = "", y = wellbeing, fill = faculty)) +
-  geom_col(width = 1, colour = "white") +
-  coord_polar(theta = "y") +
-  theme_void()
-
-# A bar chart
-ggplot(faculty_means, aes(x = reorder(faculty, wellbeing), y = wellbeing)) +
-  ______(fill = "grey50") +
-  labs(x = NULL, y = "Average wellbeing")
-
-# A dot plot
-ggplot(faculty_means, aes(x = wellbeing, y = reorder(faculty, wellbeing))) +
-  ______(size = 3) +
-  labs(x = "Average wellbeing", y = NULL)
+fig, ax = plt.subplots(figsize=(7, 3.5))
+ax.scatter(faculty_means["wellbeing"], faculty_means["faculty"], color="navy", s=60)
+ax.set_xlim(______, ______)
+ax.set_xlabel("Average Wellbeing (0 to 100)")
+ax.set_ylabel("Faculty")
+ax.set_title("Dot Plot of Faculty Averages")
+plt.show()
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-A bar chart of values already in the data uses the geom for columns, not `geom_bar()`, which counts rows. A dot plot is points.
+Try setting `ax.set_xlim(55, 65)`. Because the points encode value by *position* rather than bar *length*, zooming the axis does not mislead the viewer about relative proportions.
 :::
 :::
 
@@ -287,43 +398,51 @@ A bar chart of values already in the data uses the geom for columns, not `geom_b
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-ggplot(faculty_means, aes(x = reorder(faculty, wellbeing), y = wellbeing)) +
-  geom_col(fill = "grey50") +
-  labs(x = NULL, y = "Average wellbeing")
-
-ggplot(faculty_means, aes(x = wellbeing, y = reorder(faculty, wellbeing))) +
-  geom_point(size = 3) +
-  labs(x = "Average wellbeing", y = NULL)
+```python
+fig, ax = plt.subplots(figsize=(7, 3.5))
+ax.scatter(faculty_means["wellbeing"], faculty_means["faculty"], color="navy", s=60)
+ax.set_xlim(55, 65)
+ax.set_xlabel("Average Wellbeing (0 to 100)")
+ax.set_ylabel("Faculty")
+ax.set_title("Dot Plot: Zoomed scale is honest because points denote position, not length")
+plt.show()
 ```
 
-In the pie chart, the five slices look equal, and a pie of averages makes no sense anyway: slices are parts of a whole, and averages do not add up to anything. The bar chart shows the order, but the differences look tiny, because the bars start at zero. The dot plot makes the comparison easiest: the dots are positions on a common scale, the axis can zoom in without distorting anything (dots, unlike bars, do not represent values by length), and the two groups of faculties, around 59 and around 62, stand out at once.
+Cleveland & McGill showed that position along a common scale is decoded with highest accuracy. Unlike bars (which encode quantity via physical length from zero), dots encode quantity purely by coordinate position. Thus, a zoomed axis in a dot plot is honest as long as the axis bounds and units are clearly stated.
 :::
 :::
 
 ### Exercise 8: A line chart, zoomed and not
 
-Draw the chapter's line chart of average wellbeing by semester and workshop group twice: once as ggplot2 draws it, and once with the y axis from 0 to 100. Write a one-sentence caption for each.
+Draw average wellbeing across semesters for both workshop conditions twice: once zoomed in, and once on the full theoretical scale (0 to 100).
 
-```{webr}
+```{pyodide}
 #| exercise: gf2
-wellbeing_by_sem <- semesters |>
-  left_join(students, join_by(student_id)) |>
-  summarise(mean_wellbeing = mean(wellbeing), .by = c(semester, workshop))
+wellbeing_by_sem = (
+    semesters.merge(students[["student_id", "workshop"]], on="student_id")
+    .groupby(["semester", "workshop"], as_index=False)["wellbeing"]
+    .mean()
+)
 
-p <- ggplot(wellbeing_by_sem, aes(x = semester, y = mean_wellbeing, colour = workshop)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2.5) +
-  labs(x = "Semester", y = "Average wellbeing (0 to 100)", colour = "Workshop")
-p
-p + coord_cartesian(ylim = c(______, ______))
+fig, axes = plt.subplots(1, 2, figsize=(12, 4))
+
+# Left: zoomed in
+sns.lineplot(data=wellbeing_by_sem, x="semester", y="wellbeing", hue="workshop", marker="o", ax=axes[0])
+axes[0].set_title("Zoomed View (Exaggerated visual slope)")
+
+# Right: full 0-100 scale
+sns.lineplot(data=wellbeing_by_sem, x="semester", y="wellbeing", hue="workshop", marker="o", ax=axes[1])
+axes[1].set_ylim(______, ______)
+axes[1].set_title("Full Theoretical Scale (0 to 100)")
+plt.tight_layout()
+plt.show()
 ```
 
 ::: { .hint exercise="gf2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The two numbers are the ends of the wellbeing scale.
+The theoretical wellbeing instrument bounds are `0` and `100`.
 :::
 :::
 
@@ -331,40 +450,48 @@ The two numbers are the ends of the wellbeing scale.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-p + coord_cartesian(ylim = c(0, 100))
+```python
+axes[1].set_ylim(0, 100)
 ```
 
-Zoomed in, the axis runs only from about 58 to 66, and the invited group's rise in semester 2 looks dramatic. On the full scale, the same rise, about 5 points, looks modest. Both are honest if the caption says what the reader sees. For example: *"Average wellbeing by semester and workshop group; note that the y axis shows only part of the 0-to-100 scale"*, and *"Average wellbeing on the full 0-to-100 scale: the invited group's rise in semester 2 is about 5 points."* Lines, unlike bars, may be zoomed, because they represent values by position; the reader only needs to be told.
+Zoomed in, the axis spans roughly 58 to 66, making the workshop group's post-intervention gain appear dramatic. On the full 0–100 scale, the 5-point rise appears modest and realistic. Both views are legitimate in research if the figure caption informs the reader of the axis bounds.
 :::
 :::
 
 ### Exercise 9: Anscombe's quartet yourself
 
-Calculate the mean and standard deviation of `y` and the correlation of `x` and `y` in each of Anscombe's four datasets, then plot the four in separate panels.
+Calculate summary statistics for Anscombe's four datasets, then plot them in separate facet panels using Seaborn.
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-anscombe_long <- tibble(
-  set = rep(c("I", "II", "III", "IV"), each = 11),
-  x   = c(anscombe$x1, anscombe$x2, anscombe$x3, anscombe$x4),
-  y   = c(anscombe$y1, anscombe$y2, anscombe$y3, anscombe$y4)
+anscombe = sns.load_dataset("anscombe")
+
+summary = anscombe.groupby("dataset").agg(
+    mean_x=("x", "mean"),
+    std_x=("x", "std"),
+    mean_y=("y", "mean"),
+    std_y=("y", "std")
 )
+print("Summary Statistics:")
+print(summary.round(2))
 
-anscombe_long |>
-  summarise(mean_y = mean(y), sd_y = sd(y), r = ______(x, y), .by = set)
-
-ggplot(anscombe_long, aes(x = x, y = y)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE) +
-  ______(~ set)
+g = sns.lmplot(
+    data=anscombe,
+    x="x",
+    y="y",
+    col="______",
+    ci=None,
+    scatter_kws={"s": 50, "alpha": 0.8},
+    line_kws={"color": "crimson"}
+)
+plt.show()
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The function for a correlation is a short form of its name. The function that splits a graph into panels, one for each value of a variable, wraps them into rows.
+Set `col="dataset"` in `sns.lmplot()` to create a small-multiple column for each of the four datasets (I, II, III, IV).
 :::
 :::
 
@@ -372,37 +499,49 @@ The function for a correlation is a short form of its name. The function that sp
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-anscombe_long |>
-  summarise(mean_y = mean(y), sd_y = sd(y), r = cor(x, y), .by = set)
-
-ggplot(anscombe_long, aes(x = x, y = y)) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE) +
-  facet_wrap(~ set)
+```python
+g = sns.lmplot(
+    data=anscombe,
+    x="x",
+    y="y",
+    col="dataset",
+    ci=None,
+    scatter_kws={"s": 50, "alpha": 0.8},
+    line_kws={"color": "crimson"}
+)
+plt.show()
 ```
 
-All four sets have a mean of 7.50, a standard deviation of 2.03, and a correlation of 0.82, to two decimal places, and the same trend line. The panels show four completely different stories: a noisy straight line (I), a smooth curve (II), a perfect line with one outlier (III), and no relationship at all except for one extreme point (IV). Only the first is described well by the numbers. Always plot the data before summarising it.
+All four datasets share identical numerical summaries ($\bar{x}=9.0$, $\bar{y}=7.5$, $r=0.82$, linear regression line $y = 3.0 + 0.5x$), yet visually reveal completely different phenomena: a linear noisy trend (I), a nonlinear curve (II), a line with an extreme outlier (III), and an influential leverage point (IV). Always inspect visual distributions before accepting summary metrics!
 :::
 :::
 
-### Exercise 10: Exercise and wellbeing
+### Exercise 10: Exercise days and wellbeing
 
-Graph the relationship between the number of days a week students exercise and their wellbeing in the first semester. Exercise days take only the values 0 to 7, so ordinary points would pile up in eight columns: spread them a little sideways, make them transparent, and add a trend line.
+Graph the relationship between weekly exercise days (0 to 7) and first-semester wellbeing. Add horizontal jitter to separate overlapping discrete points, set transparency, and add a linear trend line.
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-ggplot(first_sem, aes(x = exercise_days, y = wellbeing)) +
-  ______(width = 0.2, height = 0, alpha = 0.3) +
-  geom_smooth(method = "lm") +
-  labs(x = "Days of exercise per week", y = "Wellbeing in semester 1 (0 to 100)")
+fig, ax = plt.subplots(figsize=(7, 4))
+sns.regplot(
+    data=first_sem,
+    x="exercise_days",
+    y="wellbeing",
+    x_jitter=______,
+    scatter_kws={"alpha": 0.3, "color": "teal"},
+    line_kws={"color": "darkred"},
+    ax=ax
+)
+ax.set_xlabel("Days of Exercise per Week")
+ax.set_ylabel("Wellbeing Score (0 to 100)")
+plt.show()
 ```
 
 ::: { .hint exercise="gf4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The geom that adds a little random noise to each point's position was used in the book's redesigned graph. `height = 0` keeps the wellbeing values exact and spreads the points only sideways.
+Set `x_jitter=0.2` to spread discrete integer points horizontally without altering their actual vertical wellbeing values.
 :::
 :::
 
@@ -410,14 +549,23 @@ The geom that adds a little random noise to each point's position was used in th
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-ggplot(first_sem, aes(x = exercise_days, y = wellbeing)) +
-  geom_jitter(width = 0.2, height = 0, alpha = 0.3) +
-  geom_smooth(method = "lm") +
-  labs(x = "Days of exercise per week", y = "Wellbeing in semester 1 (0 to 100)")
+```python
+fig, ax = plt.subplots(figsize=(7, 4))
+sns.regplot(
+    data=first_sem,
+    x="exercise_days",
+    y="wellbeing",
+    x_jitter=0.2,
+    scatter_kws={"alpha": 0.3, "color": "teal"},
+    line_kws={"color": "darkred"},
+    ax=ax
+)
+ax.set_xlabel("Days of Exercise per Week")
+ax.set_ylabel("Wellbeing Score (0 to 100)")
+plt.show()
 ```
 
-The trend line rises gently: students who exercise more days report somewhat higher wellbeing, but the points spread widely at every number of days, so the relationship is weak (the correlation, from Chapter 6, is about 0.2). Few students exercise six or seven days, so the right end of the line rests on little data. Jittering changed only where the points are drawn, not the data; with `height = 0`, every wellbeing value is still exact. (R warns about 2 removed rows: students without an exercise value.)
+Horizontal jittering resolves overplotting along discrete whole-number days of exercise while preserving exact vertical measurement values. The trend line reveals a positive relationship between exercise frequency and student psychological wellbeing.
 :::
 :::
 
@@ -430,7 +578,7 @@ Answer each question in your own words first, then click to see a model answer.
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because people judge positions and lengths on a common scale far more accurately than angles and areas. In a bar chart or dot plot, the values sit side by side on the same axis, so small differences and the order of the groups are visible at once; in a pie chart, similar slices look alike, and ranking them needs a legend.
+Human perception judges positions and lengths along a common aligned scale far more accurately than angles, arc lengths, or 2D slice areas (Cleveland & McGill, 1984). In a bar chart or dot plot, differences are immediately discernible; in a pie chart, slices of similar proportions are nearly indistinguishable without numeric text callouts.
 :::
 
 **2.** When is a y axis that does not start at zero acceptable?
@@ -438,15 +586,15 @@ Because people judge positions and lengths on a common scale far more accurately
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-When the values are shown by position, as in a line chart, scatter plot, or dot plot, and the reader is told that the axis is zoomed. It is never acceptable for bars, because a bar shows its value by its length: with a shortened axis, a bar twice as long no longer means twice as much.
+When values are represented by coordinate position rather than ink length (e.g., in line charts, scatter plots, or dot plots), provided the reader is informed in the figure caption. It is never acceptable in bar charts, where visual ink length directly represents physical magnitude from baseline zero.
 :::
 
-**3.** What is the difference between mapping a colour and setting a colour?
+**3.** What is the difference between mapping a color to data and setting a fixed color?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Mapping, inside `aes()`, links colour to a variable, so each group gets its own colour and ggplot2 adds a legend. Setting, outside `aes()`, gives every element the same fixed colour. Putting a fixed colour such as `"steelblue"` inside `aes()` is a common mistake: ggplot2 treats it as data with one value, colours it pink, and adds a pointless legend.
+Mapping (e.g., `hue="faculty"`) links color to a dataset variable, assigning distinct palette swatches and generating an automated legend. Setting a fixed color (e.g., `color="steelblue"`) paints all elements uniformly without creating a redundant legend.
 :::
 
 **4.** Which kind of palette suits categories, and which suits quantities?
@@ -454,7 +602,7 @@ Mapping, inside `aes()`, links colour to a variable, so each group gets its own 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Categories need a qualitative palette: colours that are clearly different but equally prominent, since no category is more important than another. Quantities need a sequential palette, running from light to dark, or a diverging palette, running in two directions away from a meaningful midpoint such as zero. A rainbow palette suits neither, because its bright bands suggest boundaries that are not in the data.
+Categories require qualitative/discrete palettes (e.g. `Set2`, `tab10`) with balanced perceived luminance. Continuous quantities require sequential palettes (light-to-dark gradient, e.g. `viridis`, `Blues`) or diverging palettes centered on a meaningful midpoint (e.g. `vlag`, `coolwarm`).
 :::
 
 **5.** What is an exploratory graph for, and how does it differ from an explanatory graph?
@@ -462,54 +610,53 @@ Categories need a qualitative palette: colours that are clearly different but eq
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-An exploratory graph is for the researcher: quick, made in large numbers, and used to find patterns, problems, and surprises in the data. An explanatory graph is for readers: one carefully designed figure that shows one message clearly, with labels, units, an honest axis, a suitable palette, and a caption. Most graphs made during a project are exploratory; only a few become explanatory figures in the thesis.
+Exploratory graphs are private, rapid, and numerous—used by the researcher to inspect distributions, identify coding anomalies, and uncover relationships. Explanatory graphs are carefully designed public artifacts prepared for publication, featuring clear titles, labelled axes with measurement units, honest scales, and an informative caption.
 :::
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. Each code space below is ready to run: write your own code, as you would for a thesis. The data (`students`, `semesters`, and `first_sem`) and the ggplot2 and dplyr packages are already loaded, and R's built-in datasets are always available.
+These tasks have no starter code and no answers. Each code space below is ready to run: write your own Python code, as you would for a thesis. The datasets (`students`, `semesters`, and `first_sem`) and libraries (`pandas`, `numpy`, `matplotlib.pyplot`, `seaborn`) are preloaded.
 
-**1.** Choose a question about two variables of the study that the chapter did not graph. Choose the graph with the chapter's table of graphs by kinds of variables, make an explanatory version ready for a thesis, and write its caption.
+**1.** Choose a question about two variables of the study that the chapter did not graph. Select the appropriate plot type, build an explanatory thesis-ready figure, and write its caption.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**2.** The code below draws a deliberately poor graph. Improve it, and write down each change you made and why. (This is the only code space on the page with code in it: the task is to change it.)
+**2.** The code below draws a deliberately poor graph. Improve it, and note each change you made and why:
 
-```{webr}
-first_sem |>
-  summarise(sleep = mean(sleep_hours, na.rm = TRUE), .by = faculty) |>
-  ggplot(aes(x = faculty, y = sleep, fill = faculty)) +
-  geom_col() +
-  coord_cartesian(ylim = c(6.3, 6.7))
+```{pyodide}
+bad_data = first_sem.groupby("faculty", as_index=False)["sleep_hours"].mean()
+fig, ax = plt.subplots()
+sns.barplot(data=bad_data, x="faculty", y="sleep_hours", hue="faculty", ax=ax)
+ax.set_ylim(6.3, 6.7)
+plt.show()
 ```
 
-**3.** R's built-in `ChickWeight` data records the weight of 50 chicks on four diets, measured every few days from birth to day 21. Make a figure for a report that shows how weight grows over time on each diet, and write its caption. Think about what one line should represent, and whether panels or colours compare the diets better.
+**3.** Load seaborn's built-in `mpg` dataset (`sns.load_dataset("mpg")`). Create three quick exploratory plots examining engine displacement (`displacement`) against fuel efficiency (`mpg`), then polish the clearest version into an explanatory thesis graphic.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**4.** ggplot2's `mpg` data records the fuel economy of 234 cars. Make three quick exploratory graphs of the relationship between engine size (`displ`) and motorway fuel economy (`hwy`), then turn the most informative one into an explanatory graph.
+**4.** Create a small-multiples grid showing the distribution of wellbeing across faculties using `sns.displot(..., col="faculty", kde=True)` or `sns.FacetGrid`.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**5.** In the download project, save your figure from Task 3 as a PDF file 16 cm wide and 10 cm high, and as a PNG at 300 dpi, and compare the two files when you zoom in.
+**5.** In your local environment, save your polished graphic as both a vector PDF and a 300 DPI PNG, and inspect the clarity of text and vector lines when magnified.
 
 ## Work on your own computer
 
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 4 project
 
-The project contains the data and all four parts of this page as an R script: the exercises with blanks, the questions to check your understanding (answers in `solutions.R`), and the open tasks, each with space to write your code.
+The project contains the data and all four parts of this page as a standalone Python project: exercises with blanks (`exercises.py`), questions with model solutions (`solutions.py`), and open tasks.
 
-- [Download chapter04.zip](chapter04.zip), unzip it, and double-click `chapter04.Rproj`.
-- Or type this one line in RStudio's Console:
-
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter04.zip")
-```
+- [Download chapter04.zip](chapter04.zip), unzip it, and open the folder in VS Code or your preferred Python IDE.
+- Make sure you have pandas, matplotlib, and seaborn installed:
+  ```bash
+  pip install pandas matplotlib seaborn
+  ```
 :::

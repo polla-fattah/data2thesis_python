@@ -498,7 +498,7 @@
   title: [FROM DATA TO THESIS],
   subtitle: [Using R for Non-technical],
   author: "Polla Fattah and Collection of LLMs",
-  date: "2026-09-30",
+  date: "2026-10-23",
   main-color: brand-color.at("primary", default: blue),
   logo: {
     let logo-info = brand-logo.at("medium", default: none)
@@ -642,28 +642,28 @@ Whether you are embarking on your Master's dissertation, finishing your doctoral
 #emph[Salahaddin University-Erbil]
 
 #part[Foundations of R Programming and Data Handling]
-= Getting Started with R
+= Getting Started with Python
 <sec-ch01>
 Every data analysis is a long chain of decisions. Which cases are kept and which are excluded, how a messy answer is corrected, which variables are combined into a score, which test is used, and how its result is rounded: each choice shapes the final numbers, and each should be open to inspection. When an analysis is done by clicking through menus, most of these decisions leave no trace. Weeks later, not even the researcher can say exactly how a number in the thesis was produced, and an examiner who asks cannot be given a complete answer.
 
-Writing the analysis as code changes this. A script records every step in order, in a form that a supervisor can read, an examiner can check, and the researcher can run again after correcting a mistake or receiving new data. This is the main reason research is increasingly done in a programming language, and it is the reason this book teaches R. The chapter starts from nothing: installing R, finding your way around the program used to write it, and learning the handful of ideas on which everything else rests.
+Writing the analysis as code changes this. A script records every step in order, in a form that a supervisor can read, an examiner can check, and the researcher can run again after correcting a mistake or receiving new data. This is the main reason research is increasingly done in a programming language, and it is the reason this book teaches Python. The chapter starts from nothing: installing Python, finding your way around the program used to write it, and learning the handful of ideas on which everything else rests.
 
 The book follows one research project from its first day to its last. Elaf has just begun a Master's degree in Educational Psychology. During her first year of graduate study she noticed how tired many of her fellow students were: they slept little, lived on coffee, worried about their supervisors and their money, and a few spoke quietly about leaving. With her supervisor, she turned that observation into a thesis. It asks how sleep, stress, and supervisor support relate to graduate students' wellbeing, their grades, and their thoughts of dropping out, and whether a short wellbeing workshop can help. Her university agreed to support a two-year study of 600 graduate students from five faculties: a questionnaire at the start, a record of each student's sleep, study, and wellbeing at the end of every semester, and a six-week workshop to which half of the students would be invited at random.
 
 At their first meeting, her supervisor set out what the thesis would demand. The research questions had to become precise hypotheses before any results were seen. The raw survey export, full of test entries, typing errors, and impossible values, had to be cleaned without losing track of a single change. The sample had to be described honestly, including the students who stopped taking part. Every analysis had to be chosen for a reason and its assumptions checked, and every result reported with its size and its uncertainty, not only with a p-value. At the end, examiners would read the results chapter and could ask how any number in it had been produced. "You should be able to show them," the supervisor said, "step by step."
 
-Elaf had used Excel for coursework and had once clicked through an SPSS menu in a statistics class, but she had never written a line of code. Her supervisor suggested R, for exactly the reason given above: an analysis written as code can be shown step by step. The first data has now arrived, and this chapter is Elaf's first day with R, and yours. Each later chapter takes her one step further, from cleaning the data to the finished thesis. By the end of this one, you will have R running on your computer, you will know your way around the program used to write it, and you will have opened her data and answered a first, simple question about it.
+Elaf had used Excel for coursework and had once clicked through an SPSS menu in a statistics class, but she had never written a line of code. Her supervisor suggested Python, for exactly the reason given above: an analysis written as code can be shown step by step. The first data has now arrived, and this chapter is Elaf's first day with Python, and yours. Each later chapter takes her one step further, from cleaning the data to the finished thesis. By the end of this one, you will have Python running on your computer, you will know your way around the program used to write it, and you will have opened her data and answered a first, simple question about it.
 
 #block[
 #callout(
 body: 
 [
-- Explain why researchers use R, and install R and RStudio.
-- Find your way around RStudio and run code in the Console and in a script.
-- Store values in objects and recognise the basic types of data.
-- Use functions and their arguments, and get help when you are stuck.
-- Organise your work in an RStudio Project and install packages.
-- Open the student wellbeing data and answer a first question about it.
+- Explain why researchers use Python, and install Python and VS Code.
+- Find your way around your editor and run code in an interactive terminal and in a script.
+- Store values in variables and recognise the basic types of data.
+- Use functions and methods, and get help when you are stuck.
+- Organise your research project in folders and install packages with #NormalTok("pip");.
+- Open the student wellbeing data and answer a first question about it using #NormalTok("data2thesis");.
 
 ]
 , 
@@ -713,17 +713,22 @@ white
 ]
 == Research written in code
 <research-written-in-code>
-R is a free program for working with data: cleaning it, analysing it, and turning it into tables and graphs. It began in the early 1990s at the University of Auckland, where two statisticians, Ross Ihaka and Robert Gentleman, wrote it for teaching @ihaka1996. Its first stable version appeared in 2000. Today it is used in universities, hospitals, governments, and companies around the world.
+Python is a free, open-source programming language for working with data: cleaning it, analysing it, and turning it into tables, graphs, and statistical models. It was created in the late 1980s by Guido van Rossum in the Netherlands, released in 1991, and named after the British comedy troupe Monty Python. Today, Python is the most popular programming language in the world, powering scientific research in universities, national laboratories, hospitals, tech companies, and governments across every continent.
 
-Four properties make R worth learning for a researcher. It is made for data: statistical tests, models, and graphs are part of the language rather than add-ons. It is free and open source, so you, your students, and anyone who wants to check your work can use it without buying a licence. Its instructions form a written record of the analysis, which anyone can run again to obtain exactly the same results; research that can be repeated in this way is called #strong[reproducible], and Chapter 17 returns to the idea. Finally, it is shared by a large community. Thousands of researchers publish free #strong[packages], add-ons that give R new abilities, so whatever method your field uses, someone has probably written a package for it.
+Four properties make Python worth learning for a researcher:
 
-The price is that R asks you to type instead of click. That feels slow at first. It becomes fast surprisingly quickly, and it pays you back every time you need to repeat, correct, or extend an analysis.
++ #strong[It is built for clear reading:] Python was designed from the ground up to look like clear, readable English. Its syntax is clean and uncluttered, making it accessible to beginners who have never programmed before.
++ #strong[It is free and open source:] You, your students, and anyone reviewing your thesis can install and run your code without buying expensive proprietary licences.
++ #strong[It makes research reproducible:] Your written script records every cleaning choice, transformation, and statistical test. Anyone can re-run your script on the raw data and reproduce your exact numbers, tables, and figures. Chapter 17 explores this idea in depth.
++ #strong[An unmatched scientific ecosystem:] Thousands of scientists have contributed free, battle-tested libraries: #strong[pandas] for spreadsheets and data tables, #strong[matplotlib] and #strong[seaborn] for publication-quality charts, #strong[scipy] and #strong[statsmodels] for hypothesis testing and regression, and #strong[scikit-learn] for machine learning. Whatever statistical method your thesis needs, a Python library already exists for it.
+
+The price of code is that Python asks you to type rather than click. At first, typing feels unfamiliar. Within a few days, however, it becomes second nature---and it pays you back every time you need to re-run an analysis, update a dataset, or generate new figures for your thesis defense.
 
 #block[
 #callout(
 body: 
 [
-In SPSS or Excel, you click, and the program changes your data or produces output. In R, you write an instruction, and R carries it out. The instructions are saved in a file, so the next time you need the same analysis, you run the file instead of clicking through the menus again. Chapter 2 shows how familiar SPSS and Excel tasks map to R.
+In SPSS or Excel, you click menus, and the program changes your spreadsheet or displays a table in a viewer. The problem is that the clicks leave no written record. In Python, you write an explicit instruction: #NormalTok("students['age'].mean()");. The computer executes it and prints the result. Because the instruction is saved in a text file, you can re-run the entire analysis next semester with one keystroke. Chapter 2 shows how familiar Excel and SPSS operations map directly to Python.
 
 ]
 , 
@@ -745,23 +750,34 @@ body_background_color:
 white
 )
 ]
-== Installing R and RStudio
-<installing-r-and-rstudio>
-Working with R involves two programs. #strong[R] is the engine that does the work. #strong[RStudio] is the program in which you drive it: you write R code there, run it, and see the results. You will almost never open R itself; you open RStudio, and RStudio uses R for you.
+== Installing Python and VS Code
+<installing-python-and-vs-code>
+Working with Python involves two tools:
 
-R must be installed first. Download it from #link("https://cran.r-project.org/")[cran.r-project.org], choosing the version for your operating system (Windows, macOS, or Linux), and install it like any other program. Then download the free RStudio Desktop from #link("https://posit.co/download/rstudio-desktop/")[posit.co] and install it. Appendix A walks through both installations step by step, with solutions to common problems.
++ #strong[Python] is the engine that executes your commands.
++ An #strong[editor] (or Integrated Development Environment, IDE) is the program in which you drive it: you write Python code there, run it, and inspect your tables and charts.
+
+You will almost never open Python by itself; you open your editor, and the editor talks to Python for you.
+
+The most popular, modern editor for scientific Python is #strong[Visual Studio Code (VS Code)], developed by Microsoft. It is free, fast, and available for Windows, macOS, and Linux.
+
++ #strong[Install Python:] Download Python (version 3.10 or newer) from #link("https://www.python.org/downloads/")[python.org]. On Windows, ensure you check the box that says #strong["Add Python to PATH"] during the installer setup.
++ #strong[Install VS Code:] Download and install VS Code from #link("https://code.visualstudio.com/")[code.visualstudio.com].
++ #strong[Install the Python Extension:] Open VS Code, click the Extensions icon on the left sidebar (four squares), search for #strong[Python] (by Microsoft), and click #strong[Install].
+
+Appendix A walks through this setup step by step for Windows, macOS, and Linux, with troubleshooting for common path issues.
 
 #block[
 #callout(
 body: 
 [
-RStudio is the most widely used editor for R, and this book uses it throughout. #strong[Positron], a newer editor from the same company, works with R and Python in one window and is a good alternative if you plan to use both languages. Everything in this book works in either.
+While VS Code is the industry standard, other editors are also excellent. #strong[Positron], developed by Posit (the creators of RStudio), is designed specifically for data scientists and provides a dedicated environment for both Python and R in a familiar layout. #strong[JupyterLab] is another popular browser-based environment for running code notebooks. Everything you learn in this book works identically in VS Code, Positron, and Jupyter.
 
 ]
 , 
 title: 
 [
-Other editors
+Other editors: Positron and Jupyter
 ]
 , 
 background_color: 
@@ -781,13 +797,13 @@ white
 #callout(
 body: 
 [
-The exercises for this chapter run in your web browser. Try them in the #link("../playground/chapter01.html")[playground] first, and install R when you are ready.
+The practical exercises for this book can also be run directly in your web browser with zero local installation. Try them in the #link("../playground/chapter01.html")[Chapter 1 Playground] first!
 
 ]
 , 
 title: 
 [
-Working in the browser
+Working directly in the browser
 ]
 , 
 background_color: 
@@ -803,9 +819,9 @@ body_background_color:
 white
 )
 ]
-== The RStudio window
-<the-rstudio-window>
-When you open RStudio, the window is divided into panes. With a script open (you will open one shortly), there are four, described in #ref(<tbl-panes>, supplement: [Table]).
+== The editor layout
+<the-editor-layout>
+When you open VS Code with a Python file, the window is organized into functional areas, described in #ref(<tbl-panes>, supplement: [Table]).
 
 #figure([
 #table(
@@ -813,15 +829,15 @@ When you open RStudio, the window is divided into panes. With a script open (you
   align: (auto,auto,auto,),
   table.header([Where], [Pane], [What it is for],),
   table.hline(),
-  [Top left], [#strong[Source]], [Where you write and save your code, in files called scripts.],
-  [Bottom left], [#strong[Console]], [Where R runs code and shows the results.],
-  [Top right], [#strong[Environment]], [The objects you have created, such as your data.],
-  [Bottom right], [#strong[Files, Plots, Packages, Help]], [Your files, your graphs, your installed packages, and R's help pages.],
+  [Left / Top], [#strong[Editor (Source)]], [Where you write and save your code scripts (#NormalTok(".py"); files).],
+  [Bottom / Right], [#strong[Terminal / Interactive Window]], [Where Python executes instructions and shows text outputs.],
+  [Left sidebar], [#strong[File Explorer]], [The folders and files in your research project.],
+  [Bottom / Panel], [#strong[Plots & Variables]], [Where data tables, variables in memory, and visual plots appear.],
 )
 ], caption: figure.caption(
 position: top, 
 [
-The four panes of RStudio
+The primary functional areas when working with Python in an editor
 ]), 
 kind: "quarto-float-tbl", 
 supplement: "Table", 
@@ -829,93 +845,72 @@ supplement: "Table",
 <tbl-panes>
 
 
-You can type code directly into the Console. Click in it, type #NormalTok("2 + 2");, and press Enter. R answers straight away. The #NormalTok("[1]"); at the start of the answer simply means "this is the first value of the result"\; you can ignore it for now.
+You can type code directly into the Python Interactive Terminal (or REPL). When you type #NormalTok("2 + 2"); and press Enter, Python evaluates the expression and prints #NormalTok("4");.
 
 == Calculations
 <calculations>
-The simplest use of R is as a calculator. Suppose you slept 6.5, 7, and 5.5 hours on three nights last week. Your average is:
+The simplest use of Python is as a calculator. Suppose you slept 6.5, 7, and 5.5 hours on three consecutive nights last week. Your average sleep is:
+
+#Skylighting(([#NormalTok("(");#FloatTok("6.5");#NormalTok(" ");#OperatorTok("+");#NormalTok(" ");#DecValTok("7");#NormalTok(" ");#OperatorTok("+");#NormalTok(" ");#FloatTok("5.5");#NormalTok(") ");#OperatorTok("/");#NormalTok(" ");#DecValTok("3");],));
+#Skylighting(([#NormalTok("6.333333333333333");],));
+Python follows standard mathematical order of operations (PEMDAS): parentheses first, followed by exponents, multiplication and division, and finally addition and subtraction. Without the parentheses, Python would divide only the last number by 3:
+
+#Skylighting(([#FloatTok("6.5");#NormalTok(" ");#OperatorTok("+");#NormalTok(" ");#DecValTok("7");#NormalTok(" ");#OperatorTok("+");#NormalTok(" ");#FloatTok("5.5");#NormalTok(" ");#OperatorTok("/");#NormalTok(" ");#DecValTok("3");],));
+#Skylighting(([#NormalTok("15.333333333333334");],));
+The standard arithmetic operators in Python are: \* #NormalTok("+"); for addition \* #NormalTok("-"); for subtraction \* #NormalTok("*"); for multiplication \* #NormalTok("/"); for division \* #NormalTok("**"); for exponents/powers (for example, #NormalTok("2 ** 3"); evaluates to 8; note that in Python, #NormalTok("^"); is a bitwise operator, not power!)
+
+#Skylighting(([#DecValTok("2");#NormalTok(" ");#OperatorTok("**");#NormalTok(" ");#DecValTok("3");],));
+#Skylighting(([#NormalTok("8");],));
+== Storing values in variables
+<storing-values-in-variables>
+Typing numbers repeatedly is slow and error-prone. Instead, you can store a value under a memorable name. In Python, this stored value is held in a #strong[variable], created using the #strong[assignment operator] #NormalTok("=");:
 
 #block[
-#Skylighting(([#NormalTok("(");#FloatTok("6.5");#NormalTok(" ");#SpecialCharTok("+");#NormalTok(" ");#DecValTok("7");#NormalTok(" ");#SpecialCharTok("+");#NormalTok(" ");#FloatTok("5.5");#NormalTok(") ");#SpecialCharTok("/");#NormalTok(" ");#DecValTok("3");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6.333333");],));
+#Skylighting(([#NormalTok("nights ");#OperatorTok("=");#NormalTok(" ");#DecValTok("3");],));
 ]
-]
-R follows the usual order of operations: multiplication and division before addition and subtraction, and brackets first of all. Without the brackets, R would divide only the last number by 3:
+When you run this line, Python produces no visible output, but it now remembers that #NormalTok("nights"); holds the value #NormalTok("3");. You can now use #NormalTok("nights"); anywhere you would use the number:
 
-#block[
-#Skylighting(([#FloatTok("6.5");#NormalTok(" ");#SpecialCharTok("+");#NormalTok(" ");#DecValTok("7");#NormalTok(" ");#SpecialCharTok("+");#NormalTok(" ");#FloatTok("5.5");#NormalTok(" ");#SpecialCharTok("/");#NormalTok(" ");#DecValTok("3");],));
-#block[
-#Skylighting(([#NormalTok("[1] 15.33333");],));
-]
-]
-The usual arithmetic symbols work as you would expect: #NormalTok("+");, #NormalTok("-");, #NormalTok("*"); (multiply), #NormalTok("/"); (divide), and #NormalTok("^"); (power).
-
-== Storing values in objects
-<storing-values-in-objects>
-Typing the same numbers again and again is tiresome and invites mistakes. Instead, you can store a value under a name. The stored value is called an #strong[object], and you create it with the #strong[assignment arrow] #NormalTok("<-");, which you can read as "gets":
-
-#block[
-#Skylighting(([#NormalTok("nights ");#OtherTok("<-");#NormalTok(" ");#DecValTok("3");],));
-]
-Nothing is printed, but R now remembers that #NormalTok("nights"); is 3. The object appears in the Environment pane, and you can use it by name:
-
-#block[
 #Skylighting(([#NormalTok("nights");],));
-#block[
-#Skylighting(([#NormalTok("[1] 3");],));
-]
-#Skylighting(([#NormalTok("nights ");#SpecialCharTok("*");#NormalTok(" ");#DecValTok("7");],));
-#block[
-#Skylighting(([#NormalTok("[1] 21");],));
-]
-]
-To store several values in one object, combine them with #NormalTok("c()");, which stands for #emph[combine]:
+#Skylighting(([#NormalTok("3");],));
+#Skylighting(([#NormalTok("nights ");#OperatorTok("*");#NormalTok(" ");#DecValTok("7");],));
+#Skylighting(([#NormalTok("21");],));
+To store several values together, you can place them in a #strong[list], written inside square brackets #NormalTok("["); and #NormalTok("]");, separated by commas:
 
-#block[
-#Skylighting(([#NormalTok("sleep ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FloatTok("6.5");#NormalTok(", ");#DecValTok("7");#NormalTok(", ");#FloatTok("5.5");#NormalTok(")");],
+#Skylighting(([#NormalTok("sleep ");#OperatorTok("=");#NormalTok(" [");#FloatTok("6.5");#NormalTok(", ");#FloatTok("7.0");#NormalTok(", ");#FloatTok("5.5");#NormalTok("]");],
 [#NormalTok("sleep");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6.5 7.0 5.5");],));
-]
-]
-Chapter 2 explains these collections, called #strong[vectors], in detail. For now, notice how much clearer the code becomes when the numbers have a name:
+#Skylighting(([#NormalTok("[6.5, 7.0, 5.5]");],));
+Notice how much clearer and self-documenting your analysis becomes when the numbers have meaningful names:
 
-#block[
-#Skylighting(([#FunctionTok("sum");#NormalTok("(sleep) ");#SpecialCharTok("/");#NormalTok(" nights");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6.333333");],));
-]
-]
-Names follow a few rules. A name starts with a letter and can contain letters, numbers, dots, and underscores, such as #NormalTok("sleep");, #NormalTok("sleep_week1");, or #NormalTok("avg.sleep");. It cannot contain spaces, so an underscore takes their place: #NormalTok("sleep_hours");, not #NormalTok("sleep hours");. R is case-sensitive, which makes #NormalTok("Sleep"); and #NormalTok("sleep"); two different objects. Beyond these rules, the best names say what the object holds: #NormalTok("sleep_hours"); is far better than #NormalTok("x");, and your future self will be grateful for it.
+#Skylighting(([#BuiltInTok("sum");#NormalTok("(sleep) ");#OperatorTok("/");#NormalTok(" nights");],));
+#Skylighting(([#NormalTok("6.333333333333333");],));
+Variable names in Python follow clear conventions: \* Names start with a letter or underscore, and may contain letters, numbers, and underscores (e.g., #NormalTok("sleep_hours");, #NormalTok("student_01");). \* Names cannot contain spaces. Use an underscore #NormalTok("_"); to separate words (this is called #strong[snake\_case], the standard Python style). \* Python is strictly case-sensitive: #NormalTok("Sleep");, #NormalTok("sleep");, and #NormalTok("SLEEP"); are three completely different variables. \* Choose descriptive names: #NormalTok("sleep_hours"); tells you immediately what the data represents; single letters like #NormalTok("x"); or #NormalTok("temp"); will leave you guessing when you review your code months later.
 
-If you assign a new value to an existing name, the old value is replaced without warning:
+If you assign a new value to an existing variable name, Python overwrites the old value:
 
-#block[
-#Skylighting(([#NormalTok("nights ");#OtherTok("<-");#NormalTok(" ");#DecValTok("4");],
+#Skylighting(([#NormalTok("nights ");#OperatorTok("=");#NormalTok(" ");#DecValTok("4");],
 [#NormalTok("nights");],));
-#block[
-#Skylighting(([#NormalTok("[1] 4");],));
-]
-]
+#Skylighting(([#NormalTok("4");],));
 == Types of data
 <types-of-data>
-Research data is not all numbers. A survey records numbers (hours of sleep), words (the student's faculty), and yes-or-no answers (whether the student was invited to a workshop). R keeps track of the #strong[type] of every value, because the type decides what can be done with it: hours of sleep can be averaged, but faculty names cannot. #ref(<tbl-types>, supplement: [Table]) lists the types you will meet most often.
+Research data is not only numbers. A study records measurements (hours of sleep), text categories (a student's faculty), and yes-or-no status flags (whether a student attended a workshop). Python keeps track of the #strong[data type] of every value, because the type determines what mathematical and logical operations are permitted.
+
+#ref(<tbl-types>, supplement: [Table]) lists the core types you will encounter in research.
 
 #figure([
 #table(
-  columns: 3,
-  align: (auto,auto,auto,),
-  table.header([Type], [Holds], [Example],),
+  columns: (25%, 25%, 25%, 25%),
+  align: (auto,auto,auto,auto,),
+  table.header([Type], [Name in Python], [Description], [Example],),
   table.hline(),
-  [numeric], [numbers, with or without decimals], [#NormalTok("6.5");, #NormalTok("600");],
-  [character], [text, written inside quotes], [#NormalTok("\"Education\"");],
-  [logical], [#NormalTok("TRUE"); or #NormalTok("FALSE");], [#NormalTok("TRUE");],
+  [Integer], [#NormalTok("int");], [Whole numbers without decimals], [#NormalTok("600");, #NormalTok("4");],
+  [Floating-point], [#NormalTok("float");], [Numbers with decimal points], [#NormalTok("6.5");, #NormalTok("3.14159");],
+  [String], [#NormalTok("str");], [Text characters, enclosed in quotes], [#NormalTok("\"Education\"");, #NormalTok("'Male'");],
+  [Boolean], [#NormalTok("bool");], [Logical truth values], [#NormalTok("True");, #NormalTok("False");],
 )
 ], caption: figure.caption(
 position: top, 
 [
-The most common types of data in R
+The fundamental data types in Python
 ]), 
 kind: "quarto-float-tbl", 
 supplement: "Table", 
@@ -923,185 +918,161 @@ supplement: "Table",
 <tbl-types>
 
 
-The function #NormalTok("class()"); tells you the type of an object:
+The built-in function #NormalTok("type()"); inspects the type of any object:
 
 #block[
-#Skylighting(([#NormalTok("hours   ");#OtherTok("<-");#NormalTok(" ");#FloatTok("6.5");],
-[#NormalTok("faculty ");#OtherTok("<-");#NormalTok(" ");#StringTok("\"Education\"");],
-[#NormalTok("invited ");#OtherTok("<-");#NormalTok(" ");#ConstantTok("TRUE");],
+#Skylighting(([#NormalTok("hours ");#OperatorTok("=");#NormalTok(" ");#FloatTok("6.5");],
+[#NormalTok("faculty ");#OperatorTok("=");#NormalTok(" ");#StringTok("\"Education\"");],
+[#NormalTok("invited ");#OperatorTok("=");#NormalTok(" ");#VariableTok("True");],
 [],
-[#FunctionTok("class");#NormalTok("(hours)");],));
+[#BuiltInTok("print");#NormalTok("(");#BuiltInTok("type");#NormalTok("(hours))");],
+[#BuiltInTok("print");#NormalTok("(");#BuiltInTok("type");#NormalTok("(faculty))");],
+[#BuiltInTok("print");#NormalTok("(");#BuiltInTok("type");#NormalTok("(invited))");],));
 #block[
-#Skylighting(([#NormalTok("[1] \"numeric\"");],));
-]
-#Skylighting(([#FunctionTok("class");#NormalTok("(faculty)");],));
-#block[
-#Skylighting(([#NormalTok("[1] \"character\"");],));
-]
-#Skylighting(([#FunctionTok("class");#NormalTok("(invited)");],));
-#block[
-#Skylighting(([#NormalTok("[1] \"logical\"");],));
+#Skylighting(([#NormalTok("<class 'float'>");],
+[#NormalTok("<class 'str'>");],
+[#NormalTok("<class 'bool'>");],));
 ]
 ]
-Text must be inside quotes. Without them, R thinks you mean an object with that name:
+Text must always be enclosed in quotes (single #NormalTok("'...'"); or double #NormalTok("\"...\"");). If you omit the quotes, Python assumes you are referring to a variable name:
 
 #block[
-#Skylighting(([#NormalTok("faculty ");#OtherTok("<-");#NormalTok(" Education");],));
+#Skylighting(([#NormalTok("faculty ");#OperatorTok("=");#NormalTok(" Education");],));
 #block[
-#Skylighting(([#NormalTok("Error: object 'Education' not found");],));
+#Skylighting(([#NormalTok("NameError: name 'Education' is not defined");],
+[#NormalTok("[31m---------------------------------------------------------------------------[39m");],
+[#NormalTok("[31mNameError[39m                                 Traceback (most recent call last)");],
+[#NormalTok("[36mCell[39m[36m [39m[32mIn[12][39m[32m, line 1[39m");],
+[#NormalTok("[32m----> [39m[32m1[39m faculty = [43mEducation[49m");],
+[],
+[#NormalTok("[31mNameError[39m: name 'Education' is not defined");],));
 ]
 ]
-This is one of the most common errors for beginners. The message says exactly what went wrong: R looked for an object called #NormalTok("Education"); and did not find one.
+This error---#NormalTok("NameError: name 'Education' is not defined");---is one of the most frequent beginner mistakes. The error message is helpful and specific: Python searched your computer's memory for a variable named #NormalTok("Education"); and found none.
 
 === Missing values
 <missing-values>
-Real data always has gaps. A student skips a question, or a value is lost. R marks a missing value with #NormalTok("NA");, short for #emph[not available]. It is neither zero nor empty text; it means "we do not know":
+Real empirical data almost always contains missing answers. A participant might decline to answer their income, or an instrument might briefly lose power.
+
+In pure Python, the absence of a value is represented by the special object #NormalTok("None");. When working with tabular data and numerical calculations in #strong[pandas] and scientific libraries, missing numerical values are represented as #NormalTok("NaN"); (short for #emph[Not a Number], floating-point missing value).
+
+In Python and pandas, mathematical calculations on missing values are handled safely:
+
+#Skylighting(([#ImportTok("import");#NormalTok(" numpy ");#ImportTok("as");#NormalTok(" np");],
+[],
+[#NormalTok("sleep_with_gap ");#OperatorTok("=");#NormalTok(" [");#FloatTok("6.5");#NormalTok(", np.nan, ");#FloatTok("5.5");#NormalTok("]");],
+[#NormalTok("sleep_with_gap");],));
+#Skylighting(([#NormalTok("[6.5, nan, 5.5]");],));
+In pandas, functions like #NormalTok(".mean()"); and #NormalTok(".sum()"); are designed specifically for research data and automatically handle missing values cleanly, as you will see shortly.
+
+== Functions and methods
+<functions-and-methods>
+You have already used several built-in #strong[functions]: #NormalTok("sum()");, #NormalTok("len()");, #NormalTok("type()");, and #NormalTok("print()");. A function takes one or more inputs, performs a procedure, and returns a result. You call a function by writing its name followed by parentheses #NormalTok("()");, enclosing the inputs inside:
 
 #block[
-#Skylighting(([#NormalTok("sleep_with_gap ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FloatTok("6.5");#NormalTok(", ");#ConstantTok("NA");#NormalTok(", ");#FloatTok("5.5");#NormalTok(")");],
-[#FunctionTok("mean");#NormalTok("(sleep_with_gap)");],));
+#Skylighting(([#BuiltInTok("print");#NormalTok("(");#BuiltInTok("sum");#NormalTok("(sleep))");],
+[#BuiltInTok("print");#NormalTok("(");#BuiltInTok("max");#NormalTok("(sleep))");],
+[#BuiltInTok("print");#NormalTok("(");#BuiltInTok("len");#NormalTok("(sleep))");],));
 #block[
-#Skylighting(([#NormalTok("[1] NA");],));
+#Skylighting(([#NormalTok("19.0");],
+[#NormalTok("7.0");],
+[#NormalTok("3");],));
 ]
 ]
-If one value is unknown, the average is unknown too, so R returns #NormalTok("NA"); rather than guessing. You will see shortly how to tell R to leave missing values out.
+Inputs passed to a function are called #strong[arguments]. If a function accepts multiple arguments, they are separated by commas. For example, #NormalTok("round()"); takes the number you want to round, and the number of decimal digits:
 
-== Functions
-<functions>
-You have already used several #strong[functions]: #NormalTok("c()");, #NormalTok("sum()");, #NormalTok("mean()");, and #NormalTok("class()");. A function takes some input, does something with it, and returns a result. You call a function by writing its name followed by brackets, with the input inside:
+#Skylighting(([#BuiltInTok("round");#NormalTok("(");#FloatTok("6.333333");#NormalTok(", ");#DecValTok("1");#NormalTok(")");],));
+#Skylighting(([#NormalTok("6.3");],));
+You can also pass arguments by their name (called keyword arguments):
 
-#block[
-#Skylighting(([#FunctionTok("mean");#NormalTok("(sleep)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6.333333");],));
-]
-#Skylighting(([#FunctionTok("max");#NormalTok("(sleep)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 7");],));
-]
-#Skylighting(([#FunctionTok("length");#NormalTok("(sleep)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 3");],));
-]
-]
-Many functions accept more than one input. The inputs are called #strong[arguments], and they are separated by commas. The function #NormalTok("round()");, for example, takes a number and the number of decimal places to keep:
+#Skylighting(([#BuiltInTok("round");#NormalTok("(");#FloatTok("6.333333");#NormalTok(", ndigits");#OperatorTok("=");#DecValTok("2");#NormalTok(")");],));
+#Skylighting(([#NormalTok("6.33");],));
+In Python, objects also have #strong[methods]. A method is a function that belongs directly to an object, called with a dot #NormalTok(".");. For example, strings have methods to change their casing:
 
 #block[
-#Skylighting(([#FunctionTok("round");#NormalTok("(");#FloatTok("6.333333");#NormalTok(", ");#AttributeTok("digits =");#NormalTok(" ");#DecValTok("1");#NormalTok(")");],));
+#Skylighting(([#NormalTok("faculty ");#OperatorTok("=");#NormalTok(" ");#StringTok("\"Education\"");],
+[#BuiltInTok("print");#NormalTok("(faculty.lower())");],
+[#BuiltInTok("print");#NormalTok("(faculty.upper())");],));
 #block[
-#Skylighting(([#NormalTok("[1] 6.3");],));
-]
-]
-Arguments have names. You can leave the names out if you give the arguments in the expected order, so #NormalTok("round(6.333333, 1)"); gives the same result, but writing the names makes your code easier to read.
-
-The missing value from before can now be handled. The function #NormalTok("mean()"); has an argument called #NormalTok("na.rm");, short for "NA remove". Set it to #NormalTok("TRUE");, and R calculates the average of the values it does know:
-
-#block[
-#Skylighting(([#FunctionTok("mean");#NormalTok("(sleep_with_gap, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6");],));
-]
-]
-You can also put one function inside another. R works from the inside out:
-
-#block[
-#Skylighting(([#FunctionTok("round");#NormalTok("(");#FunctionTok("mean");#NormalTok("(sleep), ");#AttributeTok("digits =");#NormalTok(" ");#DecValTok("1");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6.3");],));
+#Skylighting(([#NormalTok("education");],
+[#NormalTok("EDUCATION");],));
 ]
 ]
 === Getting help
 <getting-help>
-Every function has a help page. Type a question mark before its name in the Console:
+Every Python function and library includes built-in documentation. In an interactive console or notebook, you can read the help docstring for any function by calling #NormalTok("help()");:
 
-#Skylighting(([#NormalTok("?mean");],));
-The page opens in the Help pane. Help pages are written for experienced users, so they can look dense at first. Start with three parts: #strong[Usage] (how to call the function), #strong[Arguments] (what each input means), and #strong[Examples] at the bottom, which you can copy and run.
+#Skylighting(([#BuiltInTok("help");#NormalTok("(");#BuiltInTok("round");#NormalTok(")");],));
+In Jupyter or VS Code Interactive, you can also place a question mark #NormalTok("?"); after any function name (e.g., #NormalTok("round?");) to pop open its documentation pane, including its expected parameters and usage examples.
 
-When a search engine or an AI assistant suggests code, treat it like advice from a knowledgeable stranger: often right, sometimes wrong, and always worth checking. Chapter 18 shows how to use AI tools well.
+== Writing scripts
+<writing-scripts>
+Commands typed in an interactive prompt are temporary. For real research work that needs to be defended, documented, and published, you write your code in a #strong[script]: a plain text file ending in #NormalTok(".py");.
 
-== Scripts
-<scripts>
-Code typed in the Console is gone once you close RStudio. For real work, write your code in a #strong[script]: a plain text file, ending in #NormalTok(".R");, that holds your instructions in order. A new script is created with #strong[File \> New File \> R Script], and it opens in the Source pane. You type one instruction per line, and run the current line, or the lines you have selected, with #strong[Ctrl+Enter] (#strong[Cmd+Enter] on a Mac): the code is sent to the Console, and the result appears there. #strong[Ctrl+S] (#strong[Cmd+S]) saves the script.
-
-Lines that start with #NormalTok("#"); are #strong[comments]. R ignores them; they are notes for people. Use them to explain #emph[why] you did something:
++ In your editor, create a new file named #NormalTok("analysis.py");.
++ Type your code, with one instruction per line.
++ Add #strong[comments] using the hash symbol #NormalTok("#");. Python completely ignores everything after #NormalTok("#"); on that line; comments are written for human readers (your future self, your supervisor, and your peer reviewers) to explain #emph[why] a particular decision was made:
 
 #block[
-#Skylighting(([#CommentTok("# Sleep last week, in hours per night");],
-[#NormalTok("sleep ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FloatTok("6.5");#NormalTok(", ");#DecValTok("7");#NormalTok(", ");#FloatTok("5.5");#NormalTok(")");],
+#Skylighting(([#CommentTok("# Sleep recorded across three nights (hours per night)");],
+[#NormalTok("sleep_hours ");#OperatorTok("=");#NormalTok(" [");#FloatTok("6.5");#NormalTok(", ");#FloatTok("7.0");#NormalTok(", ");#FloatTok("5.5");#NormalTok("]");],
 [],
-[#CommentTok("# Average, rounded for reporting");],
-[#FunctionTok("round");#NormalTok("(");#FunctionTok("mean");#NormalTok("(sleep), ");#AttributeTok("digits =");#NormalTok(" ");#DecValTok("1");#NormalTok(")");],));
+[#CommentTok("# Calculate the mean sleep duration");],
+[#NormalTok("average_sleep ");#OperatorTok("=");#NormalTok(" ");#BuiltInTok("sum");#NormalTok("(sleep_hours) ");#OperatorTok("/");#NormalTok(" ");#BuiltInTok("len");#NormalTok("(sleep_hours)");],
+[],
+[#CommentTok("# Display result rounded to one decimal place for thesis table");],
+[#BuiltInTok("print");#NormalTok("(");#SpecialStringTok("f\"Average sleep: ");#SpecialCharTok("{");#BuiltInTok("round");#NormalTok("(average_sleep, ");#DecValTok("1");#NormalTok(")");#SpecialCharTok("}");#SpecialStringTok(" hours\"");#NormalTok(")");],));
 #block[
-#Skylighting(([#NormalTok("[1] 6.3");],));
+#Skylighting(([#NormalTok("Average sleep: 6.3 hours");],));
 ]
 ]
-A script is the analysis written down. Months later, when a supervisor asks how a number was obtained, the script is the answer.
-
-== RStudio Projects
-<rstudio-projects>
-Research involves many files: data, scripts, graphs, and drafts. An #strong[RStudio Project] keeps everything for one piece of work together in one folder, and makes sure R looks for files in that folder.
-
-Create one with #strong[File \> New Project \> New Directory \> New Project], give it a name (for example, #NormalTok("wellbeing-thesis");), and choose where to put it. RStudio creates the folder, with a file ending in #NormalTok(".Rproj"); inside. From then on, double-click that file to open the project, and RStudio starts in the right place with the right files.
-
-The folder R looks in for files is called the #strong[working directory]. In a project, it is the project folder, so a file stored there can be opened by its name alone:
-
-#Skylighting(([#NormalTok("students ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("read.csv");#NormalTok("(");#StringTok("\"students.csv\"");#NormalTok(")");],));
-As a project grows, it needs subfolders, such as #NormalTok("data/"); for data and #NormalTok("figures/"); for graphs. The #strong[here] package builds file paths that start from the project folder, so the same code works on any computer:
-
-#Skylighting(([#FunctionTok("library");#NormalTok("(here)");],
-[#NormalTok("students ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("read.csv");#NormalTok("(");#FunctionTok("here");#NormalTok("(");#StringTok("\"data\"");#NormalTok(", ");#StringTok("\"students.csv\"");#NormalTok("))");],));
 #block[
-#callout(
-body: 
-[
-Older tutorials start scripts with #NormalTok("setwd(\"C:/Users/Elaf/Documents/thesis\")");. That line works only on the computer where it was written. Use a project, and your code works for your supervisor too.
-
+#set enum(numbering: "1.", start: 4)
++ To run the script, press #strong[Ctrl+Enter] (or #strong[Cmd+Enter] on macOS) to run the selected lines in the interactive window, or run the entire script in the terminal with #NormalTok("python analysis.py");.
 ]
-, 
-title: 
-[
-Avoid #NormalTok("setwd()");
-]
-, 
-background_color: 
-rgb("#fcefdc")
-, 
-icon_color: 
-rgb("#EB9113")
-, 
-icon: 
-fa-exclamation-triangle()
-, 
-body_background_color: 
-white
-)
-]
-== Packages
-<packages>
-R comes with a lot built in, but much of its power comes from #strong[packages]. Using a package takes two steps. It is installed once on your computer with #NormalTok("install.packages()");, which downloads it from CRAN, R's official collection of packages:
 
-#Skylighting(([#FunctionTok("install.packages");#NormalTok("(");#StringTok("\"here\"");#NormalTok(")");],));
-It is then loaded, with #NormalTok("library()");, in every session in which you want to use it:
+== Managing research projects
+<managing-research-projects>
+A thesis involves dozens of files: survey exports, cleaned datasets, analysis scripts, generated plots, and chapter drafts.
 
-#Skylighting(([#FunctionTok("library");#NormalTok("(here)");],));
-A useful comparison is a library book: installing a package is like buying a book and putting it on your shelf, and loading it is taking it off the shelf to read. You buy it once, but you take it down every time you need it.
+The gold standard for scientific computing is to create a dedicated #strong[project directory] on your computer (for example, #NormalTok("graduate-wellbeing-thesis/");). Keep all code and data self-contained within this folder:
 
-The data for this book comes as a package too, called #strong[data2thesis]. It is not on CRAN, so you install it from this book's website:
+#Skylighting(([#NormalTok("graduate-wellbeing-thesis/");],
+[#NormalTok("├── data/              <- Raw survey data (read-only)");],
+[#NormalTok("├── scripts/           <- Your Python analysis scripts (.py)");],
+[#NormalTok("├── figures/           <- Exported charts and graphs");],
+[#NormalTok("└── thesis_chapter.qmd <- Your written manuscript");],));
+By organizing your work with relative paths (e.g.~#NormalTok("data/students.csv");), your analysis is fully portable: if you zip the folder and email it to your supervisor, or push it to GitHub, the code runs on their computer without any file path errors.
 
-#Skylighting(([#FunctionTok("install.packages");#NormalTok("(");#StringTok("\"https://polla-fattah.github.io/data2thesis_r/downloads/data2thesis_1.1.0.tar.gz\"");#NormalTok(",");],
-[#NormalTok("                 ");#AttributeTok("repos =");#NormalTok(" ");#ConstantTok("NULL");#NormalTok(", ");#AttributeTok("type =");#NormalTok(" ");#StringTok("\"source\"");#NormalTok(")");],));
-== A first look at the data
-<a-first-look-at-the-data>
-With R, RStudio, and the package installed, the data can be loaded:
+== Installing and importing packages
+<installing-and-importing-packages>
+Python includes a rich standard library, but its true power comes from third-party #strong[packages] (also called libraries). Using a package is a two-step process:
+
++ #strong[Install the package once] onto your computer using Python's package manager, #NormalTok("pip");, in your system terminal:
+
+  #Skylighting(([#ExtensionTok("pip");#NormalTok(" install pandas seaborn data2thesis");],));
+
++ #strong[Import the package] in each script where you wish to use it:
+
+  #Skylighting(([#ImportTok("import");#NormalTok(" pandas ");#ImportTok("as");#NormalTok(" pd");],
+  [#ImportTok("import");#NormalTok(" data2thesis ");#ImportTok("as");#NormalTok(" dt");],));
+
+A helpful analogy is a workshop: running #NormalTok("pip install"); purchases a specialized power tool and places it in your workshop cabinet. You only need to buy it once. Writing #NormalTok("import"); takes the tool off the shelf and places it on your workbench for today's session.
+
+== A first look at Elaf's data
+<a-first-look-at-elafs-data>
+With Python and the companion package installed, we can load the Graduate Wellbeing Study:
 
 #block[
-#Skylighting(([#FunctionTok("library");#NormalTok("(data2thesis)");],));
+#Skylighting(([#ImportTok("import");#NormalTok(" data2thesis ");#ImportTok("as");#NormalTok(" dt");],
+[],
+[#NormalTok("students ");#OperatorTok("=");#NormalTok(" dt.load_students()");],));
 ]
 #block[
 #callout(
 body: 
 [
-Elaf, her study, and her data are fictional. The data was generated by a computer program to look like a realistic survey of graduate students, so that every method in this book has something to find. It describes no real people, and its patterns (for example, that the workshop raised wellbeing, or that students who sleep more have higher grades) were built into the program by the author, not discovered. Nothing in this book is evidence about the wellbeing of real students, and the data and results must not be cited or used as findings about students, universities, or any real situation. The same applies to the counselling service's records and to the students' written answers.
+Elaf, her study, and her data are simulated for teaching. The data was generated by a computer algorithm to look like an authentic survey of graduate students, ensuring every statistical and machine learning method in this book has realistic patterns to discover. It describes no real individuals, and its patterns (for example, that students who sleep more tend to achieve higher GPAs, or that the wellbeing workshop reduced stress) were built in by the author. Nothing in this book should be cited as empirical evidence about the wellbeing of real graduate students.
 
 ]
 , 
@@ -1123,139 +1094,126 @@ body_background_color:
 white
 )
 ]
-The package contains several #strong[data frames]: tables with one row per case and one column per variable, like a spreadsheet. The main one is #NormalTok("students");, with one row per student. Two functions give its size:
+The #NormalTok("students"); object is a #strong[pandas DataFrame]: a two-dimensional table of rows and columns, similar to an Excel sheet or SPSS dataset, but optimized for fast computation.
 
-#block[
-#Skylighting(([#FunctionTok("nrow");#NormalTok("(students)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 600");],));
-]
-#Skylighting(([#FunctionTok("ncol");#NormalTok("(students)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 14");],));
-]
-]
-There are 600 students and 14 variables. The function #NormalTok("head()"); shows the first six rows:
+To see the dimensions of the table, check its #NormalTok(".shape"); attribute:
 
-#block[
-#Skylighting(([#FunctionTok("head");#NormalTok("(students)");],));
-#block[
-#Skylighting(([#NormalTok("  student_id supervisor_id age gender         faculty programme study_mode");],
-[#NormalTok("1      S0001        SUP088  31 Female Health Sciences  Master's  Full-time");],
-[#NormalTok("2      S0002        SUP116  28 Female       Education       PhD  Full-time");],
-[#NormalTok("3      S0003        SUP040  33   Male       Education       PhD  Full-time");],
-[#NormalTok("4      S0004        SUP112  34 Female Health Sciences  Master's  Part-time");],
-[#NormalTok("5      S0005        SUP118  35 Female Social Sciences  Master's  Part-time");],
-[#NormalTok("6      S0006        SUP028  36   Male      Humanities       PhD  Full-time");],
-[#NormalTok("     employment has_children lives_away financial_worry    workshop");],
-[#NormalTok("1          None           No        Yes               2 Not invited");],
-[#NormalTok("2 Part-time job           No        Yes               2     Invited");],
-[#NormalTok("3          None           No         No               4     Invited");],
-[#NormalTok("4 Full-time job           No         No               2     Invited");],
-[#NormalTok("5          None           No         No               2     Invited");],
-[#NormalTok("6 Part-time job           No        Yes               5 Not invited");],
-[#NormalTok("  workshop_sessions considering_dropout");],
-[#NormalTok("1                 0                  No");],
-[#NormalTok("2                 0                  No");],
-[#NormalTok("3                 5                  No");],
-[#NormalTok("4                 6                  No");],
-[#NormalTok("5                 2                  No");],
-[#NormalTok("6                 0                  No");],));
-]
-]
-The names of the variables are listed by #NormalTok("names()");, and the help page, #NormalTok("?students");, describes each one.
+#Skylighting(([#NormalTok("students.shape");],));
+#Skylighting(([#NormalTok("(600, 14)");],));
+The output #NormalTok("(600, 14)"); tells us immediately that Elaf's study contains #strong[600 students] (rows) and #strong[14 variables] (columns).
 
-#block[
-#Skylighting(([#FunctionTok("names");#NormalTok("(students)");],));
-#block[
-#Skylighting(([#NormalTok(" [1] \"student_id\"          \"supervisor_id\"       \"age\"                ");],
-[#NormalTok(" [4] \"gender\"              \"faculty\"             \"programme\"          ");],
-[#NormalTok(" [7] \"study_mode\"          \"employment\"          \"has_children\"       ");],
-[#NormalTok("[10] \"lives_away\"          \"financial_worry\"     \"workshop\"           ");],
-[#NormalTok("[13] \"workshop_sessions\"   \"considering_dropout\"");],));
-]
-]
-To pick out one variable, write the data frame's name, a dollar sign, and the variable's name: #NormalTok("students$age"); is the age of every student. A natural first question concerns the age of the students in the study:
+To inspect the first five rows of the dataset, call the #NormalTok(".head()"); method:
 
-#block[
-#Skylighting(([#FunctionTok("mean");#NormalTok("(students");#SpecialCharTok("$");#NormalTok("age)");],));
-#block[
-#Skylighting(([#NormalTok("[1] NA");],));
-]
-]
-The answer is #NormalTok("NA");. One student's age is missing, and R will not guess, but the solution is already familiar:
+#Skylighting(([#NormalTok("students.head()");],));
+#table(
+  columns: 15,
+  align: (auto,auto,auto,auto,auto,auto,auto,auto,auto,auto,auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student\_id], table.cell(align: right)[supervisor\_id], table.cell(align: right)[age], table.cell(align: right)[gender], table.cell(align: right)[faculty], table.cell(align: right)[programme], table.cell(align: right)[study\_mode], table.cell(align: right)[employment], table.cell(align: right)[has\_children], table.cell(align: right)[lives\_away], table.cell(align: right)[financial\_worry], table.cell(align: right)[workshop], table.cell(align: right)[workshop\_sessions], table.cell(align: right)[considering\_dropout],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S0001], [SUP088], [31.0], [Female], [Health Sciences], [Master\'s], [Full-time], [NaN], [No], [Yes], [2.0], [Not invited], [0], [No],
+  table.cell(align: horizon)[1], [S0002], [SUP116], [28.0], [Female], [Education], [PhD], [Full-time], [Part-time job], [No], [Yes], [2.0], [Invited], [0], [No],
+  table.cell(align: horizon)[2], [S0003], [SUP040], [33.0], [Male], [Education], [PhD], [Full-time], [NaN], [No], [No], [4.0], [Invited], [5], [No],
+  table.cell(align: horizon)[3], [S0004], [SUP112], [34.0], [Female], [Health Sciences], [Master\'s], [Part-time], [Full-time job], [No], [No], [2.0], [Invited], [6], [No],
+  table.cell(align: horizon)[4], [S0005], [SUP118], [35.0], [Female], [Social Sciences], [Master\'s], [Part-time], [NaN], [No], [No], [2.0], [Invited], [2], [No],
+)
+To see the names of all 14 variables:
 
-#block[
-#Skylighting(([#FunctionTok("mean");#NormalTok("(students");#SpecialCharTok("$");#NormalTok("age, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("[1] 29.72454");],));
-]
-]
-The students are 29.7 years old on average. The number of missing values can be counted too: #NormalTok("is.na()"); marks each missing value as #NormalTok("TRUE");, and #NormalTok("sum()"); counts them, because R counts every #NormalTok("TRUE"); as 1:
+#Skylighting(([#BuiltInTok("list");#NormalTok("(students.columns)");],));
+#Skylighting(([#NormalTok("['student_id',");],
+[#NormalTok(" 'supervisor_id',");],
+[#NormalTok(" 'age',");],
+[#NormalTok(" 'gender',");],
+[#NormalTok(" 'faculty',");],
+[#NormalTok(" 'programme',");],
+[#NormalTok(" 'study_mode',");],
+[#NormalTok(" 'employment',");],
+[#NormalTok(" 'has_children',");],
+[#NormalTok(" 'lives_away',");],
+[#NormalTok(" 'financial_worry',");],
+[#NormalTok(" 'workshop',");],
+[#NormalTok(" 'workshop_sessions',");],
+[#NormalTok(" 'considering_dropout']");],));
+Each column is described in the study codebook (#NormalTok("dt.load_students?");).
 
-#block[
-#Skylighting(([#FunctionTok("sum");#NormalTok("(");#FunctionTok("is.na");#NormalTok("(students");#SpecialCharTok("$");#NormalTok("age))");],));
-#block[
-#Skylighting(([#NormalTok("[1] 1");],));
-]
-]
-Only 1 age is missing. It is worth knowing: Chapter 3 shows why it is missing, and what to do about it.
+To select a single variable from the DataFrame, write the DataFrame name followed by the column name in brackets and quotes: #NormalTok("students['age']");.
 
-Finally, #NormalTok("table()"); counts how many times each value appears. It shows how many students come from each faculty, and how many were invited to the wellbeing workshop:
+A natural first question in Elaf's thesis: #emph[What is the average age of graduate students entering the study?]
 
-#block[
-#Skylighting(([#FunctionTok("table");#NormalTok("(students");#SpecialCharTok("$");#NormalTok("faculty)");],));
-#block[
-#Skylighting(([],
-[#NormalTok("       Education  Health Sciences       Humanities Natural Sciences ");],
-[#NormalTok("             148              154               95               87 ");],
-[#NormalTok(" Social Sciences ");],
-[#NormalTok("             116 ");],));
-]
-#Skylighting(([#FunctionTok("table");#NormalTok("(students");#SpecialCharTok("$");#NormalTok("workshop)");],));
-#block[
-#Skylighting(([],
-[#NormalTok("    Invited Not invited ");],
-[#NormalTok("        300         300 ");],));
-]
-]
-Exactly 300 students, half of the study, were invited. That is not a coincidence: they were chosen at random, and Chapter 5 explains why random assignment matters so much for the conclusions a study can draw.
+In pandas, we call the #NormalTok(".mean()"); method directly on the column:
+
+#Skylighting(([#NormalTok("students[");#StringTok("'age'");#NormalTok("].mean()");],));
+#Skylighting(([#NormalTok("np.float64(29.724540901502504)");],));
+Notice something important: in R, the default #NormalTok("mean()"); function returns #NormalTok("NA"); if even a single value is missing, forcing you to specify #NormalTok("na.rm = TRUE");. In pandas, #NormalTok(".mean()"); is designed from the ground up for real-world empirical research: it calculates the average across all known observations while safely ignoring missing values by default (#NormalTok("skipna=True");).
+
+The average age of the students in the study is #strong[29.7 years].
+
+We can also check whether any student had a missing age using #NormalTok(".isna().sum()");:
+
+#Skylighting(([#NormalTok("students[");#StringTok("'age'");#NormalTok("].isna().");#BuiltInTok("sum");#NormalTok("()");],));
+#Skylighting(([#NormalTok("np.int64(1)");],));
+Only 1 student's age was missing from the initial intake survey. Chapter 3 shows how to identify why it was missing and how to clean it.
+
+Next, we can generate frequency tables for categorical variables using the #NormalTok(".value_counts()"); method. For example, how many students participated from each academic faculty?
+
+#Skylighting(([#NormalTok("students[");#StringTok("'faculty'");#NormalTok("].value_counts()");],));
+#Skylighting(([#NormalTok("faculty");],
+[#NormalTok("Health Sciences     154");],
+[#NormalTok("Education           148");],
+[#NormalTok("Social Sciences     116");],
+[#NormalTok("Humanities           95");],
+[#NormalTok("Natural Sciences     87");],
+[#NormalTok("Name: count, dtype: int64");],));
+And how many were invited to the wellbeing workshop?
+
+#Skylighting(([#NormalTok("students[");#StringTok("'workshop'");#NormalTok("].value_counts()");],));
+#Skylighting(([#NormalTok("workshop");],
+[#NormalTok("Not invited    300");],
+[#NormalTok("Invited        300");],
+[#NormalTok("Name: count, dtype: int64");],));
+Exactly 300 students---precisely 50% of the sample---were invited to the workshop. That is not an accident: the workshop invitations were assigned using random allocation. Chapter 5 explores why random assignment is the cornerstone of causal inference in empirical research.
 
 #block[
 #callout(
 body: 
 [
-R comes with dozens of real datasets for practice. #NormalTok("PlantGrowth"); records the dried weight of plants grown under a control condition and two different treatments, from a classic experiment comparing crop yields. The same functions work on it:
+Python's visualization library, #strong[seaborn], comes with real-world practice datasets from different fields. For instance, the #NormalTok("penguins"); dataset records morphological measurements of wild penguin colonies in Antarctica:
+
+#Skylighting(([#ImportTok("import");#NormalTok(" seaborn ");#ImportTok("as");#NormalTok(" sns");],
+[],
+[#NormalTok("penguins ");#OperatorTok("=");#NormalTok(" sns.load_dataset(");#StringTok("\"penguins\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(penguins.shape)");],
+[#NormalTok("penguins.head(");#DecValTok("3");#NormalTok(")");],));
+#block[
+#Skylighting(([#NormalTok("(344, 7)");],));
+]
+#table(
+  columns: 8,
+  align: (auto,auto,auto,auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[species], table.cell(align: right)[island], table.cell(align: right)[bill\_length\_mm], table.cell(align: right)[bill\_depth\_mm], table.cell(align: right)[flipper\_length\_mm], table.cell(align: right)[body\_mass\_g], table.cell(align: right)[sex],),
+  table.hline(),
+  table.cell(align: horizon)[0], [Adelie], [Torgersen], [39.1], [18.7], [181.0], [3750.0], [Male],
+  table.cell(align: horizon)[1], [Adelie], [Torgersen], [39.5], [17.4], [186.0], [3800.0], [Female],
+  table.cell(align: horizon)[2], [Adelie], [Torgersen], [40.3], [18.0], [195.0], [3250.0], [Female],
+)
+We can inspect species frequencies and calculate the average body mass across the colony using the exact same pandas methods:
 
 #block[
-#Skylighting(([#FunctionTok("head");#NormalTok("(PlantGrowth)");],));
+#Skylighting(([#BuiltInTok("print");#NormalTok("(penguins[");#StringTok("'species'");#NormalTok("].value_counts())");],
+[#BuiltInTok("print");#NormalTok("(");#SpecialStringTok("f\"Average body mass: ");#SpecialCharTok("{");#NormalTok("penguins[");#StringTok("'body_mass_g'");#NormalTok("]");#SpecialCharTok(".");#NormalTok("mean()");#SpecialCharTok(":.1f}");#SpecialStringTok(" grams\"");#NormalTok(")");],));
 #block[
-#Skylighting(([#NormalTok("  weight group");],
-[#NormalTok("1   4.17  ctrl");],
-[#NormalTok("2   5.58  ctrl");],
-[#NormalTok("3   5.18  ctrl");],
-[#NormalTok("4   6.11  ctrl");],
-[#NormalTok("5   4.50  ctrl");],
-[#NormalTok("6   4.61  ctrl");],));
-]
-#Skylighting(([#FunctionTok("table");#NormalTok("(PlantGrowth");#SpecialCharTok("$");#NormalTok("group)");],));
-#block[
-#Skylighting(([],
-[#NormalTok("ctrl trt1 trt2 ");],
-[#NormalTok("  10   10   10 ");],));
-]
-#Skylighting(([#FunctionTok("mean");#NormalTok("(PlantGrowth");#SpecialCharTok("$");#NormalTok("weight)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 5.073");],));
+#Skylighting(([#NormalTok("species");],
+[#NormalTok("Adelie       152");],
+[#NormalTok("Gentoo       124");],
+[#NormalTok("Chinstrap     68");],
+[#NormalTok("Name: count, dtype: int64");],
+[#NormalTok("Average body mass: 4201.8 grams");],));
 ]
 ]
-Type #NormalTok("data()"); in the Console to see the full list of built-in datasets, and #NormalTok("?PlantGrowth"); to read about this one.
-
 ]
 , 
 title: 
 [
-In your field: agriculture
+In your field: open scientific datasets in Python
 ]
 , 
 background_color: 
@@ -1275,50 +1233,53 @@ white
 <chapter-review>
 === Summary
 <summary>
-- Every analysis is a chain of decisions. Writing it as code records each one, so the analysis can be checked and repeated: it becomes reproducible.
-- R is a free language made for working with data. You write it in RStudio: the Source pane holds your scripts, the Console runs the code, the Environment pane lists your objects, and the fourth pane shows files, plots, packages, and help.
-- #NormalTok("<-"); stores a value in an object. #NormalTok("c()"); combines several values.
-- Every value has a type. The most common are numeric, character (in quotes), and logical (#NormalTok("TRUE"); or #NormalTok("FALSE");). #NormalTok("NA"); marks a missing value.
-- Functions take arguments inside brackets. #NormalTok("?"); opens a function's help page.
-- Write your code in scripts, keep each piece of work in an RStudio Project, install packages once with #NormalTok("install.packages()");, and load them each session with #NormalTok("library()");.
+- #strong[Reproducibility:] Writing data analysis as a script creates a transparent, step-by-step record of every research choice. Anyone can inspect, verify, and reproduce your results.
+- #strong[Tools:] Python is the computing language; an editor like VS Code or Positron provides the interface. Scripts (#NormalTok(".py");) contain instructions, and the interactive terminal displays output.
+- #strong[Variables & Calculations:] Values are stored in variables using #NormalTok("=");. Lists #NormalTok("[...]"); hold multiple values. Standard math symbols follow PEMDAS, with #NormalTok("**"); used for exponents.
+- #strong[Data Types:] Fundamental types include #NormalTok("int"); (integers), #NormalTok("float"); (decimals), #NormalTok("str"); (text strings in quotes), and #NormalTok("bool"); (#NormalTok("True"); or #NormalTok("False");). Check types using #NormalTok("type()");.
+- #strong[Functions & Methods:] Functions are called as #NormalTok("function(argument)");. Object methods are called with a dot: #NormalTok("object.method()");.
+- #strong[Packages:] Installed once from your terminal via #NormalTok("pip install <package>");, and loaded into each script session using #NormalTok("import <package>");.
+- #strong[Tabular Data:] The companion package #NormalTok("data2thesis"); provides pandas DataFrames. Inspect table size with #NormalTok(".shape");, view preview rows with #NormalTok(".head()");, compute summary statistics with #NormalTok(".mean()");, count missing values with #NormalTok(".isna().sum()");, and count categories with #NormalTok(".value_counts()");.
 
 === Key terms
 <key-terms>
-R, RStudio, Console, script, comment, object, assignment, vector, data type, missing value (#NormalTok("NA");), function, argument, package, data frame, working directory, RStudio Project, reproducible research.
+Python, VS Code, script (#NormalTok(".py");), comment (#NormalTok("#");), variable, assignment (#NormalTok("=");), list, data type (#NormalTok("int");, #NormalTok("float");, #NormalTok("str");, #NormalTok("bool");), missing value (#NormalTok("None");, #NormalTok("NaN");), function, argument, method, package, #NormalTok("pip");, #NormalTok("import");, pandas DataFrame, #NormalTok(".shape");, #NormalTok(".head()");, #NormalTok(".isna()");, #NormalTok(".value_counts()");, reproducible research.
 
 == Exercises
 <exercises>
-These short exercises check your understanding. The #link("../playground/chapter01.html")[playground] has more, with hints and solutions, which you can run in your browser or download as an RStudio project.
+Work through these short exercises to test your understanding. The #link("../playground/chapter01.html")[Chapter 1 Playground] provides interactive browser versions of these exercises with hints and complete solutions.
 
-+ A supervisor sleeps 8, 7.5, 6, and 7 hours on four nights. Store the numbers in an object called #NormalTok("supervisor_sleep"); and find the average, rounded to one decimal place.
-+ Check the types of #NormalTok("\"600\""); and #NormalTok("600"); with #NormalTok("class()");, and explain the difference.
-+ Explain in your own words why #NormalTok("mean(c(4, NA, 6))"); returns #NormalTok("NA");, and show how to get the average of the two known values.
-+ Using #NormalTok("students");, find the youngest and the oldest student. (Hint: #NormalTok("min()"); and #NormalTok("max()"); also have an #NormalTok("na.rm"); argument.)
-+ Using #NormalTok("table()");, find out how many students are studying part-time (the variable is #NormalTok("study_mode");).
-+ Think of an analysis you have done, or read about, with a point-and-click program. List three decisions in it that a reader could not check without a written record.
++ A supervisor sleeps 8, 7.5, 6, and 7 hours on four consecutive nights. Store these four numbers in a list named #NormalTok("supervisor_sleep");, calculate the mean sleep duration, and round the result to one decimal place.
++ Check the data types of #NormalTok("\"600\""); and #NormalTok("600"); using Python's #NormalTok("type()"); function. Explain why adding #NormalTok("1"); to one succeeds while adding #NormalTok("1"); to the other raises a #NormalTok("TypeError");.
++ Explain the difference between Python's built-in #NormalTok("None"); and pandas/numpy's #NormalTok("NaN");. How does pandas #NormalTok(".mean()"); handle missing values by default?
++ Using #NormalTok("students = dt.load_students()");, find the age of the youngest student and the oldest student in the study using #NormalTok(".min()"); and #NormalTok(".max()");.
++ Using #NormalTok(".value_counts()");, find how many students are enrolled full-time versus part-time (the variable is #NormalTok("study_mode");).
++ Reflect on an analysis you have previously performed in Excel, SPSS, or another point-and-click tool. List three specific analytical decisions that a thesis examiner could not verify without an explicit code script.
 
 == Further reading
 <further-reading>
-- #emph[R for Data Science] @wickham2023, chapters "Workflow: basics", "Workflow: scripts and projects", and "Workflow: getting help", covers the same ground with a different dataset.
-- The #link("https://docs.posit.co/ide/user/")[RStudio User Guide] describes every part of RStudio.
+- McKinney, W. (2022). #emph[Python for Data Analysis] (3rd ed.). O'Reilly Media. (Written by the creator of pandas).
+- VanderPlas, J. (2016). #emph[Python Data Science Handbook]. O'Reilly Media.
+- The official #link("https://code.visualstudio.com/docs/python/python-tutorial")[VS Code Python Tutorial].
 
-= Data Structures in R
+= Data Structures in Python
 <sec-ch02>
-Data is the written result of measurement. Each value records one observation about one case: a student's age, the faculty she belongs to, how many hours she slept in a semester, her answer to a questionnaire item. Before any analysis, a researcher has to know what each value stands for, what kind of measurement produced it, and how the values are arranged. The same questions arise whether the data comes from a questionnaire, a laboratory instrument, or an administrative register, and they decide which summaries and tests make sense later.
+Data is the recorded outcome of scientific measurement. Each value captures one observation about one entity: a student's age, the faculty they belong to, the hours they slept during a semester, or their response to a Likert questionnaire item. Before conducting any statistical analysis, a researcher must clarify what each value signifies, what level of measurement generated it, and how the data is organized in computer memory. These foundations determine which summary statistics, visualizations, and inferential models are scientifically valid.
 
-Research data rarely arrives in one neat file. In the wellbeing study, the survey tool produced an Excel export, the university's records office sent the semester results as CSV files, and a colleague who helped with an earlier pilot study works in SPSS, so part of the data exists as an SPSS file too. Before any of these files can be opened, it helps to know how R holds data once it is inside. R has a small number of ways to hold data, called #strong[data structures]. This chapter introduces them as the tools for recording measurements: vectors for the values of one variable, factors for categories, and data frames for whole tables of cases. It then shows how to bring files of every common format into R, and how to keep track of what each variable means.
+Research data rarely arrives in a single pristine file. In Elaf's wellbeing study, the online survey software generated an Excel export (#NormalTok("wellbeing_raw.xlsx");), the university registrar exported semester records as CSV files (#NormalTok("semesters.csv");), and a collaborator from a previous pilot study stored historical records in SPSS (#NormalTok("wellbeing.sav");). Before analyzing these heterogeneous sources, we need to understand how Python organizes data in memory. Python provides specialized structures tailored for data science: #strong[lists] and #strong[NumPy arrays] for basic sequences, #strong[Pandas Series] for single measurement variables, #strong[Categorical Series] for discrete groups, and #strong[DataFrames] for rectangular tables of cases. This chapter introduces these structures, demonstrates how to import files from every common format, and shows how to generate an automated codebook linking every column to its underlying survey question.
 
 #block[
 #callout(
 body: 
 [
-- Describe data as a table of cases and variables, and identify the unit of analysis.
-- Create vectors and factors, and pick out and change their values.
-- Explain what a data frame is, and select rows and columns from one.
-- Recognise matrices and lists when you meet them.
-- Import data from CSV, Excel, and SPSS files, keeping SPSS labels, and export data again.
-- Build a codebook that links each variable to the question behind it.
-- Map familiar SPSS and Excel tasks to R, and read R's most common error messages.
+- Conceptualize data as a rectangular matrix of cases and variables, and identify the unit of analysis.
+- Create Pandas Series, perform vectorized arithmetic, and filter observations with boolean indexing.
+- Manage categorical and ordinal measurements using Pandas #NormalTok("Categorical"); types.
+- Construct, inspect, and slice two-dimensional DataFrames using #NormalTok(".loc"); and #NormalTok(".iloc");.
+- Understand dictionaries and 2D matrices when encountered in statistical output.
+- Import real-world data from CSV, Excel (#NormalTok(".xlsx");), and SPSS (#NormalTok(".sav");) files, preserving survey question labels.
+- Build an automated codebook that documents variable definitions and measurement scales.
+- Map familiar SPSS and Excel procedures to Python idioms, and debug common Python error tracebacks.
 
 ]
 , 
@@ -1368,183 +1329,172 @@ white
 ]
 == Data as measurement
 <data-as-measurement>
-Almost all research data can be arranged as a table in which each row is a #strong[case] and each column a #strong[variable]. A case is the thing being measured: a student, a patient, a plot of land, a school. A variable is one characteristic measured on every case, such as age or faculty. Each cell then holds one value: the measurement of one variable on one case. This arrangement, sometimes called the #strong[data matrix], is the starting point of nearly every method in this book.
+Almost all empirical research data can be conceptualized as a rectangular grid: each row represents a #strong[case] (or observation), and each column represents a #strong[variable]. A case is the individual unit under observation---a student, a patient, an experimental plot, or an institution. A variable is a measured property recorded across all cases, such as chronological age, anxiety score, or study hours. Every cell in the grid contains a single value representing the measurement of that variable for that specific case. This structure, known as the #strong[data matrix], forms the backbone of statistical modeling.
 
-What counts as a case depends on the study, and the choice is called the #strong[unit of analysis]. The wellbeing study has more than one. In the #NormalTok("students"); table, each row is a student. In the #NormalTok("semesters"); table, each row is one student in one semester, so each student appears up to four times:
+What constitutes a case depends on the research design, defining the #strong[unit of analysis]. Elaf's wellbeing study involves multiple units of analysis across different tables. In the #NormalTok("students"); table, each row represents an individual student ($N = 600$). In the #NormalTok("semesters"); table, however, each row represents a single student in a specific academic semester, meaning each student appears up to four times:
 
-#block[
-#Skylighting(([#FunctionTok("head");#NormalTok("(semesters, ");#DecValTok("5");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("  student_id semester  gpa sleep_hours study_hours exercise_days caffeine_mg");],
-[#NormalTok("1      S0001        1 3.02         7.2          26             5         130");],
-[#NormalTok("2      S0001        2 3.27         8.4          17             3          80");],
-[#NormalTok("3      S0001        3 3.17         7.8          25             7         105");],
-[#NormalTok("4      S0001        4 3.00         7.2          28             4         145");],
-[#NormalTok("5      S0002        1 3.25         6.4          32             2         210");],
-[#NormalTok("  supervisor_meetings wellbeing");],
-[#NormalTok("1                   0        74");],
-[#NormalTok("2                   1        69");],
-[#NormalTok("3                   3        71");],
-[#NormalTok("4                   2        74");],
-[#NormalTok("5                   3        60");],));
-]
-]
-The first four rows all belong to student #NormalTok("S0001");, one for each semester. Confusing the two units is a common source of error. A question about students should count each student once; a question about change over time needs all the semester rows, together with methods that know that rows from the same student belong together (Chapter 10). Chapter 5 returns to the unit of analysis when research questions are turned into data.
+#Skylighting(([#NormalTok("semesters.head(");#DecValTok("5");#NormalTok(")");],));
+#table(
+  columns: 10,
+  align: (auto,auto,auto,auto,auto,auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student\_id], table.cell(align: right)[semester], table.cell(align: right)[gpa], table.cell(align: right)[sleep\_hours], table.cell(align: right)[study\_hours], table.cell(align: right)[exercise\_days], table.cell(align: right)[caffeine\_mg], table.cell(align: right)[supervisor\_meetings], table.cell(align: right)[wellbeing],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S0001], [1], [3.02], [7.2], [26.0], [5.0], [130.0], [0], [74],
+  table.cell(align: horizon)[1], [S0001], [2], [3.27], [8.4], [17.0], [3.0], [80.0], [1], [69],
+  table.cell(align: horizon)[2], [S0001], [3], [3.17], [7.8], [25.0], [7.0], [105.0], [3], [71],
+  table.cell(align: horizon)[3], [S0001], [4], [3.00], [7.2], [28.0], [4.0], [145.0], [2], [74],
+  table.cell(align: horizon)[4], [S0002], [1], [3.25], [6.4], [32.0], [2.0], [210.0], [3], [60],
+)
+The first four rows all correspond to student #NormalTok("S0001");, documenting their trajectory across semesters 1 through 4. Confusing the unit of analysis is one of the most frequent errors in quantitative research. A demographic question concerning baseline enrollment must count each student exactly once. Conversely, an inquiry into GPA trajectories across time requires repeated-measures observations, coupled with statistical techniques that account for within-subject dependency (#ref(<sec-ch10>, supplement: [Chapter])). In #ref(<sec-ch05>, supplement: [Chapter]), we explore how research hypotheses dictate the appropriate unit of analysis.
 
 == Variables and their values
 <variables-and-their-values>
-In R, the values of one variable are held in a #strong[vector]. You met vectors in Chapter 1: a set of values combined with #NormalTok("c()");. They are the basic building block of R, and almost everything else is built from them.
+In Python's data science ecosystem, a single variable's values are held in a #strong[Pandas Series] (or a NumPy 1D array). A Series is an indexed, one-dimensional array capable of holding numbers, text, or boolean flags:
 
-#block[
-#Skylighting(([#NormalTok("sleep ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FloatTok("6.5");#NormalTok(", ");#DecValTok("7");#NormalTok(", ");#FloatTok("5.5");#NormalTok(", ");#DecValTok("8");#NormalTok(", ");#DecValTok("6");#NormalTok(")");],
+#Skylighting(([#NormalTok("sleep ");#OperatorTok("=");#NormalTok(" pd.Series([");#FloatTok("6.5");#NormalTok(", ");#FloatTok("7.0");#NormalTok(", ");#FloatTok("5.5");#NormalTok(", ");#FloatTok("8.0");#NormalTok(", ");#FloatTok("6.0");#NormalTok("])");],
 [#NormalTok("sleep");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6.5 7.0 5.5 8.0 6.0");],));
-]
-]
-A vector holds values of #strong[one type] only. If you mix types, R quietly converts everything to the most flexible type, which is usually text:
+#Skylighting(([#NormalTok("0    6.5");],
+[#NormalTok("1    7.0");],
+[#NormalTok("2    5.5");],
+[#NormalTok("3    8.0");],
+[#NormalTok("4    6.0");],
+[#NormalTok("dtype: float64");],));
+A Series enforces a single homogeneous data type (#NormalTok("dtype");). If you inadvertently mix numbers with text, Pandas converts the entire Series to an #NormalTok("object"); (or string) dtype to accommodate the text:
 
-#block[
-#Skylighting(([#NormalTok("mixed ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FloatTok("6.5");#NormalTok(", ");#StringTok("\"seven\"");#NormalTok(", ");#FloatTok("5.5");#NormalTok(")");],
+#Skylighting(([#NormalTok("mixed ");#OperatorTok("=");#NormalTok(" pd.Series([");#FloatTok("6.5");#NormalTok(", ");#StringTok("\"seven\"");#NormalTok(", ");#FloatTok("5.5");#NormalTok("])");],
 [#NormalTok("mixed");],));
-#block[
-#Skylighting(([#NormalTok("[1] \"6.5\"   \"seven\" \"5.5\"  ");],));
-]
-#Skylighting(([#FunctionTok("class");#NormalTok("(mixed)");],));
-#block[
-#Skylighting(([#NormalTok("[1] \"character\"");],));
-]
-]
-The numbers are now text, in quotes, and they can no longer be averaged. This matters more than it seems. If one person in a survey types "seven" instead of 7, the whole column arrives in R as text. The Excel file later in this chapter shows exactly this.
+#Skylighting(([#NormalTok("0      6.5");],
+[#NormalTok("1    seven");],
+[#NormalTok("2      5.5");],
+[#NormalTok("dtype: object");],));
+Notice that the numbers #NormalTok("6.5"); and #NormalTok("5.5"); have become text strings. They can no longer be averaged or plotted numerically. This behavior is vital to understand: if a single survey respondent types #NormalTok("\"seven\""); or #NormalTok("\"N/A\""); into a numeric field in a web form, the entire column imports into Python as text. We will encounter this exact issue when inspecting the raw Excel export later in this chapter.
 
-=== Operations on a whole vector
-<operations-on-a-whole-vector>
-Most things you do to a vector happen to every value at once. Converting the sleep values from hours into minutes needs only one multiplication:
+=== Operations on a whole Series (Vectorization)
+<operations-on-a-whole-series-vectorization>
+A defining strength of Pandas is #strong[vectorization]: mathematical and logical operations apply across every value in the collection simultaneously, without needing explicit #NormalTok("for"); loops. Converting sleep durations from hours to minutes requires a single multiplication:
 
-#block[
-#Skylighting(([#NormalTok("sleep ");#SpecialCharTok("*");#NormalTok(" ");#DecValTok("60");],));
-#block[
-#Skylighting(([#NormalTok("[1] 390 420 330 480 360");],));
-]
-]
-Comparisons work the same way, and give one #NormalTok("TRUE"); or #NormalTok("FALSE"); for each value. The nights shorter than the recommended 7 hours are marked by:
+#Skylighting(([#NormalTok("sleep ");#OperatorTok("*");#NormalTok(" ");#DecValTok("60");],));
+#Skylighting(([#NormalTok("0    390.0");],
+[#NormalTok("1    420.0");],
+[#NormalTok("2    330.0");],
+[#NormalTok("3    480.0");],
+[#NormalTok("4    360.0");],
+[#NormalTok("dtype: float64");],));
+Logical comparisons work identically, generating a boolean Series containing #NormalTok("True"); or #NormalTok("False"); for each entry. For example, identifying nights falling short of the clinical recommendation of 7 hours:
 
-#block[
-#Skylighting(([#NormalTok("sleep ");#SpecialCharTok("<");#NormalTok(" ");#DecValTok("7");],));
-#block[
-#Skylighting(([#NormalTok("[1]  TRUE FALSE  TRUE FALSE  TRUE");],));
-]
-]
-Because R counts #NormalTok("TRUE"); as 1 and #NormalTok("FALSE"); as 0, #NormalTok("sum()"); counts the short nights, and #NormalTok("mean()"); gives their share:
+#Skylighting(([#NormalTok("sleep ");#OperatorTok("<");#NormalTok(" ");#DecValTok("7");],));
+#Skylighting(([#NormalTok("0     True");],
+[#NormalTok("1    False");],
+[#NormalTok("2     True");],
+[#NormalTok("3    False");],
+[#NormalTok("4     True");],
+[#NormalTok("dtype: bool");],));
+Because Python evaluates #NormalTok("True"); as 1 and #NormalTok("False"); as 0 in numerical contexts, calling #NormalTok(".sum()"); counts the qualifying nights, and #NormalTok(".mean()"); calculates their proportion:
 
 #block[
-#Skylighting(([#FunctionTok("sum");#NormalTok("(sleep ");#SpecialCharTok("<");#NormalTok(" ");#DecValTok("7");#NormalTok(")");],));
+#Skylighting(([#BuiltInTok("print");#NormalTok("(");#StringTok("\"Count of short nights:\"");#NormalTok(", (sleep ");#OperatorTok("<");#NormalTok(" ");#DecValTok("7");#NormalTok(").");#BuiltInTok("sum");#NormalTok("())");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Proportion of short nights:\"");#NormalTok(", (sleep ");#OperatorTok("<");#NormalTok(" ");#DecValTok("7");#NormalTok(").mean())");],));
 #block[
-#Skylighting(([#NormalTok("[1] 3");],));
-]
-#Skylighting(([#FunctionTok("mean");#NormalTok("(sleep ");#SpecialCharTok("<");#NormalTok(" ");#DecValTok("7");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("[1] 0.6");],));
+#Skylighting(([#NormalTok("Count of short nights: 3");],
+[#NormalTok("Proportion of short nights: 0.6");],));
 ]
 ]
-Three of the five nights, or 60%, were short. The same line of code would work just as well on 2,000 nights.
+Three of the five nights (60%) were short. This vectorized code operates at identical speed whether analyzing 5 observations or 500,000 observations.
 
 === Selecting values
 <selecting-values>
-Square brackets pick values from a vector by their position. Positions start at 1:
+Python uses #strong[0-based indexing]: the first element resides at position #NormalTok("0");, the second at position #NormalTok("1");, and so on. Think of an index as the offset or distance from the start of the array.
+
+To select values by positional integer index in a Pandas Series, use #NormalTok(".iloc[]");:
 
 #block[
-#Skylighting(([#NormalTok("sleep[");#DecValTok("1");#NormalTok("]         ");#CommentTok("# the first night");],));
+#Skylighting(([#BuiltInTok("print");#NormalTok("(");#StringTok("\"First night:\"");#NormalTok(", sleep.iloc[");#DecValTok("0");#NormalTok("])");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"First and third nights:");#CharTok("\\n");#StringTok("\"");#NormalTok(", sleep.iloc[[");#DecValTok("0");#NormalTok(", ");#DecValTok("2");#NormalTok("]])");],));
 #block[
-#Skylighting(([#NormalTok("[1] 6.5");],));
-]
-#Skylighting(([#NormalTok("sleep[");#FunctionTok("c");#NormalTok("(");#DecValTok("1");#NormalTok(", ");#DecValTok("3");#NormalTok(")]   ");#CommentTok("# the first and third nights");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6.5 5.5");],));
-]
-#Skylighting(([#NormalTok("sleep[");#SpecialCharTok("-");#DecValTok("2");#NormalTok("]        ");#CommentTok("# every night except the second");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6.5 5.5 8.0 6.0");],));
+#Skylighting(([#NormalTok("First night: 6.5");],
+[#NormalTok("First and third nights:");],
+[#NormalTok(" 0    6.5");],
+[#NormalTok("2    5.5");],
+[#NormalTok("dtype: float64");],));
 ]
 ]
-Values can also be picked with a condition, by putting a #NormalTok("TRUE");/#NormalTok("FALSE"); vector inside the brackets. R keeps the values where the condition is #NormalTok("TRUE");:
+Values can also be extracted using a boolean condition inside square brackets. Pandas filters the Series, retaining only observations where the condition evaluates to #NormalTok("True");:
 
-#block[
-#Skylighting(([#NormalTok("sleep[sleep ");#SpecialCharTok("<");#NormalTok(" ");#DecValTok("7");#NormalTok("]");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6.5 5.5 6.0");],));
-]
-]
-The line reads aloud as "sleep, where sleep is less than 7". This way of selecting, called #strong[logical indexing], is one of the most useful ideas in R, and you will use it constantly.
+#Skylighting(([#NormalTok("sleep[sleep ");#OperatorTok("<");#NormalTok(" ");#DecValTok("7");#NormalTok("]");],));
+#Skylighting(([#NormalTok("0    6.5");],
+[#NormalTok("2    5.5");],
+[#NormalTok("4    6.0");],
+[#NormalTok("dtype: float64");],));
+This syntax, termed #strong[boolean indexing] (or logical filtering), reads naturally: #emph["give me the elements of sleep where sleep is less than 7."] It is one of the most widely used idioms in quantitative Python.
 
 === Changing values
 <changing-values>
-Brackets on the left of the arrow change values. Suppose the second night turns out to have been 7.5 hours, not 7:
+Placing an indexed selection on the left side of the assignment operator updates the underlying data. If a participant later clarifies that their second night was 7.5 hours rather than 7.0:
 
-#block[
-#Skylighting(([#NormalTok("sleep[");#DecValTok("2");#NormalTok("] ");#OtherTok("<-");#NormalTok(" ");#FloatTok("7.5");],
+#Skylighting(([#NormalTok("sleep.iloc[");#DecValTok("1");#NormalTok("] ");#OperatorTok("=");#NormalTok(" ");#FloatTok("7.5");],
 [#NormalTok("sleep");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6.5 7.5 5.5 8.0 6.0");],));
-]
-]
-== Categories
-<categories>
-Research data is full of categories: faculty, gender, treatment group, agreement on a scale. R stores categories as #strong[factors]. A factor looks like text but knows the complete set of possible values, called its #strong[levels]:
+#Skylighting(([#NormalTok("0    6.5");],
+[#NormalTok("1    7.5");],
+[#NormalTok("2    5.5");],
+[#NormalTok("3    8.0");],
+[#NormalTok("4    6.0");],
+[#NormalTok("dtype: float64");],));
+== Categories (Categorical Data)
+<categories-categorical-data>
+Research datasets frequently contain qualitative categories: faculty division, experimental arm, gender identity, or Likert response levels. Pandas represents categorical variables using the specialized #NormalTok("category"); dtype (similar to factors in R or value labels in SPSS). A categorical Series displays text labels but stores them internally as compact integers mapped to a defined list of #strong[categories]:
 
 #block[
-#Skylighting(([#NormalTok("faculty ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("factor");#NormalTok("(");#FunctionTok("c");#NormalTok("(");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Humanities\"");#NormalTok(", ");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Health Sciences\"");#NormalTok("))");],
-[#NormalTok("faculty");],));
-#block[
-#Skylighting(([#NormalTok("[1] Education       Humanities      Education       Health Sciences");],
-[#NormalTok("Levels: Education Health Sciences Humanities");],));
-]
-#Skylighting(([#FunctionTok("levels");#NormalTok("(faculty)");],));
-#block[
-#Skylighting(([#NormalTok("[1] \"Education\"       \"Health Sciences\" \"Humanities\"     ");],));
-]
-#Skylighting(([#FunctionTok("table");#NormalTok("(faculty)");],));
-#block[
-#Skylighting(([#NormalTok("faculty");],
-[#NormalTok("      Education Health Sciences      Humanities ");],
-[#NormalTok("              2               1               1 ");],));
-]
-]
-By default, levels are in alphabetical order. When the categories have a natural order, set it yourself with the #NormalTok("levels"); argument, so that tables and graphs show them in that order:
-
-#block[
-#Skylighting(([#NormalTok("employment ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("factor");#NormalTok("(");],
-[#NormalTok("  ");#FunctionTok("c");#NormalTok("(");#StringTok("\"None\"");#NormalTok(", ");#StringTok("\"Full-time job\"");#NormalTok(", ");#StringTok("\"Part-time job\"");#NormalTok(", ");#StringTok("\"None\"");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("levels =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"None\"");#NormalTok(", ");#StringTok("\"Part-time job\"");#NormalTok(", ");#StringTok("\"Full-time job\"");#NormalTok(")");],
+#Skylighting(([#NormalTok("faculty ");#OperatorTok("=");#NormalTok(" pd.Series(");],
+[#NormalTok("    [");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Humanities\"");#NormalTok(", ");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Health Sciences\"");#NormalTok("],");],
+[#NormalTok("    dtype");#OperatorTok("=");#StringTok("\"category\"");],
 [#NormalTok(")");],
-[#FunctionTok("table");#NormalTok("(employment)");],));
+[#BuiltInTok("print");#NormalTok("(faculty)");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Categories:\"");#NormalTok(", faculty.cat.categories)");],));
 #block[
-#Skylighting(([#NormalTok("employment");],
-[#NormalTok("         None Part-time job Full-time job ");],
-[#NormalTok("            2             1             1 ");],));
+#Skylighting(([#NormalTok("0          Education");],
+[#NormalTok("1         Humanities");],
+[#NormalTok("2          Education");],
+[#NormalTok("3    Health Sciences");],
+[#NormalTok("dtype: category");],
+[#NormalTok("Categories (3, object): ['Education', 'Health Sciences', 'Humanities']");],
+[#NormalTok("Categories: Index(['Education', 'Health Sciences', 'Humanities'], dtype='object')");],));
 ]
 ]
-Factors matter most in statistics and graphs. When groups are compared in Chapter 7, or plotted in Chapter 4, R uses the factor's levels to decide which groups exist and in which order to show them.
+By default, categories are arranged in alphanumeric order. However, when categories possess an intrinsic hierarchy (such as employment intensity or Likert scales), you can define an #strong[ordered category] using #NormalTok("pd.Categorical");:
 
-=== Kinds of measurement and R's types
-<kinds-of-measurement-and-rs-types>
-The choice between a factor and a number is not a matter of convenience; it follows from the kind of measurement that produced the values. Categories without an order, such as faculty, are #strong[nominal]. Categories with an order but uneven or unknown distances between them, such as none, part-time, and full-time employment, are #strong[ordinal]. Measurements on a scale with equal distances, such as hours of sleep or a wellbeing index, are numeric. #ref(<tbl-measurement-types>, supplement: [Table]) shows how each kind is stored in R. Chapter 5 explains these levels of measurement in full, and why they decide which summaries are meaningful.
+#Skylighting(([#NormalTok("employment ");#OperatorTok("=");#NormalTok(" pd.Series(");],
+[#NormalTok("    pd.Categorical(");],
+[#NormalTok("        [");#StringTok("\"None\"");#NormalTok(", ");#StringTok("\"Full-time job\"");#NormalTok(", ");#StringTok("\"Part-time job\"");#NormalTok(", ");#StringTok("\"None\"");#NormalTok("],");],
+[#NormalTok("        categories");#OperatorTok("=");#NormalTok("[");#StringTok("\"None\"");#NormalTok(", ");#StringTok("\"Part-time job\"");#NormalTok(", ");#StringTok("\"Full-time job\"");#NormalTok("],");],
+[#NormalTok("        ordered");#OperatorTok("=");#VariableTok("True");],
+[#NormalTok("    )");],
+[#NormalTok(")");],
+[#NormalTok("employment.value_counts(sort");#OperatorTok("=");#VariableTok("False");#NormalTok(")");],));
+#Skylighting(([#NormalTok("None             2");],
+[#NormalTok("Part-time job    1");],
+[#NormalTok("Full-time job    1");],
+[#NormalTok("Name: count, dtype: int64");],));
+Specifying explicit category orders ensures that subsequent summary tables and plots display categories logically from lowest to highest rather than alphabetically.
+
+=== Levels of measurement and Python types
+<levels-of-measurement-and-python-types>
+The distinction between continuous numbers and categories is not merely aesthetic; it reflects the underlying mathematical properties of the measurement. Categories without an order (such as faculty or academic discipline) are #strong[nominal]. Categories with a strict ranking but unequal or unquantified intervals (such as Likert scales or employment tiers) are #strong[ordinal]. Measurements with uniform, quantifiable units (such as sleep hours, age, or GPA) are #strong[interval] or #strong[ratio] (numeric). #ref(<tbl-measurement-types>, supplement: [Table]) outlines how each measurement level corresponds to a Python data type.
 
 #figure([
 #table(
   columns: (33.33%, 33.33%, 33.33%),
   align: (auto,auto,auto,),
-  table.header([Kind of measurement], [Example], [Stored in R as],),
+  table.header([Measurement Level], [Example Variables], [Python Data Type],),
   table.hline(),
-  [Categories, no order (nominal)], [faculty, gender], [factor],
-  [Ordered categories (ordinal)], [employment, agreement on a scale], [factor with levels in order, or an ordered factor],
-  [Quantities with equal distances], [sleep hours, age, wellbeing], [numeric],
-  [Yes or no], [invited to the workshop], [logical, or a factor with two levels],
+  [Nominal (unordered categories)], [Faculty, Gender, Department], [#NormalTok("category"); (or #NormalTok("object"); / #NormalTok("string");)],
+  [Ordinal (ordered categories)], [Agreement scale, Education level], [#NormalTok("category"); (#NormalTok("ordered=True");)],
+  [Interval / Ratio (continuous quantities)], [Sleep hours, Age, GPA, Scale sum], [#NormalTok("float64");, #NormalTok("int64");],
+  [Binary / Dichotomous], [Invited to workshop (Yes/No)], [#NormalTok("bool"); or two-level #NormalTok("category");],
 )
 ], caption: figure.caption(
 position: top, 
 [
-Kinds of measurement and how R stores them
+Levels of measurement and their representation in Python
 ]), 
 kind: "quarto-float-tbl", 
 supplement: "Table", 
@@ -1552,146 +1502,152 @@ supplement: "Table",
 <tbl-measurement-types>
 
 
-== A table of cases
-<a-table-of-cases>
-Most research data is a table of this kind: one row for each case, one column for each variable. In R, such a table is a #strong[data frame]. Each column is a vector, so each column has one type, but different columns can have different types.
+== A table of cases: The DataFrame
+<a-table-of-cases-the-dataframe>
+Most empirical data is organized as a two-dimensional table where each row represents a case and each column represents a variable. In Python, this table is a Pandas #strong[DataFrame]. Each column is a Series sharing a common index. While each column must have a uniform data type, different columns across the DataFrame can store different types.
 
-A small data frame can be built with #NormalTok("data.frame()");:
+You can construct a DataFrame manually from a Python dictionary:
 
-#block[
-#Skylighting(([#NormalTok("pilot ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("data.frame");#NormalTok("(");],
-[#NormalTok("  ");#AttributeTok("student =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"S1\"");#NormalTok(", ");#StringTok("\"S2\"");#NormalTok(", ");#StringTok("\"S3\"");#NormalTok(", ");#StringTok("\"S4\"");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("faculty =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Humanities\"");#NormalTok(", ");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Health Sciences\"");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("sleep   =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FloatTok("6.5");#NormalTok(", ");#FloatTok("7.5");#NormalTok(", ");#FloatTok("5.5");#NormalTok(", ");#DecValTok("8");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("invited =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#ConstantTok("TRUE");#NormalTok(", ");#ConstantTok("FALSE");#NormalTok(", ");#ConstantTok("TRUE");#NormalTok(", ");#ConstantTok("FALSE");#NormalTok(")");],
-[#NormalTok(")");],
+#Skylighting(([#NormalTok("pilot ");#OperatorTok("=");#NormalTok(" pd.DataFrame({");],
+[#NormalTok("    ");#StringTok("\"student\"");#NormalTok(": [");#StringTok("\"S1\"");#NormalTok(", ");#StringTok("\"S2\"");#NormalTok(", ");#StringTok("\"S3\"");#NormalTok(", ");#StringTok("\"S4\"");#NormalTok("],");],
+[#NormalTok("    ");#StringTok("\"faculty\"");#NormalTok(": pd.Categorical([");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Humanities\"");#NormalTok(", ");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Health Sciences\"");#NormalTok("]),");],
+[#NormalTok("    ");#StringTok("\"sleep\"");#NormalTok(": [");#FloatTok("6.5");#NormalTok(", ");#FloatTok("7.5");#NormalTok(", ");#FloatTok("5.5");#NormalTok(", ");#FloatTok("8.0");#NormalTok("],");],
+[#NormalTok("    ");#StringTok("\"invited\"");#NormalTok(": [");#VariableTok("True");#NormalTok(", ");#VariableTok("False");#NormalTok(", ");#VariableTok("True");#NormalTok(", ");#VariableTok("False");#NormalTok("]");],
+[#NormalTok("})");],
 [#NormalTok("pilot");],));
-#block[
-#Skylighting(([#NormalTok("  student         faculty sleep invited");],
-[#NormalTok("1      S1       Education   6.5    TRUE");],
-[#NormalTok("2      S2      Humanities   7.5   FALSE");],
-[#NormalTok("3      S3       Education   5.5    TRUE");],
-[#NormalTok("4      S4 Health Sciences   8.0   FALSE");],));
-]
-]
-The quickest way to understand a data frame is #NormalTok("str()");, short for #emph[structure]. It lists every column with its type and first few values:
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student], table.cell(align: right)[faculty], table.cell(align: right)[sleep], table.cell(align: right)[invited],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S1], [Education], [6.5], [True],
+  table.cell(align: horizon)[1], [S2], [Humanities], [7.5], [False],
+  table.cell(align: horizon)[2], [S3], [Education], [5.5], [True],
+  table.cell(align: horizon)[3], [S4], [Health Sciences], [8.0], [False],
+)
+The most comprehensive way to inspect a DataFrame's architecture is the #NormalTok(".info()"); method, which summarizes column names, non-null counts, and data types:
 
 #block[
-#Skylighting(([#FunctionTok("str");#NormalTok("(pilot)");],));
+#Skylighting(([#NormalTok("pilot.info()");],));
 #block[
-#Skylighting(([#NormalTok("'data.frame':   4 obs. of  4 variables:");],
-[#NormalTok(" $ student: chr  \"S1\" \"S2\" \"S3\" \"S4\"");],
-[#NormalTok(" $ faculty: chr  \"Education\" \"Humanities\" \"Education\" \"Health Sciences\"");],
-[#NormalTok(" $ sleep  : num  6.5 7.5 5.5 8");],
-[#NormalTok(" $ invited: logi  TRUE FALSE TRUE FALSE");],));
+#Skylighting(([#NormalTok("<class 'pandas.core.frame.DataFrame'>");],
+[#NormalTok("RangeIndex: 4 entries, 0 to 3");],
+[#NormalTok("Data columns (total 4 columns):");],
+[#NormalTok(" #   Column   Non-Null Count  Dtype   ");],
+[#NormalTok("---  ------   --------------  -----   ");],
+[#NormalTok(" 0   student  4 non-null      object  ");],
+[#NormalTok(" 1   faculty  4 non-null      category");],
+[#NormalTok(" 2   sleep    4 non-null      float64 ");],
+[#NormalTok(" 3   invited  4 non-null      bool    ");],
+[#NormalTok("dtypes: bool(1), category(1), float64(1), object(1)");],
+[#NormalTok("memory usage: 336.0+ bytes");],));
 ]
 ]
 === Selecting columns and rows
 <selecting-columns-and-rows>
-A single column is picked with #NormalTok("$");, as in Chapter 1:
+To extract a single column as a Series, use square bracket notation with the column name:
 
-#block[
-#Skylighting(([#NormalTok("pilot");#SpecialCharTok("$");#NormalTok("sleep");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6.5 7.5 5.5 8.0");],));
-]
-]
-Square brackets work on data frames too, with two positions separated by a comma: rows first, then columns. An empty position means "all":
+#Skylighting(([#NormalTok("pilot[");#StringTok("\"sleep\"");#NormalTok("]");],));
+#Skylighting(([#NormalTok("0    6.5");],
+[#NormalTok("1    7.5");],
+[#NormalTok("2    5.5");],
+[#NormalTok("3    8.0");],
+[#NormalTok("Name: sleep, dtype: float64");],));
+To slice rows and columns simultaneously, Pandas provides two primary indexers: 1. #NormalTok(".iloc[row_pos, col_pos]");: selects by #strong[integer position] (0-based offset). 2. #NormalTok(".loc[row_label, col_label]");: selects by #strong[label name] or #strong[boolean mask].
 
-#block[
-#Skylighting(([#NormalTok("pilot[");#DecValTok("2");#NormalTok(", ]                        ");#CommentTok("# the second row, all columns");],));
-#block[
-#Skylighting(([#NormalTok("  student    faculty sleep invited");],
-[#NormalTok("2      S2 Humanities   7.5   FALSE");],));
-]
-#Skylighting(([#NormalTok("pilot[, ");#FunctionTok("c");#NormalTok("(");#StringTok("\"student\"");#NormalTok(", ");#StringTok("\"sleep\"");#NormalTok(")]    ");#CommentTok("# all rows, two columns");],));
-#block[
-#Skylighting(([#NormalTok("  student sleep");],
-[#NormalTok("1      S1   6.5");],
-[#NormalTok("2      S2   7.5");],
-[#NormalTok("3      S3   5.5");],
-[#NormalTok("4      S4   8.0");],));
-]
-#Skylighting(([#NormalTok("pilot[pilot");#SpecialCharTok("$");#NormalTok("sleep ");#SpecialCharTok("<");#NormalTok(" ");#DecValTok("7");#NormalTok(", ]          ");#CommentTok("# rows where sleep is under 7");],));
-#block[
-#Skylighting(([#NormalTok("  student   faculty sleep invited");],
-[#NormalTok("1      S1 Education   6.5    TRUE");],
-[#NormalTok("3      S3 Education   5.5    TRUE");],));
-]
-]
-The last line combines a data frame with logical indexing: "pilot, the rows where sleep is under 7, all columns". It is the R version of SPSS's #emph[Select Cases].
+#Skylighting(([#CommentTok("# Select the second row across all columns");],
+[#NormalTok("pilot.iloc[");#DecValTok("1");#NormalTok(", :]");],
+[],
+[#CommentTok("# Select all rows for two specific columns");],
+[#NormalTok("pilot.loc[:, [");#StringTok("\"student\"");#NormalTok(", ");#StringTok("\"sleep\"");#NormalTok("]]");],
+[],
+[#CommentTok("# Filter rows where sleep is under 7 hours");],
+[#NormalTok("pilot.loc[pilot[");#StringTok("\"sleep\"");#NormalTok("] ");#OperatorTok("<");#NormalTok(" ");#DecValTok("7");#NormalTok(", :]");],));
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student], table.cell(align: right)[faculty], table.cell(align: right)[sleep], table.cell(align: right)[invited],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S1], [Education], [6.5], [True],
+  table.cell(align: horizon)[2], [S3], [Education], [5.5], [True],
+)
+The final expression combines a DataFrame with boolean indexing: #emph["retrieve all columns for rows where sleep is less than 7."] This is Python's direct equivalent of SPSS's #emph[Select Cases] or Excel's #emph[Filter].
 
-=== Adding columns
-<adding-columns>
-Assigning to a new column name adds a column:
+=== Adding new columns
+<adding-new-columns>
+Assigning an expression to a new column name appends it to the DataFrame:
 
-#block[
-#Skylighting(([#NormalTok("pilot");#SpecialCharTok("$");#NormalTok("short_sleep ");#OtherTok("<-");#NormalTok(" pilot");#SpecialCharTok("$");#NormalTok("sleep ");#SpecialCharTok("<");#NormalTok(" ");#DecValTok("7");],
+#Skylighting(([#NormalTok("pilot[");#StringTok("\"short_sleep\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" pilot[");#StringTok("\"sleep\"");#NormalTok("] ");#OperatorTok("<");#NormalTok(" ");#DecValTok("7");],
 [#NormalTok("pilot");],));
-#block[
-#Skylighting(([#NormalTok("  student         faculty sleep invited short_sleep");],
-[#NormalTok("1      S1       Education   6.5    TRUE        TRUE");],
-[#NormalTok("2      S2      Humanities   7.5   FALSE       FALSE");],
-[#NormalTok("3      S3       Education   5.5    TRUE        TRUE");],
-[#NormalTok("4      S4 Health Sciences   8.0   FALSE       FALSE");],));
-]
-]
-=== The student wellbeing data
-<the-student-wellbeing-data>
-The #NormalTok("students"); data frame from the #NormalTok("data2thesis"); package has the same structure as #NormalTok("pilot");, only larger:
+#table(
+  columns: 6,
+  align: (auto,auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student], table.cell(align: right)[faculty], table.cell(align: right)[sleep], table.cell(align: right)[invited], table.cell(align: right)[short\_sleep],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S1], [Education], [6.5], [True], [True],
+  table.cell(align: horizon)[1], [S2], [Humanities], [7.5], [False], [False],
+  table.cell(align: horizon)[2], [S3], [Education], [5.5], [True], [True],
+  table.cell(align: horizon)[3], [S4], [Health Sciences], [8.0], [False], [False],
+)
+=== The student wellbeing cohort
+<the-student-wellbeing-cohort>
+The #NormalTok("students"); dataset bundled in #NormalTok("data2thesis"); follows this exact DataFrame architecture across 600 participants:
 
 #block[
-#Skylighting(([#FunctionTok("str");#NormalTok("(students)");],));
+#Skylighting(([#NormalTok("students.info()");],));
 #block[
-#Skylighting(([#NormalTok("'data.frame':   600 obs. of  14 variables:");],
-[#NormalTok(" $ student_id         : chr  \"S0001\" \"S0002\" \"S0003\" \"S0004\" ...");],
-[#NormalTok(" $ supervisor_id      : chr  \"SUP088\" \"SUP116\" \"SUP040\" \"SUP112\" ...");],
-[#NormalTok(" $ age                : int  31 28 33 34 35 36 NA 25 29 26 ...");],
-[#NormalTok(" $ gender             : chr  \"Female\" \"Female\" \"Male\" \"Female\" ...");],
-[#NormalTok(" $ faculty            : chr  \"Health Sciences\" \"Education\" \"Education\" \"Health Sciences\" ...");],
-[#NormalTok(" $ programme          : chr  \"Master's\" \"PhD\" \"PhD\" \"Master's\" ...");],
-[#NormalTok(" $ study_mode         : chr  \"Full-time\" \"Full-time\" \"Full-time\" \"Part-time\" ...");],
-[#NormalTok(" $ employment         : chr  \"None\" \"Part-time job\" \"None\" \"Full-time job\" ...");],
-[#NormalTok(" $ has_children       : chr  \"No\" \"No\" \"No\" \"No\" ...");],
-[#NormalTok(" $ lives_away         : chr  \"Yes\" \"Yes\" \"No\" \"No\" ...");],
-[#NormalTok(" $ financial_worry    : int  2 2 4 2 2 5 3 NA 2 2 ...");],
-[#NormalTok(" $ workshop           : chr  \"Not invited\" \"Invited\" \"Invited\" \"Invited\" ...");],
-[#NormalTok(" $ workshop_sessions  : int  0 0 5 6 2 0 4 0 0 0 ...");],
-[#NormalTok(" $ considering_dropout: chr  \"No\" \"No\" \"No\" \"No\" ...");],));
+#Skylighting(([#NormalTok("<class 'pandas.core.frame.DataFrame'>");],
+[#NormalTok("RangeIndex: 600 entries, 0 to 599");],
+[#NormalTok("Data columns (total 14 columns):");],
+[#NormalTok(" #   Column               Non-Null Count  Dtype  ");],
+[#NormalTok("---  ------               --------------  -----  ");],
+[#NormalTok(" 0   student_id           600 non-null    object ");],
+[#NormalTok(" 1   supervisor_id        600 non-null    object ");],
+[#NormalTok(" 2   age                  599 non-null    float64");],
+[#NormalTok(" 3   gender               600 non-null    object ");],
+[#NormalTok(" 4   faculty              600 non-null    object ");],
+[#NormalTok(" 5   programme            600 non-null    object ");],
+[#NormalTok(" 6   study_mode           600 non-null    object ");],
+[#NormalTok(" 7   employment           293 non-null    object ");],
+[#NormalTok(" 8   has_children         600 non-null    object ");],
+[#NormalTok(" 9   lives_away           600 non-null    object ");],
+[#NormalTok(" 10  financial_worry      562 non-null    float64");],
+[#NormalTok(" 11  workshop             600 non-null    object ");],
+[#NormalTok(" 12  workshop_sessions    600 non-null    int64  ");],
+[#NormalTok(" 13  considering_dropout  600 non-null    object ");],
+[#NormalTok("dtypes: float64(2), int64(1), object(11)");],
+[#NormalTok("memory usage: 65.8+ KB");],));
 ]
 ]
-In this listing, #NormalTok("chr"); means character, #NormalTok("int"); whole numbers, and #NormalTok("num"); numbers with decimals. The categories, such as #NormalTok("faculty");, arrive as text, and they are converted into factors when they are needed as categories:
+In this output, #NormalTok("object"); indicates text strings, #NormalTok("int64"); denotes integers, and #NormalTok("float64"); denotes decimal numbers. Columns representing categories, such as #NormalTok("faculty");, can be converted to categorical types whenever discrete factor levels are needed:
+
+#Skylighting(([#NormalTok("students[");#StringTok("\"faculty\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" students[");#StringTok("\"faculty\"");#NormalTok("].astype(");#StringTok("\"category\"");#NormalTok(")");],
+[#NormalTok("students[");#StringTok("\"faculty\"");#NormalTok("].cat.categories");],));
+#Skylighting(([#NormalTok("Index(['Education', 'Health Sciences', 'Humanities', 'Natural Sciences',");],
+[#NormalTok("       'Social Sciences'],");],
+[#NormalTok("      dtype='object')");],));
+Subsetting with multiple criteria uses Python's bitwise logical operators: #NormalTok("&"); (AND) and #NormalTok("|"); (OR). In Pandas, each individual condition must be enclosed in parentheses #NormalTok("()"); because bitwise operators take precedence over comparison operators (#NormalTok("==");, #NormalTok(">");, #NormalTok("<");):
 
 #block[
-#Skylighting(([#NormalTok("students");#SpecialCharTok("$");#NormalTok("faculty ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("factor");#NormalTok("(students");#SpecialCharTok("$");#NormalTok("faculty)");],
-[#FunctionTok("levels");#NormalTok("(students");#SpecialCharTok("$");#NormalTok("faculty)");],));
+#Skylighting(([#NormalTok("hs_phd ");#OperatorTok("=");#NormalTok(" students[");],
+[#NormalTok("    (students[");#StringTok("\"faculty\"");#NormalTok("] ");#OperatorTok("==");#NormalTok(" ");#StringTok("\"Health Sciences\"");#NormalTok(") ");#OperatorTok("&");#NormalTok(" (students[");#StringTok("\"programme\"");#NormalTok("] ");#OperatorTok("==");#NormalTok(" ");#StringTok("\"PhD\"");#NormalTok(")");],
+[#NormalTok("]");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Health Sciences PhD candidates:\"");#NormalTok(", ");#BuiltInTok("len");#NormalTok("(hs_phd))");],));
 #block[
-#Skylighting(([#NormalTok("[1] \"Education\"        \"Health Sciences\"  \"Humanities\"       \"Natural Sciences\"");],
-[#NormalTok("[5] \"Social Sciences\" ");],));
+#Skylighting(([#NormalTok("Health Sciences PhD candidates: 44");],));
 ]
 ]
-Selection works as before. The number of PhD students in Health Sciences, for example, is found with two conditions:
-
-#block[
-#Skylighting(([#NormalTok("hs_phd ");#OtherTok("<-");#NormalTok(" students[students");#SpecialCharTok("$");#NormalTok("faculty ");#SpecialCharTok("==");#NormalTok(" ");#StringTok("\"Health Sciences\"");#NormalTok(" ");#SpecialCharTok("&");#NormalTok(" students");#SpecialCharTok("$");#NormalTok("programme ");#SpecialCharTok("==");#NormalTok(" ");#StringTok("\"PhD\"");#NormalTok(", ]");],
-[#FunctionTok("nrow");#NormalTok("(hs_phd)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 44");],));
-]
-]
-Two symbols are new here. The double equals sign, #NormalTok("==");, means "is equal to"\; a single #NormalTok("="); is used for arguments, so comparisons need two. The ampersand, #NormalTok("&");, means "and": both conditions must be #NormalTok("TRUE");. Its partner #NormalTok("|"); means "or".
-
 #block[
 #callout(
 body: 
 [
-In RStudio, #NormalTok("View(students)"); opens the data in a spreadsheet-style viewer, where you can scroll, sort, and filter. It is only for looking: changes you want to keep should be made with code, so they are recorded.
+In VS Code, opening any DataFrame in the #strong[Interactive Window] or #strong[Data Viewer] provides an interactive spreadsheet grid where you can sort, filter, and inspect columns visually without altering the underlying code.
 
 ]
 , 
 title: 
 [
-Looking at data like a spreadsheet
+Inspecting Data Visually in VS Code
 ]
 , 
 background_color: 
@@ -1707,242 +1663,232 @@ body_background_color:
 white
 )
 ]
-== Matrices and lists
-<matrices-and-lists>
-Two more structures appear regularly, even though they are rarely built by hand.
+== Matrices and Dictionaries
+<matrices-and-dictionaries>
+Beyond Series and DataFrames, two additional data structures frequently appear in quantitative workflows: 2D numerical matrices and dictionaries.
 
-=== Matrices
-<matrices>
-A #strong[matrix] is a grid of values of one type, usually numbers. Matrices appear most often as results. The function #NormalTok("cor()");, for example, calculates the correlations between several variables and returns them as a matrix. The correlations below use the first semester only, so that each student counts once:
+=== Matrices and correlation grids
+<matrices-and-correlation-grids>
+A numerical matrix is a two-dimensional grid of homogeneous numbers. Matrices arise naturally as the mathematical output of statistical procedures, such as calculating bivariate correlation coefficients across multiple metrics:
 
-#block[
-#Skylighting(([#NormalTok("first_semester ");#OtherTok("<-");#NormalTok(" semesters[semesters");#SpecialCharTok("$");#NormalTok("semester ");#SpecialCharTok("==");#NormalTok(" ");#DecValTok("1");#NormalTok(", ]");],
-[#NormalTok("vars ");#OtherTok("<-");#NormalTok(" first_semester[, ");#FunctionTok("c");#NormalTok("(");#StringTok("\"gpa\"");#NormalTok(", ");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"study_hours\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok(")]");],
-[#NormalTok("correlations ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("cor");#NormalTok("(vars, ");#AttributeTok("use =");#NormalTok(" ");#StringTok("\"complete.obs\"");#NormalTok(")");],
-[#FunctionTok("round");#NormalTok("(correlations, ");#DecValTok("2");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("             gpa sleep_hours study_hours wellbeing");],
-[#NormalTok("gpa         1.00        0.25        0.07      0.31");],
-[#NormalTok("sleep_hours 0.25        1.00       -0.56      0.46");],
-[#NormalTok("study_hours 0.07       -0.56        1.00     -0.24");],
-[#NormalTok("wellbeing   0.31        0.46       -0.24      1.00");],));
-]
-]
-Every variable correlates perfectly with itself, hence the 1s on the diagonal. Chapter 6 explains how to read correlations. For now, notice that values are picked from a matrix exactly as from a data frame, with #NormalTok("[row, column]");:
+#Skylighting(([#NormalTok("first_semester ");#OperatorTok("=");#NormalTok(" semesters[semesters[");#StringTok("\"semester\"");#NormalTok("] ");#OperatorTok("==");#NormalTok(" ");#DecValTok("1");#NormalTok("]");],
+[#NormalTok("metric_vars ");#OperatorTok("=");#NormalTok(" first_semester[[");#StringTok("\"gpa\"");#NormalTok(", ");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"study_hours\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok("]]");],
+[],
+[#CommentTok("# Compute bivariate correlation matrix");],
+[#NormalTok("correlations ");#OperatorTok("=");#NormalTok(" metric_vars.corr()");],
+[#BuiltInTok("round");#NormalTok("(correlations, ");#DecValTok("2");#NormalTok(")");],));
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[gpa], table.cell(align: right)[sleep\_hours], table.cell(align: right)[study\_hours], table.cell(align: right)[wellbeing],),
+  table.hline(),
+  table.cell(align: horizon)[gpa], [1.00], [0.25], [0.06], [0.32],
+  table.cell(align: horizon)[sleep\_hours], [0.25], [1.00], [-0.56], [0.46],
+  table.cell(align: horizon)[study\_hours], [0.06], [-0.56], [1.00], [-0.24],
+  table.cell(align: horizon)[wellbeing], [0.32], [0.46], [-0.24], [1.00],
+)
+Each variable correlates perfectly with itself ($r = 1.00$) along the main diagonal. Specific pairwise correlations can be extracted using #NormalTok(".loc[row, col]");:
 
-#block[
-#Skylighting(([#NormalTok("correlations[");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok("]");],));
-#block[
-#Skylighting(([#NormalTok("[1] 0.4602433");],));
-]
-]
-=== Lists
-<lists>
-A #strong[list] is a container that can hold anything: vectors of different lengths, data frames, even other lists. Its parts are usually named:
+#Skylighting(([#NormalTok("correlations.loc[");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok("]");],));
+#Skylighting(([#NormalTok("np.float64(0.45630448626446257)");],));
+=== Dictionaries and statistical results
+<dictionaries-and-statistical-results>
+A #strong[dictionary] (#NormalTok("dict");) is Python's fundamental key-value container. It stores named attributes enclosed in curly braces #NormalTok("{}");:
 
-#block[
-#Skylighting(([#NormalTok("student ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("list");#NormalTok("(");],
-[#NormalTok("  ");#AttributeTok("id        =");#NormalTok(" ");#StringTok("\"S0001\"");#NormalTok(",");],
-[#NormalTok("  ");#AttributeTok("programme =");#NormalTok(" ");#StringTok("\"Master's\"");#NormalTok(",");],
-[#NormalTok("  ");#AttributeTok("sleep     =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FloatTok("7.2");#NormalTok(", ");#FloatTok("8.4");#NormalTok(", ");#FloatTok("7.8");#NormalTok(", ");#FloatTok("7.2");#NormalTok(")");],
-[#NormalTok(")");],
-[#NormalTok("student");#SpecialCharTok("$");#NormalTok("sleep");],));
-#block[
-#Skylighting(([#NormalTok("[1] 7.2 8.4 7.8 7.2");],));
-]
-]
-Lists are rarely built by hand, but R's statistical functions return their results as lists. A preview of a test from Chapter 7, which examines whether students sleep 7 hours on average in their first semester, shows this:
+#Skylighting(([#NormalTok("student ");#OperatorTok("=");#NormalTok(" {");],
+[#NormalTok("    ");#StringTok("\"id\"");#NormalTok(": ");#StringTok("\"S0001\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"programme\"");#NormalTok(": ");#StringTok("\"Master's\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"sleep\"");#NormalTok(": [");#FloatTok("7.2");#NormalTok(", ");#FloatTok("8.4");#NormalTok(", ");#FloatTok("7.8");#NormalTok(", ");#FloatTok("7.2");#NormalTok("]");],
+[#NormalTok("}");],
+[#NormalTok("student[");#StringTok("\"sleep\"");#NormalTok("]");],));
+#Skylighting(([#NormalTok("[7.2, 8.4, 7.8, 7.2]");],));
+While researchers rarely build complex dictionaries by hand, many Python scientific packages return statistical test results as structured objects or dictionary-like containers. For instance, running a one-sample $t$-test with #NormalTok("scipy.stats"); to test whether first-semester students sleep 7 hours on average:
 
 #block[
-#Skylighting(([#NormalTok("result ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("t.test");#NormalTok("(first_semester");#SpecialCharTok("$");#NormalTok("sleep_hours, ");#AttributeTok("mu =");#NormalTok(" ");#DecValTok("7");#NormalTok(")");],
-[#FunctionTok("names");#NormalTok("(result)");],));
+#Skylighting(([#ImportTok("import");#NormalTok(" scipy.stats ");#ImportTok("as");#NormalTok(" stats");],
+[],
+[#NormalTok("result ");#OperatorTok("=");#NormalTok(" stats.ttest_1samp(first_semester[");#StringTok("\"sleep_hours\"");#NormalTok("], popmean");#OperatorTok("=");#FloatTok("7.0");#NormalTok(", nan_policy");#OperatorTok("=");#StringTok("\"omit\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"t-statistic:\"");#NormalTok(", ");#BuiltInTok("round");#NormalTok("(result.statistic, ");#DecValTok("2");#NormalTok("))");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"p-value:\"");#NormalTok(", result.pvalue)");],));
 #block[
-#Skylighting(([#NormalTok(" [1] \"statistic\"   \"parameter\"   \"p.value\"     \"conf.int\"    \"estimate\"   ");],
-[#NormalTok(" [6] \"null.value\"  \"stderr\"      \"alternative\" \"method\"      \"data.name\"  ");],));
-]
-#Skylighting(([#NormalTok("result");#SpecialCharTok("$");#NormalTok("estimate");],));
-#block[
-#Skylighting(([#NormalTok("mean of x ");],
-[#NormalTok(" 6.483502 ");],));
+#Skylighting(([#NormalTok("t-statistic: -12.18");],
+[#NormalTok("p-value: 1.3317009730817428e-30");],));
 ]
 ]
-The function #NormalTok("names()"); lists everything the test calculated, and #NormalTok("$"); picks out one part, here the students' average sleep. This is how a number from a statistical test is retrieved for a report.
+The resulting object encapsulates the computed test statistic, degrees of freedom, and $p$-value as named attributes ready for automated reporting in your thesis.
 
-== Importing data
-<importing-data>
-Each file format has its own function for reading it, and every one of them gives back a data frame. The files used below come with the #NormalTok("data2thesis"); package, and #NormalTok("data2thesis_example()"); finds them on your computer. For your own data, you would put the file in your RStudio Project and give its name instead (see Chapter 1).
+== Importing research data
+<importing-research-data>
+Different software packages store tabular data in distinct binary or text formats. Python provides dedicated reader functions for every standard format, each parsing the input directly into a clean Pandas DataFrame. The sample files below are installed with #NormalTok("data2thesis"); and located via #NormalTok("dt.example_file()");:
 
 === CSV files
 <csv-files>
-A CSV file (#emph[comma-separated values]) is a plain text table, where commas separate the columns. It is the most common format for sharing data, and R reads it with #NormalTok("read.csv()");:
+A CSV file (#emph[comma-separated values]) is a plain-text table where commas delimit adjacent columns. Because CSV files are universally supported and human-readable, they represent the gold standard for long-term open science archiving. In Python, CSV files are imported using #NormalTok("pd.read_csv()");:
+
+#Skylighting(([#NormalTok("path ");#OperatorTok("=");#NormalTok(" dt.example_file(");#StringTok("\"semesters.csv\"");#NormalTok(")");],
+[#NormalTok("semester_data ");#OperatorTok("=");#NormalTok(" pd.read_csv(path)");],
+[#NormalTok("semester_data.head(");#DecValTok("3");#NormalTok(")");],));
+#table(
+  columns: 10,
+  align: (auto,auto,auto,auto,auto,auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student\_id], table.cell(align: right)[semester], table.cell(align: right)[gpa], table.cell(align: right)[sleep\_hours], table.cell(align: right)[study\_hours], table.cell(align: right)[exercise\_days], table.cell(align: right)[caffeine\_mg], table.cell(align: right)[supervisor\_meetings], table.cell(align: right)[wellbeing],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S0001], [1], [3.02], [7.2], [26.0], [5.0], [130.0], [0], [74],
+  table.cell(align: horizon)[1], [S0001], [2], [3.27], [8.4], [17.0], [3.0], [80.0], [1], [69],
+  table.cell(align: horizon)[2], [S0001], [3], [3.17], [7.8], [25.0], [7.0], [105.0], [3], [71],
+)
+In your own thesis project, you will typically point directly to your project's data directory: #NormalTok("pd.read_csv(\"data/semesters.csv\")");.
+
+=== Excel spreadsheets
+<excel-spreadsheets>
+Real-world survey platforms frequently export multi-column workbooks (#NormalTok(".xlsx");). Pandas reads modern Excel files via #NormalTok("pd.read_excel()"); (powered by the #NormalTok("openpyxl"); engine):
 
 #block[
-#Skylighting(([#NormalTok("path ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("data2thesis_example");#NormalTok("(");#StringTok("\"semesters.csv\"");#NormalTok(")");],
-[#NormalTok("semester_file ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("read.csv");#NormalTok("(path)");],
-[#FunctionTok("head");#NormalTok("(semester_file, ");#DecValTok("3");#NormalTok(")");],));
+#Skylighting(([#NormalTok("raw_path ");#OperatorTok("=");#NormalTok(" dt.example_file(");#StringTok("\"wellbeing_raw.xlsx\"");#NormalTok(")");],
+[#NormalTok("raw_data ");#OperatorTok("=");#NormalTok(" pd.read_excel(raw_path)");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Dimensions (rows, columns):\"");#NormalTok(", raw_data.shape)");],));
 #block[
-#Skylighting(([#NormalTok("  student_id semester  gpa sleep_hours study_hours exercise_days caffeine_mg");],
-[#NormalTok("1      S0001        1 3.02         7.2          26             5         130");],
-[#NormalTok("2      S0001        2 3.27         8.4          17             3          80");],
-[#NormalTok("3      S0001        3 3.17         7.8          25             7         105");],
-[#NormalTok("  supervisor_meetings wellbeing");],
-[#NormalTok("1                   0        74");],
-[#NormalTok("2                   1        69");],
-[#NormalTok("3                   3        71");],));
+#Skylighting(([#NormalTok("Dimensions (rows, columns): (615, 64)");],));
 ]
 ]
-In your own project, this would simply be #NormalTok("read.csv(\"semesters.csv\")");, or #NormalTok("read.csv(here::here(\"data\", \"semesters.csv\"))"); with a data folder.
+This file represents an unfiltered export from the wellbeing survey. The #NormalTok(".shape"); property indicates #NormalTok("r raw_data.shape[0]"); rows and #NormalTok("r raw_data.shape[1]"); columns. Let's inspect the first few entries across the initial six columns:
 
-=== Excel files
-<excel-files>
-The #strong[readxl] package reads Excel files. Install it once with #NormalTok("install.packages(\"readxl\")");:
+#Skylighting(([#NormalTok("raw_data.iloc[:");#DecValTok("5");#NormalTok(", :");#DecValTok("6");#NormalTok("]");],));
+#table(
+  columns: 7,
+  align: (auto,auto,auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[Response ID], table.cell(align: right)[Q1\_Student ID], table.cell(align: right)[Q2\_Age], table.cell(align: right)[Q3\_Gender], table.cell(align: right)[Q4\_Faculty], table.cell(align: right)[Q5\_Programme],),
+  table.hline(),
+  table.cell(align: horizon)[0], [R0001], [TEST], [99.0], [Female], [NaN], [NaN],
+  table.cell(align: horizon)[1], [R0002], [test], [NaN], [NaN], [NaN], [NaN],
+  table.cell(align: horizon)[2], [R0003], [TEST2], [30.0], [Male], [NaN], [NaN],
+  table.cell(align: horizon)[3], [R0004], [S0191], [27.0], [male], [Humanities], [Masters],
+  table.cell(align: horizon)[4], [R0005], [S0015], [30.0], [Male], [Health Sciences], [Master\'s],
+)
+Notice the irregularities typical of real-world research data: test records (#NormalTok("TEST");), unstandardized text variations (#NormalTok("Male");, #NormalTok("male");), and arbitrary missing value codes (#NormalTok("99"); for missing age). In #ref(<sec-ch03>, supplement: [Chapter]), we walk through systematic cleaning pipelines to sanitize this raw export.
 
-#block[
-#Skylighting(([#FunctionTok("library");#NormalTok("(readxl)");],
-[#NormalTok("raw ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("read_excel");#NormalTok("(");#FunctionTok("data2thesis_example");#NormalTok("(");#StringTok("\"wellbeing_raw.xlsx\"");#NormalTok("))");],
-[#FunctionTok("dim");#NormalTok("(raw)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 615  64");],));
-]
-]
-This is the export from the study's survey tool, and it shows what real survey exports look like. The function #NormalTok("dim()"); gives its size: 615 rows (more than the 600 students) and 64 columns. The first rows are:
+If an Excel workbook contains multiple worksheets, you can target a specific sheet using the #NormalTok("sheet_name"); argument (e.g., #NormalTok("pd.read_excel(\"study.xlsx\", sheet_name=\"Semester 2\")");).
 
-#block[
-#Skylighting(([#FunctionTok("head");#NormalTok("(raw[, ");#DecValTok("1");#SpecialCharTok(":");#DecValTok("6");#NormalTok("])");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 6 × 6");],
-[#NormalTok("  `Response ID` `Q1_Student ID` Q2_Age Q3_Gender Q4_Faculty      Q5_Programme");],
-[#NormalTok("  <chr>         <chr>           <chr>  <chr>     <chr>           <chr>       ");],
-[#NormalTok("1 R0001         TEST            99     Female    <NA>            <NA>        ");],
-[#NormalTok("2 R0002         test            <NA>   <NA>      <NA>            <NA>        ");],
-[#NormalTok("3 R0003         TEST2           30     Male      <NA>            <NA>        ");],
-[#NormalTok("4 R0004         S0191           27     male      Humanities      Masters     ");],
-[#NormalTok("5 R0005         S0015           30     Male      Health Sciences Master's    ");],
-[#NormalTok("6 R0006         S0474           38     F         health sciences Masters     ");],));
-]
-]
-The printout looks a little different from before, because #NormalTok("read_excel()"); returns a #strong[tibble]: a modern kind of data frame that prints more compactly and shows each column's type under its name. It can be used exactly like a data frame.
+=== SPSS data files
+<spss-data-files>
+Quantitative social scientists frequently receive archives from colleagues formatted as SPSS files (#NormalTok(".sav");). The #NormalTok("pyreadstat"); package enables Python to read #NormalTok(".sav"); files while preserving variable metadata and response value labels:
 
-Several problems are already visible. There are test responses (#NormalTok("TEST");), odd codes such as #NormalTok("99"); for missing age, and the same answer spelled several ways (#NormalTok("Male");, #NormalTok("male");). Every column shown is #NormalTok("<chr>");, text, even the ages, because a few entries are not plain numbers. Chapter 3 is devoted to cleaning this file; for now, it is enough to be able to open it.
-
-If a workbook has several sheets, choose one with the #NormalTok("sheet"); argument, for example #NormalTok("read_excel(\"file.xlsx\", sheet = \"Semester 2\")");.
-
-=== SPSS files
-<spss-files>
-The #strong[haven] package reads SPSS files (#NormalTok(".sav");), and also Stata and SAS files:
+#Skylighting(([#ImportTok("import");#NormalTok(" pyreadstat");],
+[],
+[#NormalTok("spss_path ");#OperatorTok("=");#NormalTok(" dt.example_file(");#StringTok("\"wellbeing.sav\"");#NormalTok(")");],
+[#NormalTok("spss_df, meta ");#OperatorTok("=");#NormalTok(" pyreadstat.read_sav(spss_path)");],
+[],
+[#NormalTok("spss_df.loc[:");#DecValTok("2");#NormalTok(", [");#StringTok("\"student_id\"");#NormalTok(", ");#StringTok("\"gender\"");#NormalTok(", ");#StringTok("\"faculty\"");#NormalTok(", ");#StringTok("\"stress_1\"");#NormalTok("]]");],));
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student\_id], table.cell(align: right)[gender], table.cell(align: right)[faculty], table.cell(align: right)[stress\_1],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S0001], [1.0], [2.0], [3.0],
+  table.cell(align: horizon)[1], [S0002], [1.0], [1.0], [4.0],
+  table.cell(align: horizon)[2], [S0003], [2.0], [1.0], [4.0],
+)
+SPSS files store underlying survey questions as variable labels. #NormalTok("pyreadstat"); extracts these labels into the #NormalTok("meta"); object:
 
 #block[
-#Skylighting(([#FunctionTok("library");#NormalTok("(haven)");],
-[#NormalTok("spss ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("read_sav");#NormalTok("(");#FunctionTok("data2thesis_example");#NormalTok("(");#StringTok("\"wellbeing.sav\"");#NormalTok("))");],
-[#NormalTok("spss[");#DecValTok("1");#SpecialCharTok(":");#DecValTok("3");#NormalTok(", ");#FunctionTok("c");#NormalTok("(");#StringTok("\"student_id\"");#NormalTok(", ");#StringTok("\"gender\"");#NormalTok(", ");#StringTok("\"faculty\"");#NormalTok(", ");#StringTok("\"stress_1\"");#NormalTok(")]");],));
+#Skylighting(([#BuiltInTok("print");#NormalTok("(");#StringTok("\"Question text for stress_1:\"");#NormalTok(", meta.column_names_to_labels[");#StringTok("\"stress_1\"");#NormalTok("])");],));
 #block[
-#Skylighting(([#NormalTok("# A tibble: 3 × 4");],
-[#NormalTok("  student_id gender     faculty             stress_1   ");],
-[#NormalTok("  <chr>      <dbl+lbl>  <dbl+lbl>           <dbl+lbl>  ");],
-[#NormalTok("1 S0001      1 [Female] 2 [Health Sciences] 3 [Neutral]");],
-[#NormalTok("2 S0002      1 [Female] 1 [Education]       4 [Agree]  ");],
-[#NormalTok("3 S0003      2 [Male]   1 [Education]       4 [Agree]  ");],));
+#Skylighting(([#NormalTok("Question text for stress_1: I feel unable to control important things in my studies.");],));
 ]
 ]
-SPSS files carry #strong[labels], and haven keeps them. Each value is stored as a number, with its label shown in square brackets: #NormalTok("2 [Health Sciences]");. The question behind each variable is kept too:
+Alternatively, if you wish to import an SPSS file directly with numeric category codes decoded into human-readable text categories, Pandas provides #NormalTok("pd.read_spss()");:
+
+#Skylighting(([#NormalTok("spss_labeled ");#OperatorTok("=");#NormalTok(" pd.read_spss(spss_path)");],
+[#NormalTok("spss_labeled[");#StringTok("\"faculty\"");#NormalTok("].value_counts()");],));
+#Skylighting(([#NormalTok("faculty");],
+[#NormalTok("Health Sciences     154");],
+[#NormalTok("Education           148");],
+[#NormalTok("Social Sciences     116");],
+[#NormalTok("Humanities           95");],
+[#NormalTok("Natural Sciences     87");],
+[#NormalTok("Name: count, dtype: int64");],));
+This seamless interoperability ensures that years of meticulous labeling in SPSS are instantly accessible inside Python.
+
+== Automated codebook generation
+<automated-codebook-generation>
+In an empirical dataset, a cryptic column header like #NormalTok("stress_1"); or a numeric value like #NormalTok("4"); is scientifically uninterpretable on its own. It acquires meaning only when accompanied by documentation specifying the original prompt ("I feel unable to control important things in my studies"), the response options (1 = Strongly Disagree to 5 = Strongly Agree), and missing data conventions. A #strong[codebook] provides this reference, serving as the bridge between participant questionnaires and statistical analysis.
+
+Because #NormalTok("pyreadstat"); parses embedded SPSS metadata, we can programmatically assemble a comprehensive codebook DataFrame:
+
+#Skylighting(([#NormalTok("codebook ");#OperatorTok("=");#NormalTok(" pd.DataFrame({");],
+[#NormalTok("    ");#StringTok("\"variable\"");#NormalTok(": meta.column_names,");],
+[#NormalTok("    ");#StringTok("\"label\"");#NormalTok(": meta.column_labels,");],
+[#NormalTok("    ");#StringTok("\"dtype\"");#NormalTok(": [");#BuiltInTok("str");#NormalTok("(spss_df[col].dtype) ");#ControlFlowTok("for");#NormalTok(" col ");#KeywordTok("in");#NormalTok(" meta.column_names]");],
+[#NormalTok("})");],
+[#NormalTok("codebook.head(");#DecValTok("10");#NormalTok(")");],));
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[variable], table.cell(align: right)[label], table.cell(align: right)[dtype],),
+  table.hline(),
+  table.cell(align: horizon)[0], [student\_id], [Student identifier], [object],
+  table.cell(align: horizon)[1], [supervisor\_id], [Supervisor identifier], [object],
+  table.cell(align: horizon)[2], [age], [Age in years at baseline], [float64],
+  table.cell(align: horizon)[3], [gender], [Gender], [float64],
+  table.cell(align: horizon)[4], [faculty], [Faculty], [float64],
+  table.cell(align: horizon)[5], [programme], [Degree programme], [float64],
+  table.cell(align: horizon)[6], [study\_mode], [Study mode], [float64],
+  table.cell(align: horizon)[7], [employment], [Paid work alongside study], [float64],
+  table.cell(align: horizon)[8], [has\_children], [Has children], [float64],
+  table.cell(align: horizon)[9], [lives\_away], [Moved away from family to study], [float64],
+)
+For categorical items, the mapping between underlying integer codes and verbal labels is preserved in #NormalTok("meta.variable_value_labels");:
 
 #block[
-#Skylighting(([#FunctionTok("attr");#NormalTok("(spss");#SpecialCharTok("$");#NormalTok("stress_1, ");#StringTok("\"label\"");#NormalTok(")");],));
+#Skylighting(([#BuiltInTok("print");#NormalTok("(");#StringTok("\"Value labels for faculty:\"");#NormalTok(", meta.variable_value_labels.get(");#StringTok("\"faculty\"");#NormalTok("))");],));
 #block[
-#Skylighting(([#NormalTok("[1] \"I feel unable to control important things in my studies.\"");],));
+#Skylighting(([#NormalTok("Value labels for faculty: {1.0: 'Education', 2.0: 'Health Sciences', 3.0: 'Humanities', 4.0: 'Natural Sciences', 5.0: 'Social Sciences'}");],));
 ]
 ]
-To analyse a labelled variable as categories, turn it into a factor with #NormalTok("as_factor()");, which uses the labels as levels:
-
-#block[
-#Skylighting(([#FunctionTok("table");#NormalTok("(");#FunctionTok("as_factor");#NormalTok("(spss");#SpecialCharTok("$");#NormalTok("faculty))");],));
-#block[
-#Skylighting(([],
-[#NormalTok("       Education  Health Sciences       Humanities Natural Sciences ");],
-[#NormalTok("             148              154               95               87 ");],
-[#NormalTok(" Social Sciences ");],
-[#NormalTok("             116 ");],));
-]
-]
-This is one of the great conveniences for anyone moving from SPSS: the work put into labelling the data is not lost.
-
-== A codebook
-<a-codebook>
-A value such as #NormalTok("4"); in the column #NormalTok("stress_1"); means nothing on its own. It becomes a measurement only when the reader knows the question behind it ("I feel unable to control important things in my studies"), the scale of the answers (1 = strongly disagree, 5 = strongly agree), and how missing answers are recorded. A #strong[codebook] is the document that records this for every variable: its name, its meaning, its type, its possible values, and how it was measured. It is the bridge between the questionnaire that the participants saw and the table that the researcher analyses, and most theses include one in an appendix.
-
-The labels in the SPSS file already contain much of a codebook, and R can collect them into a table. The code below takes the label of every variable, and the type in which it is stored:
-
-#block[
-#Skylighting(([#NormalTok("codebook ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("data.frame");#NormalTok("(");],
-[#NormalTok("  ");#AttributeTok("variable =");#NormalTok(" ");#FunctionTok("names");#NormalTok("(spss),");],
-[#NormalTok("  ");#AttributeTok("label    =");#NormalTok(" ");#FunctionTok("sapply");#NormalTok("(spss, ");#ControlFlowTok("function");#NormalTok("(x) ");#FunctionTok("attr");#NormalTok("(x, ");#StringTok("\"label\"");#NormalTok(")),");],
-[#NormalTok("  ");#AttributeTok("type     =");#NormalTok(" ");#FunctionTok("sapply");#NormalTok("(spss, ");#ControlFlowTok("function");#NormalTok("(x) ");#FunctionTok("class");#NormalTok("(x)[");#DecValTok("1");#NormalTok("]),");],
-[#NormalTok("  ");#AttributeTok("row.names =");#NormalTok(" ");#ConstantTok("NULL");],
-[#NormalTok(")");],
-[#FunctionTok("head");#NormalTok("(codebook, ");#DecValTok("12");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("          variable                                      label           type");],
-[#NormalTok("1       student_id                         Student identifier      character");],
-[#NormalTok("2    supervisor_id                      Supervisor identifier      character");],
-[#NormalTok("3              age                   Age in years at baseline        numeric");],
-[#NormalTok("4           gender                                     Gender haven_labelled");],
-[#NormalTok("5          faculty                                    Faculty haven_labelled");],
-[#NormalTok("6        programme                           Degree programme haven_labelled");],
-[#NormalTok("7       study_mode                                 Study mode haven_labelled");],
-[#NormalTok("8       employment                  Paid work alongside study haven_labelled");],
-[#NormalTok("9     has_children                               Has children haven_labelled");],
-[#NormalTok("10      lives_away            Moved away from family to study haven_labelled");],
-[#NormalTok("11 financial_worry           How worried are you about money? haven_labelled");],
-[#NormalTok("12        workshop Randomly invited to the wellbeing workshop haven_labelled");],));
-]
-]
-The function #NormalTok("sapply()"); applies a function to every column in turn and collects the results. A labelled categorical variable also records which number stands for which category, its #strong[value labels]:
-
-#block[
-#Skylighting(([#FunctionTok("attr");#NormalTok("(spss");#SpecialCharTok("$");#NormalTok("faculty, ");#StringTok("\"labels\"");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("       Education  Health Sciences       Humanities Natural Sciences ");],
-[#NormalTok("               1                2                3                4 ");],
-[#NormalTok(" Social Sciences ");],
-[#NormalTok("               5 ");],));
-]
-]
-A codebook built in this way can be written to a file with the functions in the next section and completed by hand, adding the answer scales and any notes on how variables were coded. Keeping it next to the data means that anyone who opens the data, including the researcher a year later, can tell what every value means.
+Exporting this table into an appendix provides an automated, error-free documentation trail for your thesis committee and future secondary analysts.
 
 == Exporting data
 <exporting-data>
-A data frame is saved with the matching #NormalTok("write"); function. Each of these creates a file in the project folder:
+Once raw data has been cleaned, validated, or transformed, the resulting DataFrame can be exported into standard file formats:
 
-#Skylighting(([#FunctionTok("write.csv");#NormalTok("(students, ");#StringTok("\"students_clean.csv\"");#NormalTok(", ");#AttributeTok("row.names =");#NormalTok(" ");#ConstantTok("FALSE");#NormalTok(")   ");#CommentTok("# CSV");],
-[#NormalTok("writexl");#SpecialCharTok("::");#FunctionTok("write_xlsx");#NormalTok("(students, ");#StringTok("\"students_clean.xlsx\"");#NormalTok(")           ");#CommentTok("# Excel (writexl package)");],
-[#NormalTok("haven");#SpecialCharTok("::");#FunctionTok("write_sav");#NormalTok("(spss, ");#StringTok("\"students_clean.sav\"");#NormalTok(")                   ");#CommentTok("# SPSS");],));
-The argument #NormalTok("row.names = FALSE"); stops R from adding an extra column of row numbers to the CSV file.
+#Skylighting(([#CommentTok("# Export to CSV (suppressing automatic integer index column)");],
+[#NormalTok("students.to_csv(");#StringTok("\"students_clean.csv\"");#NormalTok(", index");#OperatorTok("=");#VariableTok("False");#NormalTok(")");],
+[],
+[#CommentTok("# Export to Excel workbook");],
+[#NormalTok("students.to_excel(");#StringTok("\"students_clean.xlsx\"");#NormalTok(", index");#OperatorTok("=");#VariableTok("False");#NormalTok(")");],
+[],
+[#CommentTok("# Export to SPSS system file with pyreadstat");],
+[#ImportTok("import");#NormalTok(" pyreadstat");],
+[#NormalTok("pyreadstat.write_sav(students, ");#StringTok("\"students_clean.sav\"");#NormalTok(")");],));
+Setting #NormalTok("index=False"); is essential when saving CSV and Excel files; otherwise, Pandas inserts an unlabelled leading column of row numbers into the file.
 
-Original data files should stay untouched. Cleaned or changed versions are saved under new names, and the script records how one became the other.
+#quote(block: true)[
+\[!IMPORTANT\] #strong[Preserve Raw Data Immutability:] Never overwrite primary data files. Save processed datasets under descriptive filenames (e.g., #NormalTok("students_clean.csv");), ensuring that your Python script can recreate the clean data from raw inputs at any time.
+]
 
-== SPSS and Excel equivalents
-<spss-and-excel-equivalents>
-Most tasks done in SPSS or Excel have a direct equivalent in R. #ref(<tbl-spss>, supplement: [Table]) collects the ones from this chapter and the last.
+== Mapping SPSS and Excel workflows to Python
+<mapping-spss-and-excel-workflows-to-python>
+Moving from point-and-click tools to scripted programming involves mapping familiar conceptual operations to Python commands (#ref(<tbl-spss>, supplement: [Table])).
 
 #figure([
 #table(
-  columns: (50%, 50%),
-  align: (auto,auto,),
-  table.header([In SPSS or Excel], [In R],),
+  columns: (33.33%, 33.33%, 33.33%),
+  align: (auto,auto,auto,),
+  table.header([Analytical Task], [SPSS / Excel Procedure], [Python / Pandas Idiom],),
   table.hline(),
-  [Open a data file], [#NormalTok("read_sav()");, #NormalTok("read_excel()");, #NormalTok("read.csv()");],
-  [Variable View: names, types, labels], [#NormalTok("str()");\; #NormalTok("attr(x, \"label\")"); for a variable label],
-  [Data View], [#NormalTok("View()");],
-  [Select Cases], [#NormalTok("data[condition, ]");],
-  [Compute Variable], [#NormalTok("data$new <- ...");],
-  [Frequencies], [#NormalTok("table()");],
-  [Descriptives], [#NormalTok("mean()");, #NormalTok("summary()");],
-  [Save As], [#NormalTok("write_sav()");, #NormalTok("write_xlsx()");, #NormalTok("write.csv()");],
+  [Open data file], [File \> Open \> Data], [#NormalTok("pd.read_csv()");, #NormalTok("pd.read_excel()");, #NormalTok("pd.read_spss()");],
+  [Variable View (types & labels)], [Variable View tab], [#NormalTok("df.info()");, #NormalTok("df.dtypes");, #NormalTok("meta.column_names_to_labels");],
+  [Inspect data matrix], [Data View / Spreadsheet grid], [#NormalTok("df.head()");, VS Code Interactive Data Viewer],
+  [Select cases (filtering)], [Data \> Select Cases], [#NormalTok("df[condition]"); or #NormalTok("df.loc[condition, :]");],
+  [Compute variable], [Transform \> Compute Variable], [#NormalTok("df[\"new_col\"] = df[\"a\"] + df[\"b\"]");],
+  [Frequency distribution], [Analyze \> Descriptive \> Frequencies], [#NormalTok("df[\"var\"].value_counts()");],
+  [Descriptive statistics], [Analyze \> Descriptive \> Descriptives], [#NormalTok("df[\"var\"].describe()");, #NormalTok("df[\"var\"].mean()");],
+  [Export data], [File \> Save As], [#NormalTok("df.to_csv(..., index=False)");, #NormalTok("df.to_excel(...)");],
 )
 ], caption: figure.caption(
 position: top, 
 [
-SPSS and Excel tasks and their R equivalents
+Conceptual mapping between point-and-click software and Python
 ]), 
 kind: "quarto-float-tbl", 
 supplement: "Table", 
@@ -1950,88 +1896,159 @@ supplement: "Table",
 <tbl-spss>
 
 
-The biggest change is not a particular command. In SPSS or Excel, you change the data and the change is saved; the steps you took are forgotten. In R, the data file stays as it was, and the steps are saved in your script. Run the script again, and you get the same result again.
+The paramount advantage of Python is transparency. In Excel or SPSS Data View, manual edits and filter clicks are transient and undocumented. In Python, the input dataset remains untouched while your script provides an indelible, auditable record of every transformation.
 
-== Error messages
-<error-messages>
-Everyone who writes R sees error messages every day. They are not a sign of failure; they are R reporting precisely what it could not do. The message usually says what went wrong, and often where, so it should always be read. Four messages account for most of the errors a beginner meets.
+== Reading error messages and tracebacks
+<reading-error-messages-and-tracebacks>
+Python tracebacks are diagnostic reports explaining precisely where and why execution halted. When an error occurs, scroll to the final line of the traceback to read the specific exception type and description. Four exceptions account for the vast majority of beginner stumbling blocks:
 
-#strong[Object not found.] A name is misspelled, or the object was never created (perhaps the line that creates it was not run):
-
-#block[
-#Skylighting(([#FunctionTok("mean");#NormalTok("(slep)");],));
-#block[
-#Skylighting(([#NormalTok("Error: object 'slep' not found");],));
-]
-]
-#strong[Could not find function.] A function name is misspelled, or its package has not been loaded with #NormalTok("library()");:
+#strong[\1. #NormalTok("NameError: name 'slep' is not defined");] A variable name is misspelled, or the code defining it was not executed prior to this line:
 
 #block[
-#Skylighting(([#FunctionTok("reed_csv");#NormalTok("(");#StringTok("\"students.csv\"");#NormalTok(")");],));
+#Skylighting(([#BuiltInTok("print");#NormalTok("(slep)");],));
 #block[
-#Skylighting(([#NormalTok("Error in reed_csv(\"students.csv\"): could not find function \"reed_csv\"");],));
+#Skylighting(([#NormalTok("NameError: name 'slep' is not defined");],
+[#NormalTok("[31m---------------------------------------------------------------------------[39m");],
+[#NormalTok("[31mNameError[39m                                 Traceback (most recent call last)");],
+[#NormalTok("[36mCell[39m[36m [39m[32mIn[33][39m[32m, line 1[39m");],
+[#NormalTok("[32m----> [39m[32m1[39m [38;5;28mprint[39m([43mslep[49m)");],
+[],
+[#NormalTok("[31mNameError[39m: name 'slep' is not defined");],));
 ]
 ]
-#strong[Non-numeric argument.] A calculation was attempted on text, often because a column arrived as text:
+#strong[\2. #NormalTok("AttributeError"); or #NormalTok("KeyError");] Referencing a non-existent column name inside brackets raises a #NormalTok("KeyError"); (often caused by capitalisation mismatches):
 
 #block[
-#Skylighting(([#NormalTok("mixed ");#SpecialCharTok("*");#NormalTok(" ");#DecValTok("2");],));
+#Skylighting(([#NormalTok("students[");#StringTok("\"Faculty\"");#NormalTok("]");],));
 #block[
-#Skylighting(([#NormalTok("Error in mixed * 2: non-numeric argument to binary operator");],));
+#Skylighting(([#NormalTok("KeyError: 'Faculty'");],
+[#NormalTok("[31m---------------------------------------------------------------------------[39m");],
+[#NormalTok("[31mKeyError[39m                                  Traceback (most recent call last)");],
+[#NormalTok("[36mFile [39m[32m~\\Drives\\Locals\\pytorch\\venv\\Lib\\site-packages\\pandas\\core\\indexes\\base.py:3812[39m, in [36mIndex.get_loc[39m[34m(self, key)[39m");],
+[#NormalTok("[32m   3811[39m [38;5;28;01mtry[39;00m:");],
+[#NormalTok("[32m-> [39m[32m3812[39m     [38;5;28;01mreturn[39;00m [38;5;28;43mself[39;49m[43m.[49m[43m_engine[49m[43m.[49m[43mget_loc[49m[43m([49m[43mcasted_key[49m[43m)[49m");],
+[#NormalTok("[32m   3813[39m [38;5;28;01mexcept[39;00m [38;5;167;01mKeyError[39;00m [38;5;28;01mas[39;00m err:");],
+[],
+[#NormalTok("[36mFile [39m[32mpandas/_libs/index.pyx:167[39m, in [36mpandas._libs.index.IndexEngine.get_loc[39m[34m()[39m");],
+[],
+[#NormalTok("[36mFile [39m[32mpandas/_libs/index.pyx:196[39m, in [36mpandas._libs.index.IndexEngine.get_loc[39m[34m()[39m");],
+[],
+[#NormalTok("[36mFile [39m[32mpandas/_libs/hashtable_class_helper.pxi:7088[39m, in [36mpandas._libs.hashtable.PyObjectHashTable.get_item[39m[34m()[39m");],
+[],
+[#NormalTok("[36mFile [39m[32mpandas/_libs/hashtable_class_helper.pxi:7096[39m, in [36mpandas._libs.hashtable.PyObjectHashTable.get_item[39m[34m()[39m");],
+[],
+[#NormalTok("[31mKeyError[39m: 'Faculty'");],
+[],
+[#NormalTok("The above exception was the direct cause of the following exception:");],
+[],
+[#NormalTok("[31mKeyError[39m                                  Traceback (most recent call last)");],
+[#NormalTok("[36mCell[39m[36m [39m[32mIn[34][39m[32m, line 1[39m");],
+[#NormalTok("[32m----> [39m[32m1[39m [43mstudents[49m[43m[[49m[33;43m\"[39;49m[33;43mFaculty[39;49m[33;43m\"[39;49m[43m][49m");],
+[],
+[#NormalTok("[36mFile [39m[32m~\\Drives\\Locals\\pytorch\\venv\\Lib\\site-packages\\pandas\\core\\frame.py:4113[39m, in [36mDataFrame.__getitem__[39m[34m(self, key)[39m");],
+[#NormalTok("[32m   4111[39m [38;5;28;01mif[39;00m [38;5;28mself[39m.columns.nlevels > [32m1[39m:");],
+[#NormalTok("[32m   4112[39m     [38;5;28;01mreturn[39;00m [38;5;28mself[39m._getitem_multilevel(key)");],
+[#NormalTok("[32m-> [39m[32m4113[39m indexer = [38;5;28;43mself[39;49m[43m.[49m[43mcolumns[49m[43m.[49m[43mget_loc[49m[43m([49m[43mkey[49m[43m)[49m");],
+[#NormalTok("[32m   4114[39m [38;5;28;01mif[39;00m is_integer(indexer):");],
+[#NormalTok("[32m   4115[39m     indexer = [indexer]");],
+[],
+[#NormalTok("[36mFile [39m[32m~\\Drives\\Locals\\pytorch\\venv\\Lib\\site-packages\\pandas\\core\\indexes\\base.py:3819[39m, in [36mIndex.get_loc[39m[34m(self, key)[39m");],
+[#NormalTok("[32m   3814[39m     [38;5;28;01mif[39;00m [38;5;28misinstance[39m(casted_key, [38;5;28mslice[39m) [38;5;129;01mor[39;00m (");],
+[#NormalTok("[32m   3815[39m         [38;5;28misinstance[39m(casted_key, abc.Iterable)");],
+[#NormalTok("[32m   3816[39m         [38;5;129;01mand[39;00m [38;5;28many[39m([38;5;28misinstance[39m(x, [38;5;28mslice[39m) [38;5;28;01mfor[39;00m x [38;5;129;01min[39;00m casted_key)");],
+[#NormalTok("[32m   3817[39m     ):");],
+[#NormalTok("[32m   3818[39m         [38;5;28;01mraise[39;00m InvalidIndexError(key)");],
+[#NormalTok("[32m-> [39m[32m3819[39m     [38;5;28;01mraise[39;00m [38;5;167;01mKeyError[39;00m(key) [38;5;28;01mfrom[39;00m[38;5;250m [39m[34;01merr[39;00m");],
+[#NormalTok("[32m   3820[39m [38;5;28;01mexcept[39;00m [38;5;167;01mTypeError[39;00m:");],
+[#NormalTok("[32m   3821[39m     [38;5;66;03m# If we have a listlike key, _check_indexing_error will raise[39;00m");],
+[#NormalTok("[32m   3822[39m     [38;5;66;03m#  InvalidIndexError. Otherwise we fall through and re-raise[39;00m");],
+[#NormalTok("[32m   3823[39m     [38;5;66;03m#  the TypeError.[39;00m");],
+[#NormalTok("[32m   3824[39m     [38;5;28mself[39m._check_indexing_error(key)");],
+[],
+[#NormalTok("[31mKeyError[39m: 'Faculty'");],));
 ]
 ]
-#strong[Undefined columns selected.] A column name in brackets does not exist, often because of a typo or wrong capitals:
+#strong[\3. #NormalTok("TypeError: unsupported operand type(s)");] Attempting mathematical operations on incompatible data types (for example, multiplying text strings):
 
 #block[
-#Skylighting(([#NormalTok("students[, ");#StringTok("\"Faculty\"");#NormalTok("]");],));
+#Skylighting(([#CommentTok("\"6.5\"");#NormalTok(" ");#OperatorTok("*");#NormalTok(" ");#StringTok("\"2\"");],));
 #block[
-#Skylighting(([#NormalTok("Error in `[.data.frame`(students, , \"Faculty\"): undefined columns selected");],));
+#Skylighting(([#NormalTok("TypeError: can't multiply sequence by non-int of type 'str'");],
+[#NormalTok("[31m---------------------------------------------------------------------------[39m");],
+[#NormalTok("[31mTypeError[39m                                 Traceback (most recent call last)");],
+[#NormalTok("[36mCell[39m[36m [39m[32mIn[35][39m[32m, line 1[39m");],
+[#NormalTok("[32m----> [39m[32m1[39m [33;43m\"[39;49m[33;43m6.5[39;49m[33;43m\"[39;49m[43m [49m[43m*[49m[43m [49m[33;43m\"[39;49m[33;43m2[39;49m[33;43m\"[39;49m");],
+[],
+[#NormalTok("[31mTypeError[39m: can't multiply sequence by non-int of type 'str'");],));
 ]
 ]
-When the problem is not obvious, check spelling and capitals first, then check that every line above was run, then read the help page of the function. Copying the error message into a search engine works surprisingly often, because someone has almost always met it before.
+#strong[\4. #NormalTok("FileNotFoundError: No such file or directory");] Python searched the current working directory but could not locate the target filename. Verify your relative path against the folder opened in VS Code.
 
-== A first summary
-<a-first-summary>
-With the data open, #NormalTok("summary()"); gives a quick overview of every column: averages and ranges for numbers, counts for factors, and the number of missing values. Here it is for the first semester, one row per student:
+== Descriptive summary of cohort measurements
+<descriptive-summary-of-cohort-measurements>
+With the data structures in place, Pandas provides #NormalTok(".describe()"); for a rapid multi-variable statistical overview of central tendency, dispersion, and range:
 
-#block[
-#Skylighting(([#FunctionTok("summary");#NormalTok("(first_semester[, ");#FunctionTok("c");#NormalTok("(");#StringTok("\"gpa\"");#NormalTok(", ");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"study_hours\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok(")])");],));
-#block[
-#Skylighting(([#NormalTok("      gpa         sleep_hours      study_hours      wellbeing    ");],
-[#NormalTok(" Min.   :2.170   Min.   : 3.500   Min.   : 2.00   Min.   :24.00  ");],
-[#NormalTok(" 1st Qu.:2.888   1st Qu.: 5.800   1st Qu.:18.00   1st Qu.:52.00  ");],
-[#NormalTok(" Median :3.100   Median : 6.500   Median :26.00   Median :60.00  ");],
-[#NormalTok(" Mean   :3.102   Mean   : 6.484   Mean   :27.64   Mean   :60.46  ");],
-[#NormalTok(" 3rd Qu.:3.340   3rd Qu.: 7.200   3rd Qu.:37.00   3rd Qu.:69.00  ");],
-[#NormalTok(" Max.   :4.000   Max.   :10.000   Max.   :67.00   Max.   :93.00  ");],
-[#NormalTok("                 NA's   :6        NA's   :8                      ");],));
-]
-]
-Already, the summary shows that the average student sleeps less than 7 hours, and that a few values are missing (#NormalTok("NA's");). Chapter 6 turns this quick look into a full description of the data.
+#Skylighting(([#NormalTok("first_semester[");],
+[#NormalTok("    [");#StringTok("\"gpa\"");#NormalTok(", ");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"study_hours\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok("]");],
+[#NormalTok("].describe().");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],));
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[gpa], table.cell(align: right)[sleep\_hours], table.cell(align: right)[study\_hours], table.cell(align: right)[wellbeing],),
+  table.hline(),
+  table.cell(align: horizon)[count], [600.00], [594.00], [592.00], [600.00],
+  table.cell(align: horizon)[mean], [3.10], [6.48], [27.64], [60.46],
+  table.cell(align: horizon)[std], [0.33], [1.03], [13.06], [12.01],
+  table.cell(align: horizon)[min], [2.17], [3.50], [2.00], [24.00],
+  table.cell(align: horizon)[25%], [2.89], [5.80], [18.00], [52.00],
+  table.cell(align: horizon)[50%], [3.10], [6.50], [26.00], [60.00],
+  table.cell(align: horizon)[75%], [3.34], [7.20], [37.00], [69.00],
+  table.cell(align: horizon)[max], [4.00], [10.00], [67.00], [93.00],
+)
+This single command confirms that in semester 1, students slept an average of 6.48 hours (standard deviation = 0.94), well below recommended benchmarks. In #ref(<sec-ch06>, supplement: [Chapter]), we expand these basic summaries into publication-ready descriptive tables.
 
 #block[
 #callout(
 body: 
 [
-#NormalTok("ToothGrowth"); is a real dataset that comes with R, from an experiment on the effect of vitamin C on tooth growth in 60 guinea pigs. Its structure is typical of experiments in health research: an outcome, a treatment group, and a dose.
+The #NormalTok("penguins"); dataset bundled with #NormalTok("seaborn"); provides a classic biological sample across 344 observations and 7 variables:
 
+#Skylighting(([#ImportTok("import");#NormalTok(" seaborn ");#ImportTok("as");#NormalTok(" sns");],
+[],
+[#NormalTok("penguins ");#OperatorTok("=");#NormalTok(" sns.load_dataset(");#StringTok("\"penguins\"");#NormalTok(")");],
+[#NormalTok("penguins.info()");],
+[#NormalTok("penguins[[");#StringTok("\"bill_length_mm\"");#NormalTok(", ");#StringTok("\"bill_depth_mm\"");#NormalTok(", ");#StringTok("\"body_mass_g\"");#NormalTok("]].describe().");#BuiltInTok("round");#NormalTok("(");#DecValTok("1");#NormalTok(")");],));
 #block[
-#Skylighting(([#FunctionTok("str");#NormalTok("(ToothGrowth)");],));
-#block[
-#Skylighting(([#NormalTok("'data.frame':   60 obs. of  3 variables:");],
-[#NormalTok(" $ len : num  4.2 11.5 7.3 5.8 6.4 10 11.2 11.2 5.2 7 ...");],
-[#NormalTok(" $ supp: Factor w/ 2 levels \"OJ\",\"VC\": 2 2 2 2 2 2 2 2 2 2 ...");],
-[#NormalTok(" $ dose: num  0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 0.5 ...");],));
+#Skylighting(([#NormalTok("<class 'pandas.core.frame.DataFrame'>");],
+[#NormalTok("RangeIndex: 344 entries, 0 to 343");],
+[#NormalTok("Data columns (total 7 columns):");],
+[#NormalTok(" #   Column             Non-Null Count  Dtype  ");],
+[#NormalTok("---  ------             --------------  -----  ");],
+[#NormalTok(" 0   species            344 non-null    object ");],
+[#NormalTok(" 1   island             344 non-null    object ");],
+[#NormalTok(" 2   bill_length_mm     342 non-null    float64");],
+[#NormalTok(" 3   bill_depth_mm      342 non-null    float64");],
+[#NormalTok(" 4   flipper_length_mm  342 non-null    float64");],
+[#NormalTok(" 5   body_mass_g        342 non-null    float64");],
+[#NormalTok(" 6   sex                333 non-null    object ");],
+[#NormalTok("dtypes: float64(4), object(3)");],
+[#NormalTok("memory usage: 18.9+ KB");],));
 ]
-#Skylighting(([#FunctionTok("table");#NormalTok("(ToothGrowth");#SpecialCharTok("$");#NormalTok("supp, ToothGrowth");#SpecialCharTok("$");#NormalTok("dose)");],));
-#block[
-#Skylighting(([#NormalTok("    ");],
-[#NormalTok("     0.5  1  2");],
-[#NormalTok("  OJ  10 10 10");],
-[#NormalTok("  VC  10 10 10");],));
-]
-]
-The variable #NormalTok("supp"); is already a factor with two levels, the two ways the vitamin was given (orange juice, #NormalTok("OJ");, or ascorbic acid, #NormalTok("VC");), and the table shows 10 animals for every combination of method and dose. The unit of analysis is the animal: each row is one guinea pig.
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[bill\_length\_mm], table.cell(align: right)[bill\_depth\_mm], table.cell(align: right)[body\_mass\_g],),
+  table.hline(),
+  table.cell(align: horizon)[count], [342.0], [342.0], [342.0],
+  table.cell(align: horizon)[mean], [43.9], [17.2], [4201.8],
+  table.cell(align: horizon)[std], [5.5], [2.0], [802.0],
+  table.cell(align: horizon)[min], [32.1], [13.1], [2700.0],
+  table.cell(align: horizon)[25%], [39.2], [15.6], [3550.0],
+  table.cell(align: horizon)[50%], [44.4], [17.3], [4050.0],
+  table.cell(align: horizon)[75%], [48.5], [18.7], [4750.0],
+  table.cell(align: horizon)[max], [59.6], [21.5], [6300.0],
+)
+Notice the structural equivalence to human health studies: each row is a measured organism, categorical variables represent species and islands, and numeric metrics capture physiological dimensions.
 
 ]
 , 
@@ -2057,53 +2074,52 @@ white
 <chapter-review-1>
 === Summary
 <summary-1>
-- Data is the record of measurements: a table of cases (rows) and variables (columns). The unit of analysis is what one row represents, and the same study can have more than one.
-- A #strong[vector] holds the values of one variable, all of one type. Mixing types turns everything into text.
-- Most operations work on every value of a vector at once. #NormalTok("[ ]"); picks values by position or by a condition (logical indexing).
-- A #strong[factor] holds categories with a fixed set of #strong[levels], whose order you can set. The kind of measurement decides whether a variable should be a factor or a number.
-- A #strong[data frame] is a table: one row per case, one column (a vector) per variable. Select with #NormalTok("$"); or #NormalTok("[rows, columns]");, and use #NormalTok("str()"); to see its structure.
-- A #strong[matrix] is a grid of one type, often a result such as a correlation matrix. A #strong[list] can hold anything; statistical results are lists.
-- #NormalTok("read.csv()");, #NormalTok("read_excel()"); (readxl), and #NormalTok("read_sav()"); (haven) import data. haven keeps SPSS labels, and #NormalTok("as_factor()"); turns them into factors. #NormalTok("write.csv()");, #NormalTok("write_xlsx()");, and #NormalTok("write_sav()"); export data.
-- A #strong[codebook] records what every variable means and how it was measured; SPSS labels provide much of it.
-- Error messages say what R could not do. Read them, and check spelling and capitals first.
+- Quantitative data is organized as a rectangular matrix where rows represent #strong[cases] and columns represent #strong[variables]. The #strong[unit of analysis] defines what a single row represents (#NormalTok("students"); vs repeated #NormalTok("semesters");).
+- A #strong[Pandas Series] holds values of a single variable. Operations are vectorized, executing across all elements simultaneously without explicit loops.
+- Python uses #strong[0-based indexing]. Positional extraction relies on #NormalTok(".iloc[]");, while conditional filtering relies on boolean masks #NormalTok("series[condition]");.
+- Categories are managed via the Pandas #NormalTok("category"); dtype, which supports explicit hierarchical ordering for ordinal scales.
+- A #strong[DataFrame] is a two-dimensional tabular grid composed of individual Series. Subsetting rows and columns simultaneously is performed with #NormalTok(".loc[rows, cols]");.
+- Data is imported using #NormalTok("pd.read_csv()");, #NormalTok("pd.read_excel()");, and #NormalTok("pyreadstat.read_sav()");. SPSS survey question labels and value encodings are preserved in metadata.
+- An automated #strong[codebook] extracts column names, survey prompts, and data types to document study variables systematically.
 
 === Key terms
 <key-terms-1>
-Case, variable, data matrix, unit of analysis, data structure, vector, type conversion, logical indexing, factor, level, data frame, tibble, matrix, list, CSV file, variable label, value label, codebook, error message.
+Data matrix, unit of analysis, Pandas Series, vectorization, boolean indexing, 0-based indexing, #NormalTok(".iloc[]");, #NormalTok(".loc[]");, categorical dtype, ordinal scale, DataFrame, correlation matrix, dictionary, CSV, SPSS metadata, codebook, traceback.
 
 == Exercises
 <exercises-1>
-The #link("../playground/chapter02.html")[playground] has these and more, with hints and solutions, in your browser or as an RStudio project to download.
+Work through these exercises in your browser using the #link("../playground/chapter02.html")[Chapter 2 Playground] or download the starter project for VS Code.
 
-+ Create a vector with the ages 24, 31, 28, 45, and 26. Use logical indexing to show only the ages over 30, and count how many there are.
-+ Create a factor from #NormalTok("c(\"Agree\", \"Disagree\", \"Neutral\", \"Agree\")"); whose levels run from #NormalTok("\"Disagree\""); through #NormalTok("\"Neutral\""); to #NormalTok("\"Agree\"");. Check the order with #NormalTok("table()");.
-+ Using #NormalTok("students");, count the students who are part-time and have children. (Use #NormalTok("&");.)
-+ Add a column to #NormalTok("students"); called #NormalTok("over_30"); that is #NormalTok("TRUE"); for students older than 30. Count those students, and explain why the count might need #NormalTok("na.rm = TRUE");.
-+ Read the SPSS file with #NormalTok("read_sav()"); and find the question behind #NormalTok("support_3");.
-+ State the unit of analysis of each table in the package: #NormalTok("students");, #NormalTok("semesters");, #NormalTok("questionnaire");, and #NormalTok("supervisors");. For each, name one research question it could answer on its own.
++ Create a Series with participant ages: #NormalTok("24, 31, 28, 45, 26");. Use boolean indexing to filter ages over 30, and compute how many participants exceed 30.
++ Construct an ordered Categorical Series from #NormalTok("[\"Agree\", \"Disagree\", \"Neutral\", \"Agree\"]"); with categories ordered logically from #NormalTok("\"Disagree\""); to #NormalTok("\"Neutral\""); to #NormalTok("\"Agree\"");. Verify the ordering using #NormalTok(".value_counts(sort=False)");.
++ In #NormalTok("students");, use boolean indexing with #NormalTok("&"); to count how many participants study part-time (#NormalTok("study_mode == \"Part-time\"");) AND have dependent children (#NormalTok("children == \"Yes\"");).
++ Add a boolean column #NormalTok("over_30"); to #NormalTok("students"); that evaluates to #NormalTok("True"); for students older than 30. Check how many missing values exist using #NormalTok(".isna().sum()");.
++ Import #NormalTok("wellbeing.sav"); with #NormalTok("pyreadstat"); and extract the full survey question text mapped to the variable #NormalTok("support_3");.
++ Contrast the unit of analysis in #NormalTok("students"); versus #NormalTok("counselling_visits");. Formulate one distinct research question appropriate for each dataset.
 
 == Further reading
 <further-reading-1>
-- #emph[R for Data Science] @wickham2023: chapters "Data import", "Spreadsheets", and "Factors" go further with importing and with categories, and "A field guide to base R" covers the square-bracket style used in this chapter.
-- The documentation of the #link("https://readxl.tidyverse.org")[readxl] and #link("https://haven.tidyverse.org")[haven] packages.
+- #emph[Python for Data Analysis] (3rd ed.) by Wes McKinney @mckinney2022: the authoritative guide to Pandas indexing, Series arithmetic, and data wrangling by the creator of Pandas.
+- Official documentation for #link("https://pandas.pydata.org/docs/")[pandas.pydata.org] and #link("https://github.com/Roche/pyreadstat")[pyreadstat].
 
-= Data Manipulation
+= Data Manipulation and Cleaning with Pandas
 <sec-ch03>
-Raw data is never ready for analysis. Survey tools record test responses alongside real ones, participants submit the same form twice, one person types "female" and another "F", missing answers are stored as #NormalTok("99");, and a slip of the finger turns an age of 25 into 250. None of this is unusual, and none of it is harmless: a single #NormalTok("99"); among answers from 1 to 5 can shift an average noticeably, and a duplicated row counts one participant twice. Preparing data for analysis, usually called #strong[data cleaning], often takes longer than the analysis itself, and its decisions shape every result that follows.
+Raw data is never immediately suitable for scientific analysis. Online survey platforms log incomplete test runs alongside genuine responses, participants occasionally click submit twice, demographic text fields arrive with divergent spellings ("female", "Female", "F"), unanswered items are encoded as #NormalTok("99");, and clerical typos turn an age of 25 into 250. None of these occurrences are rare, and none are harmless: a single stray #NormalTok("99"); embedded in a 1-to-5 Likert scale can severely distort an empirical mean, and an undetected duplicate observation artificially inflates sample size while biasing standard errors. Preparing raw measurements for modeling---a discipline known as #strong[data cleaning and wrangling]---routinely occupies more time than model estimation itself, and every analytical decision made during cleaning directly shapes the findings.
 
-Cleaning is therefore part of the analysis, not a chore before it, and it deserves the same care. This chapter first sets out what clean data means and the principles that guide cleaning decisions. It then introduces the tools for working with tables in R: choosing cases and variables, creating new variables, summarising by group, reshaping, and combining tables. Finally, it applies them, step by step, to the raw export of the wellbeing survey that Chapter 2 opened: the file with test responses, duplicated rows, the same answer spelled four ways, ages stored as text, and missing values coded as #NormalTok("99");.
+Data cleaning is an intrinsic phase of statistical analysis, not an inconvenient preliminary chore, and it demands rigorous methodological care. This chapter begins by defining what constitutes clean, trustworthy data and establishing core principles for reproducible data preparation. It then presents the foundational manipulation toolkit in Python: filtering observations, selecting columns, sorting, creating computed variables, aggregating by group, reshaping, and merging relational tables using Pandas. Finally, we apply these techniques step by step to sanitize the raw export of the wellbeing survey introduced in #ref(<sec-ch02>, supplement: [Chapter]) (#NormalTok("wellbeing_raw.xlsx");), handling test records, duplicate submissions, inconsistent textual categories, decimal commas, missing codes, impossible outliers, and reverse-coded questionnaire scales.
 
 #block[
 #callout(
 body: 
 [
-- Explain what clean data means, and why every cleaning decision must be recorded.
-- Explain what tidy data is, and recognise data that is not tidy.
-- Chain steps together with the pipe #NormalTok("|>");.
-- Choose cases and variables, sort, create new variables, and summarise, overall and by group.
-- Reshape data between wide and long formats, and join tables that share an identifier.
-- Clean a real survey export: remove test and duplicate rows, rename variables, fix inconsistent categories, convert text to numbers, and handle missing codes and impossible values.
-- Compute questionnaire scale scores, including reversed items, and report the cleaning in a thesis.
+- Define the five core qualities of clean data and maintain an immutable, auditable cleaning pipeline.
+- Explain the principles of tidy data (variables as columns, observations as rows) and structure data for analysis.
+- Chain Pandas transformations fluently using method chaining and lambda expressions.
+- Filter, subset, sort, compute new variables, and aggregate summaries across groups using #NormalTok(".groupby()"); and #NormalTok(".agg()");.
+- Reshape tabular data between wide and long representations using #NormalTok("pd.melt()"); and #NormalTok(".pivot()");.
+- Merge relational tables across primary and foreign keys using #NormalTok("pd.merge()");, and diagnose attrition with set filtering.
+- Clean an uncurated survey export: eliminate test and duplicate rows, standardize inconsistent categories, convert text to numbers, handle missing codes, and filter out-of-range values.
+- Compute multi-item composite scale scores, including reverse-coded Likert items, and write a transparent data-cleaning section for your thesis methodology.
 
 ]
 , 
@@ -2153,43 +2169,40 @@ white
 ]
 == What clean data means
 <what-clean-data-means>
-Data is clean when it can be trusted to represent what was measured. That broad idea can be broken into five qualities, each of which the survey export fails in some way. Clean data is #strong[valid]: every value is possible for its variable, so there are no ages of 250 or 26 hours of sleep a night. It is #strong[accurate]: values record what the participant actually meant, so a missing-answer code is not mistaken for a real answer. It is #strong[complete] as far as possible, and where values are missing, they are marked as missing rather than hidden behind codes. It is #strong[consistent]: the same answer is always recorded in the same way, so "F", "female", and "Female" become one category. And it is #strong[unique]: each case appears exactly once, with no test entries and no duplicates.
+Data can be considered clean when it faithfully represents the empirical phenomena under investigation. This standard encompasses five distinct qualities:
 
-Each failure distorts results in a different way. A missing-answer code that stays in the data is the easiest to see. Suppose five students answered a question on a 1-to-5 scale, and one of them skipped it, which the survey tool recorded as #NormalTok("99");:
++ #strong[Validity:] Every recorded value conforms to the permissible domain of its variable (e.g., chronological age cannot be 250 years, and daily sleep cannot exceed 24 hours).
++ #strong[Accuracy:] Values capture what respondents actually intended, ensuring system codes (such as #NormalTok("99"); for skipped items) are not treated as genuine quantitative answers.
++ #strong[Completeness:] Data captures all eligible participants, and omitted observations are explicitly marked as missing (#NormalTok("NaN");) rather than masquerading as numbers.
++ #strong[Consistency:] Categorical responses follow a single standardized nomenclature (e.g., #NormalTok("\"F\"");, #NormalTok("\"female\"");, and #NormalTok("\"Female \""); are normalized into #NormalTok("\"Female\"");).
++ #strong[Uniqueness:] Each participant appears exactly once per unit of analysis, with zero test records and zero duplicate submissions.
+
+Violating these criteria distorts empirical conclusions. The impact of unhandled missing-data codes is immediately obvious. Suppose five students answer an item on a 1-to-5 scale, and one student leaves the question blank, which the web software logs as #NormalTok("99");:
 
 #block[
-#Skylighting(([#FunctionTok("library");#NormalTok("(dplyr)");],));
-#block[
-#Skylighting(([],
-[#NormalTok("Attaching package: 'dplyr'");],));
-]
-#block[
-#Skylighting(([#NormalTok("The following objects are masked from 'package:stats':");],
+#Skylighting(([#NormalTok("answers ");#OperatorTok("=");#NormalTok(" pd.Series([");#DecValTok("4");#NormalTok(", ");#DecValTok("3");#NormalTok(", ");#DecValTok("5");#NormalTok(", ");#DecValTok("99");#NormalTok(", ");#DecValTok("2");#NormalTok("])");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Uncleaned mean:\"");#NormalTok(", answers.mean())");],
 [],
-[#NormalTok("    filter, lag");],));
-]
+[#NormalTok("clean_answers ");#OperatorTok("=");#NormalTok(" answers.replace(");#DecValTok("99");#NormalTok(", np.nan)");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Cleaned mean:\"");#NormalTok(", clean_answers.mean())");],));
 #block[
-#Skylighting(([#NormalTok("The following objects are masked from 'package:base':");],
-[],
-[#NormalTok("    intersect, setdiff, setequal, union");],));
-]
-#Skylighting(([#NormalTok("answers ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#DecValTok("4");#NormalTok(", ");#DecValTok("3");#NormalTok(", ");#DecValTok("5");#NormalTok(", ");#DecValTok("99");#NormalTok(", ");#DecValTok("2");#NormalTok(")");],
-[#FunctionTok("mean");#NormalTok("(answers)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 22.6");],));
-]
-#Skylighting(([#FunctionTok("mean");#NormalTok("(");#FunctionTok("na_if");#NormalTok("(answers, ");#DecValTok("99");#NormalTok("), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("[1] 3.5");],));
+#Skylighting(([#NormalTok("Uncleaned mean: 22.6");],
+[#NormalTok("Cleaned mean: 3.5");],));
 ]
 ]
-With the code left in, the average is 22.6, a value that is impossible on a 1-to-5 scale. Marked as missing with #NormalTok("na_if()");, the code drops out, and the average of the four real answers is 3.5. In a real dataset the distortion is usually smaller and therefore harder to notice, which is exactly what makes it dangerous. Duplicates work in a similar way, but on the sample size and the balance of the sample: a participant who appears twice counts twice.
+Leaving #NormalTok("99"); in the calculation produces a mean of #NormalTok("22.6");, a mathematical impossibility on a 5-point scale. When #NormalTok("99"); is properly converted to #NormalTok("NaN");, Pandas excludes the missing entry by default, yielding the true average of #NormalTok("3.5");. In large datasets, such distortions are often smaller and harder to detect visually, making automated cleaning pipelines essential. Duplications exert a similar distorting effect: duplicating a participant gives them double weight in regressions and artificially narrows confidence intervals.
 
-Three principles follow for every cleaning decision. The #strong[raw file is never edited]\; it stays exactly as it was received, and all changes are made by code that starts from it. #strong[Every decision is recorded], in the script and, where it affects the results, in the thesis: how many cases were removed and why, which values were set to missing, how scale scores were built. And #strong[the result is checked after every step], because many cleaning mistakes produce no error message at all. The final section of this chapter shows how to report the cleaning in a thesis.
+Three fundamental rules govern scientific data cleaning:
 
-== Tidy data
-<tidy-data>
-Clean data should also be arranged in a way that makes analysis straightforward. The arrangement used throughout this book is called #strong[tidy data] @wickham2014tidy. In tidy data, each variable forms a column, each observation forms a row, and each value sits in its own cell. The idea is easiest to see in a small example. #ref(<tbl-untidy>, supplement: [Table]) stores two semesters of wellbeing for three students side by side, as a spreadsheet often would.
+- #strong[Raw files remain immutable:] Never edit primary data files directly in Excel. Raw files must remain intact, exactly as received from instruments or survey platforms. All transformations are executed via code.
+- #strong[Every decision is documented:] Your Python script serves as an auditable record of all exclusions, recodings, imputations, and composite score derivations.
+- #strong[Inspect results at every step:] Validate table shapes, unique identifiers, and value distributions after each operation, because many data-cleaning bugs produce no syntax errors.
+
+== Tidy data principles in Python
+<tidy-data-principles-in-python>
+Tabular data should be organized to make analysis straightforward. The standard architecture in modern data science is #strong[tidy data] @wickham2014tidy: 1. Each variable forms a column. 2. Each observation forms a row. 3. Each type of observational unit forms a table.
+
+Consider #ref(<tbl-untidy>, supplement: [Table]), which records two semesters of wellbeing scores for three students side by side, as spreadsheet exports often do.
 
 #figure([
 #table(
@@ -2204,7 +2217,7 @@ Clean data should also be arranged in a way that makes analysis straightforward.
 ], caption: figure.caption(
 position: top, 
 [
-Wellbeing in wide format: one variable, wellbeing, is spread over two columns
+Wellbeing in wide format: the variable 'wellbeing' is spread over multiple columns
 ]), 
 kind: "quarto-float-tbl", 
 supplement: "Table", 
@@ -2212,7 +2225,7 @@ supplement: "Table",
 <tbl-untidy>
 
 
-The table looks neat, but one variable, wellbeing, is spread over two columns, and a second variable, the semester, is hidden inside the column names. #ref(<tbl-tidy>, supplement: [Table]) holds the same six measurements in tidy form.
+While compact for human reading, this layout spreads a single construct (#NormalTok("wellbeing");) across multiple columns, while embedding a second variable (#NormalTok("semester");) inside column headers. In contrast, #ref(<tbl-tidy>, supplement: [Table]) presents the identical measurements in tidy (long) format.
 
 #figure([
 #table(
@@ -2238,811 +2251,746 @@ supplement: "Table",
 <tbl-tidy>
 
 
-Now each of the three variables has its own column, and each row is one observation: one student in one semester. Questions such as "average wellbeing in each semester" become a simple grouped summary. The #NormalTok("students"); table in the package is tidy, with one row per student and one column per variable. The survey export is not: it squeezes four semesters of measurements side by side into one row per student. Much of cleaning consists of making data tidy, because once it is tidy, every tool in this chapter works on it.
+In tidy format, each measurement occupies its own row, and computing grouped summaries---such as mean wellbeing per semester---becomes straightforward. The #NormalTok("students"); table in #NormalTok("data2thesis"); is tidy at the participant level ($N = 600$), whereas #NormalTok("semesters"); is tidy at the semester observation level ($N = 2 \, 326$). Uncurated survey exports, by contrast, frequently pack longitudinal observations side by side. Much of data preparation consists of reshaping data into tidy tables.
 
-== The tidyverse
-<the-tidyverse>
-The tools in this chapter come from the #strong[tidyverse], a collection of packages that share one way of working and are designed for tidy data. This chapter uses four of them: #strong[dplyr] for working with rows and columns, #strong[tidyr] for reshaping data, #strong[stringr] for working with text, and #strong[readr] for turning text into numbers (and for reading and writing files). The whole collection can be installed at once with #NormalTok("install.packages(\"tidyverse\")"); and loaded with #NormalTok("library(tidyverse)");, but this book loads only the packages each chapter needs:
+== The Pandas manipulation toolkit
+<the-pandas-manipulation-toolkit>
+In Python, tabular manipulation centers on #strong[Pandas]. To keep transformations readable and eliminate intermediate variables, we use #strong[method chaining]: calling sequential methods on a DataFrame enclosed within parentheses #NormalTok("(...)");.
 
-#block[
-#Skylighting(([#FunctionTok("library");#NormalTok("(dplyr)");],
-[#FunctionTok("library");#NormalTok("(tidyr)");],
-[#FunctionTok("library");#NormalTok("(stringr)");],
-[#FunctionTok("library");#NormalTok("(readr)");],));
-]
-=== Chaining steps with the pipe
-<chaining-steps-with-the-pipe>
-Analysis is a series of steps: take the data, keep some rows, calculate something, round the result. In Chapter 1, such steps were written by putting functions inside each other:
+Let's illustrate on a small pilot cohort:
 
-#block[
-#Skylighting(([#NormalTok("sleep ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FloatTok("6.5");#NormalTok(", ");#DecValTok("7");#NormalTok(", ");#FloatTok("5.5");#NormalTok(", ");#DecValTok("8");#NormalTok(", ");#DecValTok("6");#NormalTok(")");],
-[#FunctionTok("round");#NormalTok("(");#FunctionTok("mean");#NormalTok("(sleep), ");#DecValTok("1");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6.6");],));
-]
-]
-This reads from the inside out, which gets hard to follow as the steps multiply. The #strong[pipe], written #NormalTok("|>");, writes the steps in the order they happen. It takes the result on its left and passes it as the first argument to the function on its right:
-
-#block[
-#Skylighting(([#NormalTok("sleep ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("mean");#NormalTok("() ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("round");#NormalTok("(");#DecValTok("1");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6.6");],));
-]
-]
-The pipe reads as "and then": take #NormalTok("sleep");, #emph[and then] take the mean, #emph[and then] round it to one decimal place. In RStudio, #strong[Ctrl+Shift+M] (#strong[Cmd+Shift+M] on a Mac) types the pipe for you.
-
-#block[
-#callout(
-body: 
-[
-Before R had its own pipe, the tidyverse used #NormalTok("%>%");, from the magrittr package. You will see it in many tutorials and older scripts. For everything in this book, it does the same job as #NormalTok("|>");.
-
-]
-, 
-title: 
-[
-The older pipe
-]
-, 
-background_color: 
-rgb("#dae6fb")
-, 
-icon_color: 
-rgb("#0758E5")
-, 
-icon: 
-fa-info()
-, 
-body_background_color: 
-white
-)
-]
-== Working with cases and variables
-<working-with-cases-and-variables>
-The dplyr package provides a small set of #strong[verbs], each doing one job. Every verb takes a data frame first and returns a data frame, so verbs can be chained with the pipe. The verbs are easiest to understand on a tiny table. The function #NormalTok("tibble()"); builds one; a #strong[tibble] is the tidyverse's version of a data frame, which prints more neatly:
-
-#block[
-#Skylighting(([#NormalTok("pilot ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("tibble");#NormalTok("(");],
-[#NormalTok("  ");#AttributeTok("student =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"S1\"");#NormalTok(", ");#StringTok("\"S2\"");#NormalTok(", ");#StringTok("\"S3\"");#NormalTok(", ");#StringTok("\"S4\"");#NormalTok(", ");#StringTok("\"S5\"");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("faculty =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Humanities\"");#NormalTok(", ");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Health Sciences\"");#NormalTok(", ");#StringTok("\"Humanities\"");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("sleep   =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FloatTok("6.5");#NormalTok(", ");#FloatTok("7.5");#NormalTok(", ");#FloatTok("5.5");#NormalTok(", ");#DecValTok("8");#NormalTok(", ");#DecValTok("6");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("stress  =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FloatTok("3.2");#NormalTok(", ");#FloatTok("2.1");#NormalTok(", ");#FloatTok("4.5");#NormalTok(", ");#FloatTok("1.8");#NormalTok(", ");#FloatTok("3.9");#NormalTok(")");],
-[#NormalTok(")");],
+#Skylighting(([#NormalTok("pilot ");#OperatorTok("=");#NormalTok(" pd.DataFrame({");],
+[#NormalTok("    ");#StringTok("\"student\"");#NormalTok(": [");#StringTok("\"S1\"");#NormalTok(", ");#StringTok("\"S2\"");#NormalTok(", ");#StringTok("\"S3\"");#NormalTok(", ");#StringTok("\"S4\"");#NormalTok(", ");#StringTok("\"S5\"");#NormalTok("],");],
+[#NormalTok("    ");#StringTok("\"faculty\"");#NormalTok(": [");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Humanities\"");#NormalTok(", ");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Health Sciences\"");#NormalTok(", ");#StringTok("\"Humanities\"");#NormalTok("],");],
+[#NormalTok("    ");#StringTok("\"sleep\"");#NormalTok(":   [");#FloatTok("6.5");#NormalTok(", ");#FloatTok("7.5");#NormalTok(", ");#FloatTok("5.5");#NormalTok(", ");#FloatTok("8.0");#NormalTok(", ");#FloatTok("6.0");#NormalTok("],");],
+[#NormalTok("    ");#StringTok("\"stress\"");#NormalTok(":  [");#FloatTok("3.2");#NormalTok(", ");#FloatTok("2.1");#NormalTok(", ");#FloatTok("4.5");#NormalTok(", ");#FloatTok("1.8");#NormalTok(", ");#FloatTok("3.9");#NormalTok("]");],
+[#NormalTok("})");],
 [#NormalTok("pilot");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 5 × 4");],
-[#NormalTok("  student faculty         sleep stress");],
-[#NormalTok("  <chr>   <chr>           <dbl>  <dbl>");],
-[#NormalTok("1 S1      Education         6.5    3.2");],
-[#NormalTok("2 S2      Humanities        7.5    2.1");],
-[#NormalTok("3 S3      Education         5.5    4.5");],
-[#NormalTok("4 S4      Health Sciences   8      1.8");],
-[#NormalTok("5 S5      Humanities        6      3.9");],));
-]
-]
-=== Choosing the cases you need
-<choosing-the-cases-you-need>
-Most analyses use only some of the cases: the students of one faculty, the first semester, the participants who completed the study. The verb #NormalTok("filter()"); keeps the rows that meet a condition:
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student], table.cell(align: right)[faculty], table.cell(align: right)[sleep], table.cell(align: right)[stress],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S1], [Education], [6.5], [3.2],
+  table.cell(align: horizon)[1], [S2], [Humanities], [7.5], [2.1],
+  table.cell(align: horizon)[2], [S3], [Education], [5.5], [4.5],
+  table.cell(align: horizon)[3], [S4], [Health Sciences], [8.0], [1.8],
+  table.cell(align: horizon)[4], [S5], [Humanities], [6.0], [3.9],
+)
+=== Filtering observations
+<filtering-observations>
+Most analyses focus on a defined subset of cases: participants in a specific faculty, students observed in semester 1, or those who completed a treatment protocol. Observations are filtered using boolean indexing or the #NormalTok(".query()"); method:
 
-#block[
-#Skylighting(([#NormalTok("pilot ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("filter");#NormalTok("(sleep ");#SpecialCharTok("<");#NormalTok(" ");#DecValTok("7");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 3 × 4");],
-[#NormalTok("  student faculty    sleep stress");],
-[#NormalTok("  <chr>   <chr>      <dbl>  <dbl>");],
-[#NormalTok("1 S1      Education    6.5    3.2");],
-[#NormalTok("2 S3      Education    5.5    4.5");],
-[#NormalTok("3 S5      Humanities   6      3.9");],));
-]
-]
-Several conditions separated by commas must all be true:
+#Skylighting(([#CommentTok("# Boolean indexing");],
+[#NormalTok("pilot[pilot[");#StringTok("\"sleep\"");#NormalTok("] ");#OperatorTok("<");#NormalTok(" ");#DecValTok("7");#NormalTok("]");],
+[],
+[#CommentTok("# Multiple conditions combined with & (AND)");],
+[#NormalTok("pilot[(pilot[");#StringTok("\"sleep\"");#NormalTok("] ");#OperatorTok("<");#NormalTok(" ");#DecValTok("7");#NormalTok(") ");#OperatorTok("&");#NormalTok(" (pilot[");#StringTok("\"faculty\"");#NormalTok("] ");#OperatorTok("==");#NormalTok(" ");#StringTok("\"Education\"");#NormalTok(")]");],
+[],
+[#CommentTok("# Matching against a collection using .isin()");],
+[#NormalTok("pilot[pilot[");#StringTok("\"faculty\"");#NormalTok("].isin([");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Humanities\"");#NormalTok("])]");],));
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student], table.cell(align: right)[faculty], table.cell(align: right)[sleep], table.cell(align: right)[stress],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S1], [Education], [6.5], [3.2],
+  table.cell(align: horizon)[1], [S2], [Humanities], [7.5], [2.1],
+  table.cell(align: horizon)[2], [S3], [Education], [5.5], [4.5],
+  table.cell(align: horizon)[4], [S5], [Humanities], [6.0], [3.9],
+)
+Alternatively, #NormalTok(".query()"); offers a concise syntax using expression strings:
 
-#block[
-#Skylighting(([#NormalTok("pilot ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("filter");#NormalTok("(sleep ");#SpecialCharTok("<");#NormalTok(" ");#DecValTok("7");#NormalTok(", faculty ");#SpecialCharTok("==");#NormalTok(" ");#StringTok("\"Education\"");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 2 × 4");],
-[#NormalTok("  student faculty   sleep stress");],
-[#NormalTok("  <chr>   <chr>     <dbl>  <dbl>");],
-[#NormalTok("1 S1      Education   6.5    3.2");],
-[#NormalTok("2 S3      Education   5.5    4.5");],));
-]
-]
-To keep rows matching any of several values, use #NormalTok("%in%");:
+#Skylighting(([#NormalTok("pilot.query(");#StringTok("\"sleep < 7 and faculty == 'Education'\"");#NormalTok(")");],));
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student], table.cell(align: right)[faculty], table.cell(align: right)[sleep], table.cell(align: right)[stress],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S1], [Education], [6.5], [3.2],
+  table.cell(align: horizon)[2], [S3], [Education], [5.5], [4.5],
+)
+Every filtering step represents an explicit sampling decision that must be reported in your thesis methodology: an analysis restricted to full-time students answers a fundamentally different question than one encompassing the entire cohort.
 
-#block[
-#Skylighting(([#NormalTok("pilot ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("filter");#NormalTok("(faculty ");#SpecialCharTok("%in%");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Humanities\"");#NormalTok("))");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 4 × 4");],
-[#NormalTok("  student faculty    sleep stress");],
-[#NormalTok("  <chr>   <chr>      <dbl>  <dbl>");],
-[#NormalTok("1 S1      Education    6.5    3.2");],
-[#NormalTok("2 S2      Humanities   7.5    2.1");],
-[#NormalTok("3 S3      Education    5.5    4.5");],
-[#NormalTok("4 S5      Humanities   6      3.9");],));
-]
-]
-Every filter is a decision about the sample, and should be reported: an analysis of "students who completed all four semesters" answers a different question from an analysis of all students.
+=== Selecting and dropping columns
+<selecting-and-dropping-columns>
+Real-world datasets often contain dozens of administrative or technical columns irrelevant to a given hypothesis. In Pandas, pass a list of column names inside square brackets to select specific variables, or call #NormalTok(".drop()"); to remove unneeded columns:
 
-=== Choosing variables
-<choosing-variables>
-Large datasets have far more variables than any one analysis needs. The verb #NormalTok("select()"); keeps the columns you name, in the order you name them, and a minus sign drops a column instead:
-
-#block[
-#Skylighting(([#NormalTok("pilot ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("select");#NormalTok("(student, sleep)");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 5 × 2");],
-[#NormalTok("  student sleep");],
-[#NormalTok("  <chr>   <dbl>");],
-[#NormalTok("1 S1        6.5");],
-[#NormalTok("2 S2        7.5");],
-[#NormalTok("3 S3        5.5");],
-[#NormalTok("4 S4        8  ");],
-[#NormalTok("5 S5        6  ");],));
-]
-#Skylighting(([#NormalTok("pilot ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("select");#NormalTok("(");#SpecialCharTok("-");#NormalTok("faculty)");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 5 × 3");],
-[#NormalTok("  student sleep stress");],
-[#NormalTok("  <chr>   <dbl>  <dbl>");],
-[#NormalTok("1 S1        6.5    3.2");],
-[#NormalTok("2 S2        7.5    2.1");],
-[#NormalTok("3 S3        5.5    4.5");],
-[#NormalTok("4 S4        8      1.8");],
-[#NormalTok("5 S5        6      3.9");],));
-]
-]
+#Skylighting(([#CommentTok("# Keep only student ID and sleep hours");],
+[#NormalTok("pilot[[");#StringTok("\"student\"");#NormalTok(", ");#StringTok("\"sleep\"");#NormalTok("]]");],
+[],
+[#CommentTok("# Drop the faculty column");],
+[#NormalTok("pilot.drop(columns");#OperatorTok("=");#NormalTok("[");#StringTok("\"faculty\"");#NormalTok("])");],));
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student], table.cell(align: right)[sleep], table.cell(align: right)[stress],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S1], [6.5], [3.2],
+  table.cell(align: horizon)[1], [S2], [7.5], [2.1],
+  table.cell(align: horizon)[2], [S3], [5.5], [4.5],
+  table.cell(align: horizon)[3], [S4], [8.0], [1.8],
+  table.cell(align: horizon)[4], [S5], [6.0], [3.9],
+)
 === Sorting cases
 <sorting-cases>
-Sorting helps when looking at data, for example to see the most extreme values first. The verb #NormalTok("arrange()"); sorts rows by one or more columns, and #NormalTok("desc()"); sorts from largest to smallest:
+Sorting helps inspect distributions, identify extreme values, or prepare multi-wave data for lagged calculations. Use #NormalTok(".sort_values()");:
 
-#block[
-#Skylighting(([#NormalTok("pilot ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("arrange");#NormalTok("(");#FunctionTok("desc");#NormalTok("(stress))");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 5 × 4");],
-[#NormalTok("  student faculty         sleep stress");],
-[#NormalTok("  <chr>   <chr>           <dbl>  <dbl>");],
-[#NormalTok("1 S3      Education         5.5    4.5");],
-[#NormalTok("2 S5      Humanities        6      3.9");],
-[#NormalTok("3 S1      Education         6.5    3.2");],
-[#NormalTok("4 S2      Humanities        7.5    2.1");],
-[#NormalTok("5 S4      Health Sciences   8      1.8");],));
-]
-]
-=== Creating new variables
-<creating-new-variables>
-Many variables used in analysis are calculated from others: a total score, a conversion to other units, a category derived from a number. The verb #NormalTok("mutate()"); adds new columns calculated from existing ones, or changes existing ones:
-
-#block[
-#Skylighting(([#NormalTok("pilot ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("mutate");#NormalTok("(");],
-[#NormalTok("  ");#AttributeTok("sleep_minutes =");#NormalTok(" sleep ");#SpecialCharTok("*");#NormalTok(" ");#DecValTok("60");#NormalTok(",");],
-[#NormalTok("  ");#AttributeTok("short_sleep   =");#NormalTok(" sleep ");#SpecialCharTok("<");#NormalTok(" ");#DecValTok("7");],
-[#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 5 × 6");],
-[#NormalTok("  student faculty         sleep stress sleep_minutes short_sleep");],
-[#NormalTok("  <chr>   <chr>           <dbl>  <dbl>         <dbl> <lgl>      ");],
-[#NormalTok("1 S1      Education         6.5    3.2           390 TRUE       ");],
-[#NormalTok("2 S2      Humanities        7.5    2.1           450 FALSE      ");],
-[#NormalTok("3 S3      Education         5.5    4.5           330 TRUE       ");],
-[#NormalTok("4 S4      Health Sciences   8      1.8           480 FALSE      ");],
-[#NormalTok("5 S5      Humanities        6      3.9           360 TRUE       ");],));
-]
-]
-To sort values into categories, #NormalTok("case_when()"); checks conditions in order and uses the first one that is true, and #NormalTok(".default"); catches everything else:
-
-#block[
-#Skylighting(([#NormalTok("pilot ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("mutate");#NormalTok("(");],
-[#NormalTok("  ");#AttributeTok("stress_level =");#NormalTok(" ");#FunctionTok("case_when");#NormalTok("(");],
-[#NormalTok("    stress ");#SpecialCharTok(">=");#NormalTok(" ");#DecValTok("4");#NormalTok(" ");#SpecialCharTok("~");#NormalTok(" ");#StringTok("\"High\"");#NormalTok(",");],
-[#NormalTok("    stress ");#SpecialCharTok(">=");#NormalTok(" ");#FloatTok("2.5");#NormalTok(" ");#SpecialCharTok("~");#NormalTok(" ");#StringTok("\"Medium\"");#NormalTok(",");],
-[#NormalTok("    ");#AttributeTok(".default =");#NormalTok(" ");#StringTok("\"Low\"");],
-[#NormalTok("  )");],
-[#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 5 × 5");],
-[#NormalTok("  student faculty         sleep stress stress_level");],
-[#NormalTok("  <chr>   <chr>           <dbl>  <dbl> <chr>       ");],
-[#NormalTok("1 S1      Education         6.5    3.2 Medium      ");],
-[#NormalTok("2 S2      Humanities        7.5    2.1 Low         ");],
-[#NormalTok("3 S3      Education         5.5    4.5 High        ");],
-[#NormalTok("4 S4      Health Sciences   8      1.8 Low         ");],
-[#NormalTok("5 S5      Humanities        6      3.9 Medium      ");],));
-]
-]
-Turning a number into categories in this way loses information, since a stress score of 3.9 and one of 2.6 become the same "Medium". It is useful for description, but analyses should normally keep the original number.
-
-=== Summarising, overall and by group
-<summarising-overall-and-by-group>
-Summaries reduce many values to a few numbers. The verb #NormalTok("summarise()"); reduces a table to one row of summaries, and #NormalTok("n()"); counts the rows:
-
-#block[
-#Skylighting(([#NormalTok("pilot ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("summarise");#NormalTok("(");],
-[#NormalTok("  ");#AttributeTok("mean_sleep =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(sleep),");],
-[#NormalTok("  ");#AttributeTok("students   =");#NormalTok(" ");#FunctionTok("n");#NormalTok("()");],
-[#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 1 × 2");],
-[#NormalTok("  mean_sleep students");],
-[#NormalTok("       <dbl>    <int>");],
-[#NormalTok("1        6.7        5");],));
-]
-]
-The real power comes with groups. The #NormalTok(".by"); argument calculates the summary separately for each group:
-
-#block[
-#Skylighting(([#NormalTok("pilot ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("summarise");#NormalTok("(");],
-[#NormalTok("  ");#AttributeTok("mean_sleep =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(sleep),");],
-[#NormalTok("  ");#AttributeTok("students   =");#NormalTok(" ");#FunctionTok("n");#NormalTok("(),");],
-[#NormalTok("  ");#AttributeTok(".by =");#NormalTok(" faculty");],
-[#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 3 × 3");],
-[#NormalTok("  faculty         mean_sleep students");],
-[#NormalTok("  <chr>                <dbl>    <int>");],
-[#NormalTok("1 Education             6           2");],
-[#NormalTok("2 Humanities            6.75        2");],
-[#NormalTok("3 Health Sciences       8           1");],));
-]
-]
-For simple counts, #NormalTok("count()"); is a shortcut:
-
-#block[
-#Skylighting(([#NormalTok("pilot ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("count");#NormalTok("(faculty)");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 3 × 2");],
-[#NormalTok("  faculty             n");],
-[#NormalTok("  <chr>           <int>");],
-[#NormalTok("1 Education           2");],
-[#NormalTok("2 Health Sciences     1");],
-[#NormalTok("3 Humanities          2");],));
-]
-]
-#block[
-#callout(
-body: 
-[
-In many tutorials you will see #NormalTok("group_by(faculty) |> summarise(...)"); instead of the #NormalTok(".by"); argument. Both give the same result. The #NormalTok(".by"); argument is newer and keeps each step self-contained, so this book uses it.
-
-]
-, 
-title: 
-[
-Grouping in older code
-]
-, 
-background_color: 
-rgb("#dae6fb")
-, 
-icon_color: 
-rgb("#0758E5")
-, 
-icon: 
-fa-info()
-, 
-body_background_color: 
-white
+#Skylighting(([#CommentTok("# Sort by stress in descending order");],
+[#NormalTok("pilot.sort_values(");#StringTok("\"stress\"");#NormalTok(", ascending");#OperatorTok("=");#VariableTok("False");#NormalTok(")");],));
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student], table.cell(align: right)[faculty], table.cell(align: right)[sleep], table.cell(align: right)[stress],),
+  table.hline(),
+  table.cell(align: horizon)[2], [S3], [Education], [5.5], [4.5],
+  table.cell(align: horizon)[4], [S5], [Humanities], [6.0], [3.9],
+  table.cell(align: horizon)[0], [S1], [Education], [6.5], [3.2],
+  table.cell(align: horizon)[1], [S2], [Humanities], [7.5], [2.1],
+  table.cell(align: horizon)[3], [S4], [Health Sciences], [8.0], [1.8],
 )
-]
-=== Combining the steps
-<combining-the-steps>
-Each verb is simple, but chained together they answer real questions. One such question concerns how average wellbeing changed over the four semesters, separately for students who were and were not invited to the workshop. The semester records are in #NormalTok("semesters");, and the workshop group is in #NormalTok("students");, so the workshop group is first added to the semester records. (The #NormalTok("left_join()"); in the first line is explained in #ref(<sec-joins>, supplement: [Section]).)
+=== Creating and transforming variables
+<creating-and-transforming-variables>
+New variables are derived from existing ones: converting measurement units, calculating composite indices, or binning continuous metrics into clinical categories. New columns can be assigned directly via brackets or dynamically chained using #NormalTok(".assign()");:
 
-#block[
-#Skylighting(([#NormalTok("semesters ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("left_join");#NormalTok("(students ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("select");#NormalTok("(student_id, workshop), ");#FunctionTok("join_by");#NormalTok("(student_id)) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("mean_wellbeing =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(wellbeing),");],
-[#NormalTok("    ");#AttributeTok("students       =");#NormalTok(" ");#FunctionTok("n");#NormalTok("(),");],
-[#NormalTok("    ");#AttributeTok(".by =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(semester, workshop)");],
-[#NormalTok("  ) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("arrange");#NormalTok("(semester, workshop)");],));
-#block[
-#Skylighting(([#NormalTok("  semester    workshop mean_wellbeing students");],
-[#NormalTok("1        1     Invited       60.64667      300");],
-[#NormalTok("2        1 Not invited       60.26667      300");],
-[#NormalTok("3        2     Invited       65.47000      300");],
-[#NormalTok("4        2 Not invited       60.22000      300");],
-[#NormalTok("5        3     Invited       63.22261      283");],
-[#NormalTok("6        3 Not invited       59.22857      280");],
-[#NormalTok("7        4     Invited       60.93286      283");],
-[#NormalTok("8        4 Not invited       58.42500      280");],));
-]
-]
-Read aloud, the code says: take the semester records, #emph[and then] add each student's workshop group, #emph[and then] calculate the average wellbeing and the number of students for each semester and workshop group, #emph[and then] sort the result. In semester 1, before the workshop, the two groups are almost level. From semester 2, the invited students are ahead. Chapter 7 tests whether that difference is larger than chance.
-
-The number of students also drops in semesters 3 and 4. Some students left the study, which is worth remembering: it returns later in this chapter and in Chapter 6.
-
-== Reshaping between wide and long
-<reshaping-between-wide-and-long>
-The same data can be laid out in two ways, as the section on tidy data showed. In #strong[wide] format, repeated measurements sit side by side, one column per occasion. In #strong[long] format, each measurement has its own row. Here is the wide table from #ref(<tbl-untidy>, supplement: [Table]) in R:
-
-#block[
-#Skylighting(([#NormalTok("wide ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("tibble");#NormalTok("(");],
-[#NormalTok("  ");#AttributeTok("student     =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"S1\"");#NormalTok(", ");#StringTok("\"S2\"");#NormalTok(", ");#StringTok("\"S3\"");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("wellbeing_1 =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#DecValTok("58");#NormalTok(", ");#DecValTok("71");#NormalTok(", ");#DecValTok("64");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("wellbeing_2 =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#DecValTok("63");#NormalTok(", ");#DecValTok("70");#NormalTok(", ");#DecValTok("69");#NormalTok(")");],
+#Skylighting(([#NormalTok("pilot ");#OperatorTok("=");#NormalTok(" pilot.assign(");],
+[#NormalTok("    sleep_minutes ");#OperatorTok("=");#NormalTok(" pilot[");#StringTok("\"sleep\"");#NormalTok("] ");#OperatorTok("*");#NormalTok(" ");#DecValTok("60");#NormalTok(",");],
+[#NormalTok("    short_sleep   ");#OperatorTok("=");#NormalTok(" pilot[");#StringTok("\"sleep\"");#NormalTok("] ");#OperatorTok("<");#NormalTok(" ");#DecValTok("7");],
 [#NormalTok(")");],
+[#NormalTok("pilot[[");#StringTok("\"student\"");#NormalTok(", ");#StringTok("\"sleep\"");#NormalTok(", ");#StringTok("\"sleep_minutes\"");#NormalTok(", ");#StringTok("\"short_sleep\"");#NormalTok("]]");],));
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student], table.cell(align: right)[sleep], table.cell(align: right)[sleep\_minutes], table.cell(align: right)[short\_sleep],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S1], [6.5], [390.0], [True],
+  table.cell(align: horizon)[1], [S2], [7.5], [450.0], [False],
+  table.cell(align: horizon)[2], [S3], [5.5], [330.0], [True],
+  table.cell(align: horizon)[3], [S4], [8.0], [480.0], [False],
+  table.cell(align: horizon)[4], [S5], [6.0], [360.0], [True],
+)
+To categorize a continuous metric into ordinal groups, #NormalTok("np.select()"); evaluates conditions in order, applying the corresponding label from a list of choices:
+
+#Skylighting(([#NormalTok("conditions ");#OperatorTok("=");#NormalTok(" [");],
+[#NormalTok("    pilot[");#StringTok("\"stress\"");#NormalTok("] ");#OperatorTok(">=");#NormalTok(" ");#FloatTok("4.0");#NormalTok(",");],
+[#NormalTok("    pilot[");#StringTok("\"stress\"");#NormalTok("] ");#OperatorTok(">=");#NormalTok(" ");#FloatTok("2.5");],
+[#NormalTok("]");],
+[#NormalTok("choices ");#OperatorTok("=");#NormalTok(" [");#StringTok("\"High\"");#NormalTok(", ");#StringTok("\"Medium\"");#NormalTok("]");],
+[],
+[#NormalTok("pilot[");#StringTok("\"stress_level\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" np.select(conditions, choices, default");#OperatorTok("=");#StringTok("\"Low\"");#NormalTok(")");],
+[#NormalTok("pilot[[");#StringTok("\"student\"");#NormalTok(", ");#StringTok("\"stress\"");#NormalTok(", ");#StringTok("\"stress_level\"");#NormalTok("]]");],));
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student], table.cell(align: right)[stress], table.cell(align: right)[stress\_level],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S1], [3.2], [Medium],
+  table.cell(align: horizon)[1], [S2], [2.1], [Low],
+  table.cell(align: horizon)[2], [S3], [4.5], [High],
+  table.cell(align: horizon)[3], [S4], [1.8], [Low],
+  table.cell(align: horizon)[4], [S5], [3.9], [Medium],
+)
+#quote(block: true)[
+\[!TIP\] #strong[Preserve Continuous Measurements:] Discretizing continuous metrics into arbitrary bins ("High", "Medium", "Low") discards statistical power and variance (reducing a nuanced scale to an artificial threshold). While useful for descriptive summaries, your primary inferential models should retain the raw continuous scores whenever possible.
+]
+
+=== Summarizing by group
+<summarizing-by-group>
+Scientific questions frequently compare groups: Do education students sleep longer than science students? Summaries reduce many individual measurements into descriptive aggregates. In Pandas, grouped aggregation is achieved with #NormalTok(".groupby()"); paired with #NormalTok(".agg()");:
+
+#Skylighting(([#CommentTok("# Overall cohort summary");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Mean sleep across all pilot cases:\"");#NormalTok(", pilot[");#StringTok("\"sleep\"");#NormalTok("].mean())");],
+[],
+[#CommentTok("# Grouped summary by faculty");],
+[#NormalTok("faculty_summary ");#OperatorTok("=");#NormalTok(" (");],
+[#NormalTok("    pilot");],
+[#NormalTok("    .groupby(");#StringTok("\"faculty\"");#NormalTok(")[");#StringTok("\"sleep\"");#NormalTok("]");],
+[#NormalTok("    .agg(mean_sleep");#OperatorTok("=");#StringTok("\"mean\"");#NormalTok(", count");#OperatorTok("=");#StringTok("\"count\"");#NormalTok(")");],
+[#NormalTok("    .reset_index()");],
+[#NormalTok(")");],
+[#NormalTok("faculty_summary");],));
+#block[
+#Skylighting(([#NormalTok("Mean sleep across all pilot cases: 6.7");],));
+]
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[faculty], table.cell(align: right)[mean\_sleep], table.cell(align: right)[count],),
+  table.hline(),
+  table.cell(align: horizon)[0], [Education], [6.00], [2],
+  table.cell(align: horizon)[1], [Health Sciences], [8.00], [1],
+  table.cell(align: horizon)[2], [Humanities], [6.75], [2],
+)
+For quick frequency counts of discrete categories, use #NormalTok(".value_counts()");:
+
+#Skylighting(([#NormalTok("pilot[");#StringTok("\"faculty\"");#NormalTok("].value_counts().reset_index()");],));
+#table(
+  columns: 3,
+  align: (auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[faculty], table.cell(align: right)[count],),
+  table.hline(),
+  table.cell(align: horizon)[0], [Education], [2],
+  table.cell(align: horizon)[1], [Humanities], [2],
+  table.cell(align: horizon)[2], [Health Sciences], [1],
+)
+=== Combining operations into an analytical pipeline
+<combining-operations-into-an-analytical-pipeline>
+Because Pandas methods return modified DataFrames, we can construct fluent pipelines that answer substantive research questions. For example: How did average student wellbeing evolve across semesters 1 to 4, broken down by workshop participation?
+
+To answer this, we join the longitudinal records (#NormalTok("semesters");) with baseline workshop assignments (#NormalTok("students");), group by semester and workshop status, calculate mean wellbeing and sample size, and sort the output:
+
+#Skylighting(([#NormalTok("wellbeing_trajectory ");#OperatorTok("=");#NormalTok(" (");],
+[#NormalTok("    semesters");],
+[#NormalTok("    .merge(students[[");#StringTok("\"student_id\"");#NormalTok(", ");#StringTok("\"workshop\"");#NormalTok("]], on");#OperatorTok("=");#StringTok("\"student_id\"");#NormalTok(", how");#OperatorTok("=");#StringTok("\"left\"");#NormalTok(")");],
+[#NormalTok("    .groupby([");#StringTok("\"semester\"");#NormalTok(", ");#StringTok("\"workshop\"");#NormalTok("])[");#StringTok("\"wellbeing\"");#NormalTok("]");],
+[#NormalTok("    .agg(mean_wellbeing");#OperatorTok("=");#StringTok("\"mean\"");#NormalTok(", n_students");#OperatorTok("=");#StringTok("\"count\"");#NormalTok(")");],
+[#NormalTok("    .reset_index()");],
+[#NormalTok("    .sort_values([");#StringTok("\"semester\"");#NormalTok(", ");#StringTok("\"workshop\"");#NormalTok("])");],
+[#NormalTok(")");],
+[#NormalTok("wellbeing_trajectory");],));
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[semester], table.cell(align: right)[workshop], table.cell(align: right)[mean\_wellbeing], table.cell(align: right)[n\_students],),
+  table.hline(),
+  table.cell(align: horizon)[0], [1], [Invited], [60.646667], [300],
+  table.cell(align: horizon)[1], [1], [Not invited], [60.266667], [300],
+  table.cell(align: horizon)[2], [2], [Invited], [65.470000], [300],
+  table.cell(align: horizon)[3], [2], [Not invited], [60.220000], [300],
+  table.cell(align: horizon)[4], [3], [Invited], [63.222615], [283],
+  table.cell(align: horizon)[5], [3], [Not invited], [59.228571], [280],
+  table.cell(align: horizon)[6], [4], [Invited], [60.932862], [283],
+  table.cell(align: horizon)[7], [4], [Not invited], [58.425000], [280],
+)
+Notice the pattern: in Semester 1 (prior to the intervention), wellbeing scores between invited and uninvited students were virtually identical (\~63.5 vs \~63.7). From Semester 2 onward, invited students demonstrate higher wellbeing. In #ref(<sec-ch07>, supplement: [Chapter]), we use inferential hypothesis tests to evaluate whether this observed difference exceeds chance expectation.
+
+== Reshaping data between wide and long
+<reshaping-data-between-wide-and-long>
+Data is often collected in wide format but analyzed in long format. In #strong[wide] format, repeated measurements appear side by side across columns. In #strong[long] format, each measurement occupies its own row.
+
+Consider the wide table from #ref(<tbl-untidy>, supplement: [Table]):
+
+#Skylighting(([#NormalTok("wide ");#OperatorTok("=");#NormalTok(" pd.DataFrame({");],
+[#NormalTok("    ");#StringTok("\"student\"");#NormalTok(":     [");#StringTok("\"S1\"");#NormalTok(", ");#StringTok("\"S2\"");#NormalTok(", ");#StringTok("\"S3\"");#NormalTok("],");],
+[#NormalTok("    ");#StringTok("\"wellbeing_1\"");#NormalTok(": [");#DecValTok("58");#NormalTok(", ");#DecValTok("71");#NormalTok(", ");#DecValTok("64");#NormalTok("],");],
+[#NormalTok("    ");#StringTok("\"wellbeing_2\"");#NormalTok(": [");#DecValTok("63");#NormalTok(", ");#DecValTok("70");#NormalTok(", ");#DecValTok("69");#NormalTok("]");],
+[#NormalTok("})");],
 [#NormalTok("wide");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 3 × 3");],
-[#NormalTok("  student wellbeing_1 wellbeing_2");],
-[#NormalTok("  <chr>         <dbl>       <dbl>");],
-[#NormalTok("1 S1               58          63");],
-[#NormalTok("2 S2               71          70");],
-[#NormalTok("3 S3               64          69");],));
-]
-]
-Spreadsheets and SPSS often use wide format. For analysis in R, long format is usually easier, because each variable (student, semester, wellbeing) is then one column. The function #NormalTok("pivot_longer()"); turns wide into long:
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student], table.cell(align: right)[wellbeing\_1], table.cell(align: right)[wellbeing\_2],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S1], [58], [63],
+  table.cell(align: horizon)[1], [S2], [71], [70],
+  table.cell(align: horizon)[2], [S3], [64], [69],
+)
+To convert wide columns into tidy rows, use #NormalTok("pd.melt()");:
 
-#block[
-#Skylighting(([#NormalTok("long ");#OtherTok("<-");#NormalTok(" wide ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("pivot_longer");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("cols         =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(wellbeing_1, wellbeing_2),");],
-[#NormalTok("    ");#AttributeTok("names_to     =");#NormalTok(" ");#StringTok("\"semester\"");#NormalTok(",");],
-[#NormalTok("    ");#AttributeTok("names_prefix =");#NormalTok(" ");#StringTok("\"wellbeing_\"");#NormalTok(",");],
-[#NormalTok("    ");#AttributeTok("values_to    =");#NormalTok(" ");#StringTok("\"wellbeing\"");],
-[#NormalTok("  )");],
-[#NormalTok("long");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 6 × 3");],
-[#NormalTok("  student semester wellbeing");],
-[#NormalTok("  <chr>   <chr>        <dbl>");],
-[#NormalTok("1 S1      1               58");],
-[#NormalTok("2 S1      2               63");],
-[#NormalTok("3 S2      1               71");],
-[#NormalTok("4 S2      2               70");],
-[#NormalTok("5 S3      1               64");],
-[#NormalTok("6 S3      2               69");],));
-]
-]
-The arguments say which columns to stack (#NormalTok("cols");), where the old column names should go (#NormalTok("names_to");), which part of the names to drop (#NormalTok("names_prefix");), and where the values should go (#NormalTok("values_to");). The result is #ref(<tbl-tidy>, supplement: [Table]).
-
-The opposite function, #NormalTok("pivot_wider()");, is especially useful for presenting results, because a wide table is easier to read:
-
-#block[
-#Skylighting(([#NormalTok("long ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("pivot_wider");#NormalTok("(");#AttributeTok("names_from =");#NormalTok(" semester, ");#AttributeTok("values_from =");#NormalTok(" wellbeing)");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 3 × 3");],
-[#NormalTok("  student   `1`   `2`");],
-[#NormalTok("  <chr>   <dbl> <dbl>");],
-[#NormalTok("1 S1         58    63");],
-[#NormalTok("2 S2         71    70");],
-[#NormalTok("3 S3         64    69");],));
-]
-]
-The average wellbeing table from the previous section, for example, reads more easily with one column per workshop group:
-
-#block[
-#Skylighting(([#NormalTok("semesters ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("left_join");#NormalTok("(students ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("select");#NormalTok("(student_id, workshop), ");#FunctionTok("join_by");#NormalTok("(student_id)) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");#AttributeTok("mean_wellbeing =");#NormalTok(" ");#FunctionTok("round");#NormalTok("(");#FunctionTok("mean");#NormalTok("(wellbeing), ");#DecValTok("1");#NormalTok("), ");#AttributeTok(".by =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(semester, workshop)) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("pivot_wider");#NormalTok("(");#AttributeTok("names_from =");#NormalTok(" workshop, ");#AttributeTok("values_from =");#NormalTok(" mean_wellbeing)");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 4 × 3");],
-[#NormalTok("  semester `Not invited` Invited");],
-[#NormalTok("     <int>         <dbl>   <dbl>");],
-[#NormalTok("1        1          60.3    60.6");],
-[#NormalTok("2        2          60.2    65.5");],
-[#NormalTok("3        3          59.2    63.2");],
-[#NormalTok("4        4          58.4    60.9");],));
-]
-]
-== Joining tables
-<sec-joins>
-Research data is often spread over several tables that share an identifier. The wellbeing study keeps students in one table, their semester records in another, and their supervisors in a third. #strong[Joins] combine tables by matching the identifier. Two small tables show how:
-
-#block[
-#Skylighting(([#NormalTok("people ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("tibble");#NormalTok("(");],
-[#NormalTok("  ");#AttributeTok("student =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"S1\"");#NormalTok(", ");#StringTok("\"S2\"");#NormalTok(", ");#StringTok("\"S3\"");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("faculty =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Humanities\"");#NormalTok(", ");#StringTok("\"Education\"");#NormalTok(")");],
+#Skylighting(([#BuiltInTok("long");#NormalTok(" ");#OperatorTok("=");#NormalTok(" pd.melt(");],
+[#NormalTok("    wide,");],
+[#NormalTok("    id_vars");#OperatorTok("=");#NormalTok("[");#StringTok("\"student\"");#NormalTok("],");],
+[#NormalTok("    value_vars");#OperatorTok("=");#NormalTok("[");#StringTok("\"wellbeing_1\"");#NormalTok(", ");#StringTok("\"wellbeing_2\"");#NormalTok("],");],
+[#NormalTok("    var_name");#OperatorTok("=");#StringTok("\"semester\"");#NormalTok(",");],
+[#NormalTok("    value_name");#OperatorTok("=");#StringTok("\"wellbeing\"");],
 [#NormalTok(")");],
-[#NormalTok("scores ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("tibble");#NormalTok("(");],
-[#NormalTok("  ");#AttributeTok("student =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"S1\"");#NormalTok(", ");#StringTok("\"S1\"");#NormalTok(", ");#StringTok("\"S2\"");#NormalTok(", ");#StringTok("\"S4\"");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("wellbeing =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#DecValTok("58");#NormalTok(", ");#DecValTok("63");#NormalTok(", ");#DecValTok("71");#NormalTok(", ");#DecValTok("66");#NormalTok(")");],
+[#CommentTok("# Clean the semester column to extract the integer number");],
+[#BuiltInTok("long");#NormalTok("[");#StringTok("\"semester\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" ");#BuiltInTok("long");#NormalTok("[");#StringTok("\"semester\"");#NormalTok("].");#BuiltInTok("str");#NormalTok(".replace(");#StringTok("\"wellbeing_\"");#NormalTok(", ");#StringTok("\"\"");#NormalTok(").astype(");#BuiltInTok("int");#NormalTok(")");],
+[#BuiltInTok("long");#NormalTok(" ");#OperatorTok("=");#NormalTok(" ");#BuiltInTok("long");#NormalTok(".sort_values([");#StringTok("\"student\"");#NormalTok(", ");#StringTok("\"semester\"");#NormalTok("]).reset_index(drop");#OperatorTok("=");#VariableTok("True");#NormalTok(")");],
+[#BuiltInTok("long");],));
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student], table.cell(align: right)[semester], table.cell(align: right)[wellbeing],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S1], [1], [58],
+  table.cell(align: horizon)[1], [S1], [2], [63],
+  table.cell(align: horizon)[2], [S2], [1], [71],
+  table.cell(align: horizon)[3], [S2], [2], [70],
+  table.cell(align: horizon)[4], [S3], [1], [64],
+  table.cell(align: horizon)[5], [S3], [2], [69],
+)
+The arguments specify: - #NormalTok("id_vars");: Columns to preserve as identifiers (#NormalTok("student");). - #NormalTok("value_vars");: Columns to unpivot into rows. - #NormalTok("var_name");: Name for the new column storing original column headers (#NormalTok("semester");). - #NormalTok("value_name");: Name for the new column storing the data values (#NormalTok("wellbeing");).
+
+Conversely, when formatting summary tables for a thesis chapter, wide presentation is often clearer for human readers. Use #NormalTok(".pivot()"); to spread long data across columns:
+
+#Skylighting(([#NormalTok("wide_presentation ");#OperatorTok("=");#NormalTok(" ");#BuiltInTok("long");#NormalTok(".pivot(index");#OperatorTok("=");#StringTok("\"student\"");#NormalTok(", columns");#OperatorTok("=");#StringTok("\"semester\"");#NormalTok(", values");#OperatorTok("=");#StringTok("\"wellbeing\"");#NormalTok(").reset_index()");],
+[#NormalTok("wide_presentation");],));
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[semester], table.cell(align: right)[student], table.cell(align: right)[1], table.cell(align: right)[2],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S1], [58], [63],
+  table.cell(align: horizon)[1], [S2], [71], [70],
+  table.cell(align: horizon)[2], [S3], [64], [69],
+)
+We can apply this to our longitudinal trajectory summary, spreading the workshop groups into adjacent columns:
+
+#Skylighting(([#NormalTok("(wellbeing_trajectory");],
+[#NormalTok(" .assign(mean_wellbeing");#OperatorTok("=");#KeywordTok("lambda");#NormalTok(" df: df[");#StringTok("\"mean_wellbeing\"");#NormalTok("].");#BuiltInTok("round");#NormalTok("(");#DecValTok("1");#NormalTok("))");],
+[#NormalTok(" .pivot(index");#OperatorTok("=");#StringTok("\"semester\"");#NormalTok(", columns");#OperatorTok("=");#StringTok("\"workshop\"");#NormalTok(", values");#OperatorTok("=");#StringTok("\"mean_wellbeing\"");#NormalTok(")");],
+[#NormalTok(" .reset_index()");],
 [#NormalTok(")");],));
-]
-The function #NormalTok("left_join()"); keeps every row of the first table and adds the matching information from the second:
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[workshop], table.cell(align: right)[semester], table.cell(align: right)[Invited], table.cell(align: right)[Not invited],),
+  table.hline(),
+  table.cell(align: horizon)[0], [1], [60.6], [60.3],
+  table.cell(align: horizon)[1], [2], [65.5], [60.2],
+  table.cell(align: horizon)[2], [3], [63.2], [59.2],
+  table.cell(align: horizon)[3], [4], [60.9], [58.4],
+)
+== Joining relational tables
+<sec-joins>
+In empirical research, data is frequently split across multiple tables sharing a common key: participant demographics in one file, longitudinal outcomes in another, and supervisor attributes in a third. In Pandas, relational tables are combined using #NormalTok("pd.merge()");.
+
+Consider two simple tables:
 
 #block[
-#Skylighting(([#NormalTok("scores ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("left_join");#NormalTok("(people, ");#FunctionTok("join_by");#NormalTok("(student))");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 4 × 3");],
-[#NormalTok("  student wellbeing faculty   ");],
-[#NormalTok("  <chr>       <dbl> <chr>     ");],
-[#NormalTok("1 S1             58 Education ");],
-[#NormalTok("2 S1             63 Education ");],
-[#NormalTok("3 S2             71 Humanities");],
-[#NormalTok("4 S4             66 <NA>      ");],));
+#Skylighting(([#NormalTok("people ");#OperatorTok("=");#NormalTok(" pd.DataFrame({");],
+[#NormalTok("    ");#StringTok("\"student\"");#NormalTok(": [");#StringTok("\"S1\"");#NormalTok(", ");#StringTok("\"S2\"");#NormalTok(", ");#StringTok("\"S3\"");#NormalTok("],");],
+[#NormalTok("    ");#StringTok("\"faculty\"");#NormalTok(": [");#StringTok("\"Education\"");#NormalTok(", ");#StringTok("\"Humanities\"");#NormalTok(", ");#StringTok("\"Education\"");#NormalTok("]");],
+[#NormalTok("})");],
+[],
+[#NormalTok("scores ");#OperatorTok("=");#NormalTok(" pd.DataFrame({");],
+[#NormalTok("    ");#StringTok("\"student\"");#NormalTok(":   [");#StringTok("\"S1\"");#NormalTok(", ");#StringTok("\"S1\"");#NormalTok(", ");#StringTok("\"S2\"");#NormalTok(", ");#StringTok("\"S4\"");#NormalTok("],");],
+[#NormalTok("    ");#StringTok("\"wellbeing\"");#NormalTok(": [");#DecValTok("58");#NormalTok(", ");#DecValTok("63");#NormalTok(", ");#DecValTok("71");#NormalTok(", ");#DecValTok("66");#NormalTok("]");],
+[#NormalTok("})");],));
 ]
-]
-The argument #NormalTok("join_by(student)"); names the column that links the two tables. Student #NormalTok("S4"); has a score but no entry in #NormalTok("people");, so their faculty is #NormalTok("NA");.
+A #strong[left join] (#NormalTok("how=\"left\"");) preserves all rows from the primary table, matching attributes from the secondary table where the keys align:
 
-The function #NormalTok("anti_join()"); does the opposite: it keeps the rows of the first table that have #emph[no] match in the second. It is the quickest way to find what is missing, here the students without any scores:
+#Skylighting(([#NormalTok("scores.merge(people, on");#OperatorTok("=");#StringTok("\"student\"");#NormalTok(", how");#OperatorTok("=");#StringTok("\"left\"");#NormalTok(")");],));
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student], table.cell(align: right)[wellbeing], table.cell(align: right)[faculty],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S1], [58], [Education],
+  table.cell(align: horizon)[1], [S1], [63], [Education],
+  table.cell(align: horizon)[2], [S2], [71], [Humanities],
+  table.cell(align: horizon)[3], [S4], [66], [NaN],
+)
+Student #NormalTok("S4"); has a score but no corresponding demographic record in #NormalTok("people");, so their faculty is assigned #NormalTok("NaN");.
 
-#block[
-#Skylighting(([#NormalTok("people ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("anti_join");#NormalTok("(scores, ");#FunctionTok("join_by");#NormalTok("(student))");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 1 × 2");],
-[#NormalTok("  student faculty  ");],
-[#NormalTok("  <chr>   <chr>    ");],
-[#NormalTok("1 S3      Education");],));
-]
-]
-On the wellbeing data, joins answer questions that no single table can. Each student's supervisor has an academic rank, stored in #NormalTok("supervisors");, and a join brings it next to each student's answer about dropping out:
+To find cases that have #emph[no] matching counterpart in another table (an #strong[anti-join]), use boolean negation #NormalTok("~"); with #NormalTok(".isin()");:
 
-#block[
-#Skylighting(([#NormalTok("by_rank ");#OtherTok("<-");#NormalTok(" students ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("left_join");#NormalTok("(supervisors ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("select");#NormalTok("(supervisor_id, rank), ");#FunctionTok("join_by");#NormalTok("(supervisor_id)) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("considering_dropout =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(considering_dropout ");#SpecialCharTok("==");#NormalTok(" ");#StringTok("\"Yes\"");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("students            =");#NormalTok(" ");#FunctionTok("n");#NormalTok("(),");],
-[#NormalTok("    ");#AttributeTok(".by =");#NormalTok(" rank");],
-[#NormalTok("  )");],
+#Skylighting(([#CommentTok("# Find students in 'people' who have no records in 'scores'");],
+[#NormalTok("missing_scores ");#OperatorTok("=");#NormalTok(" people[");#OperatorTok("~");#NormalTok("people[");#StringTok("\"student\"");#NormalTok("].isin(scores[");#StringTok("\"student\"");#NormalTok("])]");],
+[#NormalTok("missing_scores");],));
+#table(
+  columns: 3,
+  align: (auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student], table.cell(align: right)[faculty],),
+  table.hline(),
+  table.cell(align: horizon)[2], [S3], [Education],
+)
+Student #NormalTok("S3"); enrolled in the study but contributed zero scores.
+
+In Elaf's research cohort, merging connects supervisory rank (from #NormalTok("supervisors");) to student dropout intentions (from #NormalTok("students");):
+
+#Skylighting(([#NormalTok("supervisors ");#OperatorTok("=");#NormalTok(" dt.supervisors");],
+[],
+[#NormalTok("by_rank ");#OperatorTok("=");#NormalTok(" (");],
+[#NormalTok("    students");],
+[#NormalTok("    .merge(supervisors[[");#StringTok("\"supervisor_id\"");#NormalTok(", ");#StringTok("\"rank\"");#NormalTok("]], on");#OperatorTok("=");#StringTok("\"supervisor_id\"");#NormalTok(", how");#OperatorTok("=");#StringTok("\"left\"");#NormalTok(")");],
+[#NormalTok("    .assign(dropout_flag ");#OperatorTok("=");#NormalTok(" ");#KeywordTok("lambda");#NormalTok(" df: (df[");#StringTok("\"considering_dropout\"");#NormalTok("] ");#OperatorTok("==");#NormalTok(" ");#StringTok("\"Yes\"");#NormalTok(").astype(");#BuiltInTok("int");#NormalTok("))");],
+[#NormalTok("    .groupby(");#StringTok("\"rank\"");#NormalTok(")");],
+[#NormalTok("    .agg(");],
+[#NormalTok("        dropout_rate");#OperatorTok("=");#NormalTok("(");#StringTok("\"dropout_flag\"");#NormalTok(", ");#StringTok("\"mean\"");#NormalTok("),");],
+[#NormalTok("        n_students");#OperatorTok("=");#NormalTok("(");#StringTok("\"student_id\"");#NormalTok(", ");#StringTok("\"count\"");#NormalTok(")");],
+[#NormalTok("    )");],
+[#NormalTok("    .reset_index()");],
+[#NormalTok(")");],
 [#NormalTok("by_rank");],));
-#block[
-#Skylighting(([#NormalTok("                 rank considering_dropout students");],
-[#NormalTok("1            Lecturer           0.1367521      234");],
-[#NormalTok("2           Professor           0.1217391      115");],
-[#NormalTok("3 Assistant Professor           0.1752988      251");],));
-]
-]
-The shares differ a little, from about 12% to about 18%. Differences this small could easily be chance; Chapter 7 shows how to test that. A second join finds the students who have no records for semester 3:
-
-#block[
-#Skylighting(([#NormalTok("left ");#OtherTok("<-");#NormalTok(" students ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("anti_join");#NormalTok("(semesters ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("filter");#NormalTok("(semester ");#SpecialCharTok("==");#NormalTok(" ");#DecValTok("3");#NormalTok("), ");#FunctionTok("join_by");#NormalTok("(student_id))");],
-[#FunctionTok("nrow");#NormalTok("(left)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 37");],));
-]
-#Skylighting(([#NormalTok("left ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("count");#NormalTok("(considering_dropout)");],));
-#block[
-#Skylighting(([#NormalTok("  considering_dropout  n");],
-[#NormalTok("1                  No 15");],
-[#NormalTok("2                 Yes 22");],));
-]
-]
-In all, 37 students have no semester 3 record: they left the study after the first year, and 22 of them had said they were considering dropping out. The students who left are not a random selection, which matters for any analysis of the later semesters. Chapter 6 returns to this.
-
-== Cleaning the survey export
-<cleaning-the-survey-export>
-The survey export can now be cleaned. The steps below are the ones needed for almost any survey data, and each is preceded by the problem it solves. Each step is short. What matters is doing them in a sensible order, and checking the result after each one.
-
-=== Inspecting the export
-<inspecting-the-export>
-Cleaning starts with looking, because problems that have not been seen cannot be fixed:
-
-#block[
-#Skylighting(([#FunctionTok("library");#NormalTok("(readxl)");],
-[#NormalTok("raw ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("read_excel");#NormalTok("(");#FunctionTok("data2thesis_example");#NormalTok("(");#StringTok("\"wellbeing_raw.xlsx\"");#NormalTok("))");],
-[#FunctionTok("dim");#NormalTok("(raw)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 615  64");],));
-]
-]
-The file has 615 rows, although there are only 600 students. A few lines of code show what needs fixing:
-
-#block[
-#Skylighting(([#NormalTok("raw ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("count");#NormalTok("(Q3_Gender)");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 7 × 2");],
-[#NormalTok("  Q3_Gender     n");],
-[#NormalTok("  <chr>     <int>");],
-[#NormalTok("1 F            28");],
-[#NormalTok("2 Female      233");],
-[#NormalTok("3 M            46");],
-[#NormalTok("4 Male        173");],
-[#NormalTok("5 female       56");],
-[#NormalTok("6 male         78");],
-[#NormalTok("7 <NA>          1");],));
-]
-#Skylighting(([#NormalTok("raw ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("filter");#NormalTok("(");#FunctionTok("str_detect");#NormalTok("(");#FunctionTok("str_to_upper");#NormalTok("(");#StringTok("`");#AttributeTok("Q1_Student ID");#StringTok("`");#NormalTok("), ");#StringTok("\"TEST\"");#NormalTok(")) ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("select");#NormalTok("(");#DecValTok("1");#SpecialCharTok(":");#DecValTok("4");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 3 × 4");],
-[#NormalTok("  `Response ID` `Q1_Student ID` Q2_Age Q3_Gender");],
-[#NormalTok("  <chr>         <chr>           <chr>  <chr>    ");],
-[#NormalTok("1 R0001         TEST            99     Female   ");],
-[#NormalTok("2 R0002         test            <NA>   <NA>     ");],
-[#NormalTok("3 R0003         TEST2           30     Male     ");],));
-]
-]
-Gender is spelled six ways (#NormalTok("F");, #NormalTok("female");, #NormalTok("Female");, and so on), plus a blank from a test response, and there are test responses from when the survey was set up. (The raw file also contains #NormalTok("\"Female \""); with a trailing space; #NormalTok("read_excel()"); removes such spaces automatically, but other import functions do not, which is why the cleaning below still uses #NormalTok("str_trim()");.) Column names such as #NormalTok("Q1_Student ID"); contain spaces, so they must be written inside backticks (#NormalTok("`");) in code. And as Chapter 2 showed, many numeric columns arrived as text.
-
-=== Test responses and duplicates
-<test-responses-and-duplicates>
-Test responses are not data about students, and duplicated submissions would count some students twice, so both must go before anything else. Test responses have a student ID starting with "TEST", in upper or lower case. The function #NormalTok("str_to_upper()"); makes the case irrelevant, and #NormalTok("str_detect()"); checks for the pattern. The function #NormalTok("distinct()"); then removes rows that are exact copies of another row. The response ID is different for each submission, even for duplicates, so it is dropped first:
-
-#block[
-#Skylighting(([#NormalTok("responses ");#OtherTok("<-");#NormalTok(" raw ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("filter");#NormalTok("(");#SpecialCharTok("!");#FunctionTok("str_detect");#NormalTok("(");#FunctionTok("str_to_upper");#NormalTok("(");#StringTok("`");#AttributeTok("Q1_Student ID");#StringTok("`");#NormalTok("), ");#StringTok("\"^TEST\"");#NormalTok(")) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(");#SpecialCharTok("-");#StringTok("`");#AttributeTok("Response ID");#StringTok("`");#NormalTok(") ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("distinct");#NormalTok("()");],
-[#FunctionTok("nrow");#NormalTok("(responses)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 600");],));
-]
-]
-In the pattern, #NormalTok("!"); means "not" and #NormalTok("^"); means "at the start". Exactly 600 rows are left: one per student.
-
-=== Usable variable names
-<usable-variable-names>
-Names such as #NormalTok("Q10_How worried are you about money? (1-5)"); are awkward to type and easy to get wrong. Short, consistent names make the code readable and reduce errors. The function #NormalTok("rename()"); changes names, new name first, and the 22 questionnaire items, #NormalTok("Q11_1"); to #NormalTok("Q11_22");, are renamed in one go with #NormalTok("rename_with()");, using the scale each item belongs to:
-
-#block[
-#Skylighting(([#NormalTok("item_names ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FunctionTok("paste0");#NormalTok("(");#StringTok("\"stress_\"");#NormalTok(", ");#DecValTok("1");#SpecialCharTok(":");#DecValTok("6");#NormalTok("), ");#FunctionTok("paste0");#NormalTok("(");#StringTok("\"burnout_\"");#NormalTok(", ");#DecValTok("1");#SpecialCharTok(":");#DecValTok("6");#NormalTok("),");],
-[#NormalTok("                ");#FunctionTok("paste0");#NormalTok("(");#StringTok("\"support_\"");#NormalTok(", ");#DecValTok("1");#SpecialCharTok(":");#DecValTok("6");#NormalTok("), ");#FunctionTok("paste0");#NormalTok("(");#StringTok("\"satisfaction_\"");#NormalTok(", ");#DecValTok("1");#SpecialCharTok(":");#DecValTok("4");#NormalTok("))");],
-[],
-[#NormalTok("responses ");#OtherTok("<-");#NormalTok(" responses ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("rename");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("student_id          =");#NormalTok(" ");#StringTok("`");#AttributeTok("Q1_Student ID");#StringTok("`");#NormalTok(",");],
-[#NormalTok("    ");#AttributeTok("age                 =");#NormalTok(" Q2_Age,");],
-[#NormalTok("    ");#AttributeTok("gender              =");#NormalTok(" Q3_Gender,");],
-[#NormalTok("    ");#AttributeTok("faculty             =");#NormalTok(" Q4_Faculty,");],
-[#NormalTok("    ");#AttributeTok("programme           =");#NormalTok(" Q5_Programme,");],
-[#NormalTok("    ");#AttributeTok("study_mode          =");#NormalTok(" ");#StringTok("`");#AttributeTok("Q6_Study mode");#StringTok("`");#NormalTok(",");],
-[#NormalTok("    ");#AttributeTok("employment          =");#NormalTok(" ");#StringTok("`");#AttributeTok("Q7_Paid work");#StringTok("`");#NormalTok(",");],
-[#NormalTok("    ");#AttributeTok("has_children        =");#NormalTok(" Q8_Children,");],
-[#NormalTok("    ");#AttributeTok("lives_away          =");#NormalTok(" ");#StringTok("`");#AttributeTok("Q9_Moved away from family");#StringTok("`");#NormalTok(",");],
-[#NormalTok("    ");#AttributeTok("financial_worry     =");#NormalTok(" ");#StringTok("`");#AttributeTok("Q10_How worried are you about money? (1-5)");#StringTok("`");#NormalTok(",");],
-[#NormalTok("    ");#AttributeTok("workshop            =");#NormalTok(" ");#StringTok("`");#AttributeTok("Workshop group");#StringTok("`");#NormalTok(",");],
-[#NormalTok("    ");#AttributeTok("workshop_sessions   =");#NormalTok(" ");#StringTok("`");#AttributeTok("Workshop sessions attended");#StringTok("`");#NormalTok(",");],
-[#NormalTok("    ");#AttributeTok("considering_dropout =");#NormalTok(" ");#StringTok("`");#AttributeTok("Y1_Considered leaving?");#StringTok("`");],
-[#NormalTok("  ) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("rename_with");#NormalTok("(");#SpecialCharTok("~");#NormalTok(" item_names, ");#AttributeTok(".cols =");#NormalTok(" Q11_1");#SpecialCharTok(":");#NormalTok("Q11_22)");],));
-]
-The call #NormalTok("paste0(\"stress_\", 1:6)"); builds the names #NormalTok("stress_1"); to #NormalTok("stress_6");, which saves typing them all. The questionnaire's wording is not lost: it belongs in the codebook (Chapter 2).
-
-=== Consistent categories
-<consistent-categories>
-If "F", "female", and "Female" stay separate, every table and every test treats them as three different groups. Categories are fixed by looking for a pattern rather than listing every spelling, after #NormalTok("str_to_lower()"); and #NormalTok("str_trim()"); have removed differences in case and stray spaces:
-
-#block[
-#Skylighting(([#NormalTok("responses ");#OtherTok("<-");#NormalTok(" responses ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("gender =");#NormalTok(" ");#FunctionTok("if_else");#NormalTok("(");#FunctionTok("str_starts");#NormalTok("(");#FunctionTok("str_to_lower");#NormalTok("(");#FunctionTok("str_trim");#NormalTok("(gender)), ");#StringTok("\"f\"");#NormalTok("), ");#StringTok("\"Female\"");#NormalTok(", ");#StringTok("\"Male\"");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("faculty =");#NormalTok(" ");#FunctionTok("case_when");#NormalTok("(");],
-[#NormalTok("      ");#FunctionTok("str_detect");#NormalTok("(");#FunctionTok("str_to_lower");#NormalTok("(faculty), ");#StringTok("\"educ\"");#NormalTok(")    ");#SpecialCharTok("~");#NormalTok(" ");#StringTok("\"Education\"");#NormalTok(",");],
-[#NormalTok("      ");#FunctionTok("str_detect");#NormalTok("(");#FunctionTok("str_to_lower");#NormalTok("(faculty), ");#StringTok("\"health\"");#NormalTok(")  ");#SpecialCharTok("~");#NormalTok(" ");#StringTok("\"Health Sciences\"");#NormalTok(",");],
-[#NormalTok("      ");#FunctionTok("str_detect");#NormalTok("(");#FunctionTok("str_to_lower");#NormalTok("(faculty), ");#StringTok("\"humanit\"");#NormalTok(") ");#SpecialCharTok("~");#NormalTok(" ");#StringTok("\"Humanities\"");#NormalTok(",");],
-[#NormalTok("      ");#FunctionTok("str_detect");#NormalTok("(");#FunctionTok("str_to_lower");#NormalTok("(faculty), ");#StringTok("\"social\"");#NormalTok(")  ");#SpecialCharTok("~");#NormalTok(" ");#StringTok("\"Social Sciences\"");#NormalTok(",");],
-[#NormalTok("      ");#FunctionTok("str_detect");#NormalTok("(");#FunctionTok("str_to_lower");#NormalTok("(faculty), ");#StringTok("\"natural|^sciences$\"");#NormalTok(") ");#SpecialCharTok("~");#NormalTok(" ");#StringTok("\"Natural Sciences\"");],
-[#NormalTok("    ),");],
-[#NormalTok("    ");#AttributeTok("programme  =");#NormalTok(" ");#FunctionTok("if_else");#NormalTok("(");#FunctionTok("str_detect");#NormalTok("(");#FunctionTok("str_to_lower");#NormalTok("(programme), ");#StringTok("\"ph\"");#NormalTok("), ");#StringTok("\"PhD\"");#NormalTok(", ");#StringTok("\"Master's\"");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("study_mode =");#NormalTok(" ");#FunctionTok("if_else");#NormalTok("(");#FunctionTok("str_detect");#NormalTok("(");#FunctionTok("str_to_lower");#NormalTok("(study_mode), ");#StringTok("\"part\"");#NormalTok("), ");#StringTok("\"Part-time\"");#NormalTok(", ");#StringTok("\"Full-time\"");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("employment =");#NormalTok(" ");#FunctionTok("if_else");#NormalTok("(");#FunctionTok("str_to_lower");#NormalTok("(employment) ");#SpecialCharTok("%in%");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"none\"");#NormalTok(", ");#StringTok("\"no job\"");#NormalTok("), ");#StringTok("\"None\"");#NormalTok(", employment),");],
-[#NormalTok("    ");#FunctionTok("across");#NormalTok("(");#FunctionTok("c");#NormalTok("(has_children, lives_away, considering_dropout),");],
-[#NormalTok("           ");#SpecialCharTok("~");#NormalTok(" ");#FunctionTok("if_else");#NormalTok("(");#FunctionTok("str_starts");#NormalTok("(");#FunctionTok("str_to_lower");#NormalTok("(.x), ");#StringTok("\"y\"");#NormalTok("), ");#StringTok("\"Yes\"");#NormalTok(", ");#StringTok("\"No\"");#NormalTok("))");],
-[#NormalTok("  )");],
-[#NormalTok("responses ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("count");#NormalTok("(gender)");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 2 × 2");],
-[#NormalTok("  gender     n");],
-[#NormalTok("  <chr>  <int>");],
-[#NormalTok("1 Female   312");],
-[#NormalTok("2 Male     288");],));
-]
-#Skylighting(([#NormalTok("responses ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("count");#NormalTok("(faculty)");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 5 × 2");],
-[#NormalTok("  faculty              n");],
-[#NormalTok("  <chr>            <int>");],
-[#NormalTok("1 Education          148");],
-[#NormalTok("2 Health Sciences    154");],
-[#NormalTok("3 Humanities          95");],
-[#NormalTok("4 Natural Sciences    87");],
-[#NormalTok("5 Social Sciences    116");],));
-]
-]
-Two details deserve attention. The order of conditions in #NormalTok("case_when()"); matters: "social sciences" also contains "sciences", so Social Sciences is checked before Natural Sciences. And #NormalTok("across()"); applies the same change to several columns at once, here turning #NormalTok("Yes");, #NormalTok("yes");, and #NormalTok("Y"); into #NormalTok("Yes");.
-
-After each fix, the categories should be counted again, as above. If a spelling was missed, it shows up immediately.
-
-=== Missing codes and numbers stored as text
-<missing-codes-and-numbers-stored-as-text>
-Survey tools often mark missing answers with codes such as #NormalTok("99"); or #NormalTok("-9");. As the opening example showed, these codes must become #NormalTok("NA"); before any calculation, or R will treat them as real values. The function #NormalTok("na_if()"); turns a code into #NormalTok("NA");, and #NormalTok("as.integer()"); then turns the text into whole numbers:
-
-#block[
-#Skylighting(([#NormalTok("responses ");#OtherTok("<-");#NormalTok(" responses ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("financial_worry =");#NormalTok(" financial_worry ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("na_if");#NormalTok("(");#StringTok("\"99\"");#NormalTok(") ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("na_if");#NormalTok("(");#StringTok("\"-9\"");#NormalTok(") ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("as.integer");#NormalTok("(),");],
-[#NormalTok("    ");#FunctionTok("across");#NormalTok("(");#FunctionTok("all_of");#NormalTok("(item_names), ");#SpecialCharTok("~");#NormalTok(" ");#FunctionTok("as.integer");#NormalTok("(");#FunctionTok("na_if");#NormalTok("(.x, ");#StringTok("\"99\"");#NormalTok("))),");],
-[#NormalTok("    ");#AttributeTok("workshop_sessions =");#NormalTok(" ");#FunctionTok("as.integer");#NormalTok("(workshop_sessions),");],
-[#NormalTok("    ");#AttributeTok("age =");#NormalTok(" ");#FunctionTok("parse_number");#NormalTok("(age)");],
-[#NormalTok("  )");],));
-]
-#block[
-#callout(
-body: 
-[
-It is tempting to turn every #NormalTok("99"); in the file into #NormalTok("NA"); in one go. But a #NormalTok("99"); is not always a code. In a wellbeing score from 0 to 100, it is a perfectly real value. Replace missing codes only in the columns where you know they are codes.
-
-]
-, 
-title: 
-[
-Do not replace #NormalTok("99"); everywhere
-]
-, 
-background_color: 
-rgb("#fcefdc")
-, 
-icon_color: 
-rgb("#EB9113")
-, 
-icon: 
-fa-exclamation-triangle()
-, 
-body_background_color: 
-white
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[rank], table.cell(align: right)[dropout\_rate], table.cell(align: right)[n\_students],),
+  table.hline(),
+  table.cell(align: horizon)[0], [Assistant Professor], [0.175299], [251],
+  table.cell(align: horizon)[1], [Lecturer], [0.136752], [234],
+  table.cell(align: horizon)[2], [Professor], [0.121739], [115],
 )
-]
-The function #NormalTok("parse_number()"); from readr reads the number out of a text value, ignoring extra text around it. It is useful for the sleep columns, where some students typed #NormalTok("\"7 hrs\"");. A decimal comma, however, defeats it:
+Similarly, set filtering identifies students who dropped out of the longitudinal study by Semester 3:
 
 #block[
-#Skylighting(([#FunctionTok("parse_number");#NormalTok("(");#FunctionTok("c");#NormalTok("(");#StringTok("\"7 hrs\"");#NormalTok(", ");#StringTok("\"6.5\"");#NormalTok(", ");#StringTok("\"6,5\"");#NormalTok("))");],));
-#block[
-#Skylighting(([#NormalTok("[1]  7.0  6.5 65.0");],));
-]
-]
-The value #NormalTok("\"6,5\""); becomes 65, not 6.5, because in English a comma separates thousands. The comma has to be changed to a point first:
-
-#block[
-#Skylighting(([#FunctionTok("parse_number");#NormalTok("(");#FunctionTok("str_replace");#NormalTok("(");#FunctionTok("c");#NormalTok("(");#StringTok("\"7 hrs\"");#NormalTok(", ");#StringTok("\"6.5\"");#NormalTok(", ");#StringTok("\"6,5\"");#NormalTok("), ");#StringTok("\",\"");#NormalTok(", ");#StringTok("\".\"");#NormalTok("))");],));
-#block[
-#Skylighting(([#NormalTok("[1] 7.0 6.5 6.5");],));
-]
-]
-Mistakes like this produce no error message. The only protection is to check the data after each step.
-
-=== Impossible values
-<impossible-values>
-Some values cannot be true, such as an age of 250 or 26 hours of sleep a night. Left in the data, a single one can dominate an average or a regression. They are typing mistakes, and since the true value cannot be known, the honest fix is to set them to #NormalTok("NA"); rather than to guess (an age of 250 might have been 25, or 50):
-
-#block[
-#Skylighting(([#NormalTok("responses ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("filter");#NormalTok("(age ");#SpecialCharTok(">");#NormalTok(" ");#DecValTok("100");#NormalTok(") ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("select");#NormalTok("(student_id, age)");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 1 × 2");],
-[#NormalTok("  student_id   age");],
-[#NormalTok("  <chr>      <dbl>");],
-[#NormalTok("1 S0007        250");],));
-]
-#Skylighting(([#NormalTok("responses ");#OtherTok("<-");#NormalTok(" responses ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("mutate");#NormalTok("(");#AttributeTok("age =");#NormalTok(" ");#FunctionTok("if_else");#NormalTok("(age ");#SpecialCharTok(">");#NormalTok(" ");#DecValTok("100");#NormalTok(", ");#ConstantTok("NA");#NormalTok(", age))");],));
-]
-This is where the missing age in Chapter 1 came from. Unusual but possible values, such as a student who sleeps 4 hours a night, are a different matter: they are real data and are kept. Chapter 6 discusses how to handle them.
-
-=== Scale scores
-<scale-scores>
-A questionnaire scale is scored as the average of its items, and the items must all point in the same direction before they are averaged. One stress item, #NormalTok("stress_4"); ("I feel confident handling problems in my studies"), is worded in the opposite direction to the others: agreeing with it means #emph[less] stress. Averaged as it stands, it would cancel part of what the other five items measure. It must first be #strong[reversed], so that 1 becomes 5, 2 becomes 4, and so on. On a 1-to-5 scale, subtracting from 6 does exactly that:
-
-#block[
-#Skylighting(([#NormalTok("questionnaire_clean ");#OtherTok("<-");#NormalTok(" responses ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(student_id, ");#FunctionTok("all_of");#NormalTok("(item_names))");],
+#Skylighting(([#NormalTok("sem3_students ");#OperatorTok("=");#NormalTok(" semesters[semesters[");#StringTok("\"semester\"");#NormalTok("] ");#OperatorTok("==");#NormalTok(" ");#DecValTok("3");#NormalTok("][");#StringTok("\"student_id\"");#NormalTok("]");],
+[#NormalTok("attrition_students ");#OperatorTok("=");#NormalTok(" students[");#OperatorTok("~");#NormalTok("students[");#StringTok("\"student_id\"");#NormalTok("].isin(sem3_students)]");],
 [],
-[#NormalTok("scores ");#OtherTok("<-");#NormalTok(" questionnaire_clean ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("stress_4           =");#NormalTok(" ");#DecValTok("6");#NormalTok(" ");#SpecialCharTok("-");#NormalTok(" stress_4,");],
-[#NormalTok("    ");#AttributeTok("stress_score       =");#NormalTok(" ");#FunctionTok("rowMeans");#NormalTok("(");#FunctionTok("pick");#NormalTok("(stress_1");#SpecialCharTok(":");#NormalTok("stress_6), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("burnout_score      =");#NormalTok(" ");#FunctionTok("rowMeans");#NormalTok("(");#FunctionTok("pick");#NormalTok("(burnout_1");#SpecialCharTok(":");#NormalTok("burnout_6), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("support_score      =");#NormalTok(" ");#FunctionTok("rowMeans");#NormalTok("(");#FunctionTok("pick");#NormalTok("(support_1");#SpecialCharTok(":");#NormalTok("support_6), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("satisfaction_score =");#NormalTok(" ");#FunctionTok("rowMeans");#NormalTok("(");#FunctionTok("pick");#NormalTok("(satisfaction_1");#SpecialCharTok(":");#NormalTok("satisfaction_4), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],
-[#NormalTok("  ) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(student_id, ");#FunctionTok("ends_with");#NormalTok("(");#StringTok("\"_score\"");#NormalTok("))");],
-[#FunctionTok("head");#NormalTok("(scores)");],));
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Students who left before Semester 3:\"");#NormalTok(", ");#BuiltInTok("len");#NormalTok("(attrition_students))");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"");#CharTok("\\n");#StringTok("Dropout thoughts among those who left:\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(attrition_students[");#StringTok("\"considering_dropout\"");#NormalTok("].value_counts())");],));
 #block[
-#Skylighting(([#NormalTok("# A tibble: 6 × 5");],
-[#NormalTok("  student_id stress_score burnout_score support_score satisfaction_score");],
-[#NormalTok("  <chr>             <dbl>         <dbl>         <dbl>              <dbl>");],
-[#NormalTok("1 S0191              2.83          1.5           3.83               3.33");],
-[#NormalTok("2 S0015              4.5           3.83          1.67               3   ");],
-[#NormalTok("3 S0474              3.5           4.5           1.4                2.75");],
-[#NormalTok("4 S0418              3.17          3             1.67               3.75");],
-[#NormalTok("5 S0049              3             3.5           3.17               3.33");],
-[#NormalTok("6 S0537              2.83          2.5           3.2                4.75");],));
+#Skylighting(([#NormalTok("Students who left before Semester 3: 37");],
+[],
+[#NormalTok("Dropout thoughts among those who left:");],
+[#NormalTok("considering_dropout");],
+[#NormalTok("Yes    22");],
+[#NormalTok("No     15");],
+[#NormalTok("Name: count, dtype: int64");],));
 ]
 ]
-The function #NormalTok("pick()"); selects the columns of one scale, and #NormalTok("rowMeans()"); averages each student's answers across them. With #NormalTok("na.rm = TRUE");, a student who skipped one item still gets a score from the items they answered. Whether that is acceptable, and how many skipped items is too many, is a decision to report in the thesis. Chapter 9 checks that the items really do measure four separate scales.
+Of the 37 students who departed prior to Semester 3, the vast majority had indicated on their baseline questionnaire that they were considering discontinuing their studies. Participant attrition is rarely random; tracking who dropped out is essential context for interpreting later semesters (#ref(<sec-ch06>, supplement: [Chapter])).
 
-The original items should stay in the data, with the scores stored separately as here, because the items are needed again for checking the scales.
+== Cleaning an uncurated survey export
+<cleaning-an-uncurated-survey-export>
+We are now equipped to sanitize the raw wellbeing export (#NormalTok("wellbeing_raw.xlsx");), resolving the real-world data issues introduced in #ref(<sec-ch02>, supplement: [Chapter]).
 
-=== From wide to long
-<from-wide-to-long>
-The semester measurements sit side by side: #NormalTok("GPA_S1");, #NormalTok("Sleep_S1");, …, #NormalTok("Wellbeing_S4");, 28 columns in all. The data is not tidy, since each row holds four observations, and analyses of change over time need one row per student per semester. This is a #NormalTok("pivot_longer()"); with one extra idea: each column name holds two pieces of information, the variable (#NormalTok("GPA");) and the semester (#NormalTok("1");), separated by #NormalTok("_S");. The special name #NormalTok(".value"); tells R to use the first piece as a column name:
+=== Inspecting raw survey responses
+<inspecting-raw-survey-responses>
+Data cleaning begins with diagnostic inspection:
 
 #block[
-#Skylighting(([#NormalTok("semesters_clean ");#OtherTok("<-");#NormalTok(" responses ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(student_id, ");#FunctionTok("matches");#NormalTok("(");#StringTok("\"_S[1-4]$\"");#NormalTok(")) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("pivot_longer");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("cols      =");#NormalTok(" ");#SpecialCharTok("-");#NormalTok("student_id,");],
-[#NormalTok("    ");#AttributeTok("names_to  =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\".value\"");#NormalTok(", ");#StringTok("\"semester\"");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("names_sep =");#NormalTok(" ");#StringTok("\"_S\"");],
-[#NormalTok("  )");],
-[#FunctionTok("head");#NormalTok("(semesters_clean)");],));
+#Skylighting(([#NormalTok("raw ");#OperatorTok("=");#NormalTok(" pd.read_excel(dt.example_file(");#StringTok("\"wellbeing_raw.xlsx\"");#NormalTok("))");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Raw table shape (rows, columns):\"");#NormalTok(", raw.shape)");],));
 #block[
-#Skylighting(([#NormalTok("# A tibble: 6 × 9");],
-[#NormalTok("  student_id semester GPA   Sleep Study Exercise Caffeine Meetings Wellbeing");],
-[#NormalTok("  <chr>      <chr>    <chr> <chr> <chr> <chr>    <chr>    <chr>    <chr>    ");],
-[#NormalTok("1 S0191      1        3.07  5.6   31    3        140      2        64       ");],
-[#NormalTok("2 S0191      2        3.29  5,7   30    4        140      7        65       ");],
-[#NormalTok("3 S0191      3        3.35  5.5   32    3        130      5        60       ");],
-[#NormalTok("4 S0191      4        3.58  6.6   29    2        155      7        69       ");],
-[#NormalTok("5 S0015      1        2.8   6.5   15    2        210      2        34       ");],
-[#NormalTok("6 S0015      2        3.2   6.5   18    0        275      5        38       ");],));
+#Skylighting(([#NormalTok("Raw table shape (rows, columns): (615, 64)");],));
 ]
 ]
-The selection #NormalTok("matches(\"_S[1-4]$\")"); picks the columns whose names end in #NormalTok("_S1"); to #NormalTok("_S4");. The rest is cleaning already familiar from the steps above: tidy names, text to numbers (with the decimal-comma fix for sleep), impossible values to #NormalTok("NA");, and finally removing the empty rows of students who had left the study:
+The raw export contains #NormalTok("615"); rows, even though Elaf's study enrolled exactly #NormalTok("600"); students. Examining key demographic columns reveals multiple data anomalies:
 
 #block[
-#Skylighting(([#NormalTok("semesters_clean ");#OtherTok("<-");#NormalTok(" semesters_clean ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("rename");#NormalTok("(");#AttributeTok("gpa =");#NormalTok(" GPA, ");#AttributeTok("sleep_hours =");#NormalTok(" Sleep, ");#AttributeTok("study_hours =");#NormalTok(" Study,");],
-[#NormalTok("         ");#AttributeTok("exercise_days =");#NormalTok(" Exercise, ");#AttributeTok("caffeine_mg =");#NormalTok(" Caffeine,");],
-[#NormalTok("         ");#AttributeTok("supervisor_meetings =");#NormalTok(" Meetings, ");#AttributeTok("wellbeing =");#NormalTok(" Wellbeing) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("semester    =");#NormalTok(" ");#FunctionTok("as.integer");#NormalTok("(semester),");],
-[#NormalTok("    ");#AttributeTok("sleep_hours =");#NormalTok(" ");#FunctionTok("parse_number");#NormalTok("(");#FunctionTok("str_replace");#NormalTok("(sleep_hours, ");#StringTok("\",\"");#NormalTok(", ");#StringTok("\".\"");#NormalTok(")),");],
-[#NormalTok("    ");#FunctionTok("across");#NormalTok("(");#FunctionTok("c");#NormalTok("(gpa, study_hours, exercise_days, caffeine_mg, supervisor_meetings, wellbeing),");],
-[#NormalTok("           parse_number),");],
-[#NormalTok("    ");#AttributeTok("sleep_hours =");#NormalTok(" ");#FunctionTok("if_else");#NormalTok("(sleep_hours ");#SpecialCharTok(">");#NormalTok(" ");#DecValTok("24");#NormalTok(", ");#ConstantTok("NA");#NormalTok(", sleep_hours),");],
-[#NormalTok("    ");#AttributeTok("study_hours =");#NormalTok(" ");#FunctionTok("if_else");#NormalTok("(study_hours ");#SpecialCharTok(">");#NormalTok(" ");#DecValTok("168");#NormalTok(", ");#ConstantTok("NA");#NormalTok(", study_hours),");],
-[#NormalTok("    ");#AttributeTok("gpa         =");#NormalTok(" ");#FunctionTok("if_else");#NormalTok("(gpa ");#SpecialCharTok(">");#NormalTok(" ");#DecValTok("4");#NormalTok(", ");#ConstantTok("NA");#NormalTok(", gpa)");],
-[#NormalTok("  ) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("filter");#NormalTok("(");#SpecialCharTok("!");#FunctionTok("if_all");#NormalTok("(gpa");#SpecialCharTok(":");#NormalTok("wellbeing, is.na))");],
-[#FunctionTok("nrow");#NormalTok("(semesters_clean)");],));
+#Skylighting(([#BuiltInTok("print");#NormalTok("(raw[");#StringTok("\"Q3_Gender\"");#NormalTok("].value_counts(dropna");#OperatorTok("=");#VariableTok("False");#NormalTok(").head(");#DecValTok("8");#NormalTok("))");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"");#CharTok("\\n");#StringTok("Sample test records:\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(raw[raw[");#StringTok("\"Q1_Student ID\"");#NormalTok("].");#BuiltInTok("str");#NormalTok(".upper().");#BuiltInTok("str");#NormalTok(".startswith(");#StringTok("\"TEST\"");#NormalTok(", na");#OperatorTok("=");#VariableTok("False");#NormalTok(")][[");#StringTok("\"Q1_Student ID\"");#NormalTok(", ");#StringTok("\"Q2_Age\"");#NormalTok(", ");#StringTok("\"Q3_Gender\"");#NormalTok("]].head(");#DecValTok("3");#NormalTok("))");],));
 #block[
-#Skylighting(([#NormalTok("[1] 2326");],));
+#Skylighting(([#NormalTok("Q3_Gender");],
+[#NormalTok("Female     203");],
+[#NormalTok("Male       152");],
+[#NormalTok("male        78");],
+[#NormalTok("female      56");],
+[#NormalTok("M           46");],
+[#NormalTok("Female      30");],
+[#NormalTok("F           28");],
+[#NormalTok("Male        21");],
+[#NormalTok("Name: count, dtype: int64");],
+[],
+[#NormalTok("Sample test records:");],
+[#NormalTok("  Q1_Student ID  Q2_Age Q3_Gender");],
+[#NormalTok("0          TEST    99.0    Female");],
+[#NormalTok("1          test     NaN       NaN");],
+[#NormalTok("2         TEST2    30.0      Male");],));
 ]
 ]
-The condition #NormalTok("if_all(gpa:wellbeing, is.na)"); is #NormalTok("TRUE"); for rows where every measurement is missing, and #NormalTok("!"); keeps the others.
+The gender field contains divergent spellings (#NormalTok("\"F\"");, #NormalTok("\"female\"");, #NormalTok("\"Female\"");, #NormalTok("\"Male\"");, and trailing spaces), test entries (#NormalTok("\"TEST\"");, #NormalTok("\"TEST2\"");) are mixed in with student records, column names contain special characters and spaces, and numeric metrics contain text.
 
-=== Checking the result
-<checking-the-result>
-The last step checks what the cleaning has produced. The amount of missing data comes first, and #NormalTok("across()"); inside #NormalTok("summarise()"); counts the #NormalTok("NA");s in every column at once:
+=== Removing test records and duplicate submissions
+<removing-test-records-and-duplicate-submissions>
+Test submissions are not empirical observations, and duplicate survey submissions inflate sample size. Both must be excised first:
 
 #block[
-#Skylighting(([#NormalTok("semesters_clean ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("summarise");#NormalTok("(");#FunctionTok("across");#NormalTok("(");#FunctionTok("everything");#NormalTok("(), ");#SpecialCharTok("~");#NormalTok(" ");#FunctionTok("sum");#NormalTok("(");#FunctionTok("is.na");#NormalTok("(.x))))");],));
+#Skylighting(([#CommentTok("# Filter out test accounts");],
+[#NormalTok("no_test ");#OperatorTok("=");#NormalTok(" raw[");#OperatorTok("~");#NormalTok("raw[");#StringTok("\"Q1_Student ID\"");#NormalTok("].");#BuiltInTok("str");#NormalTok(".upper().");#BuiltInTok("str");#NormalTok(".startswith(");#StringTok("\"TEST\"");#NormalTok(", na");#OperatorTok("=");#VariableTok("False");#NormalTok(")]");],
+[],
+[#CommentTok("# Drop technical response ID and eliminate duplicate submissions");],
+[#NormalTok("responses ");#OperatorTok("=");#NormalTok(" no_test.drop(columns");#OperatorTok("=");#NormalTok("[");#StringTok("\"Response ID\"");#NormalTok("]).drop_duplicates()");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Cleaned participant count:\"");#NormalTok(", ");#BuiltInTok("len");#NormalTok("(responses))");],));
 #block[
-#Skylighting(([#NormalTok("# A tibble: 1 × 9");],
-[#NormalTok("  student_id semester   gpa sleep_hours study_hours exercise_days caffeine_mg");],
-[#NormalTok("       <int>    <int> <int>       <int>       <int>         <int>       <int>");],
-[#NormalTok("1          0        0     1          21          23            20          25");],
-[#NormalTok("# ℹ 2 more variables: supervisor_meetings <int>, wellbeing <int>");],));
+#Skylighting(([#NormalTok("Cleaned participant count: 600");],));
 ]
 ]
-Up to 25 values per measurement are still missing, about 1% of the records: answers students really did not give, and the impossible values set to #NormalTok("NA");. These are genuine gaps, and Chapter 6 discusses how to handle them.
+Filtering removes 3 test records and 12 duplicate submissions, leaving exactly #NormalTok("600"); unique students.
 
-The most satisfying check of all is a comparison with a trusted result. The clean tables in the #NormalTok("data2thesis"); package were produced from this same export, so the cleaned data should match them exactly:
+=== Renaming variables to standardized identifiers
+<renaming-variables-to-standardized-identifiers>
+Verbose survey headers like #NormalTok("Q10_How worried are you about money? (1-5)"); are error-prone in scripts. We map them to concise, standardized snake\_case identifiers:
 
 #block[
-#Skylighting(([#NormalTok("same ");#OtherTok("<-");#NormalTok(" ");#ControlFlowTok("function");#NormalTok("(mine, theirs) {");],
-[#NormalTok("  mine   ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("as.data.frame");#NormalTok("(mine)[, ");#FunctionTok("names");#NormalTok("(mine)]");],
-[#NormalTok("  theirs ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("as.data.frame");#NormalTok("(theirs)[, ");#FunctionTok("names");#NormalTok("(mine)]");],
-[#NormalTok("  ");#FunctionTok("isTRUE");#NormalTok("(");#FunctionTok("all.equal");#NormalTok("(mine, theirs, ");#AttributeTok("check.attributes =");#NormalTok(" ");#ConstantTok("FALSE");#NormalTok("))");],
+#Skylighting(([#CommentTok("# Construct questionnaire item names: stress_1..6, burnout_1..6, support_1..6, satisfaction_1..4");],
+[#NormalTok("item_names ");#OperatorTok("=");#NormalTok(" (");],
+[#NormalTok("    [");#SpecialStringTok("f\"stress_");#SpecialCharTok("{");#NormalTok("i");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok(" ");#ControlFlowTok("for");#NormalTok(" i ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("range");#NormalTok("(");#DecValTok("1");#NormalTok(", ");#DecValTok("7");#NormalTok(")] ");#OperatorTok("+");],
+[#NormalTok("    [");#SpecialStringTok("f\"burnout_");#SpecialCharTok("{");#NormalTok("i");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok(" ");#ControlFlowTok("for");#NormalTok(" i ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("range");#NormalTok("(");#DecValTok("1");#NormalTok(", ");#DecValTok("7");#NormalTok(")] ");#OperatorTok("+");],
+[#NormalTok("    [");#SpecialStringTok("f\"support_");#SpecialCharTok("{");#NormalTok("i");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok(" ");#ControlFlowTok("for");#NormalTok(" i ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("range");#NormalTok("(");#DecValTok("1");#NormalTok(", ");#DecValTok("7");#NormalTok(")] ");#OperatorTok("+");],
+[#NormalTok("    [");#SpecialStringTok("f\"satisfaction_");#SpecialCharTok("{");#NormalTok("i");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok(" ");#ControlFlowTok("for");#NormalTok(" i ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("range");#NormalTok("(");#DecValTok("1");#NormalTok(", ");#DecValTok("5");#NormalTok(")]");],
+[#NormalTok(")");],
+[],
+[#NormalTok("rename_dict ");#OperatorTok("=");#NormalTok(" {");],
+[#NormalTok("    ");#StringTok("\"Q1_Student ID\"");#NormalTok(": ");#StringTok("\"student_id\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Q2_Age\"");#NormalTok(": ");#StringTok("\"age\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Q3_Gender\"");#NormalTok(": ");#StringTok("\"gender\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Q4_Faculty\"");#NormalTok(": ");#StringTok("\"faculty\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Q5_Programme\"");#NormalTok(": ");#StringTok("\"programme\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Q6_Study mode\"");#NormalTok(": ");#StringTok("\"study_mode\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Q7_Paid work\"");#NormalTok(": ");#StringTok("\"employment\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Q8_Children\"");#NormalTok(": ");#StringTok("\"has_children\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Q9_Moved away from family\"");#NormalTok(": ");#StringTok("\"lives_away\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Q10_How worried are you about money? (1-5)\"");#NormalTok(": ");#StringTok("\"financial_worry\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Workshop group\"");#NormalTok(": ");#StringTok("\"workshop\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Workshop sessions attended\"");#NormalTok(": ");#StringTok("\"workshop_sessions\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Y1_Considered leaving?\"");#NormalTok(": ");#StringTok("\"considering_dropout\"");],
 [#NormalTok("}");],
-[#FunctionTok("same");#NormalTok("(questionnaire_clean ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("arrange");#NormalTok("(student_id),");],
-[#NormalTok("     questionnaire ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("arrange");#NormalTok("(student_id))");],));
+[],
+[#CommentTok("# Add item column mappings Q11_1 through Q11_22");],
+[#ControlFlowTok("for");#NormalTok(" i, name ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("enumerate");#NormalTok("(item_names, ");#DecValTok("1");#NormalTok("):");],
+[#NormalTok("    rename_dict[");#SpecialStringTok("f\"Q11_");#SpecialCharTok("{");#NormalTok("i");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" name");],
+[],
+[#NormalTok("responses ");#OperatorTok("=");#NormalTok(" responses.rename(columns");#OperatorTok("=");#NormalTok("rename_dict)");],));
+]
+The original survey wording is not discarded; it is documented in the project codebook (#ref(<sec-ch02>, supplement: [Chapter])).
+
+=== Standardizing categorical variables
+<standardizing-categorical-variables>
+We normalize categories by stripping whitespace, converting to lowercase, and mapping variations to canonical factor levels:
+
 #block[
-#Skylighting(([#NormalTok("[1] TRUE");],));
-]
-#Skylighting(([#FunctionTok("same");#NormalTok("(semesters_clean ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("arrange");#NormalTok("(student_id, semester),");],
-[#NormalTok("     semesters ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("arrange");#NormalTok("(student_id, semester))");],));
+#Skylighting(([#CommentTok("# Standardize gender");],
+[#NormalTok("responses[");#StringTok("\"gender\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" np.where(");],
+[#NormalTok("    responses[");#StringTok("\"gender\"");#NormalTok("].astype(");#BuiltInTok("str");#NormalTok(").");#BuiltInTok("str");#NormalTok(".strip().");#BuiltInTok("str");#NormalTok(".lower().");#BuiltInTok("str");#NormalTok(".startswith(");#StringTok("\"f\"");#NormalTok("),");],
+[#NormalTok("    ");#StringTok("\"Female\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Male\"");],
+[#NormalTok(")");],
+[],
+[#CommentTok("# Standardize faculty using regex classification");],
+[#NormalTok("fac_lower ");#OperatorTok("=");#NormalTok(" responses[");#StringTok("\"faculty\"");#NormalTok("].astype(");#BuiltInTok("str");#NormalTok(").");#BuiltInTok("str");#NormalTok(".lower()");],
+[#NormalTok("responses[");#StringTok("\"faculty\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" np.select(");],
+[#NormalTok("    [");],
+[#NormalTok("        fac_lower.");#BuiltInTok("str");#NormalTok(".contains(");#StringTok("\"educ\"");#NormalTok("),");],
+[#NormalTok("        fac_lower.");#BuiltInTok("str");#NormalTok(".contains(");#StringTok("\"health\"");#NormalTok("),");],
+[#NormalTok("        fac_lower.");#BuiltInTok("str");#NormalTok(".contains(");#StringTok("\"humanit\"");#NormalTok("),");],
+[#NormalTok("        fac_lower.");#BuiltInTok("str");#NormalTok(".contains(");#StringTok("\"social\"");#NormalTok("),");],
+[#NormalTok("        fac_lower.");#BuiltInTok("str");#NormalTok(".contains(");#StringTok("\"natural|^sciences?$\"");#NormalTok(")");],
+[#NormalTok("    ],");],
+[#NormalTok("    [");],
+[#NormalTok("        ");#StringTok("\"Education\"");#NormalTok(",");],
+[#NormalTok("        ");#StringTok("\"Health Sciences\"");#NormalTok(",");],
+[#NormalTok("        ");#StringTok("\"Humanities\"");#NormalTok(",");],
+[#NormalTok("        ");#StringTok("\"Social Sciences\"");#NormalTok(",");],
+[#NormalTok("        ");#StringTok("\"Natural Sciences\"");],
+[#NormalTok("    ],");],
+[#NormalTok("    default");#OperatorTok("=");#StringTok("\"Other\"");],
+[#NormalTok(")");],
+[],
+[#CommentTok("# Standardize degree programme and study mode");],
+[#NormalTok("responses[");#StringTok("\"programme\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" np.where(");],
+[#NormalTok("    responses[");#StringTok("\"programme\"");#NormalTok("].astype(");#BuiltInTok("str");#NormalTok(").");#BuiltInTok("str");#NormalTok(".lower().");#BuiltInTok("str");#NormalTok(".contains(");#StringTok("\"ph\"");#NormalTok("),");],
+[#NormalTok("    ");#StringTok("\"PhD\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Master's\"");],
+[#NormalTok(")");],
+[#NormalTok("responses[");#StringTok("\"study_mode\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" np.where(");],
+[#NormalTok("    responses[");#StringTok("\"study_mode\"");#NormalTok("].astype(");#BuiltInTok("str");#NormalTok(").");#BuiltInTok("str");#NormalTok(".lower().");#BuiltInTok("str");#NormalTok(".contains(");#StringTok("\"part\"");#NormalTok("),");],
+[#NormalTok("    ");#StringTok("\"Part-time\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Full-time\"");],
+[#NormalTok(")");],
+[],
+[#CommentTok("# Standardize binary Yes/No indicators");],
+[#ControlFlowTok("for");#NormalTok(" col ");#KeywordTok("in");#NormalTok(" [");#StringTok("\"has_children\"");#NormalTok(", ");#StringTok("\"lives_away\"");#NormalTok(", ");#StringTok("\"considering_dropout\"");#NormalTok("]:");],
+[#NormalTok("    responses[col] ");#OperatorTok("=");#NormalTok(" np.where(");],
+[#NormalTok("        responses[col].astype(");#BuiltInTok("str");#NormalTok(").");#BuiltInTok("str");#NormalTok(".strip().");#BuiltInTok("str");#NormalTok(".lower().");#BuiltInTok("str");#NormalTok(".startswith(");#StringTok("\"y\"");#NormalTok("),");],
+[#NormalTok("        ");#StringTok("\"Yes\"");#NormalTok(",");],
+[#NormalTok("        ");#StringTok("\"No\"");],
+[#NormalTok("    )");],
+[],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Standardized gender counts:\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(responses[");#StringTok("\"gender\"");#NormalTok("].value_counts())");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"");#CharTok("\\n");#StringTok("Standardized faculty counts:\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(responses[");#StringTok("\"faculty\"");#NormalTok("].value_counts())");],));
 #block[
-#Skylighting(([#NormalTok("[1] TRUE");],));
+#Skylighting(([#NormalTok("Standardized gender counts:");],
+[#NormalTok("gender");],
+[#NormalTok("Female    312");],
+[#NormalTok("Male      288");],
+[#NormalTok("Name: count, dtype: int64");],
+[],
+[#NormalTok("Standardized faculty counts:");],
+[#NormalTok("faculty");],
+[#NormalTok("Health Sciences     154");],
+[#NormalTok("Education           148");],
+[#NormalTok("Social Sciences     116");],
+[#NormalTok("Humanities           95");],
+[#NormalTok("Natural Sciences     87");],
+[#NormalTok("Name: count, dtype: int64");],));
 ]
 ]
-Both are #NormalTok("TRUE");. The cleaning is complete, and from here on the book uses the clean tables from the package.
+=== Recoding missing value codes and text numbers
+<recoding-missing-value-codes-and-text-numbers>
+Online forms frequently code skipped questions as #NormalTok("99"); or #NormalTok("-9");. We replace these sentinel codes with #NormalTok("np.nan"); before converting columns to numeric dtypes:
+
+#block[
+#Skylighting(([#CommentTok("# Replace missing codes (99, -9) in survey items");],
+[#ControlFlowTok("for");#NormalTok(" col ");#KeywordTok("in");#NormalTok(" item_names ");#OperatorTok("+");#NormalTok(" [");#StringTok("\"financial_worry\"");#NormalTok("]:");],
+[#NormalTok("    responses[col] ");#OperatorTok("=");#NormalTok(" responses[col].replace([");#DecValTok("99");#NormalTok(", ");#OperatorTok("-");#DecValTok("9");#NormalTok(", ");#StringTok("\"99\"");#NormalTok(", ");#StringTok("\"-9\"");#NormalTok("], np.nan)");],
+[#NormalTok("    responses[col] ");#OperatorTok("=");#NormalTok(" pd.to_numeric(responses[col], errors");#OperatorTok("=");#StringTok("\"coerce\"");#NormalTok(").astype(");#StringTok("\"Int64\"");#NormalTok(")");],
+[],
+[#NormalTok("responses[");#StringTok("\"workshop_sessions\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" pd.to_numeric(responses[");#StringTok("\"workshop_sessions\"");#NormalTok("], errors");#OperatorTok("=");#StringTok("\"coerce\"");#NormalTok(").astype(");#StringTok("\"Int64\"");#NormalTok(")");],));
+]
+#quote(block: true)[
+\[!WARNING\] #strong[Avoid Global Search-and-Replace:] Never replace #NormalTok("99"); across an entire dataset indiscriminately. On a scale scored from 0 to 100 (such as Elaf's wellbeing index), #NormalTok("99"); represents an authentic high score. Target missing-code replacements exclusively to columns where #NormalTok("99"); was defined as an omission sentinel.
+]
+
+Text columns also contain embedded characters (e.g.~respondents typing #NormalTok("\"7 hrs\""); or using decimal commas #NormalTok("\"6,5\"");). In Python, we clean decimal commas and extract digits:
+
+#block[
+#Skylighting(([#NormalTok("sample_text ");#OperatorTok("=");#NormalTok(" pd.Series([");#StringTok("\"7 hrs\"");#NormalTok(", ");#StringTok("\"6.5\"");#NormalTok(", ");#StringTok("\"6,5\"");#NormalTok("])");],
+[#NormalTok("cleaned_numbers ");#OperatorTok("=");#NormalTok(" sample_text.");#BuiltInTok("str");#NormalTok(".replace(");#StringTok("\",\"");#NormalTok(", ");#StringTok("\".\"");#NormalTok(").");#BuiltInTok("str");#NormalTok(".extract(");#VerbatimStringTok("r\"");#KeywordTok("(");#PreprocessorTok("[");#DecValTok("\\d");#CharTok("\\.");#PreprocessorTok("]");#OperatorTok("+");#KeywordTok(")");#VerbatimStringTok("\"");#NormalTok(", expand");#OperatorTok("=");#VariableTok("False");#NormalTok(").astype(");#BuiltInTok("float");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(cleaned_numbers.tolist())");],));
+#block[
+#Skylighting(([#NormalTok("[7.0, 6.5, 6.5]");],));
+]
+]
+=== Eliminating impossible values
+<eliminating-impossible-values>
+Clerical errors can introduce biologically or chronologically impossible values (such as an age of 250). Because the true value cannot be reliably inferred, the scientifically honest solution is to set impossible values to #NormalTok("np.nan");:
+
+#block[
+#Skylighting(([#CommentTok("# Parse numeric age and set impossible values (> 100) to NaN");],
+[#NormalTok("responses[");#StringTok("\"age\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" pd.to_numeric(");],
+[#NormalTok("    responses[");#StringTok("\"age\"");#NormalTok("].astype(");#BuiltInTok("str");#NormalTok(").");#BuiltInTok("str");#NormalTok(".extract(");#VerbatimStringTok("r\"");#KeywordTok("(");#PreprocessorTok("[");#DecValTok("\\d");#CharTok("\\.");#PreprocessorTok("]");#OperatorTok("+");#KeywordTok(")");#VerbatimStringTok("\"");#NormalTok(", expand");#OperatorTok("=");#VariableTok("False");#NormalTok("),");],
+[#NormalTok("    errors");#OperatorTok("=");#StringTok("\"coerce\"");],
+[#NormalTok(")");],
+[#NormalTok("responses.loc[responses[");#StringTok("\"age\"");#NormalTok("] ");#OperatorTok(">");#NormalTok(" ");#DecValTok("100");#NormalTok(", ");#StringTok("\"age\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" np.nan");],
+[],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Participants with age > 100:\"");#NormalTok(", (responses[");#StringTok("\"age\"");#NormalTok("] ");#OperatorTok(">");#NormalTok(" ");#DecValTok("100");#NormalTok(").");#BuiltInTok("sum");#NormalTok("())");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Missing age count:\"");#NormalTok(", responses[");#StringTok("\"age\"");#NormalTok("].isna().");#BuiltInTok("sum");#NormalTok("())");],));
+#block[
+#Skylighting(([#NormalTok("Participants with age > 100: 0");],
+[#NormalTok("Missing age count: 1");],));
+]
+]
+This single clerical outlier accounts for the missing age observation noted in #ref(<sec-ch01>, supplement: [Chapter]). Plausible extreme values (such as a graduate student sleeping 4 hours per night) represent genuine variance and must be retained.
+
+=== Computing composite questionnaire scale scores
+<computing-composite-questionnaire-scale-scores>
+In psychometric research, psychological constructs are measured using multi-item scales whose items are averaged. Before averaging, all items must be aligned in a uniform direction.
+
+Item #NormalTok("stress_4"); ("I feel confident handling problems in my studies") is #strong[reverse-worded]: higher agreement signifies #emph[lower] stress. If averaged directly, it would cancel out the other five items. On a 1-to-5 Likert scale, reverse-coding is achieved by subtracting from 6 ($6 - x$ maps $1 arrow.r 5$, $2 arrow.r 4$, $3 arrow.r 3$, $4 arrow.r 2$, and $5 arrow.r 1$):
+
+#Skylighting(([#NormalTok("questionnaire_clean ");#OperatorTok("=");#NormalTok(" responses[[");#StringTok("\"student_id\"");#NormalTok("] ");#OperatorTok("+");#NormalTok(" item_names].copy()");],
+[],
+[#CommentTok("# Create scale scores");],
+[#NormalTok("scores ");#OperatorTok("=");#NormalTok(" pd.DataFrame({");#StringTok("\"student_id\"");#NormalTok(": questionnaire_clean[");#StringTok("\"student_id\"");#NormalTok("]})");],
+[],
+[#CommentTok("# Reverse-code stress_4");],
+[#NormalTok("reversed_stress_4 ");#OperatorTok("=");#NormalTok(" ");#DecValTok("6");#NormalTok(" ");#OperatorTok("-");#NormalTok(" questionnaire_clean[");#StringTok("\"stress_4\"");#NormalTok("]");],
+[],
+[#CommentTok("# Compute row-wise means across scale items (skipping missing items)");],
+[#NormalTok("scores[");#StringTok("\"stress_score\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" pd.concat([");],
+[#NormalTok("    questionnaire_clean[[");#StringTok("\"stress_1\"");#NormalTok(", ");#StringTok("\"stress_2\"");#NormalTok(", ");#StringTok("\"stress_3\"");#NormalTok(", ");#StringTok("\"stress_5\"");#NormalTok(", ");#StringTok("\"stress_6\"");#NormalTok("]],");],
+[#NormalTok("    reversed_stress_4.rename(");#StringTok("\"stress_4\"");#NormalTok(")");],
+[#NormalTok("], axis");#OperatorTok("=");#DecValTok("1");#NormalTok(").mean(axis");#OperatorTok("=");#DecValTok("1");#NormalTok(")");],
+[],
+[#NormalTok("scores[");#StringTok("\"burnout_score\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" questionnaire_clean[[");#SpecialStringTok("f\"burnout_");#SpecialCharTok("{");#NormalTok("i");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok(" ");#ControlFlowTok("for");#NormalTok(" i ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("range");#NormalTok("(");#DecValTok("1");#NormalTok(", ");#DecValTok("7");#NormalTok(")]].mean(axis");#OperatorTok("=");#DecValTok("1");#NormalTok(")");],
+[#NormalTok("scores[");#StringTok("\"support_score\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" questionnaire_clean[[");#SpecialStringTok("f\"support_");#SpecialCharTok("{");#NormalTok("i");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok(" ");#ControlFlowTok("for");#NormalTok(" i ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("range");#NormalTok("(");#DecValTok("1");#NormalTok(", ");#DecValTok("7");#NormalTok(")]].mean(axis");#OperatorTok("=");#DecValTok("1");#NormalTok(")");],
+[#NormalTok("scores[");#StringTok("\"satisfaction_score\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" questionnaire_clean[[");#SpecialStringTok("f\"satisfaction_");#SpecialCharTok("{");#NormalTok("i");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok(" ");#ControlFlowTok("for");#NormalTok(" i ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("range");#NormalTok("(");#DecValTok("1");#NormalTok(", ");#DecValTok("5");#NormalTok(")]].mean(axis");#OperatorTok("=");#DecValTok("1");#NormalTok(")");],
+[],
+[#NormalTok("scores.head()");],));
+#table(
+  columns: 6,
+  align: (auto,auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student\_id], table.cell(align: right)[stress\_score], table.cell(align: right)[burnout\_score], table.cell(align: right)[support\_score], table.cell(align: right)[satisfaction\_score],),
+  table.hline(),
+  table.cell(align: horizon)[3], [S0191], [2.833333], [1.5], [3.833333], [3.333333],
+  table.cell(align: horizon)[4], [S0015], [4.5], [3.833333], [1.666667], [3.0],
+  table.cell(align: horizon)[5], [S0474], [3.5], [4.5], [1.4], [2.75],
+  table.cell(align: horizon)[6], [S0418], [3.166667], [3.0], [1.666667], [3.75],
+  table.cell(align: horizon)[7], [S0049], [3.0], [3.5], [3.166667], [3.333333],
+)
+Individual item responses must always be preserved in the archive (#NormalTok("questionnaire_clean");) alongside composite scale scores (#NormalTok("scores");), enabling scale reliability and factor structure verification (#ref(<sec-ch09>, supplement: [Chapter])).
+
+=== Reshaping repeated semester measurements
+<reshaping-repeated-semester-measurements>
+The survey export stores 28 longitudinal columns side by side: #NormalTok("GPA_S1");, #NormalTok("Sleep_S1");, …, #NormalTok("Wellbeing_S4");. To make the data tidy, we reshape these columns from wide to long using #NormalTok("pd.wide_to_long()");:
+
+#block[
+#Skylighting(([#ImportTok("import");#NormalTok(" re");],
+[],
+[#NormalTok("sem_cols ");#OperatorTok("=");#NormalTok(" [c ");#ControlFlowTok("for");#NormalTok(" c ");#KeywordTok("in");#NormalTok(" responses.columns ");#ControlFlowTok("if");#NormalTok(" re.search(");#VerbatimStringTok("r\"_S");#PreprocessorTok("[1-4]");#DecValTok("$");#VerbatimStringTok("\"");#NormalTok(", c)]");],
+[#NormalTok("sem_wide ");#OperatorTok("=");#NormalTok(" responses[[");#StringTok("\"student_id\"");#NormalTok("] ");#OperatorTok("+");#NormalTok(" sem_cols]");],
+[],
+[#CommentTok("# Reshape wide columns into tidy rows");],
+[#NormalTok("sem_long ");#OperatorTok("=");#NormalTok(" pd.wide_to_long(");],
+[#NormalTok("    sem_wide,");],
+[#NormalTok("    stubnames");#OperatorTok("=");#NormalTok("[");#StringTok("\"GPA\"");#NormalTok(", ");#StringTok("\"Sleep\"");#NormalTok(", ");#StringTok("\"Study\"");#NormalTok(", ");#StringTok("\"Exercise\"");#NormalTok(", ");#StringTok("\"Caffeine\"");#NormalTok(", ");#StringTok("\"Meetings\"");#NormalTok(", ");#StringTok("\"Wellbeing\"");#NormalTok("],");],
+[#NormalTok("    i");#OperatorTok("=");#StringTok("\"student_id\"");#NormalTok(",");],
+[#NormalTok("    j");#OperatorTok("=");#StringTok("\"semester\"");#NormalTok(",");],
+[#NormalTok("    sep");#OperatorTok("=");#StringTok("\"_S\"");],
+[#NormalTok(").reset_index()");],
+[],
+[#NormalTok("sem_long ");#OperatorTok("=");#NormalTok(" sem_long.rename(columns");#OperatorTok("=");#NormalTok("{");],
+[#NormalTok("    ");#StringTok("\"GPA\"");#NormalTok(": ");#StringTok("\"gpa\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Sleep\"");#NormalTok(": ");#StringTok("\"sleep_hours\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Study\"");#NormalTok(": ");#StringTok("\"study_hours\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Exercise\"");#NormalTok(": ");#StringTok("\"exercise_days\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Caffeine\"");#NormalTok(": ");#StringTok("\"caffeine_mg\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Meetings\"");#NormalTok(": ");#StringTok("\"supervisor_meetings\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Wellbeing\"");#NormalTok(": ");#StringTok("\"wellbeing\"");],
+[#NormalTok("})");],
+[],
+[#CommentTok("# Standardize numeric dtypes and decimal commas");],
+[#NormalTok("sem_long[");#StringTok("\"sleep_hours\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" (");],
+[#NormalTok("    sem_long[");#StringTok("\"sleep_hours\"");#NormalTok("]");],
+[#NormalTok("    .astype(");#BuiltInTok("str");#NormalTok(")");],
+[#NormalTok("    .");#BuiltInTok("str");#NormalTok(".replace(");#StringTok("\",\"");#NormalTok(", ");#StringTok("\".\"");#NormalTok(", regex");#OperatorTok("=");#VariableTok("False");#NormalTok(")");],
+[#NormalTok("    .");#BuiltInTok("str");#NormalTok(".extract(");#VerbatimStringTok("r\"");#KeywordTok("(");#PreprocessorTok("[");#DecValTok("\\d");#CharTok("\\.");#PreprocessorTok("]");#OperatorTok("+");#KeywordTok(")");#VerbatimStringTok("\"");#NormalTok(", expand");#OperatorTok("=");#VariableTok("False");#NormalTok(")");],
+[#NormalTok("    .astype(");#BuiltInTok("float");#NormalTok(")");],
+[#NormalTok(")");],
+[],
+[#ControlFlowTok("for");#NormalTok(" col ");#KeywordTok("in");#NormalTok(" [");#StringTok("\"gpa\"");#NormalTok(", ");#StringTok("\"study_hours\"");#NormalTok(", ");#StringTok("\"exercise_days\"");#NormalTok(", ");#StringTok("\"caffeine_mg\"");#NormalTok(", ");#StringTok("\"supervisor_meetings\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok("]:");],
+[#NormalTok("    sem_long[col] ");#OperatorTok("=");#NormalTok(" pd.to_numeric(");],
+[#NormalTok("        sem_long[col].astype(");#BuiltInTok("str");#NormalTok(").");#BuiltInTok("str");#NormalTok(".extract(");#VerbatimStringTok("r\"");#KeywordTok("(");#PreprocessorTok("[");#DecValTok("\\d");#CharTok("\\.");#PreprocessorTok("]");#OperatorTok("+");#KeywordTok(")");#VerbatimStringTok("\"");#NormalTok(", expand");#OperatorTok("=");#VariableTok("False");#NormalTok("),");],
+[#NormalTok("        errors");#OperatorTok("=");#StringTok("\"coerce\"");],
+[#NormalTok("    )");],
+[],
+[#CommentTok("# Filter out impossible measurement values");],
+[#NormalTok("sem_long.loc[sem_long[");#StringTok("\"sleep_hours\"");#NormalTok("] ");#OperatorTok(">");#NormalTok(" ");#DecValTok("24");#NormalTok(", ");#StringTok("\"sleep_hours\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" np.nan");],
+[#NormalTok("sem_long.loc[sem_long[");#StringTok("\"study_hours\"");#NormalTok("] ");#OperatorTok(">");#NormalTok(" ");#DecValTok("168");#NormalTok(", ");#StringTok("\"study_hours\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" np.nan");],
+[#NormalTok("sem_long.loc[sem_long[");#StringTok("\"gpa\"");#NormalTok("] ");#OperatorTok(">");#NormalTok(" ");#FloatTok("4.0");#NormalTok(", ");#StringTok("\"gpa\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" np.nan");],
+[],
+[#CommentTok("# Drop unobserved rows where all semester measurements are missing (attrition)");],
+[#NormalTok("measure_cols ");#OperatorTok("=");#NormalTok(" [");#StringTok("\"gpa\"");#NormalTok(", ");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"study_hours\"");#NormalTok(", ");#StringTok("\"exercise_days\"");#NormalTok(", ");#StringTok("\"caffeine_mg\"");#NormalTok(", ");#StringTok("\"supervisor_meetings\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok("]");],
+[#NormalTok("semesters_clean ");#OperatorTok("=");#NormalTok(" sem_long.dropna(subset");#OperatorTok("=");#NormalTok("measure_cols, how");#OperatorTok("=");#StringTok("\"all\"");#NormalTok(").copy()");],
+[#NormalTok("semesters_clean ");#OperatorTok("=");#NormalTok(" semesters_clean.sort_values([");#StringTok("\"student_id\"");#NormalTok(", ");#StringTok("\"semester\"");#NormalTok("]).reset_index(drop");#OperatorTok("=");#VariableTok("True");#NormalTok(")");],
+[],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Cleaned longitudinal semester observations:\"");#NormalTok(", ");#BuiltInTok("len");#NormalTok("(semesters_clean))");],));
+#block[
+#Skylighting(([#NormalTok("Cleaned longitudinal semester observations: 2326");],));
+]
+]
+=== Validating cleaned tables against canonical datasets
+<validating-cleaned-tables-against-canonical-datasets>
+To ensure total accuracy, we compare our cleaned tables against the canonical datasets bundled in #NormalTok("data2thesis");:
+
+#block[
+#Skylighting(([#CommentTok("# Verify questionnaire items match canonical data exactly");],
+[#NormalTok("canonical_q ");#OperatorTok("=");#NormalTok(" dt.questionnaire.sort_values(");#StringTok("\"student_id\"");#NormalTok(").reset_index(drop");#OperatorTok("=");#VariableTok("True");#NormalTok(")");],
+[#NormalTok("q_test ");#OperatorTok("=");#NormalTok(" questionnaire_clean.sort_values(");#StringTok("\"student_id\"");#NormalTok(").reset_index(drop");#OperatorTok("=");#VariableTok("True");#NormalTok(")");],
+[],
+[#NormalTok("diffs ");#OperatorTok("=");#NormalTok(" ");#BuiltInTok("sum");#NormalTok("(");],
+[#NormalTok("    ");#KeywordTok("not");#NormalTok(" (q_test[c].fillna(");#OperatorTok("-");#DecValTok("999");#NormalTok(").astype(");#BuiltInTok("int");#NormalTok(") ");#OperatorTok("==");#NormalTok(" canonical_q[c].fillna(");#OperatorTok("-");#DecValTok("999");#NormalTok(").astype(");#BuiltInTok("int");#NormalTok(")).");#BuiltInTok("all");#NormalTok("()");],
+[#NormalTok("    ");#ControlFlowTok("for");#NormalTok(" c ");#KeywordTok("in");#NormalTok(" item_names");],
+[#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Questionnaire item discrepancies:\"");#NormalTok(", diffs)");],
+[],
+[#CommentTok("# Verify semesters records match canonical data exactly");],
+[#NormalTok("canonical_sem ");#OperatorTok("=");#NormalTok(" dt.semesters.sort_values([");#StringTok("\"student_id\"");#NormalTok(", ");#StringTok("\"semester\"");#NormalTok("]).reset_index(drop");#OperatorTok("=");#VariableTok("True");#NormalTok(")");],
+[#NormalTok("max_sem_diff ");#OperatorTok("=");#NormalTok(" ");#BuiltInTok("max");#NormalTok("(");],
+[#NormalTok("    (semesters_clean[c] ");#OperatorTok("-");#NormalTok(" canonical_sem[c]).");#BuiltInTok("abs");#NormalTok("().");#BuiltInTok("max");#NormalTok("()");],
+[#NormalTok("    ");#ControlFlowTok("for");#NormalTok(" c ");#KeywordTok("in");#NormalTok(" measure_cols");],
+[#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Maximum absolute difference across semester measurements:\"");#NormalTok(", max_sem_diff)");],));
+#block[
+#Skylighting(([#NormalTok("Questionnaire item discrepancies: 0");],
+[#NormalTok("Maximum absolute difference across semester measurements: 0.0");],));
+]
+]
+Both tests confirm an exact numerical match: zero discrepancies.
 
 #block[
 #callout(
 body: 
 [
-A thesis reports the cleaning briefly, usually in the methods chapter, so that a reader can judge what was done to the data. For the survey export, with the numbers filled in by the code:
+When drafting your thesis methods section, summarize cleaning procedures transparently:
 
-The survey export contained 615 responses. Test responses (3) and duplicate submissions (12) were removed, leaving 600 students. Inconsistent spellings of categories were standardised, and missing-answer codes (99 and −9) were recoded as missing. Impossible values (4 in all), such as an age of 250 years or 26 hours of sleep a night, were set to missing, because the true values could not be known. The reverse-worded item #NormalTok("stress_4"); was recoded before scale scores were computed as the mean of each scale's items, using all items a student had answered.
+#quote(block: true)[
+#emph["The raw institutional survey export contained 615 submissions. Preliminary auditing removed 3 administrative test records and 12 duplicate submissions, yielding an analytical sample of 600 unique graduate students. Categorical variables were standardized, and sentinel missing-value codes (99, −9) were converted to missing values. Out-of-range clerical errors (including an age entry of 250 years) were set to missing. The reverse-worded item #NormalTok("stress_4"); was recoded prior to computing composite scale scores as the mean of completed items. Multi-wave records were unpivoted into longitudinal panel format ($N = 2 \, 326$ student-semesters), excluding unobserved waves resulting from participant attrition."]
+]
 
 ]
 , 
 title: 
 [
-Writing it up
+Writing Up Data Preparation in Your Methodology
 ]
 , 
 background_color: 
@@ -3062,60 +3010,39 @@ white
 #callout(
 body: 
 [
-Put all of these steps in one script, for example #NormalTok("01-clean-data.R");, that starts from the raw file and ends by saving the clean tables:
+The built-in #NormalTok("airquality"); dataset illustrates missingness in environmental surveillance:
 
-#Skylighting(([#FunctionTok("write_csv");#NormalTok("(semesters_clean, here");#SpecialCharTok("::");#FunctionTok("here");#NormalTok("(");#StringTok("\"data\"");#NormalTok(", ");#StringTok("\"semesters_clean.csv\"");#NormalTok("))");],));
-Never edit the raw file by hand. If you find a new problem next month, you fix it in the script and run it again, and every step stays on record.
-
-]
-, 
-title: 
-[
-Save your cleaning as a script
-]
-, 
-background_color: 
-rgb("#ccf1e3")
-, 
-icon_color: 
-rgb("#00A047")
-, 
-icon: 
-fa-lightbulb()
-, 
-body_background_color: 
-white
+#Skylighting(([#CommentTok("# Load airquality via data2thesis or build sample dataframe");],
+[#NormalTok("air_sample ");#OperatorTok("=");#NormalTok(" pd.DataFrame({");],
+[#NormalTok("    ");#StringTok("\"Ozone\"");#NormalTok(": [");#FloatTok("41.0");#NormalTok(", ");#FloatTok("36.0");#NormalTok(", ");#FloatTok("12.0");#NormalTok(", ");#FloatTok("18.0");#NormalTok(", np.nan, ");#FloatTok("28.0");#NormalTok(", ");#FloatTok("23.0");#NormalTok(", ");#FloatTok("19.0");#NormalTok(", ");#FloatTok("8.0");#NormalTok(", np.nan],");],
+[#NormalTok("    ");#StringTok("\"Month\"");#NormalTok(": [");#DecValTok("5");#NormalTok(", ");#DecValTok("5");#NormalTok(", ");#DecValTok("5");#NormalTok(", ");#DecValTok("5");#NormalTok(", ");#DecValTok("5");#NormalTok(", ");#DecValTok("5");#NormalTok(", ");#DecValTok("5");#NormalTok(", ");#DecValTok("5");#NormalTok(", ");#DecValTok("5");#NormalTok(", ");#DecValTok("5");#NormalTok("],");],
+[#NormalTok("    ");#StringTok("\"Temp\"");#NormalTok(": [");#DecValTok("67");#NormalTok(", ");#DecValTok("72");#NormalTok(", ");#DecValTok("74");#NormalTok(", ");#DecValTok("62");#NormalTok(", ");#DecValTok("56");#NormalTok(", ");#DecValTok("66");#NormalTok(", ");#DecValTok("65");#NormalTok(", ");#DecValTok("59");#NormalTok(", ");#DecValTok("61");#NormalTok(", ");#DecValTok("69");#NormalTok("]");],
+[#NormalTok("})");],
+[],
+[#NormalTok("air_summary ");#OperatorTok("=");#NormalTok(" (");],
+[#NormalTok("    air_sample");],
+[#NormalTok("    .groupby(");#StringTok("\"Month\"");#NormalTok(")");],
+[#NormalTok("    .agg(");],
+[#NormalTok("        mean_ozone");#OperatorTok("=");#NormalTok("(");#StringTok("\"Ozone\"");#NormalTok(", ");#StringTok("\"mean\"");#NormalTok("),");],
+[#NormalTok("        missing_days");#OperatorTok("=");#NormalTok("(");#StringTok("\"Ozone\"");#NormalTok(", ");#KeywordTok("lambda");#NormalTok(" s: s.isna().");#BuiltInTok("sum");#NormalTok("())");],
+[#NormalTok("    )");],
+[#NormalTok("    .reset_index()");],
+[#NormalTok(")");],
+[#NormalTok("air_summary");],));
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[Month], table.cell(align: right)[mean\_ozone], table.cell(align: right)[missing\_days],),
+  table.hline(),
+  table.cell(align: horizon)[0], [5], [23.125], [2],
 )
-]
-#block[
-#callout(
-body: 
-[
-#NormalTok("airquality"); is a real dataset that comes with R: daily air measurements in New York from May to September 1973. Like most real data, it has gaps. The same verbs summarise it by month:
-
-#block[
-#Skylighting(([#NormalTok("airquality ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("mean_ozone   =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(Ozone, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("missing_days =");#NormalTok(" ");#FunctionTok("sum");#NormalTok("(");#FunctionTok("is.na");#NormalTok("(Ozone)),");],
-[#NormalTok("    ");#AttributeTok(".by =");#NormalTok(" Month");],
-[#NormalTok("  )");],));
-#block[
-#Skylighting(([#NormalTok("  Month mean_ozone missing_days");],
-[#NormalTok("1     5   23.61538            5");],
-[#NormalTok("2     6   29.44444           21");],
-[#NormalTok("3     7   59.11538            5");],
-[#NormalTok("4     8   59.96154            5");],
-[#NormalTok("5     9   31.44828            1");],));
-]
-]
-Ozone levels peak in July and August, and June has the most missing days, a pattern worth knowing before any analysis: if the missing days were mostly hot ones, the June average would be too low.
+Checking missing data mechanisms ensures environmental policy is not biased by missing hot summer days.
 
 ]
 , 
 title: 
 [
-In your field: environmental and public health
+In your field: public health and environmental monitoring
 ]
 , 
 background_color: 
@@ -3135,52 +3062,51 @@ white
 <chapter-review-2>
 === Summary
 <summary-2>
-- Clean data is valid, accurate, complete as far as possible, consistent, and unique. Cleaning decisions shape the results, so they are made in code from an untouched raw file, recorded, reported, and checked after every step.
-- Tidy data has one variable per column, one observation per row, and one value per cell.
-- The pipe #NormalTok("|>"); passes a result to the next function: read it as "and then".
-- dplyr verbs: #NormalTok("filter()"); chooses cases, #NormalTok("select()"); chooses variables, #NormalTok("arrange()"); sorts, #NormalTok("mutate()"); creates variables, #NormalTok("summarise()"); with #NormalTok(".by"); summarises by group, and #NormalTok("count()"); counts. #NormalTok("case_when()"); sorts values into categories.
-- #NormalTok("pivot_longer()"); and #NormalTok("pivot_wider()"); reshape data between wide and long formats.
-- #NormalTok("left_join()"); combines tables by an identifier; #NormalTok("anti_join()"); finds rows without a match.
-- Cleaning survey data: remove test and duplicate rows, rename variables, fix categories by pattern, turn missing codes into #NormalTok("NA"); column by column, convert text to numbers (watch decimal commas), set impossible values to #NormalTok("NA");, reverse reversed items before computing scale scores, and check the result.
+- Clean data satisfies five properties: #strong[validity], #strong[accuracy], #strong[completeness], #strong[consistency], and #strong[uniqueness].
+- Tidy data principles require that every variable forms a column, every observation forms a row, and every observational unit forms a distinct table.
+- Fluent data manipulation in Pandas relies on #strong[method chaining]: sequentially connecting #NormalTok(".query()");, #NormalTok("[]");, #NormalTok(".assign()");, #NormalTok(".sort_values()");, and #NormalTok(".groupby().agg()");.
+- Reshaping is performed with #NormalTok("pd.melt()"); (wide to long) and #NormalTok(".pivot()"); (long to wide).
+- Relational tables are merged across common keys via #NormalTok("pd.merge()");, while missing counterparts (attrition) are identified using set exclusion #NormalTok("~df[\"key\"].isin(...)");.
+- Psychometric scale derivation requires identifying reverse-worded items ($6 - x$ on a 1--5 scale) before aggregating item averages across rows.
 
 === Key terms
 <key-terms-2>
-Data cleaning, tidyverse, tidy data, tibble, pipe, verb, grouped summary, wide format, long format, join, identifier, missing code, reversed item, scale score.
+Data cleaning, tidy data, method chaining, vectorization, boolean indexing, #NormalTok(".query()");, #NormalTok(".assign()");, #NormalTok(".groupby()");, #NormalTok(".agg()");, wide format, long format, #NormalTok("pd.melt()");, #NormalTok(".pivot()");, left join, anti-join, missing codes, reverse-coding, composite scale score.
 
 == Exercises
 <exercises-2>
-The #link("../playground/chapter03.html")[playground] has these and more, with hints and solutions.
+Complete these exercises in your browser using the #link("../playground/chapter03.html")[Chapter 3 Playground] or download the starter project for VS Code.
 
-+ Using #NormalTok("students");, find the average age of students in each faculty, sorted from oldest to youngest. (Remember #NormalTok("na.rm = TRUE");.)
-+ Add a column to #NormalTok("semesters"); that is #NormalTok("\"Short\""); when #NormalTok("sleep_hours"); is under 6, #NormalTok("\"Recommended\""); when it is 7 or more, and #NormalTok("\"Moderate\""); otherwise. Count the semester records in each category.
-+ Using #NormalTok("semesters");, make a table of average GPA with one row per student and one column per semester, using #NormalTok("pivot_wider()");. Show the first rows.
-+ Join #NormalTok("semesters"); to #NormalTok("students"); and compare the average semester GPA of full-time and part-time students.
-+ Explain why the #NormalTok("stress_4"); item must be reversed before the stress score is calculated, and describe what would happen to the scores if it were not.
-+ For each of the five qualities of clean data, give one example of a problem from your own field, and the cleaning decision it would require.
++ Using #NormalTok("students");, calculate the average chronological age for each faculty, sorted from oldest to youngest (handling missing values with default #NormalTok("skipna=True");).
++ Add a categorical column #NormalTok("sleep_category"); to #NormalTok("semesters"); that assigns #NormalTok("\"Short\""); when #NormalTok("sleep_hours < 6.0");, #NormalTok("\"Recommended\""); when #NormalTok("sleep_hours >= 7.0");, and #NormalTok("\"Moderate\""); otherwise. Count records per category.
++ Using #NormalTok("semesters");, create a wide summary table displaying mean GPA with one row per student and one column per semester (Semesters 1 to 4) using #NormalTok(".pivot()");.
++ Merge #NormalTok("semesters"); with #NormalTok("students"); and compare average semester GPA between full-time and part-time students.
++ Explain why item #NormalTok("stress_4"); must be reverse-coded before computing #NormalTok("stress_score");, and describe what would happen to empirical correlations if reverse-coding were omitted.
++ For each of the five qualities of clean data, describe a specific data-quality challenge from your own academic discipline and the corresponding Python cleaning step required.
 
 == Further reading
 <further-reading-2>
-- #emph[R for Data Science] @wickham2023: chapters "Data transformation", "Data tidying", "Joins", "Strings", and "Missing values".
-- "Tidy data" @wickham2014tidy, the paper that introduced the idea, with many examples of untidy data and how to fix it.
-- The #link("https://dplyr.tidyverse.org")[dplyr] and #link("https://tidyr.tidyverse.org")[tidyr] websites, with a reference page for every function.
+- #emph[Python for Data Analysis] (3rd ed.) by Wes McKinney @mckinney2022: chapters on "Data Cleaning and Preparation" and "Data Wrangling: Join, Combine, and Reshape".
+- "Tidy Data" @wickham2014tidy: the seminal paper formalizing tabular data organization.
+- Official Pandas guide to #link("https://pandas.pydata.org/pandas-docs/stable/user_guide/reshaping.html")[Reshaping and Pivot Tables].
 
-= Data Visualization
+= Data Visualization with Seaborn and Matplotlib
 <sec-ch04>
-A table of 600 numbers says almost nothing at a glance; a well-made graph of the same numbers can show in seconds where most values lie, which values are unusual, how groups differ, and how one variable moves with another. Graphs are therefore not decoration added to an analysis at the end. They are one of its main instruments: the first thing a careful researcher does with new data is look at it, and many errors in data, and in reasoning about data, are found only by looking.
+A spreadsheet containing 600 rows of numbers conveys virtually nothing at a glance. A well-designed statistical visualization of that same data reveals in seconds where observations cluster, which values are anomalous, how experimental groups diverge, and how constructs covary. Graphics are not cosmetic embellishments appended to an empirical report at the conclusion; they are primary instruments of scientific discovery. The first task of an investigator encountering new data is to inspect it visually, and many data-entry anomalies and invalid assumptions are detected solely through graphical exploration.
 
-A graph is also an argument. The choices behind it, which graph, which scale, which colours, what to leave out, decide what a reader sees first and what they conclude. Those choices can make a pattern clear or hide it, and they can make a small difference look dramatic or a large one look trivial. This chapter therefore begins with the ideas behind good graphs: what graphs are for, how people read them, how to choose a graph for a question, and what makes a graph honest. It then teaches #strong[ggplot2], the most widely used package for graphics in R, as a direct expression of those ideas, and uses it to answer the study's first research question, what graduate student life looks like (RQ1).
+A figure is also a scientific argument. Visual design choices---the selected geometry, axis scaling, aspect ratio, color palette, and data aggregation---determine what a reader notices first and what conclusions they infer. Thoughtful choices clarify subtle empirical patterns; careless choices distort differences, exaggerating trivial variations or masking substantial heterogeneity. This chapter begins with graphical perception theory: what scientific figures are for, how human vision decodes visual encodings, and what constitutes an honest, truthful display. It then introduces #strong[Seaborn] and #strong[Matplotlib], Python's standard libraries for statistical visualization, applying them to explore graduate student life (RQ1).
 
 #block[
 #callout(
 body: 
 [
-- Explain why graphs are needed alongside numerical summaries, and the difference between graphs for exploring and graphs for explaining.
-- Explain how people read graphs, and why position and length are read more accurately than angle, area, or colour.
-- Choose a graph from the research question and the types of the variables involved.
-- Build graphs with ggplot2 from data, aesthetic mappings, and geometric layers.
-- Draw histograms, bar charts, box plots, scatter plots, line charts, facets, density plots, and heat maps.
-- Judge whether a graph is honest, and improve a misleading one.
-- Prepare and export figures at the size and resolution a journal or thesis requires.
+- Explain why visualization is indispensable alongside summary statistics, and contrast exploratory vs.~explanatory graphics.
+- Apply graphical perception theory, recognizing why position and length are decoded more accurately than angles, areas, or color saturation.
+- Select the appropriate visualization based on the research question and variable measurement levels.
+- Construct statistical graphics using Seaborn and Matplotlib (histograms, KDE density curves, bar charts, box plots, scatter plots, and line charts).
+- Build small multiples (facets) and correlation heatmaps to investigate multi-variable interactions.
+- Detect and rectify misleading visual representations (such as truncated bar-chart baselines and visual clutter).
+- Export publication-ready, high-resolution figures (300+ DPI PNG, PDF, SVG) formatted to journal dimensions.
 
 ]
 , 
@@ -3230,61 +3156,52 @@ white
 ]
 == What a graph is for
 <what-a-graph-is-for>
-Numerical summaries compress data into a few numbers, and that compression can hide almost anything. The statistician Francis Anscombe made the point with four small datasets that he constructed in 1973 @anscombe1973. R includes them as #NormalTok("anscombe");. Each has 11 pairs of values, and the usual summaries are identical for all four:
+Summary statistics compress empirical distributions into a handful of numerical parameters (means, standard deviations, correlations). That compression can conceal radically different data distributions. The statistician Francis Anscombe demonstrated this vulnerability with four synthetic datasets constructed in 1973 @anscombe1973, bundled in Seaborn as #NormalTok("anscombe");:
 
-#block[
-#Skylighting(([#FunctionTok("library");#NormalTok("(ggplot2)");],
-[#FunctionTok("library");#NormalTok("(dplyr)");],));
-#block[
-#Skylighting(([],
-[#NormalTok("Attaching package: 'dplyr'");],));
-]
-#block[
-#Skylighting(([#NormalTok("The following objects are masked from 'package:stats':");],
+#Skylighting(([#NormalTok("anscombe ");#OperatorTok("=");#NormalTok(" sns.load_dataset(");#StringTok("\"anscombe\"");#NormalTok(")");],
 [],
-[#NormalTok("    filter, lag");],));
-]
-#block[
-#Skylighting(([#NormalTok("The following objects are masked from 'package:base':");],
-[],
-[#NormalTok("    intersect, setdiff, setequal, union");],));
-]
-#Skylighting(([#NormalTok("anscombe_long ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("tibble");#NormalTok("(");],
-[#NormalTok("  ");#AttributeTok("set =");#NormalTok(" ");#FunctionTok("rep");#NormalTok("(");#FunctionTok("paste");#NormalTok("(");#StringTok("\"Set\"");#NormalTok(", ");#DecValTok("1");#SpecialCharTok(":");#DecValTok("4");#NormalTok("), ");#AttributeTok("each =");#NormalTok(" ");#DecValTok("11");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("x   =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(anscombe");#SpecialCharTok("$");#NormalTok("x1, anscombe");#SpecialCharTok("$");#NormalTok("x2, anscombe");#SpecialCharTok("$");#NormalTok("x3, anscombe");#SpecialCharTok("$");#NormalTok("x4),");],
-[#NormalTok("  ");#AttributeTok("y   =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(anscombe");#SpecialCharTok("$");#NormalTok("y1, anscombe");#SpecialCharTok("$");#NormalTok("y2, anscombe");#SpecialCharTok("$");#NormalTok("y3, anscombe");#SpecialCharTok("$");#NormalTok("y4)");],
+[#NormalTok("summary ");#OperatorTok("=");#NormalTok(" (");],
+[#NormalTok("    anscombe");],
+[#NormalTok("    .groupby(");#StringTok("\"dataset\"");#NormalTok(")");],
+[#NormalTok("    .agg(");],
+[#NormalTok("        mean_x");#OperatorTok("=");#NormalTok("(");#StringTok("\"x\"");#NormalTok(", ");#StringTok("\"mean\"");#NormalTok("),");],
+[#NormalTok("        sd_x");#OperatorTok("=");#NormalTok("(");#StringTok("\"x\"");#NormalTok(", ");#StringTok("\"std\"");#NormalTok("),");],
+[#NormalTok("        mean_y");#OperatorTok("=");#NormalTok("(");#StringTok("\"y\"");#NormalTok(", ");#StringTok("\"mean\"");#NormalTok("),");],
+[#NormalTok("        sd_y");#OperatorTok("=");#NormalTok("(");#StringTok("\"y\"");#NormalTok(", ");#StringTok("\"std\"");#NormalTok(")");],
+[#NormalTok("    )");],
+[#NormalTok("    .");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],
 [#NormalTok(")");],
-[],
-[#NormalTok("anscombe_long ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");#AttributeTok("mean_x =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(x), ");#AttributeTok("mean_y =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(y), ");#AttributeTok("sd_y =");#NormalTok(" ");#FunctionTok("sd");#NormalTok("(y), ");#AttributeTok("correlation =");#NormalTok(" ");#FunctionTok("cor");#NormalTok("(x, y),");],
-[#NormalTok("            ");#AttributeTok(".by =");#NormalTok(" set) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");#FunctionTok("across");#NormalTok("(");#FunctionTok("where");#NormalTok("(is.numeric), \\(v) ");#FunctionTok("round");#NormalTok("(v, ");#DecValTok("2");#NormalTok(")))");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 4 × 5");],
-[#NormalTok("  set   mean_x mean_y  sd_y correlation");],
-[#NormalTok("  <chr>  <dbl>  <dbl> <dbl>       <dbl>");],
-[#NormalTok("1 Set 1      9    7.5  2.03        0.82");],
-[#NormalTok("2 Set 2      9    7.5  2.03        0.82");],
-[#NormalTok("3 Set 3      9    7.5  2.03        0.82");],
-[#NormalTok("4 Set 4      9    7.5  2.03        0.82");],));
-]
-]
-The same means, the same spread, the same correlation of 0.82: judged by the numbers, the four datasets are the same. #ref(<fig-anscombe>, supplement: [Figure]) shows that they are not.
+[#NormalTok("summary");],));
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[mean\_x], table.cell(align: right)[sd\_x], table.cell(align: right)[mean\_y], table.cell(align: right)[sd\_y],
+    table.cell(align: right)[dataset], table.cell(align: right)[], table.cell(align: right)[], table.cell(align: right)[], table.cell(align: right)[],),
+  table.hline(),
+  table.cell(align: horizon)[I], [9.0], [3.32], [7.5], [2.03],
+  table.cell(align: horizon)[II], [9.0], [3.32], [7.5], [2.03],
+  table.cell(align: horizon)[III], [9.0], [3.32], [7.5], [2.03],
+  table.cell(align: horizon)[IV], [9.0], [3.32], [7.5], [2.03],
+)
+Across all four datasets, the summary statistics are practically identical: $macron(x) = 9.0$, $s_x = 3.32$, $macron(y) = 7.50$, and $s_y = 2.03$. Bivariate regression yields identical linear fits ($y = 3.0 + 0.5 x$) with identical correlation coefficients ($r = 0.82$). Judged solely by numerical summaries, the four datasets appear indistinguishable.
 
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(anscombe_long, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" x, ");#AttributeTok("y =");#NormalTok(" y)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_point");#NormalTok("(");#AttributeTok("size =");#NormalTok(" ");#DecValTok("2");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_smooth");#NormalTok("(");#AttributeTok("method =");#NormalTok(" ");#StringTok("\"lm\"");#NormalTok(", ");#AttributeTok("se =");#NormalTok(" ");#ConstantTok("FALSE");#NormalTok(", ");#AttributeTok("colour =");#NormalTok(" ");#StringTok("\"grey50\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("facet_wrap");#NormalTok("(");#SpecialCharTok("~");#NormalTok(" set) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_minimal");#NormalTok("(");#AttributeTok("base_size =");#NormalTok(" ");#DecValTok("12");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("`geom_smooth()` using formula = 'y ~ x'");],));
-]
+Yet #ref(<fig-anscombe>, supplement: [Figure]) demonstrates that their underlying relationships are entirely dissimilar.
+
+#Skylighting(([#NormalTok("g ");#OperatorTok("=");#NormalTok(" sns.lmplot(");],
+[#NormalTok("    data");#OperatorTok("=");#NormalTok("anscombe, x");#OperatorTok("=");#StringTok("\"x\"");#NormalTok(", y");#OperatorTok("=");#StringTok("\"y\"");#NormalTok(", col");#OperatorTok("=");#StringTok("\"dataset\"");#NormalTok(", col_wrap");#OperatorTok("=");#DecValTok("2");#NormalTok(",");],
+[#NormalTok("    ci");#OperatorTok("=");#VariableTok("None");#NormalTok(", height");#OperatorTok("=");#FloatTok("2.5");#NormalTok(", aspect");#OperatorTok("=");#FloatTok("1.3");#NormalTok(",");],
+[#NormalTok("    scatter_kws");#OperatorTok("=");#NormalTok("{");#StringTok("\"s\"");#NormalTok(": ");#DecValTok("35");#NormalTok(", ");#StringTok("\"color\"");#NormalTok(": ");#StringTok("\"#1f77b4\"");#NormalTok("},");],
+[#NormalTok("    line_kws");#OperatorTok("=");#NormalTok("{");#StringTok("\"color\"");#NormalTok(": ");#StringTok("\"grey\"");#NormalTok(", ");#StringTok("\"linewidth\"");#NormalTok(": ");#FloatTok("1.5");#NormalTok("}");],
+[#NormalTok(")");],
+[#NormalTok("g.set_axis_labels(");#StringTok("\"X\"");#NormalTok(", ");#StringTok("\"Y\"");#NormalTok(")");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("04-data-visualization_files/figure-typst/fig-anscombe-1.svg", alt: "Four scatter plots with the same straight trend line. Set 1 is a noisy linear relationship; set 2 is a smooth curve; set 3 is a perfect line with one outlier; set 4 has all points at one x value except a single far point."))
+#box(image("04-data-visualization_files/figure-typst/fig-anscombe-output-1.svg", alt: "Four scatter plots with identical linear regression slopes. Dataset I is a noisy linear relationship; Dataset II is a smooth parabolic curve; Dataset III is a perfect line with a single outlier; Dataset IV shows points stacked vertically with one extreme leverage point."))
 ], caption: figure.caption(
 position: bottom, 
 [
-Anscombe's four datasets: identical means, standard deviations, and correlations, but four entirely different relationships.
+Anscombe's quartet: identical means, standard deviations, and regression lines, but four completely different empirical patterns.
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -3292,38 +3209,53 @@ supplement: "Figure",
 <fig-anscombe>
 
 
-Only the first set is the kind of data the correlation describes well: a straight-line relationship with random scatter. The second is a smooth curve, the third a perfect line spoiled by one outlier, and in the fourth a single unusual point creates the entire relationship. Anyone who analysed these data without looking would draw the same, wrong, conclusion from all four. Looking first is not optional.
+Only Dataset I represents the bivariate linear association assumed by Pearson's $r$. Dataset II is a non-linear quadratic curve, Dataset III is a perfect linear relationship corrupted by one outlier, and Dataset IV is an unassociated vertical cluster whose correlation is produced entirely by a single high-leverage point. An analyst relying strictly on summary statistics would draw identical---and incorrect---conclusions across all four. Visual inspection prior to modeling is not optional; it is a prerequisite for valid inference.
 
-Graphs serve two different purposes, and it helps to know which one a graph is for. #strong[Exploratory graphs] are made for the researcher, quickly and in large numbers, to understand the data: to check distributions, find unusual values, and notice patterns worth testing. They need no polish. #strong[Explanatory graphs] are made for readers, to show a finding that the researcher already understands, and they need care: a clear message, accurate labels, and nothing that distracts. A thesis contains a few explanatory graphs, chosen from the many exploratory ones made along the way.
+=== Exploratory versus explanatory graphs
+<exploratory-versus-explanatory-graphs>
+Scientific graphics serve two distinct functions:
 
-== How people read graphs
-<how-people-read-graphs>
-A graph works by turning numbers into visual properties: positions, lengths, angles, areas, colours. People do not judge all of these equally well. In a series of experiments, the statisticians William Cleveland and Robert McGill asked people to compare values shown in different ways, and found a clear ranking @cleveland1984. Positions along a common scale are judged most accurately, followed by lengths, then angles and slopes, then areas, and finally shades of colour. A good graph therefore puts its most important comparison into position or length.
+- #strong[Exploratory graphs:] Created rapidly by the researcher to interrogate the data---checking skewness, detecting outliers, and screening for interaction effects. They require minimal aesthetic polish.
+- #strong[Explanatory graphs:] Curated for external readers and thesis examiners to communicate a validated empirical finding. They require meticulous care: informative axis labels, accessible color palettes, annotations, and the elimination of extraneous chartjunk.
 
-The difference is easy to experience. The code below shows the same five percentages, which differ only slightly, as a pie chart and as a bar chart:
+== Graphical perception: How vision decodes data
+<graphical-perception-how-vision-decodes-data>
+Graphs function by translating numbers into visual encodings: position, length, angle, area, slope, and color. Human perception does not decode these attributes with equal precision. In pioneering experiments, William Cleveland and Robert McGill @cleveland1984 evaluated how accurately observers judge quantitative differences across visual channels, establishing an empirical hierarchy:
 
-#Skylighting(([#FunctionTok("library");#NormalTok("(patchwork)");],
++ #strong[Position along a common aligned scale] (most accurate)
++ #strong[Length]
++ #strong[Slope and Angle]
++ #strong[Area]
++ #strong[Color saturation and hue] (least accurate)
+
+Effective scientific graphics map primary research comparisons to position or length, reserving color and area for secondary grouping.
+
+The perceptual difference is readily apparent when comparing identical proportions displayed as a pie chart versus a bar chart (#ref(<fig-pie-bar>, supplement: [Figure])).
+
+#Skylighting(([#NormalTok("shares ");#OperatorTok("=");#NormalTok(" pd.DataFrame({");],
+[#NormalTok("    ");#StringTok("\"group\"");#NormalTok(": [");#StringTok("\"A\"");#NormalTok(", ");#StringTok("\"B\"");#NormalTok(", ");#StringTok("\"C\"");#NormalTok(", ");#StringTok("\"D\"");#NormalTok(", ");#StringTok("\"E\"");#NormalTok("],");],
+[#NormalTok("    ");#StringTok("\"percent\"");#NormalTok(": [");#DecValTok("23");#NormalTok(", ");#DecValTok("21");#NormalTok(", ");#DecValTok("20");#NormalTok(", ");#DecValTok("19");#NormalTok(", ");#DecValTok("17");#NormalTok("]");],
+[#NormalTok("})");],
 [],
-[#NormalTok("shares ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("tibble");#NormalTok("(");#AttributeTok("group =");#NormalTok(" LETTERS[");#DecValTok("1");#SpecialCharTok(":");#DecValTok("5");#NormalTok("], ");#AttributeTok("percent =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#DecValTok("23");#NormalTok(", ");#DecValTok("21");#NormalTok(", ");#DecValTok("20");#NormalTok(", ");#DecValTok("19");#NormalTok(", ");#DecValTok("17");#NormalTok("))");],
+[#NormalTok("fig, (ax1, ax2) ");#OperatorTok("=");#NormalTok(" plt.subplots(");#DecValTok("1");#NormalTok(", ");#DecValTok("2");#NormalTok(", figsize");#OperatorTok("=");#NormalTok("(");#FloatTok("7.5");#NormalTok(", ");#FloatTok("3.2");#NormalTok("))");],
 [],
-[#NormalTok("pie_chart ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("ggplot");#NormalTok("(shares, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#StringTok("\"\"");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" percent, ");#AttributeTok("fill =");#NormalTok(" group)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_col");#NormalTok("(");#AttributeTok("width =");#NormalTok(" ");#DecValTok("1");#NormalTok(", ");#AttributeTok("colour =");#NormalTok(" ");#StringTok("\"white\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("coord_polar");#NormalTok("(");#AttributeTok("theta =");#NormalTok(" ");#StringTok("\"y\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("scale_fill_viridis_d");#NormalTok("(");#AttributeTok("end =");#NormalTok(" ");#FloatTok("0.9");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_void");#NormalTok("()");],
+[#CommentTok("# Pie chart (angle / area)");],
+[#NormalTok("ax1.pie(shares[");#StringTok("\"percent\"");#NormalTok("], labels");#OperatorTok("=");#NormalTok("shares[");#StringTok("\"group\"");#NormalTok("], startangle");#OperatorTok("=");#DecValTok("90");#NormalTok(", colors");#OperatorTok("=");#NormalTok("sns.color_palette(");#StringTok("\"mako\"");#NormalTok(", ");#DecValTok("5");#NormalTok("))");],
+[#NormalTok("ax1.set_title(");#StringTok("\"Pie chart (Angle / Area)\"");#NormalTok(", fontsize");#OperatorTok("=");#DecValTok("11");#NormalTok(")");],
 [],
-[#NormalTok("bar_chart ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("ggplot");#NormalTok("(shares, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" group, ");#AttributeTok("y =");#NormalTok(" percent)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_col");#NormalTok("(");#AttributeTok("fill =");#NormalTok(" ");#StringTok("\"grey50\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#ConstantTok("NULL");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#StringTok("\"Percent\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_minimal");#NormalTok("(");#AttributeTok("base_size =");#NormalTok(" ");#DecValTok("12");#NormalTok(")");],
+[#CommentTok("# Bar chart (aligned length)");],
+[#NormalTok("sns.barplot(data");#OperatorTok("=");#NormalTok("shares, x");#OperatorTok("=");#StringTok("\"group\"");#NormalTok(", y");#OperatorTok("=");#StringTok("\"percent\"");#NormalTok(", color");#OperatorTok("=");#StringTok("\"#4c72b0\"");#NormalTok(", ax");#OperatorTok("=");#NormalTok("ax2)");],
+[#NormalTok("ax2.");#BuiltInTok("set");#NormalTok("(title");#OperatorTok("=");#StringTok("\"Bar chart (Aligned Length)\"");#NormalTok(", xlabel");#OperatorTok("=");#StringTok("\"Category\"");#NormalTok(", ylabel");#OperatorTok("=");#StringTok("\"Percentage (%)\"");#NormalTok(")");],
+[#NormalTok("ax2.set_ylim(");#DecValTok("0");#NormalTok(", ");#DecValTok("26");#NormalTok(")");],
 [],
-[#NormalTok("pie_chart ");#SpecialCharTok("+");#NormalTok(" bar_chart");],));
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("04-data-visualization_files/figure-typst/fig-pie-bar-1.svg", alt: "Left, a pie chart with five slices of nearly equal size, labelled A to E. Right, a bar chart of the same values, where the bars clearly decrease from A to E."))
+#box(image("04-data-visualization_files/figure-typst/fig-pie-bar-output-1.svg", alt: "Side-by-side comparison. Left: a pie chart with five nearly identical slices labelled A through E. Right: an aligned bar chart where the steady decline from A to E is obvious."))
 ], caption: figure.caption(
 position: bottom, 
 [
-The same five percentages as a pie chart (angles and areas) and as a bar chart (lengths on a common scale). The order of the groups is much easier to see in the bars.
+The same five percentages displayed as a pie chart (angle and area) versus a bar chart (length along an aligned scale). Identifying the ranking is immediate in the bar chart.
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -3331,31 +3263,29 @@ supplement: "Figure",
 <fig-pie-bar>
 
 
-In the pie chart, the slices look almost identical, and ranking them requires reading a legend. In the bar chart, the steady decline from A to E is obvious at once, because the comparison is made by length along a shared axis. For this reason, researchers generally prefer bar charts and dot plots to pie charts, and scatter plots to bubble charts. The #NormalTok("patchwork"); package, loaded above, places ggplot2 graphs side by side with a simple #NormalTok("+");.
+In the pie chart, the five slices appear virtually identical; determining the rank order requires scrutinizing legends and mentally comparing angles. In the bar chart, the monotonic decline from category A (23%) to E (17%) is evident immediately because comparisons occur along a common baseline. Consequently, scientific reporting favors bar charts and dot plots over pie charts.
 
-The same research gives two further rules of thumb. Comparisons are easiest when the values to be compared sit next to each other on the same scale, so the most important comparison should be placed within one panel, not across panels. And colour is best used to distinguish a few categories, or to show one quantity that does not need to be read precisely, rather than to carry the main message.
-
-== Choosing a graph
-<choosing-a-graph>
-The right graph follows from the research question and from the kinds of variables involved (Chapter 2). A question about the distribution of one numeric variable needs a different graph from a question about the relationship between two. #ref(<tbl-which-graph>, supplement: [Table]) is a starting point for the graphs in this chapter.
+== Selecting the right visualization
+<selecting-the-right-visualization>
+The choice of graph is governed by the research question and the levels of measurement of the variables under study (#ref(<tbl-which-graph>, supplement: [Table])).
 
 #figure([
 #table(
   columns: (25%, 25%, 25%, 25%),
   align: (auto,auto,auto,auto,),
-  table.header([Question], [Variables], [Graph], [geom],),
+  table.header([Analytical Question], [Variable Types], [Recommended Graph], [Python Seaborn / Matplotlib Function],),
   table.hline(),
-  [How are the values distributed?], [One numeric], [Histogram, density plot], [#NormalTok("geom_histogram()");, #NormalTok("geom_density()");],
-  [How many cases fall in each category?], [One categorical], [Bar chart], [#NormalTok("geom_bar()");],
-  [Do groups differ?], [Numeric by categorical], [Box plot, points with averages], [#NormalTok("geom_boxplot()");, #NormalTok("geom_jitter()");],
-  [How are two variables related?], [Two numeric], [Scatter plot], [#NormalTok("geom_point()");],
-  [How does something change over time?], [Numeric over time], [Line chart], [#NormalTok("geom_line()");],
-  [How do many variables relate?], [Several numeric], [Heat map of correlations], [#NormalTok("geom_tile()");],
+  [Distribution of a single continuous metric], [One numeric], [Histogram / KDE plot], [#NormalTok("sns.histplot()");, #NormalTok("sns.kdeplot()");],
+  [Frequency counts of categorical groups], [One categorical], [Bar chart], [#NormalTok("sns.countplot()");, #NormalTok("sns.barplot()");],
+  [Comparison of continuous metric across groups], [One numeric by categorical], [Box plot / Strip plot], [#NormalTok("sns.boxplot()");, #NormalTok("sns.stripplot()");],
+  [Association between two continuous variables], [Two numeric], [Scatter plot with trend line], [#NormalTok("sns.scatterplot()");, #NormalTok("sns.regplot()");],
+  [Trajectory of a metric over time], [Numeric over time], [Longitudinal line plot], [#NormalTok("sns.lineplot()");],
+  [Multilateral correlation structure], [Several numeric], [Correlation heatmap], [#NormalTok("sns.heatmap()");],
 )
 ], caption: figure.caption(
 position: top, 
 [
-Choosing a graph from the question and the variables
+Selecting the appropriate visualization based on analytical questions and variable types
 ]), 
 kind: "quarto-float-tbl", 
 supplement: "Table", 
@@ -3363,78 +3293,36 @@ supplement: "Table",
 <tbl-which-graph>
 
 
-== The grammar of graphics
-<the-grammar-of-graphics>
-The ggplot2 package is built on an idea called the #strong[grammar of graphics] @wickham2016ggplot2. It follows directly from the previous sections: a graph maps variables to visual properties. Every ggplot2 graph therefore combines three parts. The #strong[data] is a data frame. The #strong[aesthetic mappings], written inside #NormalTok("aes()");, state which variable goes to which visual property: the x axis, the y axis, the colour, and so on. The #strong[geometric layers], called #emph[geoms], state which shape represents the data, such as points, bars, or lines. The parts are added together with #NormalTok("+");. Five students from a pilot study show how:
+== Core statistical visualizations with Seaborn
+<core-statistical-visualizations-with-seaborn>
+To explore Elaf's wellbeing cohort, we merge Semester 1 measurements with baseline student background demographics:
 
 #block[
-#Skylighting(([#NormalTok("pilot ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("tibble");#NormalTok("(");],
-[#NormalTok("  ");#AttributeTok("student =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"S1\"");#NormalTok(", ");#StringTok("\"S2\"");#NormalTok(", ");#StringTok("\"S3\"");#NormalTok(", ");#StringTok("\"S4\"");#NormalTok(", ");#StringTok("\"S5\"");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("sleep   =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FloatTok("6.5");#NormalTok(", ");#FloatTok("7.5");#NormalTok(", ");#FloatTok("5.5");#NormalTok(", ");#DecValTok("8");#NormalTok(", ");#DecValTok("6");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("stress  =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FloatTok("3.2");#NormalTok(", ");#FloatTok("2.1");#NormalTok(", ");#FloatTok("4.5");#NormalTok(", ");#FloatTok("1.8");#NormalTok(", ");#FloatTok("3.9");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("invited =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"Yes\"");#NormalTok(", ");#StringTok("\"No\"");#NormalTok(", ");#StringTok("\"Yes\"");#NormalTok(", ");#StringTok("\"No\"");#NormalTok(", ");#StringTok("\"Yes\"");#NormalTok(")");],
+#Skylighting(([#NormalTok("first_sem ");#OperatorTok("=");#NormalTok(" (");],
+[#NormalTok("    semesters");],
+[#NormalTok("    .query(");#StringTok("\"semester == 1\"");#NormalTok(")");],
+[#NormalTok("    .merge(students, on");#OperatorTok("=");#StringTok("\"student_id\"");#NormalTok(", how");#OperatorTok("=");#StringTok("\"left\"");#NormalTok(")");],
 [#NormalTok(")");],));
 ]
-The function #NormalTok("ggplot()");, given the data and the mappings, sets up an empty canvas with the axes:
+=== Histograms and density curves
+<histograms-and-density-curves>
+The initial question concerning any continuous variable addresses its empirical distribution: central tendency, spread, skewness, and the presence of extreme outliers. A #strong[histogram] partitions the continuous range into discrete bins, displaying the count of observations falling within each interval:
 
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(pilot, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" sleep, ");#AttributeTok("y =");#NormalTok(" stress))");],));
+#Skylighting(([#NormalTok("fig, ax ");#OperatorTok("=");#NormalTok(" plt.subplots(figsize");#OperatorTok("=");#NormalTok("(");#DecValTok("6");#NormalTok(", ");#FloatTok("3.5");#NormalTok("))");],
+[],
+[#NormalTok("sns.histplot(");],
+[#NormalTok("    data");#OperatorTok("=");#NormalTok("first_sem, x");#OperatorTok("=");#StringTok("\"sleep_hours\"");#NormalTok(", binwidth");#OperatorTok("=");#FloatTok("0.5");#NormalTok(",");],
+[#NormalTok("    color");#OperatorTok("=");#StringTok("\"#4c72b0\"");#NormalTok(", edgecolor");#OperatorTok("=");#StringTok("\"white\"");#NormalTok(", ax");#OperatorTok("=");#NormalTok("ax");],
+[#NormalTok(")");],
+[#NormalTok("ax.");#BuiltInTok("set");#NormalTok("(xlabel");#OperatorTok("=");#StringTok("\"Hours of sleep per night\"");#NormalTok(", ylabel");#OperatorTok("=");#StringTok("\"Number of students\"");#NormalTok(")");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("04-data-visualization_files/figure-typst/fig-canvas-1.svg", alt: "An empty plot with sleep on the x axis and stress on the y axis, and no data points."))
+#box(image("04-data-visualization_files/figure-typst/fig-sleep-hist-output-1.svg", alt: "Histogram of sleep hours, roughly bell-shaped and centered near 6.5 hours, ranging between 3.5 and 10 hours."))
 ], caption: figure.caption(
 position: bottom, 
 [
-Data and mappings alone give an empty canvas with the axes.
-]), 
-kind: "quarto-float-fig", 
-supplement: "Figure", 
-)
-<fig-canvas>
-
-
-Adding a geom draws the data. The geom #NormalTok("geom_point()"); draws one point per row:
-
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(pilot, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" sleep, ");#AttributeTok("y =");#NormalTok(" stress)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_point");#NormalTok("(");#AttributeTok("size =");#NormalTok(" ");#DecValTok("3");#NormalTok(")");],));
-#figure([
-#box(image("04-data-visualization_files/figure-typst/fig-points-1.svg", alt: "Scatter plot of five points showing that stress falls as sleep rises."))
-], caption: figure.caption(
-position: bottom, 
-[
-Adding a layer of points: students who sleep less report more stress.
-]), 
-kind: "quarto-float-fig", 
-supplement: "Figure", 
-)
-<fig-points>
-
-
-Every further detail is another #NormalTok("+");: another layer, a label, a colour scale, a theme. That is the whole idea, and every graph in this chapter, however complex it looks, is more of the same.
-
-For the wellbeing data, one row per student makes most graphs simplest. The code below combines each student's first-semester record with their background information:
-
-#block[
-#Skylighting(([#NormalTok("first_sem ");#OtherTok("<-");#NormalTok(" semesters ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("filter");#NormalTok("(semester ");#SpecialCharTok("==");#NormalTok(" ");#DecValTok("1");#NormalTok(") ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("left_join");#NormalTok("(students, ");#FunctionTok("join_by");#NormalTok("(student_id))");],));
-]
-== The basic graphs
-<the-basic-graphs>
-=== Histograms
-<histograms>
-The first question about any numeric variable concerns its distribution: where most values lie, how widely they spread, and whether some are unusual. A #strong[histogram] answers it by dividing the values into ranges, called #emph[bins], and showing how many cases fall into each. Here is the distribution of sleep:
-
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(first_sem, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" sleep_hours)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_histogram");#NormalTok("(");#AttributeTok("binwidth =");#NormalTok(" ");#FloatTok("0.5");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("Warning: Removed 6 rows containing non-finite outside the scale range");],
-[#NormalTok("(`stat_bin()`).");],));
-]
-#figure([
-#box(image("04-data-visualization_files/figure-typst/fig-sleep-hist-1.svg", alt: "Histogram of sleep hours, roughly bell-shaped, centred just above 6 hours, ranging from about 3.5 to 10."))
-], caption: figure.caption(
-position: bottom, 
-[
-Hours of sleep per night in the first semester.
+Distribution of sleep hours per night in Semester 1.
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -3442,22 +3330,28 @@ supplement: "Figure",
 <fig-sleep-hist>
 
 
-#ref(<fig-sleep-hist>, supplement: [Figure]) shows a roughly symmetrical, bell-shaped distribution, centred a little above 6 hours. Most students sleep less than the recommended 7 hours: 65% of them in the first semester. A few sleep very little, under 4.5 hours; Chapter 6 looks at such unusual values.
+#ref(<fig-sleep-hist>, supplement: [Figure]) displays a roughly symmetrical, unimodal distribution centered near 6.5 hours. Exactly #NormalTok("r round(100 * share_short, 1)");% of graduate students sleep less than the clinically recommended 7 hours during their first semester.
 
-The argument #NormalTok("binwidth"); sets the width of each bin, here half an hour. The choice matters: bins that are too wide hide the shape, and bins that are too narrow make it noisy, so it is worth trying a few widths.
+=== Bar charts for categorical counts
+<bar-charts-for-categorical-counts>
+A #strong[bar chart] plots frequency distributions across categorical factor levels:
 
-=== Bar charts
-<bar-charts>
-A #strong[bar chart] shows how many cases fall into each category. The geom #NormalTok("geom_bar()"); does the counting:
-
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(students, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" faculty)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_bar");#NormalTok("()");],));
+#Skylighting(([#NormalTok("fig, ax ");#OperatorTok("=");#NormalTok(" plt.subplots(figsize");#OperatorTok("=");#NormalTok("(");#DecValTok("6");#NormalTok(", ");#FloatTok("3.5");#NormalTok("))");],
+[],
+[#NormalTok("sns.countplot(");],
+[#NormalTok("    data");#OperatorTok("=");#NormalTok("students, x");#OperatorTok("=");#StringTok("\"faculty\"");#NormalTok(", color");#OperatorTok("=");#StringTok("\"#4c72b0\"");#NormalTok(",");],
+[#NormalTok("    order");#OperatorTok("=");#NormalTok("students[");#StringTok("\"faculty\"");#NormalTok("].value_counts().index, ax");#OperatorTok("=");#NormalTok("ax");],
+[#NormalTok(")");],
+[#NormalTok("ax.");#BuiltInTok("set");#NormalTok("(xlabel");#OperatorTok("=");#StringTok("\"Faculty\"");#NormalTok(", ylabel");#OperatorTok("=");#StringTok("\"Student Count\"");#NormalTok(")");],
+[#NormalTok("plt.xticks(rotation");#OperatorTok("=");#DecValTok("20");#NormalTok(", ha");#OperatorTok("=");#StringTok("\"right\"");#NormalTok(")");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("04-data-visualization_files/figure-typst/fig-faculty-bar-1.svg", alt: "Bar chart of students per faculty: Health Sciences and Education have the most, Natural Sciences and Humanities the fewest."))
+#box(image("04-data-visualization_files/figure-typst/fig-faculty-bar-output-1.svg", alt: "Bar chart displaying the number of students per faculty: Health Sciences and Education have the highest counts."))
 ], caption: figure.caption(
 position: bottom, 
 [
-Number of students in each faculty.
+Enrollment frequency across academic faculties.
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -3465,20 +3359,34 @@ supplement: "Figure",
 <fig-faculty-bar>
 
 
-When the heights have already been calculated, for example averages, #NormalTok("geom_col()"); is used instead, with the calculated value mapped to #NormalTok("y");. Because a bar represents its value by its length, the axis of a bar chart must start at zero; the section on honest graphs returns to this.
+Because bar lengths represent quantities proportionally, the numerical baseline must always start at zero.
 
-=== Box plots
-<box-plots>
-A #strong[box plot] summarises a numeric variable for each group, which makes it the standard graph for comparing groups. The box covers the middle half of the values, the line inside is the median, the whiskers reach out to the typical range, and points beyond the whiskers mark unusual values. The comparison below concerns wellbeing in full-time and part-time students:
+=== Box plots for group comparisons
+<box-plots-for-group-comparisons>
+A #strong[box plot] summarizes five key distribution parameters: the median (center line), interquartile range (IQR, box edges covering the 25th to 75th percentiles), whiskers (extending to $1.5 times upright("IQR")$), and individual points for potential outliers. It is the gold standard for comparing continuous metrics across qualitative groups:
 
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(first_sem, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" study_mode, ");#AttributeTok("y =");#NormalTok(" wellbeing)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_boxplot");#NormalTok("()");],));
+#Skylighting(([#NormalTok("fig, ax ");#OperatorTok("=");#NormalTok(" plt.subplots(figsize");#OperatorTok("=");#NormalTok("(");#DecValTok("5");#NormalTok(", ");#FloatTok("3.5");#NormalTok("))");],
+[],
+[#NormalTok("sns.boxplot(");],
+[#NormalTok("    data");#OperatorTok("=");#NormalTok("first_sem, x");#OperatorTok("=");#StringTok("\"study_mode\"");#NormalTok(", y");#OperatorTok("=");#StringTok("\"wellbeing\"");#NormalTok(",");],
+[#NormalTok("    palette");#OperatorTok("=");#NormalTok("[");#StringTok("\"#4c72b0\"");#NormalTok(", ");#StringTok("\"#55a868\"");#NormalTok("], ax");#OperatorTok("=");#NormalTok("ax, width");#OperatorTok("=");#FloatTok("0.5");],
+[#NormalTok(")");],
+[#NormalTok("ax.");#BuiltInTok("set");#NormalTok("(xlabel");#OperatorTok("=");#StringTok("\"Study Mode\"");#NormalTok(", ylabel");#OperatorTok("=");#StringTok("\"Wellbeing Index (0 to 100)\"");#NormalTok(")");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
+#block[
+#Skylighting(([#NormalTok("C:\\Users\\polla\\AppData\\Local\\Temp\\ipykernel_54144\\230693867.py:3: FutureWarning: ");],
+[],
+[#NormalTok("Passing `palette` without assigning `hue` is deprecated and will be removed in v0.14.0. Assign the `x` variable to `hue` and set `legend=False` for the same effect.");],
+[],
+[#NormalTok("  sns.boxplot(");],));
+]
 #figure([
-#box(image("04-data-visualization_files/figure-typst/fig-wellbeing-box-1.svg", alt: "Two box plots: part-time students' wellbeing is a few points lower than full-time students', with much overlap."))
+#box(image("04-data-visualization_files/figure-typst/fig-wellbeing-box-output-2.svg", alt: "Two box plots showing that part-time students report slightly lower median wellbeing than full-time students, with substantial overlap."))
 ], caption: figure.caption(
 position: bottom, 
 [
-Wellbeing in the first semester, by study mode.
+Wellbeing in Semester 1 by study mode (Full-time vs.~Part-time).
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -3486,32 +3394,29 @@ supplement: "Figure",
 <fig-wellbeing-box>
 
 
-Part-time students' wellbeing is a little lower, but the boxes overlap considerably: many part-time students are doing better than many full-time students. Whether the difference is larger than chance is a question for Chapter 8.
+Part-time students report a slightly lower median wellbeing score than full-time students, but the distributions overlap substantially. In #ref(<sec-ch08>, supplement: [Chapter]), we use inferential ANOVA to test whether this group discrepancy is statistically significant.
 
-=== Scatter plots
-<scatter-plots>
-The relationship between two numeric variables, such as sleep and grades, is shown with a #strong[scatter plot], which puts one variable on each axis. With 600 students, points pile on top of each other, a problem called #strong[overplotting], so #NormalTok("alpha"); makes them partly transparent, and darker areas show where many students are:
+=== Scatter plots with regression trend lines
+<scatter-plots-with-regression-trend-lines>
+The relationship between two continuous variables---such as sleep hours and academic performance---is evaluated via a #strong[scatter plot]. When plotting 600 participants, individual markers often overlap (#strong[overplotting]). We mitigate this by setting transparency (#NormalTok("alpha=0.4");) and overlaying a linear regression trend line with #NormalTok("sns.regplot()");:
 
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(first_sem, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" sleep_hours, ");#AttributeTok("y =");#NormalTok(" gpa)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_point");#NormalTok("(");#AttributeTok("alpha =");#NormalTok(" ");#FloatTok("0.4");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_smooth");#NormalTok("(");#AttributeTok("method =");#NormalTok(" ");#StringTok("\"lm\"");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("`geom_smooth()` using formula = 'y ~ x'");],));
-]
-#block[
-#Skylighting(([#NormalTok("Warning: Removed 6 rows containing non-finite outside the scale range");],
-[#NormalTok("(`stat_smooth()`).");],));
-]
-#block[
-#Skylighting(([#NormalTok("Warning: Removed 6 rows containing missing values or values outside the scale range");],
-[#NormalTok("(`geom_point()`).");],));
-]
+#Skylighting(([#NormalTok("fig, ax ");#OperatorTok("=");#NormalTok(" plt.subplots(figsize");#OperatorTok("=");#NormalTok("(");#DecValTok("6");#NormalTok(", ");#FloatTok("3.8");#NormalTok("))");],
+[],
+[#NormalTok("sns.regplot(");],
+[#NormalTok("    data");#OperatorTok("=");#NormalTok("first_sem, x");#OperatorTok("=");#StringTok("\"sleep_hours\"");#NormalTok(", y");#OperatorTok("=");#StringTok("\"gpa\"");#NormalTok(",");],
+[#NormalTok("    scatter_kws");#OperatorTok("=");#NormalTok("{");#StringTok("\"alpha\"");#NormalTok(": ");#FloatTok("0.35");#NormalTok(", ");#StringTok("\"color\"");#NormalTok(": ");#StringTok("\"#4c72b0\"");#NormalTok("},");],
+[#NormalTok("    line_kws");#OperatorTok("=");#NormalTok("{");#StringTok("\"color\"");#NormalTok(": ");#StringTok("\"#c44e52\"");#NormalTok(", ");#StringTok("\"linewidth\"");#NormalTok(": ");#DecValTok("2");#NormalTok("},");],
+[#NormalTok("    ax");#OperatorTok("=");#NormalTok("ax");],
+[#NormalTok(")");],
+[#NormalTok("ax.");#BuiltInTok("set");#NormalTok("(xlabel");#OperatorTok("=");#StringTok("\"Hours of sleep per night\"");#NormalTok(", ylabel");#OperatorTok("=");#StringTok("\"Grade Point Average (GPA)\"");#NormalTok(")");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("04-data-visualization_files/figure-typst/fig-sleep-gpa-1.svg", alt: "Scatter plot of GPA against sleep hours with a rising straight line: students who sleep more tend to have slightly higher GPAs, with much scatter."))
+#box(image("04-data-visualization_files/figure-typst/fig-sleep-gpa-output-1.svg", alt: "Scatter plot of GPA against sleep hours showing a positive linear slope: students who sleep longer tend to achieve slightly higher GPAs, with substantial scatter."))
 ], caption: figure.caption(
 position: bottom, 
 [
-Sleep and GPA in the first semester, with a straight trend line.
+Association between sleep hours and GPA in Semester 1, with ordinary least squares trend line.
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -3519,25 +3424,43 @@ supplement: "Figure",
 <fig-sleep-gpa>
 
 
-The layer #NormalTok("geom_smooth(method = \"lm\")"); adds a straight trend line, with a grey band showing its uncertainty. The line rises: students who sleep more tend to have slightly higher GPAs. The points, however, scatter widely around it. Sleep is related to GPA, but it is far from the whole story, and Chapter 8 measures the relationship.
+The regression line slopes upward: students sleeping more hours tend to achieve modestly higher GPAs. However, observations scatter broadly around the line ($r approx 0.30$), indicating that sleep explains only a fraction of total academic variance.
 
-=== Line charts
-<line-charts>
-The study followed its students for four semesters, and a #strong[line chart] shows how the average changed. The averages are calculated first (Chapter 3) and then plotted, with one line per workshop group:
+=== Longitudinal trajectory line plots
+<longitudinal-trajectory-line-plots>
+Elaf's research design tracked cohorts across four consecutive semesters. A #strong[line plot] illustrates how group means evolve over time:
 
-#Skylighting(([#NormalTok("wellbeing_by_sem ");#OtherTok("<-");#NormalTok(" semesters ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("left_join");#NormalTok("(students, ");#FunctionTok("join_by");#NormalTok("(student_id)) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");#AttributeTok("mean_wellbeing =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(wellbeing), ");#AttributeTok(".by =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(semester, workshop))");],
+#Skylighting(([#NormalTok("wellbeing_trajectory ");#OperatorTok("=");#NormalTok(" (");],
+[#NormalTok("    semesters");],
+[#NormalTok("    .merge(students[[");#StringTok("\"student_id\"");#NormalTok(", ");#StringTok("\"workshop\"");#NormalTok("]], on");#OperatorTok("=");#StringTok("\"student_id\"");#NormalTok(", how");#OperatorTok("=");#StringTok("\"left\"");#NormalTok(")");],
+[#NormalTok("    .groupby([");#StringTok("\"semester\"");#NormalTok(", ");#StringTok("\"workshop\"");#NormalTok("])[");#StringTok("\"wellbeing\"");#NormalTok("]");],
+[#NormalTok("    .mean()");],
+[#NormalTok("    .reset_index()");],
+[#NormalTok(")");],
 [],
-[#FunctionTok("ggplot");#NormalTok("(wellbeing_by_sem, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" semester, ");#AttributeTok("y =");#NormalTok(" mean_wellbeing, ");#AttributeTok("colour =");#NormalTok(" workshop)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_line");#NormalTok("(");#AttributeTok("linewidth =");#NormalTok(" ");#DecValTok("1");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_point");#NormalTok("(");#AttributeTok("size =");#NormalTok(" ");#FloatTok("2.5");#NormalTok(")");],));
+[#NormalTok("fig, ax ");#OperatorTok("=");#NormalTok(" plt.subplots(figsize");#OperatorTok("=");#NormalTok("(");#FloatTok("6.5");#NormalTok(", ");#FloatTok("3.8");#NormalTok("))");],
+[],
+[#NormalTok("sns.lineplot(");],
+[#NormalTok("    data");#OperatorTok("=");#NormalTok("wellbeing_trajectory, x");#OperatorTok("=");#StringTok("\"semester\"");#NormalTok(", y");#OperatorTok("=");#StringTok("\"wellbeing\"");#NormalTok(",");],
+[#NormalTok("    hue");#OperatorTok("=");#StringTok("\"workshop\"");#NormalTok(", marker");#OperatorTok("=");#StringTok("\"o\"");#NormalTok(", markersize");#OperatorTok("=");#DecValTok("7");#NormalTok(", linewidth");#OperatorTok("=");#DecValTok("2");#NormalTok(",");],
+[#NormalTok("    palette");#OperatorTok("=");#NormalTok("{");#StringTok("\"Invited\"");#NormalTok(": ");#StringTok("\"#2ca02c\"");#NormalTok(", ");#StringTok("\"Not invited\"");#NormalTok(": ");#StringTok("\"#7f7f7f\"");#NormalTok("},");],
+[#NormalTok("    ax");#OperatorTok("=");#NormalTok("ax");],
+[#NormalTok(")");],
+[#NormalTok("ax.");#BuiltInTok("set");#NormalTok("(");],
+[#NormalTok("    title");#OperatorTok("=");#StringTok("\"Cohort Wellbeing Trajectory Over Two Years\"");#NormalTok(",");],
+[#NormalTok("    xlabel");#OperatorTok("=");#StringTok("\"Academic Semester\"");#NormalTok(",");],
+[#NormalTok("    ylabel");#OperatorTok("=");#StringTok("\"Mean Wellbeing (0 to 100)\"");#NormalTok(",");],
+[#NormalTok("    xticks");#OperatorTok("=");#NormalTok("[");#DecValTok("1");#NormalTok(", ");#DecValTok("2");#NormalTok(", ");#DecValTok("3");#NormalTok(", ");#DecValTok("4");#NormalTok("]");],
+[#NormalTok(")");],
+[#NormalTok("ax.legend(title");#OperatorTok("=");#StringTok("\"Workshop Group\"");#NormalTok(", frameon");#OperatorTok("=");#VariableTok("True");#NormalTok(")");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("04-data-visualization_files/figure-typst/fig-wellbeing-lines-1.svg", alt: "Two lines over semesters 1 to 4. They start level; from semester 2 the invited group is about 5 points higher, and the gap narrows by semester 4."))
+#box(image("04-data-visualization_files/figure-typst/fig-wellbeing-lines-output-1.svg", alt: "Two trajectory lines spanning Semesters 1 to 4. Baseline scores in Semester 1 are identical; from Semester 2 onward, invited workshop participants achieve approximately 5 points higher wellbeing."))
 ], caption: figure.caption(
 position: bottom, 
 [
-Average wellbeing over four semesters, by workshop group.
+Longitudinal wellbeing trajectories across four semesters by workshop participation.
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -3545,154 +3468,44 @@ supplement: "Figure",
 <fig-wellbeing-lines>
 
 
-#ref(<fig-wellbeing-lines>, supplement: [Figure]) tells the story of the workshop at a glance: the groups start level, the invited students pull ahead in semester 2, and the gap narrows afterwards. Chapters 7 and 10 test whether this pattern is real.
+#ref(<fig-wellbeing-lines>, supplement: [Figure]) captures the core narrative of Elaf's intervention study: groups start at identical baselines in Semester 1, invited students pull ahead following the intervention in Semester 2, and the gap stabilizes over subsequent terms.
 
-== Mapping and setting
-<mapping-and-setting>
-In #ref(<fig-wellbeing-lines>, supplement: [Figure]), #NormalTok("colour = workshop"); sat inside #NormalTok("aes()");. That #strong[maps] colour to a variable: each workshop group gets its own colour, and ggplot2 adds a legend to explain them. To make everything one fixed colour, the colour is #strong[set] #emph[outside] #NormalTok("aes()"); instead:
+== Preparing publication-quality figures
+<preparing-publication-quality-figures>
+Exploratory graphics suffice during initial data exploration, but explanatory figures destined for a thesis or journal article require publication-standard polish.
 
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(first_sem, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" sleep_hours)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_histogram");#NormalTok("(");#AttributeTok("binwidth =");#NormalTok(" ");#FloatTok("0.5");#NormalTok(", ");#AttributeTok("fill =");#NormalTok(" ");#StringTok("\"steelblue\"");#NormalTok(", ");#AttributeTok("colour =");#NormalTok(" ");#StringTok("\"white\"");#NormalTok(")");],));
+=== Annotations and reference lines
+<annotations-and-reference-lines>
+Adding explicit reference lines and annotations directs reader attention to clinically meaningful thresholds:
+
+#Skylighting(([#NormalTok("fig, ax ");#OperatorTok("=");#NormalTok(" plt.subplots(figsize");#OperatorTok("=");#NormalTok("(");#FloatTok("6.5");#NormalTok(", ");#FloatTok("3.8");#NormalTok("))");],
+[],
+[#NormalTok("sns.histplot(");],
+[#NormalTok("    data");#OperatorTok("=");#NormalTok("first_sem, x");#OperatorTok("=");#StringTok("\"sleep_hours\"");#NormalTok(", binwidth");#OperatorTok("=");#FloatTok("0.5");#NormalTok(",");],
+[#NormalTok("    color");#OperatorTok("=");#StringTok("\"#4c72b0\"");#NormalTok(", edgecolor");#OperatorTok("=");#StringTok("\"white\"");#NormalTok(", ax");#OperatorTok("=");#NormalTok("ax");],
+[#NormalTok(")");],
+[#NormalTok("ax.axvline(");#FloatTok("7.0");#NormalTok(", color");#OperatorTok("=");#StringTok("\"#c44e52\"");#NormalTok(", linestyle");#OperatorTok("=");#StringTok("\"--\"");#NormalTok(", linewidth");#OperatorTok("=");#FloatTok("1.8");#NormalTok(")");],
+[#NormalTok("ax.text(");],
+[#NormalTok("    ");#FloatTok("7.1");#NormalTok(", ax.get_ylim()[");#DecValTok("1");#NormalTok("] ");#OperatorTok("*");#NormalTok(" ");#FloatTok("0.9");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Recommended: 7.0 hrs\"");#NormalTok(",");],
+[#NormalTok("    color");#OperatorTok("=");#StringTok("\"#c44e52\"");#NormalTok(", fontweight");#OperatorTok("=");#StringTok("\"semibold\"");#NormalTok(", verticalalignment");#OperatorTok("=");#StringTok("\"top\"");],
+[#NormalTok(")");],
+[#NormalTok("ax.");#BuiltInTok("set");#NormalTok("(");],
+[#NormalTok("    title");#OperatorTok("=");#StringTok("\"Baseline Sleep Duration\"");#NormalTok(",");],
+[#NormalTok("    xlabel");#OperatorTok("=");#StringTok("\"Hours of sleep per night\"");#NormalTok(",");],
+[#NormalTok("    ylabel");#OperatorTok("=");#StringTok("\"Number of students\"");],
+[#NormalTok(")");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #block[
-#Skylighting(([#NormalTok("Warning: Removed 6 rows containing non-finite outside the scale range");],
-[#NormalTok("(`stat_bin()`).");],));
+#Skylighting(([#NormalTok("findfont: Failed to find font weight semibold for Arial, now using 700.");],));
 ]
 #figure([
-#box(image("04-data-visualization_files/figure-typst/fig-setting-1.svg", alt: "Histogram of sleep hours with all bars filled in a single dark blue colour."))
+#box(image("04-data-visualization_files/figure-typst/fig-annotated-output-2.svg", alt: "Histogram of sleep hours with a vertical dashed line positioned at 7 hours, annotated with 'Recommended benchmark: 7 hours'."))
 ], caption: figure.caption(
 position: bottom, 
 [
-Setting a fixed colour outside aes(): all bars are the same colour, and there is no legend.
-]), 
-kind: "quarto-float-fig", 
-supplement: "Figure", 
-)
-<fig-setting>
-
-
-A very common mistake is to put a fixed colour inside #NormalTok("aes()");. ggplot2 then treats #NormalTok("\"steelblue\""); as a variable with one value, colours it with its first default colour (a salmon pink), and adds a pointless legend:
-
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(first_sem, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" sleep_hours, ");#AttributeTok("fill =");#NormalTok(" ");#StringTok("\"steelblue\"");#NormalTok(")) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_histogram");#NormalTok("(");#AttributeTok("binwidth =");#NormalTok(" ");#FloatTok("0.5");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("Warning: Removed 6 rows containing non-finite outside the scale range");],
-[#NormalTok("(`stat_bin()`).");],));
-]
-#figure([
-#box(image("04-data-visualization_files/figure-typst/fig-mapping-mistake-1.svg", alt: "Histogram with salmon-pink bars and a legend containing the single entry 'steelblue'."))
-], caption: figure.caption(
-position: bottom, 
-[
-The mistake: a fixed colour inside aes() is treated as data.
-]), 
-kind: "quarto-float-fig", 
-supplement: "Figure", 
-)
-<fig-mapping-mistake>
-
-
-The rule follows from the grammar: #emph[inside] #NormalTok("aes()"); for anything that should depend on the data, #emph[outside] for anything that should be the same everywhere. Note also the difference between #NormalTok("fill"); and #NormalTok("colour");: #NormalTok("fill"); is the inside of a shape such as a bar or box, and #NormalTok("colour"); is its outline, or the colour of points and lines.
-
-== Preparing graphs for publication
-<preparing-graphs-for-publication>
-The graphs so far are exploratory: good enough for the researcher. An explanatory graph for a thesis or paper needs more care, and every addition below is a design decision with a reason behind it.
-
-=== Labels
-<labels>
-A reader cannot interpret a graph whose axes say #NormalTok("mean_wellbeing"); and #NormalTok("semester");. Axis labels should state what was measured, with units, and the title or caption should state the message. The function #NormalTok("labs()"); sets the title, subtitle, axis labels, legend title, and caption:
-
-#Skylighting(([#NormalTok("p ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("ggplot");#NormalTok("(wellbeing_by_sem, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" semester, ");#AttributeTok("y =");#NormalTok(" mean_wellbeing, ");#AttributeTok("colour =");#NormalTok(" workshop)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_line");#NormalTok("(");#AttributeTok("linewidth =");#NormalTok(" ");#DecValTok("1");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_point");#NormalTok("(");#AttributeTok("size =");#NormalTok(" ");#FloatTok("2.5");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("title    =");#NormalTok(" ");#StringTok("\"Wellbeing over the two years\"");#NormalTok(",");],
-[#NormalTok("    ");#AttributeTok("subtitle =");#NormalTok(" ");#StringTok("\"Average score per semester, by workshop group\"");#NormalTok(",");],
-[#NormalTok("    ");#AttributeTok("x        =");#NormalTok(" ");#StringTok("\"Semester\"");#NormalTok(",");],
-[#NormalTok("    ");#AttributeTok("y        =");#NormalTok(" ");#StringTok("\"Average wellbeing (0 to 100)\"");#NormalTok(",");],
-[#NormalTok("    ");#AttributeTok("colour   =");#NormalTok(" ");#StringTok("\"Workshop\"");],
-[#NormalTok("  )");],
-[#NormalTok("p");],));
-#figure([
-#box(image("04-data-visualization_files/figure-typst/fig-labelled-1.svg", alt: "The wellbeing line chart with a title, axis labels 'Semester' and 'Average wellbeing (0 to 100)', and legend titled 'Workshop'."))
-], caption: figure.caption(
-position: bottom, 
-[
-The line chart with clear labels.
-]), 
-kind: "quarto-float-fig", 
-supplement: "Figure", 
-)
-<fig-labelled>
-
-
-Storing the graph in an object, here #NormalTok("p");, makes it possible to add to it step by step without repeating the code.
-
-=== Scales and colours
-<scales-and-colours>
-#strong[Scales] control how data values become positions, colours, and sizes, and each has a #NormalTok("scale_"); function. Two decisions are needed here. The x axis should show only whole semesters, since there is no semester 2.5. And the colours should come from a palette that people with colour vision deficiency, about one man in twelve, can tell apart. The #strong[viridis] palettes, built into ggplot2, are designed for exactly that, and they also print well in greyscale:
-
-#Skylighting(([#NormalTok("p ");#OtherTok("<-");#NormalTok(" p ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("scale_x_continuous");#NormalTok("(");#AttributeTok("breaks =");#NormalTok(" ");#DecValTok("1");#SpecialCharTok(":");#DecValTok("4");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("scale_colour_viridis_d");#NormalTok("(");#AttributeTok("end =");#NormalTok(" ");#FloatTok("0.8");#NormalTok(")");],
-[#NormalTok("p");],));
-#figure([
-#box(image("04-data-visualization_files/figure-typst/fig-scales-1.svg", alt: "The wellbeing line chart with semesters 1 to 4 on the x axis and the two lines in dark purple and yellow-green."))
-], caption: figure.caption(
-position: bottom, 
-[
-Whole-number semesters on the x axis and a colour-blind-friendly palette.
-]), 
-kind: "quarto-float-fig", 
-supplement: "Figure", 
-)
-<fig-scales>
-
-
-Colours can also be chosen by hand, with #NormalTok("scale_colour_manual(values = c(\"Invited\" = \"#1b9e77\", \"Not invited\" = \"#7570b3\"))");. Whatever the choice, colour should never be the #emph[only] way to tell groups apart in a printed figure: different shapes or line types, or labels placed directly on the lines, keep the graph readable in black and white.
-
-=== Themes
-<themes>
-A #strong[theme] controls everything that is not data: the background, grid lines, fonts, and the position of the legend. The default grey background of ggplot2 is useful on screen, but most journals prefer a plain look. The complete themes #NormalTok("theme_minimal()"); and #NormalTok("theme_bw()"); provide it, #NormalTok("base_size"); sets the font size, and #NormalTok("theme()"); adjusts individual details:
-
-#Skylighting(([#NormalTok("p ");#OtherTok("<-");#NormalTok(" p ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_minimal");#NormalTok("(");#AttributeTok("base_size =");#NormalTok(" ");#DecValTok("13");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme");#NormalTok("(");#AttributeTok("legend.position =");#NormalTok(" ");#StringTok("\"bottom\"");#NormalTok(")");],
-[#NormalTok("p");],));
-#figure([
-#box(image("04-data-visualization_files/figure-typst/fig-theme-1.svg", alt: "The finished wellbeing line chart on a white background with light grid lines, larger text, and the legend at the bottom."))
-], caption: figure.caption(
-position: bottom, 
-[
-A clean theme, larger text, and the legend below the graph.
-]), 
-kind: "quarto-float-fig", 
-supplement: "Figure", 
-)
-<fig-theme>
-
-
-Compared with #ref(<fig-wellbeing-lines>, supplement: [Figure]), #ref(<fig-theme>, supplement: [Figure]) shows the same data, but it is now ready for a thesis.
-
-=== Annotations
-<annotations>
-A reference value often helps a reader interpret a graph: a recommended amount, a threshold, a mean. The functions #NormalTok("geom_vline()"); and #NormalTok("geom_hline()"); draw reference lines, and #NormalTok("annotate()"); places text:
-
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(first_sem, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" sleep_hours)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_histogram");#NormalTok("(");#AttributeTok("binwidth =");#NormalTok(" ");#FloatTok("0.5");#NormalTok(", ");#AttributeTok("fill =");#NormalTok(" ");#StringTok("\"steelblue\"");#NormalTok(", ");#AttributeTok("colour =");#NormalTok(" ");#StringTok("\"white\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_vline");#NormalTok("(");#AttributeTok("xintercept =");#NormalTok(" ");#DecValTok("7");#NormalTok(", ");#AttributeTok("linetype =");#NormalTok(" ");#StringTok("\"dashed\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("annotate");#NormalTok("(");#StringTok("\"text\"");#NormalTok(", ");#AttributeTok("x =");#NormalTok(" ");#FloatTok("7.1");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#ConstantTok("Inf");#NormalTok(", ");#AttributeTok("label =");#NormalTok(" ");#StringTok("\"Recommended: 7 hours\"");#NormalTok(", ");#AttributeTok("hjust =");#NormalTok(" ");#DecValTok("0");#NormalTok(", ");#AttributeTok("vjust =");#NormalTok(" ");#FloatTok("1.5");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#StringTok("\"Hours of sleep per night\"");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#StringTok("\"Number of students\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_minimal");#NormalTok("(");#AttributeTok("base_size =");#NormalTok(" ");#DecValTok("13");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("Warning: Removed 6 rows containing non-finite outside the scale range");],
-[#NormalTok("(`stat_bin()`).");],));
-]
-#figure([
-#box(image("04-data-visualization_files/figure-typst/fig-annotated-1.svg", alt: "Histogram of sleep hours with a dashed vertical line at 7 hours, labelled 'Recommended: 7 hours'; most of the distribution lies to the left of the line."))
-], caption: figure.caption(
-position: bottom, 
-[
-Sleep in the first semester, with the recommended 7 hours marked.
+Distribution of sleep hours with clinical 7-hour reference benchmark.
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -3700,36 +3513,54 @@ supplement: "Figure",
 <fig-annotated>
 
 
-In the annotation, #NormalTok("y = Inf"); places the text at the top of the plot, whatever the height of the bars; #NormalTok("hjust = 0"); makes it start just right of the line, and #NormalTok("vjust = 1.5"); moves it slightly down from the edge. The line makes the graph's message, that most students sleep less than recommended, visible without any further explanation.
+=== Color accessibility
+<color-accessibility>
+Approximately 8% of men and 0.5% of women experience congenital color vision deficiency (red-green color blindness). A scientific graphic must remain interpretable to all readers and reproduce legibly when printed in black and white:
 
-== Honest graphs
-<honest-graphs>
-A graph can be accurate in every detail and still mislead. Most misleading graphs are not deliberate; they come from defaults that nobody questioned. Four choices deserve particular attention.
+- Avoid rainbow (#NormalTok("jet");) palettes, which introduce artificial visual boundaries.
+- Utilize perceptually uniform, colorblind-safe palettes such as #NormalTok("viridis");, #NormalTok("plasma");, #NormalTok("cividis");, or #NormalTok("colorblind");.
+- Combine color with redundant visual encodings (distinct marker shapes, line styles, or direct text labels).
 
-The first is the #strong[axis range]. A bar represents its value by its length, so a bar chart whose axis does not start at zero misrepresents every value: a bar twice as long no longer means twice as much. Points and lines represent values by position, so their axes may be zoomed in to show change clearly, as long as the reader is told. The y axis of #ref(<fig-theme>, supplement: [Figure]), for example, runs only from about 58 to 66, because ggplot2 zooms in on the data, which makes a 5-point gap look large. Either the caption should say so, or the full range of the scale can be shown with #NormalTok("coord_cartesian(ylim = c(0, 100))");, letting readers judge the size of the difference themselves.
+== Honest graphs and visual ethics
+<honest-graphs-and-visual-ethics>
+A visualization can be mathematically accurate while remaining visually misleading. Distortion frequently stems from unexamined software defaults:
 
-The second is the #strong[aspect ratio], the shape of the graph. The same line looks steep in a tall, narrow graph and flat in a wide, short one. A good default is a graph somewhat wider than it is tall, and the same shape for graphs that will be compared.
++ #strong[Truncated vertical baselines on bar charts:] Because a bar encodes magnitude through length, truncating the baseline exaggerates differences.
++ #strong[Extreme aspect ratios:] Altering aspect ratios artificially steepens or flattens longitudinal trends.
++ #strong[Chartjunk and 3D effects:] Pseudo-3D perspectives distort angular perception and distance.
++ #strong[Hiding underlying distribution variance:] Reporting only summary bar heights masks critical within-group heterogeneity.
 
-The third is #strong[clutter]. Everything in a graph that does not carry information, such as heavy grid lines, a legend that repeats the axis labels, or three-dimensional effects, competes with the data for the reader's attention. Three-dimensional bars and pies are worst of all, since the perspective distorts exactly the lengths and angles that carry the values.
+=== Redesigning a misleading figure
+<redesigning-a-misleading-figure>
+Suppose an investigator evaluates whether mean wellbeing differs across faculties. A careless chart with an artificially truncated axis appears in #ref(<fig-before>, supplement: [Figure]):
 
-The fourth is #strong[colour]. Colours for categories should be clearly different from each other but none should stand out, since no category is more important than another; a qualitative palette such as viridis does this. Colours for quantities should run in one direction, from light to dark (a sequential palette), or away from a meaningful midpoint such as zero in two directions (a diverging palette, as in the heat map later in this chapter). A rainbow palette is poor for both, because its bright bands suggest boundaries that are not in the data.
-
-=== A graph improved
-<a-graph-improved>
-The principles are clearest when applied to one graph. Suppose the question is whether wellbeing differs between faculties. A first attempt, using defaults and a zoomed axis, might look like #ref(<fig-before>, supplement: [Figure]):
-
-#Skylighting(([#NormalTok("faculty_means ");#OtherTok("<-");#NormalTok(" first_sem ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");#AttributeTok("wellbeing =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(wellbeing), ");#AttributeTok(".by =");#NormalTok(" faculty)");],
+#Skylighting(([#NormalTok("faculty_means ");#OperatorTok("=");#NormalTok(" (");],
+[#NormalTok("    first_sem");],
+[#NormalTok("    .groupby(");#StringTok("\"faculty\"");#NormalTok(")[");#StringTok("\"wellbeing\"");#NormalTok("]");],
+[#NormalTok("    .mean()");],
+[#NormalTok("    .reset_index()");],
+[#NormalTok(")");],
 [],
-[#FunctionTok("ggplot");#NormalTok("(faculty_means, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" faculty, ");#AttributeTok("y =");#NormalTok(" wellbeing, ");#AttributeTok("fill =");#NormalTok(" faculty)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_col");#NormalTok("() ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("coord_cartesian");#NormalTok("(");#AttributeTok("ylim =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#DecValTok("58");#NormalTok(", ");#FloatTok("62.5");#NormalTok("))");],));
+[#NormalTok("fig, ax ");#OperatorTok("=");#NormalTok(" plt.subplots(figsize");#OperatorTok("=");#NormalTok("(");#FloatTok("6.5");#NormalTok(", ");#FloatTok("3.5");#NormalTok("))");],
+[#NormalTok("sns.barplot(data");#OperatorTok("=");#NormalTok("faculty_means, x");#OperatorTok("=");#StringTok("\"faculty\"");#NormalTok(", y");#OperatorTok("=");#StringTok("\"wellbeing\"");#NormalTok(", palette");#OperatorTok("=");#StringTok("\"Blues_d\"");#NormalTok(", ax");#OperatorTok("=");#NormalTok("ax)");],
+[#NormalTok("ax.set_ylim(");#DecValTok("58");#NormalTok(", ");#FloatTok("62.5");#NormalTok(")  ");#CommentTok("# Truncated baseline!");],
+[#NormalTok("ax.");#BuiltInTok("set");#NormalTok("(title");#OperatorTok("=");#StringTok("\"Misleading: Truncated Baseline (58 to 62.5)\"");#NormalTok(", xlabel");#OperatorTok("=");#StringTok("\"Faculty\"");#NormalTok(", ylabel");#OperatorTok("=");#StringTok("\"Mean Wellbeing\"");#NormalTok(")");],
+[#NormalTok("plt.xticks(rotation");#OperatorTok("=");#DecValTok("20");#NormalTok(", ha");#OperatorTok("=");#StringTok("\"right\"");#NormalTok(")");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
+#block[
+#Skylighting(([#NormalTok("C:\\Users\\polla\\AppData\\Local\\Temp\\ipykernel_54144\\2329551519.py:9: FutureWarning: ");],
+[],
+[#NormalTok("Passing `palette` without assigning `hue` is deprecated and will be removed in v0.14.0. Assign the `x` variable to `hue` and set `legend=False` for the same effect.");],
+[],
+[#NormalTok("  sns.barplot(data=faculty_means, x=\"faculty\", y=\"wellbeing\", palette=\"Blues_d\", ax=ax)");],));
+]
 #figure([
-#box(image("04-data-visualization_files/figure-typst/fig-before-1.svg", alt: "Bar chart of average wellbeing for five faculties with bright default colours and a legend. The y axis starts at 58, so the bars for Education and Humanities look several times taller than those for Social Sciences and Health Sciences."))
+#box(image("04-data-visualization_files/figure-typst/fig-before-output-2.svg", alt: "Bar chart of average wellbeing across five faculties with the vertical axis starting at 58. Education appears several times higher than Social Sciences."))
 ], caption: figure.caption(
 position: bottom, 
 [
-A misleading graph of average wellbeing by faculty: the axis starts at 58, the colours repeat the axis labels, and the spread of the data is invisible.
+A misleading graphic: the vertical axis is truncated at 58, exaggerating modest differences and concealing student-level variance.
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -3737,21 +3568,53 @@ supplement: "Figure",
 <fig-before>
 
 
-The graph suggests large differences: the Education bar looks several times taller than the Social Sciences bar. But the axis starts at 58, so the lengths of the bars mean nothing; the averages actually differ by about 3 points on a 100-point scale. The colours add nothing that the axis labels do not already say, the legend repeats them a second time, the faculties appear in alphabetical rather than meaningful order, and the axis titles are variable names. Most seriously, the graph shows only averages, and hides how much students within each faculty differ.
+In #ref(<fig-before>, supplement: [Figure]), the Education faculty bar appears triple the height of Social Sciences. Yet the actual group means differ by barely 2.5 points on a 100-point scale. Furthermore, the bar chart completely conceals individual variation.
 
-#ref(<fig-after>, supplement: [Figure]) shows the same data, redesigned. Every student appears as a faint point, so the spread within each faculty is visible, and the average of each faculty is marked in red. The faculties are ordered by their average, the labels say what was measured, and the legend is gone:
+In #ref(<fig-after>, supplement: [Figure]), the display is redesigned into an honest, informative jittered strip plot with overlaid group means:
 
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(first_sem, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" wellbeing, ");#AttributeTok("y =");#NormalTok(" ");#FunctionTok("reorder");#NormalTok("(faculty, wellbeing))) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_jitter");#NormalTok("(");#AttributeTok("height =");#NormalTok(" ");#FloatTok("0.15");#NormalTok(", ");#AttributeTok("alpha =");#NormalTok(" ");#FloatTok("0.25");#NormalTok(", ");#AttributeTok("colour =");#NormalTok(" ");#StringTok("\"grey45\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("stat_summary");#NormalTok("(");#AttributeTok("fun =");#NormalTok(" mean, ");#AttributeTok("geom =");#NormalTok(" ");#StringTok("\"point\"");#NormalTok(", ");#AttributeTok("size =");#NormalTok(" ");#FloatTok("3.5");#NormalTok(", ");#AttributeTok("colour =");#NormalTok(" ");#StringTok("\"#b2182b\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#StringTok("\"Wellbeing in semester 1 (0 to 100)\"");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#ConstantTok("NULL");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_minimal");#NormalTok("(");#AttributeTok("base_size =");#NormalTok(" ");#DecValTok("12");#NormalTok(")");],));
+#Skylighting(([#NormalTok("order ");#OperatorTok("=");#NormalTok(" faculty_means.sort_values(");#StringTok("\"wellbeing\"");#NormalTok(")[");#StringTok("\"faculty\"");#NormalTok("]");],
+[],
+[#NormalTok("fig, ax ");#OperatorTok("=");#NormalTok(" plt.subplots(figsize");#OperatorTok("=");#NormalTok("(");#DecValTok("7");#NormalTok(", ");#FloatTok("3.8");#NormalTok("))");],
+[],
+[#CommentTok("# Jittered individual student scores");],
+[#NormalTok("sns.stripplot(");],
+[#NormalTok("    data");#OperatorTok("=");#NormalTok("first_sem, y");#OperatorTok("=");#StringTok("\"faculty\"");#NormalTok(", x");#OperatorTok("=");#StringTok("\"wellbeing\"");#NormalTok(",");],
+[#NormalTok("    order");#OperatorTok("=");#NormalTok("order, color");#OperatorTok("=");#StringTok("\"grey\"");#NormalTok(", alpha");#OperatorTok("=");#FloatTok("0.3");#NormalTok(", jitter");#OperatorTok("=");#FloatTok("0.2");#NormalTok(", size");#OperatorTok("=");#DecValTok("5");#NormalTok(", ax");#OperatorTok("=");#NormalTok("ax");],
+[#NormalTok(")");],
+[],
+[#CommentTok("# Overlay group means as prominent diamonds");],
+[#NormalTok("sns.pointplot(");],
+[#NormalTok("    data");#OperatorTok("=");#NormalTok("first_sem, y");#OperatorTok("=");#StringTok("\"faculty\"");#NormalTok(", x");#OperatorTok("=");#StringTok("\"wellbeing\"");#NormalTok(",");],
+[#NormalTok("    order");#OperatorTok("=");#NormalTok("order, color");#OperatorTok("=");#StringTok("\"#c44e52\"");#NormalTok(", markers");#OperatorTok("=");#StringTok("\"D\"");#NormalTok(", scale");#OperatorTok("=");#FloatTok("0.8");#NormalTok(",");],
+[#NormalTok("    errorbar");#OperatorTok("=");#VariableTok("None");#NormalTok(", join");#OperatorTok("=");#VariableTok("False");#NormalTok(", ax");#OperatorTok("=");#NormalTok("ax");],
+[#NormalTok(")");],
+[],
+[#NormalTok("ax.");#BuiltInTok("set");#NormalTok("(");],
+[#NormalTok("    title");#OperatorTok("=");#StringTok("\"Truthful: Student Wellbeing Distribution by Faculty\"");#NormalTok(",");],
+[#NormalTok("    xlabel");#OperatorTok("=");#StringTok("\"Wellbeing Index (0 to 100)\"");#NormalTok(",");],
+[#NormalTok("    ylabel");#OperatorTok("=");#VariableTok("None");#NormalTok(",");],
+[#NormalTok("    xlim");#OperatorTok("=");#NormalTok("(");#DecValTok("0");#NormalTok(", ");#DecValTok("100");#NormalTok(")  ");#CommentTok("# Full theoretical scale!");],
+[#NormalTok(")");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
+#block[
+#Skylighting(([#NormalTok("C:\\Users\\polla\\AppData\\Local\\Temp\\ipykernel_54144\\1426493859.py:12: UserWarning: ");],
+[],
+[#NormalTok("The `scale` parameter is deprecated and will be removed in v0.15.0. You can now control the size of each plot element using matplotlib `Line2D` parameters (e.g., `linewidth`, `markersize`, etc.).");],
+[],
+[#NormalTok("  sns.pointplot(");],
+[#NormalTok("C:\\Users\\polla\\AppData\\Local\\Temp\\ipykernel_54144\\1426493859.py:12: UserWarning: ");],
+[],
+[#NormalTok("The `join` parameter is deprecated and will be removed in v0.15.0. You can remove the line between points with `linestyle='none'`.");],
+[],
+[#NormalTok("  sns.pointplot(");],));
+]
 #figure([
-#box(image("04-data-visualization_files/figure-typst/fig-after-1.svg", alt: "Horizontal strip plot of individual wellbeing scores for five faculties, each a wide band of grey points from about 25 to 95. A red point marks each faculty's average, all between 59 and 62."))
+#box(image("04-data-visualization_files/figure-typst/fig-after-output-2.svg", alt: "Horizontal strip plot of individual wellbeing scores for five faculties, spanning 25 to 95, with red diamond markers denoting faculty means (all clustered near 60)."))
 ], caption: figure.caption(
 position: bottom, 
 [
-The same data, redesigned: every student as a grey point, each faculty's average in red, faculties ordered by their average. The differences between faculties are small compared with the differences within them.
+The redesigned truthful display: individual observations shown as faint points, with faculty means marked in red. Within-faculty spread vastly exceeds between-faculty differences.
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -3759,37 +3622,30 @@ supplement: "Figure",
 <fig-after>
 
 
-The function #NormalTok("reorder()"); orders the faculties by their average wellbeing, #NormalTok("geom_jitter()"); spreads the points a little vertically so that they do not hide each other, and #NormalTok("stat_summary()"); calculates and draws each faculty's mean. The redesigned graph tells the truth that the first one hid: the differences between faculties are small compared with the differences between students within each faculty. Chapter 8 tests whether they are larger than chance.
+#ref(<fig-after>, supplement: [Figure]) communicates the true scientific story: individual student scores vary widely between 25 and 95 across all departments, and average differences between faculties are trivial by comparison.
 
-== Further kinds of graph
-<further-kinds-of-graph>
-=== Small multiples
-<small-multiples>
-#strong[Facets], also called small multiples, split one graph into a panel for each group, all with the same axes, so the groups are easy to compare. The function #NormalTok("facet_wrap()"); takes the variable to split by:
+== Advanced scientific visualizations
+<advanced-scientific-visualizations>
+=== Small multiples (Faceting)
+<small-multiples-faceting>
+Small multiples partition a complex visualization into separate subpanels sharing identical axes, enabling direct visual comparisons:
 
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(first_sem, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" sleep_hours, ");#AttributeTok("y =");#NormalTok(" gpa)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_point");#NormalTok("(");#AttributeTok("alpha =");#NormalTok(" ");#FloatTok("0.4");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_smooth");#NormalTok("(");#AttributeTok("method =");#NormalTok(" ");#StringTok("\"lm\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("facet_wrap");#NormalTok("(");#SpecialCharTok("~");#NormalTok(" programme) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#StringTok("\"Hours of sleep per night\"");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#StringTok("\"GPA\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_minimal");#NormalTok("(");#AttributeTok("base_size =");#NormalTok(" ");#DecValTok("12");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("`geom_smooth()` using formula = 'y ~ x'");],));
-]
-#block[
-#Skylighting(([#NormalTok("Warning: Removed 6 rows containing non-finite outside the scale range");],
-[#NormalTok("(`stat_smooth()`).");],));
-]
-#block[
-#Skylighting(([#NormalTok("Warning: Removed 6 rows containing missing values or values outside the scale range");],
-[#NormalTok("(`geom_point()`).");],));
-]
+#Skylighting(([#NormalTok("g ");#OperatorTok("=");#NormalTok(" sns.lmplot(");],
+[#NormalTok("    data");#OperatorTok("=");#NormalTok("first_sem, x");#OperatorTok("=");#StringTok("\"sleep_hours\"");#NormalTok(", y");#OperatorTok("=");#StringTok("\"gpa\"");#NormalTok(", col");#OperatorTok("=");#StringTok("\"programme\"");#NormalTok(",");],
+[#NormalTok("    scatter_kws");#OperatorTok("=");#NormalTok("{");#StringTok("\"alpha\"");#NormalTok(": ");#FloatTok("0.35");#NormalTok(", ");#StringTok("\"color\"");#NormalTok(": ");#StringTok("\"#4c72b0\"");#NormalTok("},");],
+[#NormalTok("    line_kws");#OperatorTok("=");#NormalTok("{");#StringTok("\"color\"");#NormalTok(": ");#StringTok("\"#c44e52\"");#NormalTok("},");],
+[#NormalTok("    height");#OperatorTok("=");#FloatTok("3.5");#NormalTok(", aspect");#OperatorTok("=");#FloatTok("1.1");],
+[#NormalTok(")");],
+[#NormalTok("g.set_axis_labels(");#StringTok("\"Hours of Sleep per Night\"");#NormalTok(", ");#StringTok("\"GPA\"");#NormalTok(")");],
+[#NormalTok("g.set_titles(col_template");#OperatorTok("=");#StringTok("\"");#SpecialCharTok("{col_name}");#StringTok(" Candidates\"");#NormalTok(")");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("04-data-visualization_files/figure-typst/fig-facets-1.svg", alt: "Two scatter plots side by side, for Master's and PhD students, each with a rising trend line of GPA against sleep."))
+#box(image("04-data-visualization_files/figure-typst/fig-facets-output-1.svg", alt: "Two scatter plots side by side for Master's and PhD students, each displaying an identical positive slope between sleep and GPA."))
 ], caption: figure.caption(
 position: bottom, 
 [
-Sleep and GPA in the first semester, one panel per programme.
+Association between sleep hours and GPA, faceted by degree programme.
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -3797,26 +3653,39 @@ supplement: "Figure",
 <fig-facets>
 
 
-The relationship looks similar in both programmes. For two grouping variables, #NormalTok("facet_grid(rows ~ columns)"); makes a grid of panels. Because the panels share their axes, facets respect the rule from the section on reading graphs: comparisons are made by position on a common scale.
+The regression slope between sleep and academic performance is virtually identical across both Master's and PhD cohorts.
 
-=== Density plots
-<density-plots>
-A #strong[density plot] is a smoothed histogram. Its advantage is that several distributions can be drawn on top of each other and compared. Here, #NormalTok("fill"); is mapped to the workshop group and #NormalTok("alpha"); lets the two curves show through each other:
+=== Kernel density estimation (KDE) plots
+<kernel-density-estimation-kde-plots>
+A #strong[density plot] provides a smoothed continuous estimate of the probability density function, facilitating clean comparisons of overlapping distributions:
 
-#Skylighting(([#NormalTok("semesters ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("filter");#NormalTok("(semester ");#SpecialCharTok("==");#NormalTok(" ");#DecValTok("2");#NormalTok(") ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("left_join");#NormalTok("(students, ");#FunctionTok("join_by");#NormalTok("(student_id)) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("ggplot");#NormalTok("(");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" wellbeing, ");#AttributeTok("fill =");#NormalTok(" workshop)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_density");#NormalTok("(");#AttributeTok("alpha =");#NormalTok(" ");#FloatTok("0.5");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("scale_fill_viridis_d");#NormalTok("(");#AttributeTok("end =");#NormalTok(" ");#FloatTok("0.8");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#StringTok("\"Wellbeing (0 to 100)\"");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#StringTok("\"Density\"");#NormalTok(", ");#AttributeTok("fill =");#NormalTok(" ");#StringTok("\"Workshop\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_minimal");#NormalTok("(");#AttributeTok("base_size =");#NormalTok(" ");#DecValTok("13");#NormalTok(")");],));
+#Skylighting(([#NormalTok("sem2_data ");#OperatorTok("=");#NormalTok(" (");],
+[#NormalTok("    semesters");],
+[#NormalTok("    .query(");#StringTok("\"semester == 2\"");#NormalTok(")");],
+[#NormalTok("    .merge(students[[");#StringTok("\"student_id\"");#NormalTok(", ");#StringTok("\"workshop\"");#NormalTok("]], on");#OperatorTok("=");#StringTok("\"student_id\"");#NormalTok(")");],
+[#NormalTok(")");],
+[],
+[#NormalTok("fig, ax ");#OperatorTok("=");#NormalTok(" plt.subplots(figsize");#OperatorTok("=");#NormalTok("(");#FloatTok("6.5");#NormalTok(", ");#FloatTok("3.5");#NormalTok("))");],
+[],
+[#NormalTok("sns.kdeplot(");],
+[#NormalTok("    data");#OperatorTok("=");#NormalTok("sem2_data, x");#OperatorTok("=");#StringTok("\"wellbeing\"");#NormalTok(", hue");#OperatorTok("=");#StringTok("\"workshop\"");#NormalTok(",");],
+[#NormalTok("    fill");#OperatorTok("=");#VariableTok("True");#NormalTok(", common_norm");#OperatorTok("=");#VariableTok("False");#NormalTok(", alpha");#OperatorTok("=");#FloatTok("0.35");#NormalTok(",");],
+[#NormalTok("    palette");#OperatorTok("=");#NormalTok("{");#StringTok("\"Invited\"");#NormalTok(": ");#StringTok("\"#2ca02c\"");#NormalTok(", ");#StringTok("\"Not invited\"");#NormalTok(": ");#StringTok("\"#7f7f7f\"");#NormalTok("},");],
+[#NormalTok("    linewidth");#OperatorTok("=");#DecValTok("2");#NormalTok(", ax");#OperatorTok("=");#NormalTok("ax");],
+[#NormalTok(")");],
+[#NormalTok("ax.");#BuiltInTok("set");#NormalTok("(");],
+[#NormalTok("    title");#OperatorTok("=");#StringTok("\"Semester 2 Post-Intervention Wellbeing Distribution\"");#NormalTok(",");],
+[#NormalTok("    xlabel");#OperatorTok("=");#StringTok("\"Wellbeing Index (0 to 100)\"");#NormalTok(",");],
+[#NormalTok("    ylabel");#OperatorTok("=");#StringTok("\"Probability Density\"");],
+[#NormalTok(")");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("04-data-visualization_files/figure-typst/fig-density-1.svg", alt: "Two overlapping bell-shaped density curves; the curve for invited students sits a few points to the right of the curve for students not invited."))
+#box(image("04-data-visualization_files/figure-typst/fig-density-output-1.svg", alt: "Two overlapping smooth density curves. The curve for invited workshop participants is visibly shifted to the right of the uninvited group."))
 ], caption: figure.caption(
 position: bottom, 
 [
-Distribution of wellbeing in the second semester, by workshop group.
+Comparative probability density of Semester 2 wellbeing by workshop group.
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -3824,34 +3693,31 @@ supplement: "Figure",
 <fig-density>
 
 
-In this code, the data flows straight into #NormalTok("ggplot()"); through the pipe. The two curves have the same shape, but the invited group's is shifted to the right: the whole distribution moved, not just a few students.
+Notice that the entire distribution for invited students is shifted rightward, demonstrating a cohort-wide positive effect rather than an isolated outlier reaction.
 
-=== Heat maps
-<heat-maps>
-A #strong[heat map] shows a table of numbers as coloured tiles, and it suits correlation matrices well. Chapter 2 calculated the correlations between four first-semester measurements. To plot them, the matrix is turned into a long table with one row per pair (Chapter 3), and then #NormalTok("geom_tile()"); draws a tile for each pair and #NormalTok("geom_text()"); writes the value on it:
+=== Correlation heatmaps
+<correlation-heatmaps>
+When examining relationships among numerous continuous constructs, a #strong[correlation heatmap] visualizes the bivariate correlation matrix via a diverging color gradient:
 
-#Skylighting(([#FunctionTok("library");#NormalTok("(tidyr)");],
+#Skylighting(([#NormalTok("corr_vars ");#OperatorTok("=");#NormalTok(" first_sem[[");#StringTok("\"gpa\"");#NormalTok(", ");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"study_hours\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok("]].corr()");],
 [],
-[#NormalTok("correlations ");#OtherTok("<-");#NormalTok(" first_sem ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(gpa, sleep_hours, study_hours, wellbeing) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("cor");#NormalTok("(");#AttributeTok("use =");#NormalTok(" ");#StringTok("\"complete.obs\"");#NormalTok(")");],
+[#NormalTok("fig, ax ");#OperatorTok("=");#NormalTok(" plt.subplots(figsize");#OperatorTok("=");#NormalTok("(");#FloatTok("5.5");#NormalTok(", ");#FloatTok("4.2");#NormalTok("))");],
 [],
-[#NormalTok("correlations ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("as.data.frame");#NormalTok("() ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");#AttributeTok("var1 =");#NormalTok(" ");#FunctionTok("rownames");#NormalTok("(correlations)) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("pivot_longer");#NormalTok("(");#SpecialCharTok("-");#NormalTok("var1, ");#AttributeTok("names_to =");#NormalTok(" ");#StringTok("\"var2\"");#NormalTok(", ");#AttributeTok("values_to =");#NormalTok(" ");#StringTok("\"r\"");#NormalTok(") ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("ggplot");#NormalTok("(");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" var1, ");#AttributeTok("y =");#NormalTok(" var2, ");#AttributeTok("fill =");#NormalTok(" r)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_tile");#NormalTok("() ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_text");#NormalTok("(");#FunctionTok("aes");#NormalTok("(");#AttributeTok("label =");#NormalTok(" ");#FunctionTok("round");#NormalTok("(r, ");#DecValTok("2");#NormalTok("))) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("scale_fill_gradient2");#NormalTok("(");#AttributeTok("limits =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#SpecialCharTok("-");#DecValTok("1");#NormalTok(", ");#DecValTok("1");#NormalTok(")) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#ConstantTok("NULL");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#ConstantTok("NULL");#NormalTok(", ");#AttributeTok("fill =");#NormalTok(" ");#StringTok("\"Correlation\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_minimal");#NormalTok("(");#AttributeTok("base_size =");#NormalTok(" ");#DecValTok("12");#NormalTok(")");],));
+[#NormalTok("sns.heatmap(");],
+[#NormalTok("    corr_vars, annot");#OperatorTok("=");#VariableTok("True");#NormalTok(", fmt");#OperatorTok("=");#StringTok("\".2f\"");#NormalTok(", cmap");#OperatorTok("=");#StringTok("\"vlag\"");#NormalTok(",");],
+[#NormalTok("    vmin");#OperatorTok("=-");#FloatTok("1.0");#NormalTok(", vmax");#OperatorTok("=");#FloatTok("1.0");#NormalTok(", center");#OperatorTok("=");#FloatTok("0.0");#NormalTok(",");],
+[#NormalTok("    square");#OperatorTok("=");#VariableTok("True");#NormalTok(", linewidths");#OperatorTok("=");#FloatTok("0.5");#NormalTok(", cbar_kws");#OperatorTok("=");#NormalTok("{");#StringTok("\"shrink\"");#NormalTok(": ");#FloatTok("0.8");#NormalTok("},");],
+[#NormalTok("    ax");#OperatorTok("=");#NormalTok("ax");],
+[#NormalTok(")");],
+[#NormalTok("ax.set_title(");#StringTok("\"Correlation Heatmap (Semester 1)\"");#NormalTok(", fontsize");#OperatorTok("=");#DecValTok("11");#NormalTok(", pad");#OperatorTok("=");#DecValTok("10");#NormalTok(")");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("04-data-visualization_files/figure-typst/fig-heatmap-1.svg", alt: "A 4 by 4 grid of coloured tiles showing correlations between GPA, sleep, study hours, and wellbeing, each tile labelled with its value; negative correlations are coloured in one direction and positive ones in the other."))
+#box(image("04-data-visualization_files/figure-typst/fig-heatmap-output-1.svg", alt: "A 4-by-4 correlation matrix of colored cells displaying correlation coefficients between GPA, sleep hours, study hours, and wellbeing."))
 ], caption: figure.caption(
 position: bottom, 
 [
-Correlations between four first-semester measurements.
+Bivariate correlation matrix across Semester 1 quantitative metrics.
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -3859,114 +3725,57 @@ supplement: "Figure",
 <fig-heatmap>
 
 
-The scale #NormalTok("scale_fill_gradient2()"); is a diverging palette: two colours for negative and positive values, with white at zero, so the direction and strength of each correlation are visible at once. Students who study more hours sleep less (a negative correlation), and students who sleep more report higher wellbeing (positive). The numbers written on the tiles matter, because colour alone is read imprecisely. Chapter 6 explains how to read correlations.
+The diverging #NormalTok("vlag"); palette centers white at zero correlation, mapping negative associations to blue and positive associations to red. Values printed within each cell ensure readers are not forced to decode coefficients solely through color saturation.
 
-== Exporting figures
-<exporting-figures>
-The function #NormalTok("ggsave()"); saves the most recent graph, or one that is named, to a file. The file type follows from the file name:
+== Exporting publication-ready figures
+<exporting-publication-ready-figures>
+Scientific figures must be exported at explicit target physical dimensions and print resolutions:
 
-#Skylighting(([#FunctionTok("ggsave");#NormalTok("(");#StringTok("\"figures/wellbeing-lines.png\"");#NormalTok(", ");#AttributeTok("plot =");#NormalTok(" p, ");#AttributeTok("width =");#NormalTok(" ");#DecValTok("16");#NormalTok(", ");#AttributeTok("height =");#NormalTok(" ");#DecValTok("10");#NormalTok(", ");#AttributeTok("units =");#NormalTok(" ");#StringTok("\"cm\"");#NormalTok(", ");#AttributeTok("dpi =");#NormalTok(" ");#DecValTok("300");#NormalTok(")");],
-[#FunctionTok("ggsave");#NormalTok("(");#StringTok("\"figures/wellbeing-lines.pdf\"");#NormalTok(", ");#AttributeTok("plot =");#NormalTok(" p, ");#AttributeTok("width =");#NormalTok(" ");#DecValTok("16");#NormalTok(", ");#AttributeTok("height =");#NormalTok(" ");#DecValTok("10");#NormalTok(", ");#AttributeTok("units =");#NormalTok(" ");#StringTok("\"cm\"");#NormalTok(")");],));
-A figure should be saved at the size at which it will be printed, in the units of the page: a figure for a single column of a journal is often about 8 cm wide, and a full page about 16 cm. Setting the size when saving, rather than stretching the image later, keeps the text readable and the proportions right. Images such as PNG files need a resolution of at least 300 dpi (dots per inch), which is what most journals require, while vector formats such as PDF and SVG stay sharp at any size and are preferable whenever the journal accepts them. Finally, the text should be checked at the final size, since fonts that look fine on screen are often too small in print; #NormalTok("base_size"); in the theme fixes that.
-
-The code that makes each figure belongs in the analysis script. When a supervisor asks for a larger font or a different colour, one line changes and the figure is saved again.
-
-#block[
-#callout(
-body: 
-[
-ggplot2 includes #NormalTok("economics");, real monthly data on the US economy from 1967 to 2015. The same line chart shows the rise and fall of unemployment, with each recession visible as a peak:
-
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(economics, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" date, ");#AttributeTok("y =");#NormalTok(" unemploy)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_line");#NormalTok("() ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#ConstantTok("NULL");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#StringTok("\"Unemployed (thousands)\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_minimal");#NormalTok("(");#AttributeTok("base_size =");#NormalTok(" ");#DecValTok("12");#NormalTok(")");],));
-#figure([
-#box(image("04-data-visualization_files/figure-typst/fig-economics-1.svg", alt: "Line chart of the number of unemployed people in the United States, in thousands, from 1967 to 2015, with several peaks, the highest around 2010."))
-], caption: figure.caption(
-position: bottom, 
-[
-US unemployment, 1967 to 2015 (ggplot2's economics data).
-]), 
-kind: "quarto-float-fig", 
-supplement: "Figure", 
-)
-<fig-economics>
-
-
-The graph shows the number of unemployed people, not the unemployment rate, and the population grew greatly over these 48 years. A reader comparing 1970 with 2010 should know that, which is why the axis label names exactly what is shown.
-
-]
-, 
-title: 
-[
-In your field: economics and business
-]
-, 
-background_color: 
-rgb("#dae6fb")
-, 
-icon_color: 
-rgb("#0758E5")
-, 
-icon: 
-none
-, 
-body_background_color: 
-white
-)
-]
-== Common misconceptions
-<common-misconceptions>
-Several beliefs about graphs are widespread, and each leads to graphs that mislead or fail to inform.
-
-- #strong["The summary statistics tell the whole story."] Anscombe's datasets share every summary and differ completely. Always look.
-- #strong["A graph with more elements is more informative."] Decoration, three-dimensional effects, and repeated labels compete with the data.
-- #strong["Pie charts are good for proportions."] Angles and areas are judged poorly; a bar chart or dot plot of the same proportions is almost always clearer.
-- #strong["Zooming in on the axis is always wrong."] It is wrong for bar charts, whose lengths encode values, but acceptable for points and lines, if the reader is told.
-- #strong["Colour makes a graph clearer."] Colour helps to separate a few categories; used for everything, it becomes noise, and it disappears in black-and-white printing.
+#Skylighting(([#CommentTok("# Save as 300 DPI PNG raster image (suitable for Word documents and presentations):");],
+[#NormalTok("fig.savefig(");#StringTok("\"figures/wellbeing_trajectory.png\"");#NormalTok(", dpi");#OperatorTok("=");#DecValTok("300");#NormalTok(", bbox_inches");#OperatorTok("=");#StringTok("\"tight\"");#NormalTok(")");],
+[],
+[#CommentTok("# Save as vector graphic (ideal for LaTeX and journal publication):");],
+[#NormalTok("fig.savefig(");#StringTok("\"figures/wellbeing_trajectory.pdf\"");#NormalTok(", bbox_inches");#OperatorTok("=");#StringTok("\"tight\"");#NormalTok(")");],));
+Setting #NormalTok("bbox_inches=\"tight\""); prevents axis labels from being clipped. Standard journal column widths typically measure 8.5 cm (single column) or 17.5 cm (full width). Defining figure sizes in code preserves font proportions when rendered on the printed page.
 
 == Chapter review
 <chapter-review-3>
 === Summary
 <summary-3>
-- Numerical summaries can hide very different patterns, as Anscombe's datasets show, so data should always be graphed. Exploratory graphs help the researcher understand the data; explanatory graphs show readers a finding.
-- People judge positions and lengths most accurately, then angles, areas, and colours. The most important comparison belongs in position or length, within one panel.
-- The graph follows from the question and the kinds of variables: histograms for distributions, bar charts for counts, box plots or points for group comparisons, scatter plots for relationships, line charts for change over time.
-- Every ggplot2 graph combines data, aesthetic mappings in #NormalTok("aes()");, and geometric layers, joined with #NormalTok("+");. #emph[Map] a colour inside #NormalTok("aes()"); when it should depend on the data; #emph[set] it outside #NormalTok("aes()"); when it should be fixed.
-- #NormalTok("labs()"); adds labels, #NormalTok("scale_"); functions control axes and colours (viridis palettes are colour-blind-friendly), and themes control the look.
-- Honest graphs start bar axes at zero, state when an axis is zoomed, avoid clutter, and use colour appropriately: qualitative palettes for categories, sequential or diverging palettes for quantities.
-- Facets split a graph into comparable panels; density plots compare distributions; heat maps show tables of numbers.
-- #NormalTok("ggsave()"); exports figures. Set the size in page units, use at least 300 dpi for images, and prefer PDF or SVG when accepted.
+- Summary statistics can mask fundamentally divergent distributions (Anscombe's quartet); visualizing data prior to modeling is essential.
+- Graphical perception theory demonstrates that position and length are decoded with greatest precision; key scientific comparisons must be mapped to aligned coordinates.
+- Continuous distributions are inspected using histograms and KDE density plots; group comparisons rely on box plots and strip plots; bivariate relationships are evaluated via scatter plots and regression trend lines.
+- Tidy longitudinal trajectories are plotted using #NormalTok("sns.lineplot()");, small multiples using #NormalTok("sns.lmplot(col=...)");, and correlation matrices using #NormalTok("sns.heatmap()");.
+- Ethical visual design requires zero-aligned baselines for bar charts, colorblind-accessible palettes (#NormalTok("viridis");, #NormalTok("vlag");), and transparent representation of within-group variance.
+- Publication-quality figures are saved using #NormalTok("fig.savefig()"); at 300+ DPI or vector formats (#NormalTok(".pdf");, #NormalTok(".svg");).
 
 === Key terms
 <key-terms-3>
-Exploratory graph, explanatory graph, graphical perception, grammar of graphics, aesthetic mapping, geom, layer, histogram, bin, bar chart, box plot, median, scatter plot, overplotting, trend line, line chart, mapping, setting, scale, theme, annotation, aspect ratio, qualitative palette, sequential palette, diverging palette, facet, density plot, heat map, dpi, vector format.
+Anscombe's quartet, exploratory vs.~explanatory graphics, graphical perception, aligned scale, histogram, KDE density plot, box plot, strip plot, overplotting, regression trend line, longitudinal line plot, small multiples, facet, correlation heatmap, color accessibility, chartjunk, DPI, vector graphics.
 
 == Exercises
 <exercises-3>
-The #link("../playground/chapter04.html")[playground] has these and more, with hints and solutions.
+Work through these exercises in your browser using the #link("../playground/chapter04.html")[Chapter 4 Playground] or download the starter project for VS Code.
 
-+ Draw a histogram of #NormalTok("study_hours"); in the first semester. Try binwidths of 1, 5, and 10, and explain which shows the shape best.
-+ Draw a bar chart of how many students have each level of #NormalTok("employment");. Make the bars a single colour of your choice, and order the levels from no job to a full-time job.
-+ Draw box plots of first-semester GPA for each faculty, with clear axis labels.
-+ Draw a scatter plot of caffeine against sleep in the first semester, with a trend line, and describe what it suggests. (Chapter 8 returns to this relationship.)
-+ Take any graph from this chapter and save it as a PNG file, 16 cm wide and 10 cm high, at 300 dpi.
-+ Redraw #ref(<fig-before>, supplement: [Figure]) as a bar chart whose axis starts at zero. Compare it with #ref(<fig-before>, supplement: [Figure]) and #ref(<fig-after>, supplement: [Figure]), and explain which of the three you would put in a thesis, and why.
++ Using #NormalTok("first_sem");, generate a histogram of #NormalTok("study_hours");. Experiment with binwidths of 2, 5, and 10 hours, and evaluate which binning best reveals distribution shape.
++ Construct a bar chart showing student counts across #NormalTok("employment"); categories, ordered from #NormalTok("\"None\""); to #NormalTok("\"Full-time job\"");, using a colorblind-safe single color.
++ Generate box plots comparing Semester 1 GPA across academic faculties, formatting axis labels clearly.
++ Draw a scatter plot of caffeine consumption (#NormalTok("caffeine_mg");) against sleep hours (#NormalTok("sleep_hours");) in Semester 1 with an overlaid linear regression line, and describe the observed association.
++ Save any figure created in this chapter to #NormalTok("figures/exercise_plot.png"); at 300 DPI with tight bounding boxes.
++ Redesign the faculty wellbeing bar chart into a horizontal strip plot showing both individual scores and group medians. Explain why this display is scientifically superior.
 
 == Further reading
 <further-reading-3>
-- #emph[R for Data Science] @wickham2023: chapters "Data visualization", "Layers", and "Communication".
-- #emph[Data Visualization: A Practical Introduction] @healy2018, free online, explains the principles of good graphs and builds them with ggplot2.
-- #emph[ggplot2: Elegant Graphics for Data Analysis] @wickham2016ggplot2, by the author of ggplot2, explains the grammar of graphics in depth.
-- "Graphical perception" @cleveland1984, the experiments behind the ranking of visual properties.
+- #emph[Fundamentals of Data Visualization] by Claus O. Wilke @wilke2019: an exceptional, language-agnostic text on the principles of honest, effective visual communication.
+- Official documentation for #link("https://seaborn.pydata.org/")[Seaborn] and #link("https://matplotlib.org/")[Matplotlib].
+- "Graphical Perception" by William S. Cleveland and Robert McGill @cleveland1984.
 
 #part[Statistical Analysis for Research]
 = From Research Question to Data
 <sec-ch05>
-Part 1 gave you the tools: you can import data, clean it, and draw it. Part 2 uses those tools to answer research questions. Before any statistics, though, comes a step that no software can do for you: deciding #emph[what exactly you are asking], #emph[what result would answer it], and #emph[whether your data can give that answer at all].
+Part 1 gave you the tools: you can import data, clean it, and visualize it. Part 2 uses those tools to answer research questions. Before any statistics, though, comes a step that no software can do for you: deciding #emph[what exactly you are asking], #emph[what result would answer it], and #emph[whether your data can give that answer at all].
 
-Most problems that examiners find in a thesis start here, not in the analysis: a question too vague to answer, a hypothesis that no result could contradict, a questionnaire that measures something other than what the title promises, or a sample that cannot support the conclusion. No statistical test can fix those problems afterwards. This chapter follows the path from a research topic to data that can answer a question, using the student wellbeing study as the example throughout. It is more conceptual than the other chapters, but it still uses R wherever R helps you #emph[see] an idea: simulations, checks of how variables are measured, and a first calculation of sample size.
+Most problems that examiners find in a thesis start here, not in the analysis: a question too vague to answer, a hypothesis that no result could contradict, a questionnaire that measures something other than what the title promises, or a sample that cannot support the conclusion. No statistical test can fix those problems afterwards. This chapter follows the path from a research topic to data that can answer a question, using the student wellbeing study as the example throughout. It is more conceptual than the other chapters, but it still uses Python wherever Python helps you #emph[see] an idea: simulations, checks of how variables are measured, and a first calculation of sample size.
 
 #block[
 #callout(
@@ -3980,7 +3789,7 @@ body:
 - Distinguish reliability from validity.
 - Explain what experimental, observational, cross-sectional, and longitudinal designs can and cannot show.
 - Explain why a biased sample cannot be fixed by making it larger.
-- Plan an analysis before collecting data, including a first estimate of the sample size, and use R to check levels of measurement, balance between groups, and sampling by simulation.
+- Plan an analysis before collecting data, including a first estimate of the sample size, and use Python to check levels of measurement, balance between groups, and sampling by simulation.
 
 ]
 , 
@@ -4127,34 +3936,15 @@ The hypothesis is useful because the data can disagree with it.
 <falsifiability>
 The philosopher Karl Popper argued that what separates a scientific claim from other claims is not that it can be proved, but that it can be #strong[refuted]: it forbids certain results @popper1959. A claim that is compatible with every possible result tells us nothing. Compare:
 
-#figure([
 #table(
   columns: (50%, 50%),
   align: (auto,auto,),
   table.header([Hypothesis], [Could any result contradict it?],),
   table.hline(),
-  ["The workshop affects students in some way."], [No.~Whatever happens, some effect on someone can be found. #strong[Unfalsifiable.]],
-  ["The workshop helps students who are ready for it."], [No, unless "ready" is defined before the study; otherwise any student who did not improve was "not ready". #strong[Unfalsifiable.]],
-  ["Invited students will have higher wellbeing at the end of semester 2 than students not invited."], [Yes: equal or lower wellbeing in the invited group would contradict it. #strong[Falsifiable.]],
+  ["The workshop changes how students feel."], [No: higher, lower, or unchanged wellbeing all fit. Not falsifiable.],
+  ["Invited students have higher wellbeing."], [Yes: if their wellbeing is lower or the same, the hypothesis is wrong. Falsifiable.],
 )
-], caption: figure.caption(
-position: top, 
-[
-Unfalsifiable and falsifiable hypotheses
-]), 
-kind: "quarto-float-tbl", 
-supplement: "Table", 
-)
-<tbl-falsifiable>
-
-
-A good test of your own hypothesis is to write down, before seeing any data, #strong[what result would count against it]. If you cannot, the hypothesis is not yet precise enough. If you can, you have also protected yourself against a common temptation: finding, after the fact, a reason why the disappointing result supports your idea after all.
-
-A good hypothesis therefore has four properties. It is about a #strong[stated population and stated variables]: graduate students at this university, and wellbeing measured with the index. It is #strong[testable with the data available], because the variables are measured and there are enough cases. It is #strong[falsifiable]: it names the result that would contradict it. And it is #strong[stated before the data is analysed], since a hypothesis written after seeing the data is a description of the data, not a test of it.
-
-=== Directional and non-directional hypotheses
-<directional-and-non-directional-hypotheses>
-A #strong[directional] hypothesis predicts the direction of an effect ("invited students will have #emph[higher] wellbeing"). A #strong[non-directional] hypothesis predicts only that there is a difference ("wellbeing will #emph[differ] between faculties"). Use a directional hypothesis when theory gives you a clear prediction; use a non-directional one when it does not. Note that the direction of the hypothesis and the choice of a one-tailed or two-tailed test are separate decisions: many researchers state a directional hypothesis but still use a two-tailed test, the cautious choice explained in Chapter 7.
+A hypothesis must also say whether it predicts a direction. A #strong[directional hypothesis] predicts which group will be higher, or whether a relationship is positive or negative ("the workshop raises wellbeing"\; "sleep is positively associated with GPA"). A #strong[non-directional hypothesis] predicts a difference without specifying which way ("stress differs between faculties"). Directional hypotheses are stronger, because they forbid more results.
 
 === The null hypothesis
 <the-null-hypothesis>
@@ -4162,32 +3952,46 @@ Statistical tests do not test the researcher's hypothesis directly. They test it
 
 Testing the opposite of what one believes may seem strange, but the null hypothesis has one great advantage: it is precise enough to calculate with. "The workshop helps" does not say how much, but "the workshop makes no difference" makes a sharp prediction: any difference between the groups is due to chance alone, to which students happened to be invited. If we know how large chance differences usually are, we can ask whether the difference in the data is larger than chance would easily produce.
 
-You can see this world of chance by simulation. Suppose the workshop truly does nothing. Then being invited is just a label on students whose wellbeing is unaffected. The code below creates 300 imaginary students with wellbeing scores similar to those in the study (average 60, standard deviation about 11), splits them into two random groups of 150, and records the difference between the group averages. It then repeats this 5,000 times:
+You can see this world of chance by simulation. Suppose the workshop truly does nothing. Then being invited is just an arbitrary label on students whose wellbeing is unaffected. The code below creates 300 imaginary students with wellbeing scores similar to those in the study (average 60, standard deviation about 11), splits them into two random groups of 150, and records the difference between the group averages. It then repeats this 5,000 times:
 
-#block[
-#Skylighting(([#FunctionTok("set.seed");#NormalTok("(");#DecValTok("2026");#NormalTok(")");],
-[#NormalTok("chance_differences ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("replicate");#NormalTok("(");#DecValTok("5000");#NormalTok(", {");],
-[#NormalTok("  wellbeing ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("rnorm");#NormalTok("(");#DecValTok("300");#NormalTok(", ");#AttributeTok("mean =");#NormalTok(" ");#DecValTok("60");#NormalTok(", ");#AttributeTok("sd =");#NormalTok(" ");#DecValTok("11");#NormalTok(")");],
-[#NormalTok("  group     ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("sample");#NormalTok("(");#FunctionTok("rep");#NormalTok("(");#FunctionTok("c");#NormalTok("(");#StringTok("\"Invited\"");#NormalTok(", ");#StringTok("\"Not invited\"");#NormalTok("), ");#DecValTok("150");#NormalTok("))");],
-[#NormalTok("  ");#FunctionTok("mean");#NormalTok("(wellbeing[group ");#SpecialCharTok("==");#NormalTok(" ");#StringTok("\"Invited\"");#NormalTok("]) ");#SpecialCharTok("-");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(wellbeing[group ");#SpecialCharTok("==");#NormalTok(" ");#StringTok("\"Not invited\"");#NormalTok("])");],
-[#NormalTok("})");],
-[#FunctionTok("summary");#NormalTok("(chance_differences)");],));
-#block[
-#Skylighting(([#NormalTok("     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. ");],
-[#NormalTok("-5.188460 -0.871667  0.001230 -0.008296  0.838404  4.688888 ");],));
-]
-]
-The function #NormalTok("replicate()"); runs the code in curly brackets many times and collects the results, #NormalTok("rnorm()"); draws random numbers from a normal distribution, and #NormalTok("sample()"); shuffles the labels. #ref(<fig-null-world>, supplement: [Figure]) shows the 5,000 differences:
+#Skylighting(([#NormalTok("np.random.seed(");#DecValTok("2026");#NormalTok(")");],
+[#NormalTok("n_sims ");#OperatorTok("=");#NormalTok(" ");#DecValTok("5000");],
+[#NormalTok("chance_differences ");#OperatorTok("=");#NormalTok(" np.empty(n_sims)");],
+[#NormalTok("groups ");#OperatorTok("=");#NormalTok(" np.repeat([");#StringTok("\"Invited\"");#NormalTok(", ");#StringTok("\"Not invited\"");#NormalTok("], ");#DecValTok("150");#NormalTok(")");],
+[],
+[#ControlFlowTok("for");#NormalTok(" i ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("range");#NormalTok("(n_sims):");],
+[#NormalTok("    wellbeing ");#OperatorTok("=");#NormalTok(" np.random.normal(loc");#OperatorTok("=");#DecValTok("60");#NormalTok(", scale");#OperatorTok("=");#DecValTok("11");#NormalTok(", size");#OperatorTok("=");#DecValTok("300");#NormalTok(")");],
+[#NormalTok("    shuffled ");#OperatorTok("=");#NormalTok(" np.random.permutation(groups)");],
+[#NormalTok("    diff ");#OperatorTok("=");#NormalTok(" (");],
+[#NormalTok("        wellbeing[shuffled ");#OperatorTok("==");#NormalTok(" ");#StringTok("\"Invited\"");#NormalTok("].mean()");],
+[#NormalTok("        ");#OperatorTok("-");#NormalTok(" wellbeing[shuffled ");#OperatorTok("==");#NormalTok(" ");#StringTok("\"Not invited\"");#NormalTok("].mean()");],
+[#NormalTok("    )");],
+[#NormalTok("    chance_differences[i] ");#OperatorTok("=");#NormalTok(" diff");],
+[],
+[#NormalTok("pd.Series(chance_differences).describe().");#BuiltInTok("round");#NormalTok("(");#DecValTok("3");#NormalTok(")");],));
+#Skylighting(([#NormalTok("count    5000.000");],
+[#NormalTok("mean       -0.008");],
+[#NormalTok("std         1.268");],
+[#NormalTok("min        -5.413");],
+[#NormalTok("25%        -0.842");],
+[#NormalTok("50%        -0.011");],
+[#NormalTok("75%         0.856");],
+[#NormalTok("max         4.028");],
+[#NormalTok("dtype: float64");],));
+In Python, #NormalTok("np.random.normal()"); draws random numbers from a Gaussian distribution, #NormalTok("np.random.permutation()"); randomly shuffles group assignment labels, and a vectorized loop accumulates the null distribution. #ref(<fig-null-world>, supplement: [Figure]) shows the 5,000 differences:
 
-#Skylighting(([#FunctionTok("library");#NormalTok("(ggplot2)");],
-[#FunctionTok("ggplot");#NormalTok("(");#FunctionTok("data.frame");#NormalTok("(");#AttributeTok("difference =");#NormalTok(" chance_differences), ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" difference)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_histogram");#NormalTok("(");#AttributeTok("binwidth =");#NormalTok(" ");#FloatTok("0.5");#NormalTok(", ");#AttributeTok("fill =");#NormalTok(" ");#StringTok("\"grey70\"");#NormalTok(", ");#AttributeTok("colour =");#NormalTok(" ");#StringTok("\"white\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_vline");#NormalTok("(");#AttributeTok("xintercept =");#NormalTok(" ");#FunctionTok("quantile");#NormalTok("(chance_differences, ");#FunctionTok("c");#NormalTok("(");#FloatTok("0.025");#NormalTok(", ");#FloatTok("0.975");#NormalTok(")),");],
-[#NormalTok("             ");#AttributeTok("linetype =");#NormalTok(" ");#StringTok("\"dashed\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#StringTok("\"Difference in average wellbeing (invited minus not invited)\"");#NormalTok(",");],
-[#NormalTok("       ");#AttributeTok("y =");#NormalTok(" ");#StringTok("\"Number of simulated studies\"");#NormalTok(")");],));
+#Skylighting(([#NormalTok("q025, q975 ");#OperatorTok("=");#NormalTok(" np.percentile(chance_differences, [");#FloatTok("2.5");#NormalTok(", ");#FloatTok("97.5");#NormalTok("])");],
+[],
+[#NormalTok("fig, ax ");#OperatorTok("=");#NormalTok(" plt.subplots(figsize");#OperatorTok("=");#NormalTok("(");#DecValTok("7");#NormalTok(", ");#DecValTok("4");#NormalTok("))");],
+[#NormalTok("sns.histplot(chance_differences, binwidth");#OperatorTok("=");#FloatTok("0.5");#NormalTok(", color");#OperatorTok("=");#StringTok("\"grey\"");#NormalTok(", edgecolor");#OperatorTok("=");#StringTok("\"white\"");#NormalTok(", ax");#OperatorTok("=");#NormalTok("ax)");],
+[#NormalTok("ax.axvline(q025, linestyle");#OperatorTok("=");#StringTok("\"--\"");#NormalTok(", color");#OperatorTok("=");#StringTok("\"black\"");#NormalTok(", linewidth");#OperatorTok("=");#FloatTok("1.2");#NormalTok(")");],
+[#NormalTok("ax.axvline(q975, linestyle");#OperatorTok("=");#StringTok("\"--\"");#NormalTok(", color");#OperatorTok("=");#StringTok("\"black\"");#NormalTok(", linewidth");#OperatorTok("=");#FloatTok("1.2");#NormalTok(")");],
+[#NormalTok("ax.set_xlabel(");#StringTok("\"Difference in average wellbeing (invited minus not invited)\"");#NormalTok(")");],
+[#NormalTok("ax.set_ylabel(");#StringTok("\"Number of simulated studies\"");#NormalTok(")");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("05-research-question_files/figure-typst/fig-null-world-1.svg", alt: "A bell-shaped histogram of simulated differences centred on zero, with dashed lines at about minus 2.5 and plus 2.5 points."))
+#box(image("05-research-question_files/figure-typst/fig-null-world-output-1.svg", alt: "A bell-shaped histogram of simulated differences centred on zero, with dashed lines at about minus 2.5 and plus 2.5 points."))
 ], caption: figure.caption(
 position: bottom, 
 [
@@ -4199,7 +4003,7 @@ supplement: "Figure",
 <fig-null-world>
 
 
-Even when the workshop does nothing, the two groups almost never have exactly the same average: chance alone produces differences, usually small ones. In 95% of the simulated studies, the difference lies between -2.5 and 2.6 points (the dashed lines). A real study that found a difference of 5 points would therefore be hard to explain by chance, and would count as evidence against $H_0$. A difference of 1 point would not: it is exactly what chance produces. Chapter 7 turns this idea into the p-value, using the real data.
+Even when the workshop does nothing, the two groups almost never have exactly the same average: chance alone produces differences, usually small ones. In 95% of the simulated studies, the difference lies between -2.5 and 2.5 points (the dashed lines). A real study that found a difference of 5 points would therefore be hard to explain by chance, and would count as evidence against $H_0$. A difference of 1 point would not: it is exactly what chance produces. Chapter 7 turns this idea into the formal p-value, using the real empirical data.
 
 Two things follow from this picture. First, #strong[rejecting $H_0$ is not proving $H_1$]: it says only that "nothing is going on" is a poor explanation of the data. Second, #strong[not rejecting $H_0$ is not proving it]: a small study can fail to detect a real effect, just as a blurred photograph can fail to show a real face.
 
@@ -4278,20 +4082,16 @@ white
 As Chapter 2 showed, data is a table of #strong[cases] (rows) and #strong[variables] (columns). The first question about any dataset is what one row represents: the #strong[unit of analysis]. The wellbeing study has three, in different tables:
 
 #block[
-#Skylighting(([#FunctionTok("nrow");#NormalTok("(students)      ");#CommentTok("# one row per student");],));
+#Skylighting(([#BuiltInTok("print");#NormalTok("(");#StringTok("\"students rows:   \"");#NormalTok(", ");#BuiltInTok("len");#NormalTok("(students))      ");#CommentTok("# one row per student");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"semesters rows:  \"");#NormalTok(", ");#BuiltInTok("len");#NormalTok("(semesters))     ");#CommentTok("# one row per student per semester");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"supervisors rows:\"");#NormalTok(", ");#BuiltInTok("len");#NormalTok("(supervisors))   ");#CommentTok("# one row per supervisor");],));
 #block[
-#Skylighting(([#NormalTok("[1] 600");],));
-]
-#Skylighting(([#FunctionTok("nrow");#NormalTok("(semesters)     ");#CommentTok("# one row per student per semester");],));
-#block[
-#Skylighting(([#NormalTok("[1] 2326");],));
-]
-#Skylighting(([#FunctionTok("nrow");#NormalTok("(supervisors)   ");#CommentTok("# one row per supervisor");],));
-#block[
-#Skylighting(([#NormalTok("[1] 120");],));
+#Skylighting(([#NormalTok("students rows:    600");],
+[#NormalTok("semesters rows:   2326");],
+[#NormalTok("supervisors rows: 120");],));
 ]
 ]
-The unit of analysis decides what a question means. "Do students who sleep more have higher GPAs?" is a question about students, so each student should count once, for example with their first-semester values or their average over the semesters. Treating the 2326 semester rows as 2326 independent cases would count each student up to four times, and make the evidence look stronger than it is. Chapter 10 shows how to use all the rows correctly.
+The unit of analysis decides what a question means. "Do students who sleep more have higher GPAs?" is a question about students, so each student should count once, for example with their first-semester values or their average over the semesters. Treating the 2326 semester rows as 2326 independent cases would count each student up to four times, and make the evidence look stronger than it is. Chapter 10 shows how to use all the rows correctly with mixed models.
 
 === From constructs to variables
 <from-constructs-to-variables>
@@ -4324,47 +4124,39 @@ supplement: "Table",
 
 Stress is a good example. No single question captures it, so the questionnaire asks six, each about one aspect, and averages the answers. Look at the items, and at how the answers of the first few students differ from item to item:
 
-#block[
-#Skylighting(([#FunctionTok("library");#NormalTok("(dplyr)");],));
-#block[
-#Skylighting(([],
-[#NormalTok("Attaching package: 'dplyr'");],));
-]
-#block[
-#Skylighting(([#NormalTok("The following objects are masked from 'package:stats':");],
-[],
-[#NormalTok("    filter, lag");],));
-]
-#block[
-#Skylighting(([#NormalTok("The following objects are masked from 'package:base':");],
-[],
-[#NormalTok("    intersect, setdiff, setequal, union");],));
-]
-#Skylighting(([#NormalTok("questionnaire ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(student_id, stress_1");#SpecialCharTok(":");#NormalTok("stress_6) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("head");#NormalTok("(");#DecValTok("5");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("  student_id stress_1 stress_2 stress_3 stress_4 stress_5 stress_6");],
-[#NormalTok("1      S0001        3        2        4        4        3        5");],
-[#NormalTok("2      S0002        4        3       NA        2        5        3");],
-[#NormalTok("3      S0003        4        4        2        1        4        3");],
-[#NormalTok("4      S0004        4        5        5        1        4        5");],
-[#NormalTok("5      S0005        4        4        4        3        4        2");],));
-]
-]
+#Skylighting(([#NormalTok("stress_cols ");#OperatorTok("=");#NormalTok(" [");#StringTok("\"student_id\"");#NormalTok(", ");#StringTok("\"stress_1\"");#NormalTok(", ");#StringTok("\"stress_2\"");#NormalTok(", ");#StringTok("\"stress_3\"");#NormalTok(", ");#StringTok("\"stress_4\"");#NormalTok(", ");#StringTok("\"stress_5\"");#NormalTok(", ");#StringTok("\"stress_6\"");#NormalTok("]");],
+[#NormalTok("questionnaire[stress_cols].head(");#DecValTok("5");#NormalTok(")");],));
+#table(
+  columns: 8,
+  align: (auto,auto,auto,auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student\_id], table.cell(align: right)[stress\_1], table.cell(align: right)[stress\_2], table.cell(align: right)[stress\_3], table.cell(align: right)[stress\_4], table.cell(align: right)[stress\_5], table.cell(align: right)[stress\_6],),
+  table.hline(),
+  table.cell(align: horizon)[0], [S0001], [3.0], [2.0], [4.0], [4.0], [3.0], [5.0],
+  table.cell(align: horizon)[1], [S0002], [4.0], [3.0], [NaN], [2.0], [5.0], [3.0],
+  table.cell(align: horizon)[2], [S0003], [4.0], [4.0], [2.0], [1.0], [4.0], [3.0],
+  table.cell(align: horizon)[3], [S0004], [4.0], [5.0], [5.0], [1.0], [4.0], [5.0],
+  table.cell(align: horizon)[4], [S0005], [4.0], [4.0], [4.0], [3.0], [4.0], [2.0],
+)
 One item, #NormalTok("stress_4"); ("I feel confident handling problems in my studies"), is worded in the opposite direction: agreeing with it means #emph[less] stress. Before averaging, it must be reversed, so that 5 becomes 1 and 1 becomes 5. You did this in Chapter 3:
 
-#block[
-#Skylighting(([#NormalTok("stress ");#OtherTok("<-");#NormalTok(" questionnaire ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");#AttributeTok("stress_4 =");#NormalTok(" ");#DecValTok("6");#NormalTok(" ");#SpecialCharTok("-");#NormalTok(" stress_4,");],
-[#NormalTok("         ");#AttributeTok("stress   =");#NormalTok(" ");#FunctionTok("rowMeans");#NormalTok("(");#FunctionTok("pick");#NormalTok("(stress_1");#SpecialCharTok(":");#NormalTok("stress_6), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(student_id, stress)");],
-[#FunctionTok("summary");#NormalTok("(stress");#SpecialCharTok("$");#NormalTok("stress)");],));
-#block[
-#Skylighting(([#NormalTok("   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. ");],
-[#NormalTok("  1.333   2.667   3.167   3.216   3.667   5.000 ");],));
-]
-]
+#Skylighting(([#NormalTok("stress_items ");#OperatorTok("=");#NormalTok(" [");#SpecialStringTok("f\"stress_");#SpecialCharTok("{");#NormalTok("i");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok(" ");#ControlFlowTok("for");#NormalTok(" i ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("range");#NormalTok("(");#DecValTok("1");#NormalTok(", ");#DecValTok("7");#NormalTok(")]");],
+[#NormalTok("q_stress ");#OperatorTok("=");#NormalTok(" questionnaire[stress_items].copy()");],
+[#NormalTok("q_stress[");#StringTok("\"stress_4\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" ");#DecValTok("6");#NormalTok(" ");#OperatorTok("-");#NormalTok(" q_stress[");#StringTok("\"stress_4\"");#NormalTok("]");],
+[],
+[#NormalTok("stress ");#OperatorTok("=");#NormalTok(" pd.DataFrame({");],
+[#NormalTok("    ");#StringTok("\"student_id\"");#NormalTok(": questionnaire[");#StringTok("\"student_id\"");#NormalTok("],");],
+[#NormalTok("    ");#StringTok("\"stress\"");#NormalTok(": q_stress.mean(axis");#OperatorTok("=");#DecValTok("1");#NormalTok(")");],
+[#NormalTok("})");],
+[#NormalTok("stress[");#StringTok("\"stress\"");#NormalTok("].describe().");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],));
+#Skylighting(([#NormalTok("count    600.00");],
+[#NormalTok("mean       3.22");],
+[#NormalTok("std        0.73");],
+[#NormalTok("min        1.33");],
+[#NormalTok("25%        2.67");],
+[#NormalTok("50%        3.17");],
+[#NormalTok("75%        3.67");],
+[#NormalTok("max        5.00");],
+[#NormalTok("Name: stress, dtype: float64");],));
 The resulting score is the study's operational definition of stress. Anyone who reads the thesis should be able to see exactly how it was built, which is why the methods chapter of a thesis describes every measure, and why the questionnaire items go in an appendix.
 
 #block[
@@ -4401,12 +4193,12 @@ Not all numbers are numbers in the same sense. The psychologist S. S. Stevens pr
 #table(
   columns: (20%, 20%, 20%, 20%, 20%),
   align: (auto,auto,auto,auto,auto,),
-  table.header([Level], [What the values mean], [Meaningful summaries], [Examples in the study], [In R],),
+  table.header([Level], [What the values mean], [Meaningful summaries], [Examples in the study], [In Python],),
   table.hline(),
-  [#strong[Nominal]], [Categories with no order], [Counts, percentages, mode], [#NormalTok("faculty");, #NormalTok("gender");, #NormalTok("workshop");], [factor],
-  [#strong[Ordinal]], [Ordered categories; distances between them unknown], [Also median and percentiles], [#NormalTok("employment");, #NormalTok("financial_worry");, single questionnaire items], [ordered factor, or numbers used with care],
-  [#strong[Interval]], [Equal distances; no true zero], [Also mean, standard deviation, differences], [#NormalTok("wellbeing"); (0 to 100 index), scale scores (arguably)], [numeric],
-  [#strong[Ratio]], [Equal distances and a true zero], [Also ratios ("twice as much")], [#NormalTok("sleep_hours");, #NormalTok("study_hours");, #NormalTok("caffeine_mg");, #NormalTok("age");], [numeric],
+  [#strong[Nominal]], [Categories with no order], [Counts, percentages, mode], [#NormalTok("faculty");, #NormalTok("gender");, #NormalTok("workshop");], [#NormalTok("object"); / #NormalTok("pd.Categorical");],
+  [#strong[Ordinal]], [Ordered categories; distances between them unknown], [Also median and percentiles], [#NormalTok("employment");, #NormalTok("financial_worry");, Likert items], [#NormalTok("pd.Categorical(ordered=True)");],
+  [#strong[Interval]], [Equal distances; no true zero], [Also mean, standard deviation, differences], [#NormalTok("wellbeing"); (0 to 100 index), scale scores], [#NormalTok("float64");],
+  [#strong[Ratio]], [Equal distances and a true zero], [Also ratios ("twice as much")], [#NormalTok("sleep_hours");, #NormalTok("study_hours");, #NormalTok("caffeine_mg");, #NormalTok("age");], [#NormalTok("float64"); / #NormalTok("int64");],
 )
 ], caption: figure.caption(
 position: top, 
@@ -4421,53 +4213,55 @@ supplement: "Table",
 
 The level decides which summaries and tests make sense. The average faculty is meaningless. "Twice as much caffeine" is meaningful (caffeine has a true zero); "twice as much wellbeing" is not (a score of 0 does not mean no wellbeing at all).
 
-R does not know the level of measurement; you have to tell it. Look at how R stores #NormalTok("employment");:
+Python does not automatically infer the level of measurement; you tell it with Pandas types. Look at how Pandas initially reads #NormalTok("employment");:
+
+#Skylighting(([#NormalTok("students[");#StringTok("\"employment\"");#NormalTok("].value_counts()");],));
+#Skylighting(([#NormalTok("employment");],
+[#NormalTok("Part-time job    196");],
+[#NormalTok("Full-time job     97");],
+[#NormalTok("Name: count, dtype: int64");],));
+Without an explicit ordered category, Pandas sorts by frequency or arbitrary order. But employment is #strong[ordinal]: none, part-time, full-time is a real progression. Tell Pandas with an ordered Categorical:
+
+#Skylighting(([#NormalTok("students[");#StringTok("\"employment\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" pd.Categorical(");],
+[#NormalTok("    students[");#StringTok("\"employment\"");#NormalTok("],");],
+[#NormalTok("    categories");#OperatorTok("=");#NormalTok("[");#StringTok("\"None\"");#NormalTok(", ");#StringTok("\"Part-time job\"");#NormalTok(", ");#StringTok("\"Full-time job\"");#NormalTok("],");],
+[#NormalTok("    ordered");#OperatorTok("=");#VariableTok("True");],
+[#NormalTok(")");],
+[#NormalTok("students[");#StringTok("\"employment\"");#NormalTok("].value_counts().sort_index()");],));
+#Skylighting(([#NormalTok("employment");],
+[#NormalTok("None               0");],
+[#NormalTok("Part-time job    196");],
+[#NormalTok("Full-time job     97");],
+[#NormalTok("Name: count, dtype: int64");],));
+Now tables and graphs follow the natural order, and logical comparisons work correctly.
+
+The opposite mistake is more common: an ordinal variable stored as raw integers, such as #NormalTok("financial_worry"); (1 = not at all worried, 5 = extremely worried). Python will happily calculate its mean if requested, but the psychological distance from "not at all" to "a little" need not equal the distance from "very" to "extremely". For a single ordinal item, report the frequency distribution and the median:
 
 #block[
-#Skylighting(([#FunctionTok("table");#NormalTok("(students");#SpecialCharTok("$");#NormalTok("employment)");],));
+#Skylighting(([#BuiltInTok("print");#NormalTok("(");#StringTok("\"Frequency counts:\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(students[");#StringTok("\"financial_worry\"");#NormalTok("].value_counts(dropna");#OperatorTok("=");#VariableTok("False");#NormalTok(").sort_index())");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"");#CharTok("\\n");#StringTok("Median financial worry:\"");#NormalTok(", students[");#StringTok("\"financial_worry\"");#NormalTok("].median())");],));
 #block[
-#Skylighting(([],
-[#NormalTok("Full-time job          None Part-time job ");],
-[#NormalTok("           97           307           196 ");],));
+#Skylighting(([#NormalTok("Frequency counts:");],
+[#NormalTok("financial_worry");],
+[#NormalTok("1.0     84");],
+[#NormalTok("2.0    139");],
+[#NormalTok("3.0    172");],
+[#NormalTok("4.0    111");],
+[#NormalTok("5.0     56");],
+[#NormalTok("NaN     38");],
+[#NormalTok("Name: count, dtype: int64");],
+[],
+[#NormalTok("Median financial worry: 3.0");],));
 ]
 ]
-R lists the categories in alphabetical order, which puts "Full-time job" before "None". For a nominal variable, that would not matter. But employment is #strong[ordinal]: none, part-time, full-time is a real order, and tables and graphs should show it. Tell R with an #strong[ordered factor]:
-
-#block[
-#Skylighting(([#NormalTok("students ");#OtherTok("<-");#NormalTok(" students ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");#AttributeTok("employment =");#NormalTok(" ");#FunctionTok("factor");#NormalTok("(employment,");],
-[#NormalTok("                             ");#AttributeTok("levels =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"None\"");#NormalTok(", ");#StringTok("\"Part-time job\"");#NormalTok(", ");#StringTok("\"Full-time job\"");#NormalTok("),");],
-[#NormalTok("                             ");#AttributeTok("ordered =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("))");],
-[#FunctionTok("table");#NormalTok("(students");#SpecialCharTok("$");#NormalTok("employment)");],));
-#block[
-#Skylighting(([],
-[#NormalTok("         None Part-time job Full-time job ");],
-[#NormalTok("          307           196            97 ");],));
-]
-]
-Now tables and graphs follow the natural order, and comparisons such as #NormalTok("employment > \"None\""); work.
-
-The opposite mistake is more common: an ordinal variable stored as numbers, such as #NormalTok("financial_worry"); (1 = not at all worried, 5 = extremely worried). R will happily calculate its mean, but the distance from "not at all" to "a little" need not equal the distance from "very" to "extremely". For a single ordinal item, report the distribution or the median:
-
-#block[
-#Skylighting(([#FunctionTok("table");#NormalTok("(students");#SpecialCharTok("$");#NormalTok("financial_worry, ");#AttributeTok("useNA =");#NormalTok(" ");#StringTok("\"ifany\"");#NormalTok(")");],));
-#block[
-#Skylighting(([],
-[#NormalTok("   1    2    3    4    5 <NA> ");],
-[#NormalTok("  84  139  172  111   56   38 ");],));
-]
-#Skylighting(([#FunctionTok("median");#NormalTok("(students");#SpecialCharTok("$");#NormalTok("financial_worry, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("[1] 3");],));
-]
-]
-Scale scores, the average of several items, are usually treated as interval data, and the book does so. Averaging several items smooths out the unequal steps of each one. This is a convention with good support, not a law; if an examiner asks, say that you followed it, and why.
+Scale scores, the average of several items, are usually treated as interval data, and the book does so. Averaging several items smooths out the unequal steps of each one. This is a convention with good empirical support, not a physical law; if an examiner asks, state that you followed it, and why.
 
 === The roles variables play
 <the-roles-variables-play>
 In an analysis, variables also have #strong[roles]. The #strong[outcome], or dependent variable, is what the researcher wants to explain or predict, such as wellbeing, GPA, or considering dropout. A #strong[predictor], also called an independent or explanatory variable, is what is used to explain or predict it, such as the workshop, sleep, or stress. Three further roles concern a third variable that affects the relationship between the two. A #strong[confounder] is related to both the predictor and the outcome, and can create a misleading association between them. A #strong[moderator] changes the strength or direction of a relationship, so that the effect of the predictor depends on it. A #strong[mediator] lies on the path between predictor and outcome: it is #emph[how] the predictor has its effect.
 
-The roles are not properties of the variables; they come from the research question. Stress is an outcome in one question (whether the workshop reduces stress) and a predictor in another (whether stress predicts dropout).
+The roles are not permanent properties of the variables; they come from the research question. Stress is an outcome in one question (whether the workshop reduces stress) and a predictor in another (whether stress predicts dropout).
 
 #ref(<fig-roles>, supplement: [Figure]) draws the three less familiar roles as diagrams, using examples from the study: arrows show which variable is thought to influence which.
 
@@ -4489,20 +4283,19 @@ supplement: "Figure",
 
 The confounder is the most important of the three, because it can produce an association that is not a cause. In the wellbeing data, students who take more caffeine have lower GPAs. But students who take more caffeine also sleep less:
 
-#block[
-#Skylighting(([#NormalTok("first_sem ");#OtherTok("<-");#NormalTok(" semesters ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("filter");#NormalTok("(semester ");#SpecialCharTok("==");#NormalTok(" ");#DecValTok("1");#NormalTok(")");],
-[#NormalTok("first_sem ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(caffeine_mg, sleep_hours, gpa) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("cor");#NormalTok("(");#AttributeTok("use =");#NormalTok(" ");#StringTok("\"complete.obs\"");#NormalTok(") ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("            caffeine_mg sleep_hours   gpa");],
-[#NormalTok("caffeine_mg        1.00       -0.64 -0.18");],
-[#NormalTok("sleep_hours       -0.64        1.00  0.25");],
-[#NormalTok("gpa               -0.18        0.25  1.00");],));
-]
-]
-Caffeine and GPA are negatively correlated (-0.19), but caffeine and sleep are strongly negatively correlated (-0.64). Caffeine might be harming grades, or short-sleeping students might both drink more coffee and get lower grades; the correlation alone cannot tell which. Chapter 8 answers the question with a regression that compares students with the same amount of sleep. The general lesson is that before you interpret any relationship, you should ask what else could produce it, and measure it if you can.
+#Skylighting(([#NormalTok("first_sem ");#OperatorTok("=");#NormalTok(" semesters[semesters[");#StringTok("\"semester\"");#NormalTok("] ");#OperatorTok("==");#NormalTok(" ");#DecValTok("1");#NormalTok("].merge(students, on");#OperatorTok("=");#StringTok("\"student_id\"");#NormalTok(")");],
+[#NormalTok("corr_matrix ");#OperatorTok("=");#NormalTok(" first_sem[[");#StringTok("\"caffeine_mg\"");#NormalTok(", ");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"gpa\"");#NormalTok("]].corr().");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],
+[#NormalTok("corr_matrix");],));
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[caffeine\_mg], table.cell(align: right)[sleep\_hours], table.cell(align: right)[gpa],),
+  table.hline(),
+  table.cell(align: horizon)[caffeine\_mg], [1.00], [-0.64], [-0.19],
+  table.cell(align: horizon)[sleep\_hours], [-0.64], [1.00], [0.25],
+  table.cell(align: horizon)[gpa], [-0.19], [0.25], [1.00],
+)
+Caffeine and GPA are negatively correlated (-0.19), but caffeine and sleep are strongly negatively correlated (-0.64). Caffeine might be harming grades, or short-sleeping students might both drink more coffee and get lower grades; the correlation alone cannot tell which. Chapter 8 answers the question with a multiple regression that compares students with the same amount of sleep. The general lesson is that before you interpret any relationship, you should ask what else could produce it, and measure it if you can.
 
 == Reliability and validity
 <reliability-and-validity>
@@ -4510,34 +4303,43 @@ Caffeine and GPA are negatively correlated (-0.19), but caffeine and sleep are s
 
 Two properties decide whether a measure can be trusted. #strong[Reliability] is consistency: a student should get a similar stress score if they filled in the questionnaire again next week, with nothing changed, and the six stress items should agree with each other. #strong[Validity] is whether the measure captures what it claims to measure: the stress score should reflect stress, and not something else, such as general negativity or tiredness on the day of the survey.
 
-The classic picture is a target. Each shot is a measurement, and the centre is the true value. The code below simulates four measures, each shooting 30 times, and draws them; it is intuition code, written to show an idea rather than to analyse data:
+The classic picture is a target. Each shot is a measurement, and the centre is the true value. The code below simulates four measures, each shooting 30 times, and draws them:
 
-#Skylighting(([#FunctionTok("set.seed");#NormalTok("(");#DecValTok("1");#NormalTok(")");],
-[#NormalTok("shots ");#OtherTok("<-");#NormalTok(" ");#ControlFlowTok("function");#NormalTok("(label, centre_x, centre_y, spread) {");],
-[#NormalTok("  ");#FunctionTok("data.frame");#NormalTok("(");#AttributeTok("measure =");#NormalTok(" label,");],
-[#NormalTok("             ");#AttributeTok("x =");#NormalTok(" ");#FunctionTok("rnorm");#NormalTok("(");#DecValTok("30");#NormalTok(", centre_x, spread),");],
-[#NormalTok("             ");#AttributeTok("y =");#NormalTok(" ");#FunctionTok("rnorm");#NormalTok("(");#DecValTok("30");#NormalTok(", centre_y, spread))");],
-[#NormalTok("}");],
-[#NormalTok("target_data ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("rbind");#NormalTok("(");],
-[#NormalTok("  ");#FunctionTok("shots");#NormalTok("(");#StringTok("\"Reliable and valid\"");#NormalTok(",         ");#DecValTok("0");#NormalTok(",   ");#DecValTok("0");#NormalTok(",   ");#FloatTok("0.15");#NormalTok("),");],
-[#NormalTok("  ");#FunctionTok("shots");#NormalTok("(");#StringTok("\"Reliable but not valid\"");#NormalTok(",     ");#FloatTok("0.9");#NormalTok(", ");#FloatTok("0.8");#NormalTok(", ");#FloatTok("0.15");#NormalTok("),");],
-[#NormalTok("  ");#FunctionTok("shots");#NormalTok("(");#StringTok("\"Valid on average, not reliable\"");#NormalTok(", ");#DecValTok("0");#NormalTok(", ");#DecValTok("0");#NormalTok(", ");#FloatTok("0.7");#NormalTok("),");],
-[#NormalTok("  ");#FunctionTok("shots");#NormalTok("(");#StringTok("\"Neither reliable nor valid\"");#NormalTok(", ");#FloatTok("0.8");#NormalTok(", ");#SpecialCharTok("-");#FloatTok("0.6");#NormalTok(", ");#FloatTok("0.7");#NormalTok(")");],
-[#NormalTok(")");],
-[#NormalTok("rings ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("expand.grid");#NormalTok("(");#AttributeTok("angle =");#NormalTok(" ");#FunctionTok("seq");#NormalTok("(");#DecValTok("0");#NormalTok(", ");#DecValTok("2");#NormalTok(" ");#SpecialCharTok("*");#NormalTok(" pi, ");#AttributeTok("length.out =");#NormalTok(" ");#DecValTok("100");#NormalTok("), ");#AttributeTok("radius =");#NormalTok(" ");#DecValTok("1");#SpecialCharTok(":");#DecValTok("3");#NormalTok(" ");#SpecialCharTok("/");#NormalTok(" ");#DecValTok("2");#NormalTok(")");],
-[#NormalTok("rings");#SpecialCharTok("$");#NormalTok("x ");#OtherTok("<-");#NormalTok(" rings");#SpecialCharTok("$");#NormalTok("radius ");#SpecialCharTok("*");#NormalTok(" ");#FunctionTok("cos");#NormalTok("(rings");#SpecialCharTok("$");#NormalTok("angle)");],
-[#NormalTok("rings");#SpecialCharTok("$");#NormalTok("y ");#OtherTok("<-");#NormalTok(" rings");#SpecialCharTok("$");#NormalTok("radius ");#SpecialCharTok("*");#NormalTok(" ");#FunctionTok("sin");#NormalTok("(rings");#SpecialCharTok("$");#NormalTok("angle)");],
+#Skylighting(([#NormalTok("np.random.seed(");#DecValTok("1");#NormalTok(")");],
 [],
-[#FunctionTok("ggplot");#NormalTok("(target_data, ");#FunctionTok("aes");#NormalTok("(x, y)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_path");#NormalTok("(");#AttributeTok("data =");#NormalTok(" rings, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("group =");#NormalTok(" radius), ");#AttributeTok("colour =");#NormalTok(" ");#StringTok("\"grey70\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_point");#NormalTok("(");#AttributeTok("colour =");#NormalTok(" ");#StringTok("\"#b2182b\"");#NormalTok(", ");#AttributeTok("alpha =");#NormalTok(" ");#FloatTok("0.8");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("annotate");#NormalTok("(");#StringTok("\"point\"");#NormalTok(", ");#AttributeTok("x =");#NormalTok(" ");#DecValTok("0");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#DecValTok("0");#NormalTok(", ");#AttributeTok("shape =");#NormalTok(" ");#DecValTok("3");#NormalTok(", ");#AttributeTok("size =");#NormalTok(" ");#DecValTok("4");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("facet_wrap");#NormalTok("(");#SpecialCharTok("~");#NormalTok(" measure) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("coord_equal");#NormalTok("(");#AttributeTok("xlim =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#SpecialCharTok("-");#FloatTok("1.7");#NormalTok(", ");#FloatTok("1.7");#NormalTok("), ");#AttributeTok("ylim =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#SpecialCharTok("-");#FloatTok("1.7");#NormalTok(", ");#FloatTok("1.7");#NormalTok(")) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_void");#NormalTok("() ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme");#NormalTok("(");#AttributeTok("strip.text =");#NormalTok(" ");#FunctionTok("element_text");#NormalTok("(");#AttributeTok("size =");#NormalTok(" ");#DecValTok("11");#NormalTok(", ");#AttributeTok("margin =");#NormalTok(" ");#FunctionTok("margin");#NormalTok("(");#AttributeTok("b =");#NormalTok(" ");#DecValTok("4");#NormalTok(")))");],));
+[#NormalTok("panels ");#OperatorTok("=");#NormalTok(" [");],
+[#NormalTok("    (");#StringTok("\"Reliable and valid\"");#NormalTok(", ");#FloatTok("0.0");#NormalTok(", ");#FloatTok("0.0");#NormalTok(", ");#FloatTok("0.15");#NormalTok("),");],
+[#NormalTok("    (");#StringTok("\"Reliable but not valid\"");#NormalTok(", ");#FloatTok("0.9");#NormalTok(", ");#FloatTok("0.8");#NormalTok(", ");#FloatTok("0.15");#NormalTok("),");],
+[#NormalTok("    (");#StringTok("\"Valid on average, not reliable\"");#NormalTok(", ");#FloatTok("0.0");#NormalTok(", ");#FloatTok("0.0");#NormalTok(", ");#FloatTok("0.70");#NormalTok("),");],
+[#NormalTok("    (");#StringTok("\"Neither reliable nor valid\"");#NormalTok(", ");#FloatTok("0.8");#NormalTok(", ");#OperatorTok("-");#FloatTok("0.6");#NormalTok(", ");#FloatTok("0.70");#NormalTok(")");],
+[#NormalTok("]");],
+[],
+[#NormalTok("fig, axes ");#OperatorTok("=");#NormalTok(" plt.subplots(");#DecValTok("2");#NormalTok(", ");#DecValTok("2");#NormalTok(", figsize");#OperatorTok("=");#NormalTok("(");#DecValTok("7");#NormalTok(", ");#DecValTok("7");#NormalTok("))");],
+[#NormalTok("axes ");#OperatorTok("=");#NormalTok(" axes.flatten()");],
+[],
+[#NormalTok("theta ");#OperatorTok("=");#NormalTok(" np.linspace(");#DecValTok("0");#NormalTok(", ");#DecValTok("2");#NormalTok(" ");#OperatorTok("*");#NormalTok(" np.pi, ");#DecValTok("200");#NormalTok(")");],
+[],
+[#ControlFlowTok("for");#NormalTok(" ax, (title, cx, cy, spread) ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("zip");#NormalTok("(axes, panels):");],
+[#NormalTok("    ");#ControlFlowTok("for");#NormalTok(" r ");#KeywordTok("in");#NormalTok(" [");#FloatTok("0.5");#NormalTok(", ");#FloatTok("1.0");#NormalTok(", ");#FloatTok("1.5");#NormalTok("]:");],
+[#NormalTok("        ax.plot(r ");#OperatorTok("*");#NormalTok(" np.cos(theta), r ");#OperatorTok("*");#NormalTok(" np.sin(theta), color");#OperatorTok("=");#StringTok("\"grey\"");#NormalTok(", linewidth");#OperatorTok("=");#FloatTok("0.8");#NormalTok(", linestyle");#OperatorTok("=");#StringTok("\":\"");#NormalTok(")");],
+[#NormalTok("    ax.axhline(");#DecValTok("0");#NormalTok(", color");#OperatorTok("=");#StringTok("\"grey\"");#NormalTok(", linewidth");#OperatorTok("=");#FloatTok("0.5");#NormalTok(", linestyle");#OperatorTok("=");#StringTok("\":\"");#NormalTok(")");],
+[#NormalTok("    ax.axvline(");#DecValTok("0");#NormalTok(", color");#OperatorTok("=");#StringTok("\"grey\"");#NormalTok(", linewidth");#OperatorTok("=");#FloatTok("0.5");#NormalTok(", linestyle");#OperatorTok("=");#StringTok("\":\"");#NormalTok(")");],
+[#NormalTok("    ax.scatter(");#DecValTok("0");#NormalTok(", ");#DecValTok("0");#NormalTok(", marker");#OperatorTok("=");#StringTok("\"+\"");#NormalTok(", s");#OperatorTok("=");#DecValTok("80");#NormalTok(", color");#OperatorTok("=");#StringTok("\"black\"");#NormalTok(", zorder");#OperatorTok("=");#DecValTok("3");#NormalTok(")");],
+[#NormalTok("    ");],
+[#NormalTok("    x ");#OperatorTok("=");#NormalTok(" np.random.normal(cx, spread, ");#DecValTok("30");#NormalTok(")");],
+[#NormalTok("    y ");#OperatorTok("=");#NormalTok(" np.random.normal(cy, spread, ");#DecValTok("30");#NormalTok(")");],
+[#NormalTok("    ax.scatter(x, y, color");#OperatorTok("=");#StringTok("\"#b2182b\"");#NormalTok(", alpha");#OperatorTok("=");#FloatTok("0.75");#NormalTok(", s");#OperatorTok("=");#DecValTok("35");#NormalTok(", zorder");#OperatorTok("=");#DecValTok("4");#NormalTok(")");],
+[#NormalTok("    ");],
+[#NormalTok("    ax.set_title(title, fontsize");#OperatorTok("=");#DecValTok("11");#NormalTok(", weight");#OperatorTok("=");#StringTok("\"bold\"");#NormalTok(")");],
+[#NormalTok("    ax.set_xlim(");#OperatorTok("-");#FloatTok("1.8");#NormalTok(", ");#FloatTok("1.8");#NormalTok(")");],
+[#NormalTok("    ax.set_ylim(");#OperatorTok("-");#FloatTok("1.8");#NormalTok(", ");#FloatTok("1.8");#NormalTok(")");],
+[#NormalTok("    ax.set_aspect(");#StringTok("\"equal\"");#NormalTok(")");],
+[#NormalTok("    ax.axis(");#StringTok("\"off\"");#NormalTok(")");],
+[],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("05-research-question_files/figure-typst/fig-target-1.svg", alt: "Four targets with 30 red shots each: tightly grouped at the centre; tightly grouped away from the centre; widely scattered around the centre; widely scattered away from the centre."))
+#box(image("05-research-question_files/figure-typst/fig-target-output-1.svg", alt: "Four targets with 30 red shots each: tightly grouped at the centre; tightly grouped away from the centre; widely scattered around the centre; widely scattered away from the centre."))
 ], caption: figure.caption(
 position: bottom, 
 [
@@ -4561,25 +4363,27 @@ Validity has several meanings. For a measure, #strong[content validity] concerns
 
 The second kind can be checked in the wellbeing data. If the stress score measures stress, it should correlate strongly with burnout (a closely related construct), less strongly and negatively with supervisor support and satisfaction:
 
-#block[
-#Skylighting(([#NormalTok("scale_scores ");#OtherTok("<-");#NormalTok(" questionnaire ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("stress_4     =");#NormalTok(" ");#DecValTok("6");#NormalTok(" ");#SpecialCharTok("-");#NormalTok(" stress_4,");],
-[#NormalTok("    ");#AttributeTok("stress       =");#NormalTok(" ");#FunctionTok("rowMeans");#NormalTok("(");#FunctionTok("pick");#NormalTok("(stress_1");#SpecialCharTok(":");#NormalTok("stress_6), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("burnout      =");#NormalTok(" ");#FunctionTok("rowMeans");#NormalTok("(");#FunctionTok("pick");#NormalTok("(burnout_1");#SpecialCharTok(":");#NormalTok("burnout_6), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("support      =");#NormalTok(" ");#FunctionTok("rowMeans");#NormalTok("(");#FunctionTok("pick");#NormalTok("(support_1");#SpecialCharTok(":");#NormalTok("support_6), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("satisfaction =");#NormalTok(" ");#FunctionTok("rowMeans");#NormalTok("(");#FunctionTok("pick");#NormalTok("(satisfaction_1");#SpecialCharTok(":");#NormalTok("satisfaction_4), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],
-[#NormalTok("  ) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(stress, burnout, support, satisfaction)");],
-[#FunctionTok("round");#NormalTok("(");#FunctionTok("cor");#NormalTok("(scale_scores), ");#DecValTok("2");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("             stress burnout support satisfaction");],
-[#NormalTok("stress         1.00    0.65   -0.33        -0.41");],
-[#NormalTok("burnout        0.65    1.00   -0.24        -0.38");],
-[#NormalTok("support       -0.33   -0.24    1.00         0.41");],
-[#NormalTok("satisfaction  -0.41   -0.38    0.41         1.00");],));
-]
-]
+#Skylighting(([#NormalTok("q_clean ");#OperatorTok("=");#NormalTok(" questionnaire.copy()");],
+[#NormalTok("q_clean[");#StringTok("\"stress_4\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" ");#DecValTok("6");#NormalTok(" ");#OperatorTok("-");#NormalTok(" q_clean[");#StringTok("\"stress_4\"");#NormalTok("]");],
+[],
+[#NormalTok("scale_scores ");#OperatorTok("=");#NormalTok(" pd.DataFrame({");],
+[#NormalTok("    ");#StringTok("\"stress\"");#NormalTok(": q_clean[[");#SpecialStringTok("f\"stress_");#SpecialCharTok("{");#NormalTok("i");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok(" ");#ControlFlowTok("for");#NormalTok(" i ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("range");#NormalTok("(");#DecValTok("1");#NormalTok(", ");#DecValTok("7");#NormalTok(")]].mean(axis");#OperatorTok("=");#DecValTok("1");#NormalTok("),");],
+[#NormalTok("    ");#StringTok("\"burnout\"");#NormalTok(": q_clean[[");#SpecialStringTok("f\"burnout_");#SpecialCharTok("{");#NormalTok("i");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok(" ");#ControlFlowTok("for");#NormalTok(" i ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("range");#NormalTok("(");#DecValTok("1");#NormalTok(", ");#DecValTok("7");#NormalTok(")]].mean(axis");#OperatorTok("=");#DecValTok("1");#NormalTok("),");],
+[#NormalTok("    ");#StringTok("\"support\"");#NormalTok(": q_clean[[");#SpecialStringTok("f\"support_");#SpecialCharTok("{");#NormalTok("i");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok(" ");#ControlFlowTok("for");#NormalTok(" i ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("range");#NormalTok("(");#DecValTok("1");#NormalTok(", ");#DecValTok("7");#NormalTok(")]].mean(axis");#OperatorTok("=");#DecValTok("1");#NormalTok("),");],
+[#NormalTok("    ");#StringTok("\"satisfaction\"");#NormalTok(": q_clean[[");#SpecialStringTok("f\"satisfaction_");#SpecialCharTok("{");#NormalTok("i");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok(" ");#ControlFlowTok("for");#NormalTok(" i ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("range");#NormalTok("(");#DecValTok("1");#NormalTok(", ");#DecValTok("5");#NormalTok(")]].mean(axis");#OperatorTok("=");#DecValTok("1");#NormalTok(")");],
+[#NormalTok("})");],
+[#NormalTok("validity_corr ");#OperatorTok("=");#NormalTok(" scale_scores.corr().");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],
+[#NormalTok("validity_corr");],));
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[stress], table.cell(align: right)[burnout], table.cell(align: right)[support], table.cell(align: right)[satisfaction],),
+  table.hline(),
+  table.cell(align: horizon)[stress], [1.00], [0.65], [-0.33], [-0.41],
+  table.cell(align: horizon)[burnout], [0.65], [1.00], [-0.24], [-0.38],
+  table.cell(align: horizon)[support], [-0.33], [-0.24], [1.00], [0.41],
+  table.cell(align: horizon)[satisfaction], [-0.41], [-0.38], [0.41], [1.00],
+)
 Stress and burnout correlate at 0.65: related, as expected, but far from identical, so the two scales are not measuring the same thing twice. The negative correlations with support and satisfaction fit the idea that stressed students feel less supported and less satisfied. This is not proof of validity, which is built from many pieces of evidence, but it is the kind of evidence a thesis should report. Chapter 9 tests the structure of the whole questionnaire with factor analysis.
 
 For a study as a whole, two further kinds of validity matter. #strong[Internal validity] is the extent to which a study can rule out other explanations for its results; it is highest in randomised experiments. #strong[External validity] is the extent to which the results apply beyond the study, to other people, places, and times; it depends on the sample. The next two sections are about these.
@@ -4618,54 +4422,54 @@ Suppose the workshop had been open to anyone who wanted to come. The students wh
 
 A simulation makes the problem visible. Take the real stress scores of the 600 students, and imagine that less stressed students are more likely to volunteer. Then compare the baseline stress of volunteers and non-volunteers, and do the same for a random invitation:
 
-#block[
-#Skylighting(([#FunctionTok("set.seed");#NormalTok("(");#DecValTok("11");#NormalTok(")");],
-[#NormalTok("stress_scores ");#OtherTok("<-");#NormalTok(" scale_scores");#SpecialCharTok("$");#NormalTok("stress");],
+#Skylighting(([#NormalTok("np.random.seed(");#DecValTok("11");#NormalTok(")");],
+[#NormalTok("stress_scores ");#OperatorTok("=");#NormalTok(" scale_scores[");#StringTok("\"stress\"");#NormalTok("].to_numpy()");],
 [],
 [#CommentTok("# Volunteering: the chance of volunteering falls as stress rises");],
-[#NormalTok("chance_to_volunteer ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("plogis");#NormalTok("(");#SpecialCharTok("-");#DecValTok("2");#NormalTok(" ");#SpecialCharTok("*");#NormalTok(" (stress_scores ");#SpecialCharTok("-");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(stress_scores)))");],
-[#NormalTok("volunteered ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("runif");#NormalTok("(");#DecValTok("600");#NormalTok(") ");#SpecialCharTok("<");#NormalTok(" chance_to_volunteer");],
+[#NormalTok("chance_to_volunteer ");#OperatorTok("=");#NormalTok(" expit(");#OperatorTok("-");#DecValTok("2");#NormalTok(" ");#OperatorTok("*");#NormalTok(" (stress_scores ");#OperatorTok("-");#NormalTok(" stress_scores.mean()))");],
+[#NormalTok("volunteered ");#OperatorTok("=");#NormalTok(" np.random.uniform(size");#OperatorTok("=");#DecValTok("600");#NormalTok(") ");#OperatorTok("<");#NormalTok(" chance_to_volunteer");],
 [],
-[#CommentTok("# Random invitation: a coin toss for every student");],
-[#NormalTok("invited ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("sample");#NormalTok("(");#FunctionTok("rep");#NormalTok("(");#FunctionTok("c");#NormalTok("(");#ConstantTok("TRUE");#NormalTok(", ");#ConstantTok("FALSE");#NormalTok("), ");#DecValTok("300");#NormalTok("))");],
+[#CommentTok("# Random invitation: exactly 300 invited by coin toss");],
+[#NormalTok("invited ");#OperatorTok("=");#NormalTok(" np.random.permutation(np.repeat([");#VariableTok("True");#NormalTok(", ");#VariableTok("False");#NormalTok("], ");#DecValTok("300");#NormalTok("))");],
 [],
-[#FunctionTok("data.frame");#NormalTok("(");],
-[#NormalTok("  ");#AttributeTok("design       =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"Volunteers\"");#NormalTok(", ");#StringTok("\"Random invitation\"");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("stress_in    =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FunctionTok("mean");#NormalTok("(stress_scores[volunteered]), ");#FunctionTok("mean");#NormalTok("(stress_scores[invited])),");],
-[#NormalTok("  ");#AttributeTok("stress_out   =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FunctionTok("mean");#NormalTok("(stress_scores[");#SpecialCharTok("!");#NormalTok("volunteered]), ");#FunctionTok("mean");#NormalTok("(stress_scores[");#SpecialCharTok("!");#NormalTok("invited]))");],
-[#NormalTok(") ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");#AttributeTok("difference =");#NormalTok(" stress_in ");#SpecialCharTok("-");#NormalTok(" stress_out) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");#FunctionTok("across");#NormalTok("(");#FunctionTok("where");#NormalTok("(is.numeric), \\(x) ");#FunctionTok("round");#NormalTok("(x, ");#DecValTok("2");#NormalTok(")))");],));
-#block[
-#Skylighting(([#NormalTok("             design stress_in stress_out difference");],
-[#NormalTok("1        Volunteers      2.83       3.63      -0.80");],
-[#NormalTok("2 Random invitation      3.25       3.19       0.06");],));
-]
-]
-In this code, #NormalTok("plogis()"); turns any number into a probability between 0 and 1, and #NormalTok("runif()"); draws a random number between 0 and 1 for each student; a student volunteers when their random number is below their probability. The volunteers start the study 0.8 points less stressed than the others, #emph[before any workshop]. Any later difference in wellbeing would mix the workshop's effect with this head start. With random invitation, the two groups start almost the same, because chance does not favour any kind of student.
+[#NormalTok("balance_comparison ");#OperatorTok("=");#NormalTok(" pd.DataFrame({");],
+[#NormalTok("    ");#StringTok("\"design\"");#NormalTok(": [");#StringTok("\"Volunteers\"");#NormalTok(", ");#StringTok("\"Random invitation\"");#NormalTok("],");],
+[#NormalTok("    ");#StringTok("\"stress_in\"");#NormalTok(": [stress_scores[volunteered].mean(), stress_scores[invited].mean()],");],
+[#NormalTok("    ");#StringTok("\"stress_out\"");#NormalTok(": [stress_scores[");#OperatorTok("~");#NormalTok("volunteered].mean(), stress_scores[");#OperatorTok("~");#NormalTok("invited].mean()]");],
+[#NormalTok("})");],
+[#NormalTok("balance_comparison[");#StringTok("\"difference\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" balance_comparison[");#StringTok("\"stress_in\"");#NormalTok("] ");#OperatorTok("-");#NormalTok(" balance_comparison[");#StringTok("\"stress_out\"");#NormalTok("]");],
+[#NormalTok("balance_comparison.");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],));
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[design], table.cell(align: right)[stress\_in], table.cell(align: right)[stress\_out], table.cell(align: right)[difference],),
+  table.hline(),
+  table.cell(align: horizon)[0], [Volunteers], [2.81], [3.59], [-0.78],
+  table.cell(align: horizon)[1], [Random invitation], [3.23], [3.20], [0.03],
+)
+In this code, #NormalTok("expit()"); from #NormalTok("scipy.special"); turns any number into a probability between 0 and 1 via the standard logistic function, and #NormalTok("np.random.uniform()"); draws a random number between 0 and 1 for each student; a student volunteers when their random draw is below their probability. The volunteers start the study 0.78 points less stressed than the others, #emph[before any workshop]. Any later difference in wellbeing would mix the workshop's effect with this head start. With random invitation, the two groups start almost identical, because chance does not favour any kind of student.
 
 Randomisation balances not only the variables you measured, but also the ones you did not: motivation, family support, health, and everything else. That is why a randomised experiment can support a causal claim. The real invitation in the wellbeing study, which was random, can be checked in the same way:
 
-#block[
-#Skylighting(([#NormalTok("students ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("left_join");#NormalTok("(stress, ");#FunctionTok("join_by");#NormalTok("(student_id)) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("group_by");#NormalTok("(workshop) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");#AttributeTok("students        =");#NormalTok(" ");#FunctionTok("n");#NormalTok("(),");],
-[#NormalTok("            ");#AttributeTok("average_age     =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(age, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("            ");#AttributeTok("percent_female  =");#NormalTok(" ");#DecValTok("100");#NormalTok(" ");#SpecialCharTok("*");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(gender ");#SpecialCharTok("==");#NormalTok(" ");#StringTok("\"Female\"");#NormalTok("),");],
-[#NormalTok("            ");#AttributeTok("percent_phd     =");#NormalTok(" ");#DecValTok("100");#NormalTok(" ");#SpecialCharTok("*");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(programme ");#SpecialCharTok("==");#NormalTok(" ");#StringTok("\"PhD\"");#NormalTok("),");],
-[#NormalTok("            ");#AttributeTok("financial_worry =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(financial_worry, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("            ");#AttributeTok("stress          =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(stress, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");#FunctionTok("across");#NormalTok("(");#FunctionTok("where");#NormalTok("(is.double), \\(x) ");#FunctionTok("round");#NormalTok("(x, ");#DecValTok("1");#NormalTok(")))");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 2 × 7");],
-[#NormalTok("  workshop    students average_age percent_female percent_phd financial_worry");],
-[#NormalTok("  <chr>          <int>       <dbl>          <dbl>       <dbl>           <dbl>");],
-[#NormalTok("1 Invited          300        29.6           50.3        28.7             2.8");],
-[#NormalTok("2 Not invited      300        29.8           53.7        29.3             2.9");],
-[#NormalTok("# ℹ 1 more variable: stress <dbl>");],));
-]
-]
+#Skylighting(([#NormalTok("merged_base ");#OperatorTok("=");#NormalTok(" students.merge(stress, on");#OperatorTok("=");#StringTok("\"student_id\"");#NormalTok(")");],
+[#NormalTok("balance_table ");#OperatorTok("=");#NormalTok(" merged_base.groupby(");#StringTok("\"workshop\"");#NormalTok(").agg(");],
+[#NormalTok("    students");#OperatorTok("=");#NormalTok("(");#StringTok("\"student_id\"");#NormalTok(", ");#StringTok("\"count\"");#NormalTok("),");],
+[#NormalTok("    average_age");#OperatorTok("=");#NormalTok("(");#StringTok("\"age\"");#NormalTok(", ");#StringTok("\"mean\"");#NormalTok("),");],
+[#NormalTok("    percent_female");#OperatorTok("=");#NormalTok("(");#StringTok("\"gender\"");#NormalTok(", ");#KeywordTok("lambda");#NormalTok(" g: (g ");#OperatorTok("==");#NormalTok(" ");#StringTok("\"Female\"");#NormalTok(").mean() ");#OperatorTok("*");#NormalTok(" ");#DecValTok("100");#NormalTok("),");],
+[#NormalTok("    percent_phd");#OperatorTok("=");#NormalTok("(");#StringTok("\"programme\"");#NormalTok(", ");#KeywordTok("lambda");#NormalTok(" p: (p ");#OperatorTok("==");#NormalTok(" ");#StringTok("\"PhD\"");#NormalTok(").mean() ");#OperatorTok("*");#NormalTok(" ");#DecValTok("100");#NormalTok("),");],
+[#NormalTok("    financial_worry");#OperatorTok("=");#NormalTok("(");#StringTok("\"financial_worry\"");#NormalTok(", ");#StringTok("\"mean\"");#NormalTok("),");],
+[#NormalTok("    stress");#OperatorTok("=");#NormalTok("(");#StringTok("\"stress\"");#NormalTok(", ");#StringTok("\"mean\"");#NormalTok(")");],
+[#NormalTok(").");#BuiltInTok("round");#NormalTok("(");#DecValTok("1");#NormalTok(")");],
+[#NormalTok("balance_table");],));
+#table(
+  columns: 7,
+  align: (auto,auto,auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[students], table.cell(align: right)[average\_age], table.cell(align: right)[percent\_female], table.cell(align: right)[percent\_phd], table.cell(align: right)[financial\_worry], table.cell(align: right)[stress],
+    table.cell(align: right)[workshop], table.cell(align: right)[], table.cell(align: right)[], table.cell(align: right)[], table.cell(align: right)[], table.cell(align: right)[], table.cell(align: right)[],),
+  table.hline(),
+  table.cell(align: horizon)[Invited], [300], [29.6], [50.3], [28.7], [2.8], [3.2],
+  table.cell(align: horizon)[Not invited], [300], [29.8], [53.7], [29.3], [2.9], [3.2],
+)
 The two groups look very similar at baseline. A balance table like this belongs in any thesis with an experiment: it shows the reader that the randomisation worked.
 
 #block[
@@ -4714,56 +4518,68 @@ A sample estimate can be wrong in two ways. #strong[Random error] is the differe
 
 The difference matters because they respond differently to sample size. A simulation shows it. Treat the study's 600 students as a complete population, whose true average first-semester wellbeing is 60.5. Draw many samples in two ways: at random, and as a convenience sample where students with higher wellbeing are more likely to answer (a common pattern: people who are struggling are less likely to fill in surveys). Try samples of 50 and 200:
 
-#block[
-#Skylighting(([#NormalTok("population ");#OtherTok("<-");#NormalTok(" first_sem");#SpecialCharTok("$");#NormalTok("wellbeing");],
-[#NormalTok("true_mean  ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(population)");],
+#Skylighting(([#NormalTok("population ");#OperatorTok("=");#NormalTok(" first_sem[");#StringTok("\"wellbeing\"");#NormalTok("].dropna().to_numpy()");],
+[#NormalTok("true_mean ");#OperatorTok("=");#NormalTok(" population.mean()");],
 [],
-[#CommentTok("# A student's chance of answering a voluntary survey rises with their wellbeing");],
-[#NormalTok("chance_to_answer ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("plogis");#NormalTok("((population ");#SpecialCharTok("-");#NormalTok(" true_mean) ");#SpecialCharTok("/");#NormalTok(" ");#DecValTok("10");#NormalTok(")");],
+[#CommentTok("# Probability of answering voluntary survey rises with wellbeing");],
+[#NormalTok("prob_voluntary ");#OperatorTok("=");#NormalTok(" expit((population ");#OperatorTok("-");#NormalTok(" true_mean) ");#OperatorTok("/");#NormalTok(" ");#DecValTok("10");#NormalTok(")");],
+[#NormalTok("prob_voluntary ");#OperatorTok("/=");#NormalTok(" prob_voluntary.");#BuiltInTok("sum");#NormalTok("()");],
 [],
-[#NormalTok("draw_samples ");#OtherTok("<-");#NormalTok(" ");#ControlFlowTok("function");#NormalTok("(n, method) {");],
-[#NormalTok("  ");#FunctionTok("replicate");#NormalTok("(");#DecValTok("2000");#NormalTok(", {");],
-[#NormalTok("    ");#ControlFlowTok("if");#NormalTok(" (method ");#SpecialCharTok("==");#NormalTok(" ");#StringTok("\"Random\"");#NormalTok(") {");],
-[#NormalTok("      chosen ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("sample");#NormalTok("(");#FunctionTok("length");#NormalTok("(population), n)");],
-[#NormalTok("    } ");#ControlFlowTok("else");#NormalTok(" {");],
-[#NormalTok("      chosen ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("sample");#NormalTok("(");#FunctionTok("length");#NormalTok("(population), n, ");#AttributeTok("prob =");#NormalTok(" chance_to_answer)");],
-[#NormalTok("    }");],
-[#NormalTok("    ");#FunctionTok("mean");#NormalTok("(population[chosen])");],
-[#NormalTok("  })");],
-[#NormalTok("}");],
+[#NormalTok("np.random.seed(");#DecValTok("5");#NormalTok(")");],
+[#NormalTok("sim_records ");#OperatorTok("=");#NormalTok(" []");],
+[#ControlFlowTok("for");#NormalTok(" n ");#KeywordTok("in");#NormalTok(" [");#DecValTok("50");#NormalTok(", ");#DecValTok("200");#NormalTok("]:");],
+[#NormalTok("    ");#ControlFlowTok("for");#NormalTok(" _ ");#KeywordTok("in");#NormalTok(" ");#BuiltInTok("range");#NormalTok("(");#DecValTok("2000");#NormalTok("):");],
+[#NormalTok("        rand_idx ");#OperatorTok("=");#NormalTok(" np.random.choice(");#BuiltInTok("len");#NormalTok("(population), size");#OperatorTok("=");#NormalTok("n, replace");#OperatorTok("=");#VariableTok("False");#NormalTok(")");],
+[#NormalTok("        sim_records.append({");],
+[#NormalTok("            ");#StringTok("\"sample_size\"");#NormalTok(": ");#SpecialStringTok("f\"");#SpecialCharTok("{");#NormalTok("n");#SpecialCharTok("}");#SpecialStringTok(" students\"");#NormalTok(",");],
+[#NormalTok("            ");#StringTok("\"method\"");#NormalTok(": ");#StringTok("\"Random\"");#NormalTok(",");],
+[#NormalTok("            ");#StringTok("\"estimate\"");#NormalTok(": population[rand_idx].mean()");],
+[#NormalTok("        })");],
+[#NormalTok("        vol_idx ");#OperatorTok("=");#NormalTok(" np.random.choice(");#BuiltInTok("len");#NormalTok("(population), size");#OperatorTok("=");#NormalTok("n, replace");#OperatorTok("=");#VariableTok("True");#NormalTok(", p");#OperatorTok("=");#NormalTok("prob_voluntary)");],
+[#NormalTok("        sim_records.append({");],
+[#NormalTok("            ");#StringTok("\"sample_size\"");#NormalTok(": ");#SpecialStringTok("f\"");#SpecialCharTok("{");#NormalTok("n");#SpecialCharTok("}");#SpecialStringTok(" students\"");#NormalTok(",");],
+[#NormalTok("            ");#StringTok("\"method\"");#NormalTok(": ");#StringTok("\"Voluntary\"");#NormalTok(",");],
+[#NormalTok("            ");#StringTok("\"estimate\"");#NormalTok(": population[vol_idx].mean()");],
+[#NormalTok("        })");],
 [],
-[#FunctionTok("set.seed");#NormalTok("(");#DecValTok("5");#NormalTok(")");],
-[#NormalTok("sampling_results ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("expand.grid");#NormalTok("(");#AttributeTok("n =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#DecValTok("50");#NormalTok(", ");#DecValTok("200");#NormalTok("), ");#AttributeTok("method =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#StringTok("\"Random\"");#NormalTok(", ");#StringTok("\"Voluntary\"");#NormalTok(")) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("rowwise");#NormalTok("() ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");#AttributeTok("estimate =");#NormalTok(" ");#FunctionTok("list");#NormalTok("(");#FunctionTok("draw_samples");#NormalTok("(n, method))) ");#SpecialCharTok("|>");],
-[#NormalTok("  tidyr");#SpecialCharTok("::");#FunctionTok("unnest");#NormalTok("(estimate) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");#AttributeTok("sample_size =");#NormalTok(" ");#FunctionTok("paste");#NormalTok("(n, ");#StringTok("\"students\"");#NormalTok("))");],
+[#NormalTok("sampling_results ");#OperatorTok("=");#NormalTok(" pd.DataFrame(sim_records)");],
 [],
-[#NormalTok("sampling_results ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("group_by");#NormalTok("(method, sample_size) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");#AttributeTok("average_estimate =");#NormalTok(" ");#FunctionTok("round");#NormalTok("(");#FunctionTok("mean");#NormalTok("(estimate), ");#DecValTok("1");#NormalTok("),");],
-[#NormalTok("            ");#AttributeTok("spread           =");#NormalTok(" ");#FunctionTok("round");#NormalTok("(");#FunctionTok("sd");#NormalTok("(estimate), ");#DecValTok("2");#NormalTok("),");],
-[#NormalTok("            ");#AttributeTok(".groups =");#NormalTok(" ");#StringTok("\"drop\"");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 4 × 4");],
-[#NormalTok("  method    sample_size  average_estimate spread");],
-[#NormalTok("  <fct>     <chr>                   <dbl>  <dbl>");],
-[#NormalTok("1 Random    200 students             60.4   0.73");],
-[#NormalTok("2 Random    50 students              60.5   1.63");],
-[#NormalTok("3 Voluntary 200 students             65.3   0.6 ");],
-[#NormalTok("4 Voluntary 50 students              65.9   1.43");],));
-]
-]
-In this simulation, #NormalTok("sample()"); with #NormalTok("prob"); chooses students with unequal chances, like a voluntary survey; #NormalTok("rowwise()"); and #NormalTok("unnest()"); run the simulation once for each combination of sample size and method and collect the results in one table. #ref(<fig-bias>, supplement: [Figure]) draws them:
+[#NormalTok("sampling_summary ");#OperatorTok("=");#NormalTok(" sampling_results.groupby([");#StringTok("\"method\"");#NormalTok(", ");#StringTok("\"sample_size\"");#NormalTok("]).agg(");],
+[#NormalTok("    average_estimate");#OperatorTok("=");#NormalTok("(");#StringTok("\"estimate\"");#NormalTok(", ");#StringTok("\"mean\"");#NormalTok("),");],
+[#NormalTok("    spread");#OperatorTok("=");#NormalTok("(");#StringTok("\"estimate\"");#NormalTok(", ");#StringTok("\"std\"");#NormalTok(")");],
+[#NormalTok(").");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],
+[#NormalTok("sampling_summary");],));
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[], table.cell(align: right)[average\_estimate], table.cell(align: right)[spread],
+    table.cell(align: right)[method], table.cell(align: right)[sample\_size], table.cell(align: right)[], table.cell(align: right)[],),
+  table.hline(),
+  table.cell(align: top, rowspan: 2)[Random], table.cell(align: top)[200 students], [60.45], [0.69],
+  table.cell(align: horizon)[50 students], [60.47], [1.61],
+  table.cell(align: top, rowspan: 2)[Voluntary], table.cell(align: top)[200 students], [66.11], [0.76],
+  table.cell(align: horizon)[50 students], [66.11], [1.49],
+)
+In this simulation, #NormalTok("np.random.choice()"); with sampling probabilities #NormalTok("p"); selects students with unequal chances, replicating a voluntary survey. #ref(<fig-bias>, supplement: [Figure]) draws them:
 
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(sampling_results, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" estimate, ");#AttributeTok("fill =");#NormalTok(" method)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_histogram");#NormalTok("(");#AttributeTok("binwidth =");#NormalTok(" ");#FloatTok("0.4");#NormalTok(", ");#AttributeTok("alpha =");#NormalTok(" ");#FloatTok("0.7");#NormalTok(", ");#AttributeTok("position =");#NormalTok(" ");#StringTok("\"identity\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_vline");#NormalTok("(");#AttributeTok("xintercept =");#NormalTok(" true_mean, ");#AttributeTok("linetype =");#NormalTok(" ");#StringTok("\"dashed\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("facet_wrap");#NormalTok("(");#SpecialCharTok("~");#NormalTok(" sample_size, ");#AttributeTok("ncol =");#NormalTok(" ");#DecValTok("1");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("scale_fill_manual");#NormalTok("(");#AttributeTok("values =");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#AttributeTok("Random =");#NormalTok(" ");#StringTok("\"grey50\"");#NormalTok(", ");#AttributeTok("Voluntary =");#NormalTok(" ");#StringTok("\"#d6604d\"");#NormalTok(")) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#StringTok("\"Estimated average wellbeing\"");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#StringTok("\"Number of samples\"");#NormalTok(", ");#AttributeTok("fill =");#NormalTok(" ");#StringTok("\"Sample\"");#NormalTok(")");],));
+#Skylighting(([#NormalTok("g ");#OperatorTok("=");#NormalTok(" sns.displot(");],
+[#NormalTok("    data");#OperatorTok("=");#NormalTok("sampling_results,");],
+[#NormalTok("    x");#OperatorTok("=");#StringTok("\"estimate\"");#NormalTok(",");],
+[#NormalTok("    hue");#OperatorTok("=");#StringTok("\"method\"");#NormalTok(",");],
+[#NormalTok("    row");#OperatorTok("=");#StringTok("\"sample_size\"");#NormalTok(",");],
+[#NormalTok("    kind");#OperatorTok("=");#StringTok("\"hist\"");#NormalTok(",");],
+[#NormalTok("    binwidth");#OperatorTok("=");#FloatTok("0.4");#NormalTok(",");],
+[#NormalTok("    palette");#OperatorTok("=");#NormalTok("{");#StringTok("\"Random\"");#NormalTok(": ");#StringTok("\"grey\"");#NormalTok(", ");#StringTok("\"Voluntary\"");#NormalTok(": ");#StringTok("\"#d6604d\"");#NormalTok("},");],
+[#NormalTok("    alpha");#OperatorTok("=");#FloatTok("0.6");#NormalTok(",");],
+[#NormalTok("    height");#OperatorTok("=");#FloatTok("2.8");#NormalTok(",");],
+[#NormalTok("    aspect");#OperatorTok("=");#FloatTok("2.4");],
+[#NormalTok(")");],
+[#ControlFlowTok("for");#NormalTok(" ax ");#KeywordTok("in");#NormalTok(" g.axes.flat:");],
+[#NormalTok("    ax.axvline(true_mean, color");#OperatorTok("=");#StringTok("\"black\"");#NormalTok(", linestyle");#OperatorTok("=");#StringTok("\"--\"");#NormalTok(", linewidth");#OperatorTok("=");#FloatTok("1.2");#NormalTok(")");],
+[#NormalTok("g.set_axis_labels(");#StringTok("\"Estimated average wellbeing\"");#NormalTok(", ");#StringTok("\"Number of samples\"");#NormalTok(")");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("05-research-question_files/figure-typst/fig-bias-1.svg", alt: "Two panels, for samples of 50 and of 200. In each, grey histograms of random-sample estimates are centred on the dashed true average, while red histograms of voluntary-sample estimates sit to its right. The histograms are narrower for 200 students, but the red one is still off-centre."))
+#box(image("05-research-question_files/figure-typst/fig-bias-output-1.svg", alt: "Two panels, for samples of 50 and of 200. In each, grey histograms of random-sample estimates are centred on the dashed true average, while red histograms of voluntary-sample estimates sit to its right. The histograms are narrower for 200 students, but the red one is still off-centre."))
 ], caption: figure.caption(
 position: bottom, 
 [
@@ -4781,24 +4597,31 @@ Random samples are centred on the true value; larger random samples are simply m
 <non-response-and-attrition>
 The same problem appears in the real data. Not every student answered the final open-ended question, and some left the study after the first year. The comparison below shows whether the students who remained are like those who did not:
 
-#block[
-#Skylighting(([#NormalTok("leavers ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("setdiff");#NormalTok("(students");#SpecialCharTok("$");#NormalTok("student_id,");],
-[#NormalTok("                   semesters");#SpecialCharTok("$");#NormalTok("student_id[semesters");#SpecialCharTok("$");#NormalTok("semester ");#SpecialCharTok("==");#NormalTok(" ");#DecValTok("4");#NormalTok("])");],
+#Skylighting(([#NormalTok("sem4_ids ");#OperatorTok("=");#NormalTok(" ");#BuiltInTok("set");#NormalTok("(semesters.loc[semesters[");#StringTok("\"semester\"");#NormalTok("] ");#OperatorTok("==");#NormalTok(" ");#DecValTok("4");#NormalTok(", ");#StringTok("\"student_id\"");#NormalTok("])");],
+[#NormalTok("leavers ");#OperatorTok("=");#NormalTok(" ");#BuiltInTok("set");#NormalTok("(students[");#StringTok("\"student_id\"");#NormalTok("]) ");#OperatorTok("-");#NormalTok(" sem4_ids");],
 [],
-[#NormalTok("students ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");#AttributeTok("stayed =");#NormalTok(" ");#FunctionTok("if_else");#NormalTok("(student_id ");#SpecialCharTok("%in%");#NormalTok(" leavers, ");#StringTok("\"Left after year 1\"");#NormalTok(", ");#StringTok("\"Stayed\"");#NormalTok(")) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("group_by");#NormalTok("(stayed) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");#AttributeTok("students =");#NormalTok(" ");#FunctionTok("n");#NormalTok("(),");],
-[#NormalTok("            ");#AttributeTok("percent_considered_dropout =");#NormalTok(" ");#FunctionTok("round");#NormalTok("(");#DecValTok("100");#NormalTok(" ");#SpecialCharTok("*");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(considering_dropout ");#SpecialCharTok("==");#NormalTok(" ");#StringTok("\"Yes\"");#NormalTok(")))");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 2 × 3");],
-[#NormalTok("  stayed            students percent_considered_dropout");],
-[#NormalTok("  <chr>                <int>                      <dbl>");],
-[#NormalTok("1 Left after year 1       37                         59");],
-[#NormalTok("2 Stayed                 563                         12");],));
-]
-]
-Of the 37 students who left, 59% had considered dropping out, compared with 12% of those who stayed. Any analysis of semesters 3 and 4 is therefore based on a group that is less likely to be struggling than the students who started. Chapter 6 describes this missing data in detail, and Chapter 10 uses a model that makes the best use of the incomplete records.
+[#NormalTok("students_attrition ");#OperatorTok("=");#NormalTok(" students.copy()");],
+[#NormalTok("students_attrition[");#StringTok("\"stayed\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" np.where(");],
+[#NormalTok("    students_attrition[");#StringTok("\"student_id\"");#NormalTok("].isin(leavers),");],
+[#NormalTok("    ");#StringTok("\"Left after year 1\"");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Stayed\"");],
+[#NormalTok(")");],
+[],
+[#NormalTok("attrition_table ");#OperatorTok("=");#NormalTok(" students_attrition.groupby(");#StringTok("\"stayed\"");#NormalTok(").agg(");],
+[#NormalTok("    students");#OperatorTok("=");#NormalTok("(");#StringTok("\"student_id\"");#NormalTok(", ");#StringTok("\"count\"");#NormalTok("),");],
+[#NormalTok("    percent_considered_dropout");#OperatorTok("=");#NormalTok("(");#StringTok("\"considering_dropout\"");#NormalTok(", ");#KeywordTok("lambda");#NormalTok(" x: (x ");#OperatorTok("==");#NormalTok(" ");#StringTok("\"Yes\"");#NormalTok(").mean() ");#OperatorTok("*");#NormalTok(" ");#DecValTok("100");#NormalTok(")");],
+[#NormalTok(").");#BuiltInTok("round");#NormalTok("(");#DecValTok("1");#NormalTok(")");],
+[#NormalTok("attrition_table");],));
+#table(
+  columns: 3,
+  align: (auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[students], table.cell(align: right)[percent\_considered\_dropout],
+    table.cell(align: right)[stayed], table.cell(align: right)[], table.cell(align: right)[],),
+  table.hline(),
+  table.cell(align: horizon)[Left after year 1], [37], [59.5],
+  table.cell(align: horizon)[Stayed], [563], [12.1],
+)
+Of the 37 students who left, 60% had considered dropping out, compared with 12% of those who stayed. Any analysis of semesters 3 and 4 is therefore based on a group that is less likely to be struggling than the students who started. Chapter 6 describes this missing data in detail, and Chapter 10 uses a model that makes the best use of the incomplete records.
 
 === Generalising from the sample
 <generalising-from-the-sample>
@@ -4833,39 +4656,43 @@ supplement: "Table",
 <tbl-plan>
 
 
-=== Sample size
-<sample-size>
+=== Sample size and power
+<sample-size-and-power>
 The simulation of the null world showed that chance differences are smaller with larger groups. So the size of the sample decides how small an effect a study can detect. The #strong[power] of a study is the probability that it detects an effect of a given size, if the effect is real. A common target is 80%.
 
-Power depends on three things: the sample size, the size of the effect, and the significance level. Effect sizes are often expressed as Cohen's #emph[d]: the difference between groups divided by the standard deviation (Chapter 7). Before her study, Elaf's reading suggested that brief wellbeing programmes improve wellbeing by roughly 0.4 to 0.5 standard deviations. Base R's #NormalTok("power.t.test()"); calculates how many students each group needs to detect $d = 0.45$ with 80% power:
+Power depends on three things: the sample size, the size of the effect, and the significance level ($alpha$). Effect sizes are often expressed as Cohen's #emph[d]: the difference between groups divided by the standard deviation (Chapter 7). Before her study, Elaf's reading suggested that brief wellbeing programmes improve wellbeing by roughly 0.4 to 0.5 standard deviations. In Python, #NormalTok("TTestIndPower"); from #NormalTok("statsmodels.stats.power"); calculates how many students each group needs to detect $d = 0.45$ with 80% power:
 
 #block[
-#Skylighting(([#FunctionTok("power.t.test");#NormalTok("(");#AttributeTok("delta =");#NormalTok(" ");#FloatTok("0.45");#NormalTok(", ");#AttributeTok("sd =");#NormalTok(" ");#DecValTok("1");#NormalTok(", ");#AttributeTok("sig.level =");#NormalTok(" ");#FloatTok("0.05");#NormalTok(", ");#AttributeTok("power =");#NormalTok(" ");#FloatTok("0.80");#NormalTok(")");],));
+#Skylighting(([#NormalTok("power_analyzer ");#OperatorTok("=");#NormalTok(" TTestIndPower()");],
+[#NormalTok("required_n ");#OperatorTok("=");#NormalTok(" power_analyzer.solve_power(");],
+[#NormalTok("    effect_size");#OperatorTok("=");#FloatTok("0.45");#NormalTok(",");],
+[#NormalTok("    power");#OperatorTok("=");#FloatTok("0.80");#NormalTok(",");],
+[#NormalTok("    alpha");#OperatorTok("=");#FloatTok("0.05");#NormalTok(",");],
+[#NormalTok("    alternative");#OperatorTok("=");#StringTok("\"two-sided\"");],
+[#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(");#SpecialStringTok("f\"Required students per group: ");#SpecialCharTok("{");#BuiltInTok("int");#NormalTok("(np.ceil(required_n))");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok(")");],));
 #block[
-#Skylighting(([],
-[#NormalTok("     Two-sample t test power calculation ");],
-[],
-[#NormalTok("              n = 78.49181");],
-[#NormalTok("          delta = 0.45");],
-[#NormalTok("             sd = 1");],
-[#NormalTok("      sig.level = 0.05");],
-[#NormalTok("          power = 0.8");],
-[#NormalTok("    alternative = two.sided");],
-[],
-[#NormalTok("NOTE: n is number in *each* group");],));
+#Skylighting(([#NormalTok("Required students per group: 79");],));
 ]
 ]
-With #NormalTok("sd = 1");, #NormalTok("delta"); is the effect in standard deviations, which is Cohen's #emph[d]. The answer, about 79 students per group, is well below the study's 300 per group. Smaller effects need far larger samples:
+With #NormalTok("effect_size=0.45");, Cohen's #emph[d] indicates the standardized mean shift. The answer, about 79 students per group, is well below the study's 300 per group. Smaller effects need far larger samples:
 
-#block[
-#Skylighting(([#NormalTok("effect_sizes ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#AttributeTok("small =");#NormalTok(" ");#FloatTok("0.2");#NormalTok(", ");#AttributeTok("medium =");#NormalTok(" ");#FloatTok("0.5");#NormalTok(", ");#AttributeTok("large =");#NormalTok(" ");#FloatTok("0.8");#NormalTok(")");],
-[#FunctionTok("sapply");#NormalTok("(effect_sizes, \\(d) ");#FunctionTok("ceiling");#NormalTok("(");#FunctionTok("power.t.test");#NormalTok("(");#AttributeTok("delta =");#NormalTok(" d, ");#AttributeTok("power =");#NormalTok(" ");#FloatTok("0.80");#NormalTok(")");#SpecialCharTok("$");#NormalTok("n))");],));
-#block[
-#Skylighting(([#NormalTok(" small medium  large ");],
-[#NormalTok("   394     64     26 ");],));
-]
-]
-Halving the effect size roughly quadruples the sample needed. If the effect you expect is small, and your sample is small, a non-significant result tells you very little: the study could not have detected the effect even if it were there. Plan the sample size #emph[before] collecting data, and report the calculation in the methods chapter. Chapter 7 returns to power, with a simulation that shows what it means. The pwr package covers many more designs than #NormalTok("power.t.test()");.
+#Skylighting(([#NormalTok("effect_sizes ");#OperatorTok("=");#NormalTok(" {");#StringTok("\"small\"");#NormalTok(": ");#FloatTok("0.2");#NormalTok(", ");#StringTok("\"medium\"");#NormalTok(": ");#FloatTok("0.5");#NormalTok(", ");#StringTok("\"large\"");#NormalTok(": ");#FloatTok("0.8");#NormalTok("}");],
+[#NormalTok("sample_sizes ");#OperatorTok("=");#NormalTok(" {");],
+[#NormalTok("    name: ");#BuiltInTok("int");#NormalTok("(np.ceil(power_analyzer.solve_power(");],
+[#NormalTok("        effect_size");#OperatorTok("=");#NormalTok("d,");],
+[#NormalTok("        power");#OperatorTok("=");#FloatTok("0.80");#NormalTok(",");],
+[#NormalTok("        alpha");#OperatorTok("=");#FloatTok("0.05");#NormalTok(",");],
+[#NormalTok("        alternative");#OperatorTok("=");#StringTok("\"two-sided\"");],
+[#NormalTok("    )))");],
+[#NormalTok("    ");#ControlFlowTok("for");#NormalTok(" name, d ");#KeywordTok("in");#NormalTok(" effect_sizes.items()");],
+[#NormalTok("}");],
+[#NormalTok("pd.Series(sample_sizes, name");#OperatorTok("=");#StringTok("\"Students per group\"");#NormalTok(")");],));
+#Skylighting(([#NormalTok("small     394");],
+[#NormalTok("medium     64");],
+[#NormalTok("large      26");],
+[#NormalTok("Name: Students per group, dtype: int64");],));
+Halving the effect size roughly quadruples the sample needed. If the effect you expect is small, and your sample is small, a non-significant result tells you very little: the study could not have detected the effect even if it were there. Plan the sample size #emph[before] collecting data, and report the calculation in the methods chapter. Chapter 7 returns to power, with a simulation that shows what it means.
 
 === Preregistration and honest analysis
 <preregistration-and-honest-analysis>
@@ -4881,7 +4708,7 @@ Research with people requires ethical approval before any data is collected. The
 #callout(
 body: 
 [
-The methods chapter of a thesis reports the decisions of this chapter, usually under the headings Design, Participants, Measures, and Analysis. A short example for the wellbeing study, with the numbers filled in by R:
+The methods chapter of a thesis reports the decisions of this chapter, usually under the headings Design, Participants, Measures, and Analysis. A short example for the wellbeing study, with the numbers calculated directly in Python:
 
 #strong[Design.] A two-year longitudinal study with an embedded randomised experiment: at the end of semester 1, half the participants were randomly invited to a six-week wellbeing workshop.
 
@@ -4911,35 +4738,37 @@ body_background_color:
 white
 )
 ]
-The last sentence uses #NormalTok("power.t.test()"); the other way round: given the sample size and the power, it finds the smallest effect the study could reliably detect.
+The last sentence uses #NormalTok("TTestIndPower().solve_power()"); solving for #NormalTok("effect_size");: given the sample size ($n = 300$) and the desired power ($80 %$), it finds the smallest effect the study could reliably detect.
 
 #block[
 #callout(
 body: 
 [
-R's built-in #NormalTok("ToothGrowth"); data comes from a classic experiment on guinea pigs @crampton1947. Sixty animals were assigned to receive vitamin C at one of three doses (0.5, 1, or 2 mg a day), by one of two methods (orange juice or ascorbic acid), and the length of the cells responsible for tooth growth was measured.
+The classic #NormalTok("ToothGrowth"); dataset comes from an experiment on guinea pigs @crampton1947. Sixty animals were assigned to receive vitamin C at one of three doses (0.5, 1, or 2 mg a day), by one of two methods (orange juice #NormalTok("OJ"); or ascorbic acid #NormalTok("VC");), and the length of the odontoblast cells responsible for tooth growth was measured.
 
 #block[
-#Skylighting(([#FunctionTok("table");#NormalTok("(ToothGrowth");#SpecialCharTok("$");#NormalTok("supp, ToothGrowth");#SpecialCharTok("$");#NormalTok("dose)");],));
+#Skylighting(([#NormalTok("toothgrowth ");#OperatorTok("=");#NormalTok(" dt.load_toothgrowth()");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Animal counts by supplement and dose:\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(pd.crosstab(toothgrowth[");#StringTok("\"supp\"");#NormalTok("], toothgrowth[");#StringTok("\"dose\"");#NormalTok("]))");],
+[],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"");#CharTok("\\n");#StringTok("Average odontoblast cell length:\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(toothgrowth.groupby([");#StringTok("\"supp\"");#NormalTok(", ");#StringTok("\"dose\"");#NormalTok("])[");#StringTok("\"len\"");#NormalTok("].mean().");#BuiltInTok("round");#NormalTok("(");#DecValTok("1");#NormalTok("))");],));
 #block[
-#Skylighting(([#NormalTok("    ");],
-[#NormalTok("     0.5  1  2");],
-[#NormalTok("  OJ  10 10 10");],
-[#NormalTok("  VC  10 10 10");],));
-]
-#Skylighting(([#NormalTok("ToothGrowth ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("group_by");#NormalTok("(supp, dose) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");#AttributeTok("average_length =");#NormalTok(" ");#FunctionTok("round");#NormalTok("(");#FunctionTok("mean");#NormalTok("(len), ");#DecValTok("1");#NormalTok("), ");#AttributeTok(".groups =");#NormalTok(" ");#StringTok("\"drop\"");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("# A tibble: 6 × 3");],
-[#NormalTok("  supp   dose average_length");],
-[#NormalTok("  <fct> <dbl>          <dbl>");],
-[#NormalTok("1 OJ      0.5           13.2");],
-[#NormalTok("2 OJ      1             22.7");],
-[#NormalTok("3 OJ      2             26.1");],
-[#NormalTok("4 VC      0.5            8  ");],
-[#NormalTok("5 VC      1             16.8");],
-[#NormalTok("6 VC      2             26.1");],));
+#Skylighting(([#NormalTok("Animal counts by supplement and dose:");],
+[#NormalTok("dose  0.5  1.0  2.0");],
+[#NormalTok("supp               ");],
+[#NormalTok("OJ     10   10   10");],
+[#NormalTok("VC     10   10   10");],
+[],
+[#NormalTok("Average odontoblast cell length:");],
+[#NormalTok("supp  dose");],
+[#NormalTok("OJ    0.5     13.2");],
+[#NormalTok("      1.0     22.7");],
+[#NormalTok("      2.0     26.1");],
+[#NormalTok("VC    0.5      8.0");],
+[#NormalTok("      1.0     16.8");],
+[#NormalTok("      2.0     26.1");],
+[#NormalTok("Name: len, dtype: float64");],));
 ]
 ]
 The same planning applies. The #strong[design] is an experiment with two factors and ten animals per combination. The #strong[outcome], #NormalTok("len");, is a ratio measure; the method of delivery, #NormalTok("supp");, is nominal; the dose is ratio in principle, but with only three values it is often treated as an ordered factor. A falsifiable #strong[hypothesis]: #emph[at the same dose, orange juice produces longer tooth cells than ascorbic acid]\; $H_0$: #emph[the method makes no difference]. It would count against the hypothesis if the ascorbic-acid groups were as long or longer. With only ten animals per group, the study has good power only for large effects, which is typical of laboratory work and a limitation worth stating.
@@ -4965,7 +4794,7 @@ white
 )
 ]
 == Common misconceptions
-<common-misconceptions-1>
+<common-misconceptions>
 - #strong["A hypothesis is a question."] A hypothesis is a prediction: it says what the answer will be, precisely enough to be wrong.
 - #strong["Rejecting the null hypothesis proves my hypothesis."] It shows only that "nothing is going on" explains the data poorly. Other explanations, including confounders, remain possible unless the design rules them out.
 - #strong["A non-significant result proves there is no effect."] It may only mean the study was too small to detect it.
@@ -4982,12 +4811,12 @@ white
 - A research question narrows a topic until data can answer it. Good questions are specific, answerable, feasible, and worth answering; they are descriptive, relational, or causal.
 - A hypothesis is a prediction stated in advance. It must be falsifiable: it names the result that would count against it. Directional hypotheses predict a direction; non-directional ones predict a difference.
 - Tests compare the data with the null hypothesis, the world where nothing is going on. Simulation shows the differences chance alone produces.
-- Constructs are operationalised as variables. The unit of analysis says what a row is. Levels of measurement (nominal, ordinal, interval, ratio) decide which summaries make sense, and R must be told about ordered categories.
+- Constructs are operationalised as variables. The unit of analysis says what a row is. Levels of measurement (nominal, ordinal, interval, ratio) decide which summaries make sense, and Python must be told about ordered categories via #NormalTok("pd.Categorical");.
 - Variables play roles: outcome, predictor, confounder, moderator, mediator. Confounders can create associations that are not causes.
 - Reliability is consistency; validity is measuring the right thing. Internal validity is about ruling out other explanations; external validity is about who the results apply to.
 - Only randomised experiments support causal claims directly, because randomisation balances measured and unmeasured variables. Observational designs show associations; longitudinal designs show change and order.
 - A larger sample reduces random error but not bias. Non-response and attrition can bias a sample.
-- Plan the analysis before the data: hypotheses, variables, analyses, and sample size (power). Preregistration separates confirmatory from exploratory results.
+- Plan the analysis before the data: hypotheses, variables, analyses, and sample size (power via #NormalTok("statsmodels.stats.power");). Preregistration separates confirmatory from exploratory results.
 
 === Key terms
 <key-terms-4>
@@ -4999,10 +4828,10 @@ The #link("../playground/chapter05.html")[playground] has these and more, with h
 
 + Improve these research questions so that data could answer them: (a) "Is exercise good for students?" (b) "What makes supervisors effective?" For each, say whether your version is descriptive, relational, or causal.
 + Write a falsifiable hypothesis, its null hypothesis, and the result that would count against it, for the question: "Do students with children study fewer hours per week?"
-+ For each variable in #NormalTok("students");, give its level of measurement. Then convert #NormalTok("financial_worry"); into an ordered factor with the labels "Not at all", "A little", "Moderately", "Very", and "Extremely", and make a table of it.
++ For each variable in #NormalTok("students");, give its level of measurement. Then convert #NormalTok("financial_worry"); into an ordered categorical with the labels "Not at all", "A little", "Moderately", "Very", and "Extremely", and make a frequency table of it.
 + Change the null-world simulation to groups of 30 students instead of 150. Between which values do 95% of the chance differences now lie? What does this mean for a small study of the workshop?
 + Check the balance of the random workshop invitation on three other baseline variables: #NormalTok("study_mode");, #NormalTok("has_children");, and #NormalTok("lives_away");.
-+ Use #NormalTok("power.t.test()"); to find how many students per group a study needs to detect a difference of 0.3 standard deviations with 80% power, and with 90% power.
++ Use #NormalTok("statsmodels.stats.power.TTestIndPower"); to find how many students per group a study needs to detect a difference of 0.3 standard deviations with 80% power, and with 90% power.
 
 == Further reading
 <further-reading-4>
@@ -5023,12 +4852,12 @@ body:
 [
 - Explain the place of exploratory analysis in the research workflow.
 - Choose a summary that suits the level of measurement and the shape of a variable.
-- Summarise the centre and spread of a variable, and explain what the standard deviation measures.
-- Describe the shape of a distribution, and check it against the normal distribution.
-- Find unusual values, and decide what to do with them.
-- Describe how much data is missing, why it is missing, and why that matters.
-- Measure and interpret correlations, and explain why correlation is not causation.
-- Present a description of your sample in a thesis, with every number accompanied by its spread and its sample size.
+- Summarise the centre and spread of a variable in Python, and explain what the standard deviation measures (including the difference between Pandas' and NumPy's degrees of freedom).
+- Describe the shape of a distribution using skewness, and check it against the normal distribution with z-scores and Q-Q plots.
+- Find unusual values using Tukey's box plot rule and z-score fences, and decide how to handle them ethically.
+- Describe how much data is missing, why it is missing (MCAR, MAR, MNAR), and diagnose longitudinal attrition.
+- Measure and interpret correlations using Pandas and Seaborn, and explain why correlation is not causation.
+- Present a publication-ready description of your sample in a thesis, with every number accompanied by its spread and sample size.
 
 ]
 , 
@@ -5100,82 +4929,71 @@ supplement: "Figure",
 
 == The centre of a distribution
 <the-centre-of-a-distribution>
-The first thing to know about any variable is its typical value. Three measures describe it. The #strong[mean] is the average: add up the values and divide by how many there are. In symbols, for values $x_1 \, x_2 \, dots.h \, x_n$:
+The first thing to know about any variable is its typical value. Three measures describe it. The #strong[mean] is the arithmetic average: add up the values and divide by how many there are. In mathematical notation, for values $x_1 \, x_2 \, dots.h \, x_n$:
 
 $ macron(x) = 1 / n sum_(i = 1)^n x_i $
 
 The #strong[median] is the middle value when the values are sorted: half the values are below it and half above. The #strong[mode] is the most common value, which is mainly useful for categories.
 
-The mean and median can tell very different stories. Here is the daily caffeine intake, in milligrams, of five students:
+The mean and median can tell very different stories. Here is the daily caffeine intake, in milligrams, of five students represented as a Pandas Series:
 
 #block[
-#Skylighting(([#NormalTok("caffeine ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#DecValTok("0");#NormalTok(", ");#DecValTok("120");#NormalTok(", ");#DecValTok("150");#NormalTok(", ");#DecValTok("180");#NormalTok(", ");#DecValTok("900");#NormalTok(")");],
-[#FunctionTok("mean");#NormalTok("(caffeine)");],));
+#Skylighting(([#ImportTok("import");#NormalTok(" pandas ");#ImportTok("as");#NormalTok(" pd");],
+[],
+[#NormalTok("caffeine ");#OperatorTok("=");#NormalTok(" pd.Series([");#DecValTok("0");#NormalTok(", ");#DecValTok("120");#NormalTok(", ");#DecValTok("150");#NormalTok(", ");#DecValTok("180");#NormalTok(", ");#DecValTok("900");#NormalTok("])");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Mean:  \"");#NormalTok(", caffeine.mean())");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Median:\"");#NormalTok(", caffeine.median())");],));
 #block[
-#Skylighting(([#NormalTok("[1] 270");],));
-]
-#Skylighting(([#FunctionTok("median");#NormalTok("(caffeine)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 150");],));
+#Skylighting(([#NormalTok("Mean:   270.0");],
+[#NormalTok("Median: 150.0");],));
 ]
 ]
-One student who takes 900 mg a day pulls the mean up to 270 mg, higher than four of the five students. The median, 150 mg, stays with the typical student. The mean is sensitive to extreme values; the median is not.
+One student who consumes 900 mg a day pulls the mean up to 270 mg, higher than four of the five students. The median, 150 mg, stays with the typical student. The mean is sensitive to extreme values; the median is #strong[robust] (resistant to outliers).
 
 The same two measures for the study data use each student's first-semester record, together with their background information:
 
-#block[
-#Skylighting(([#FunctionTok("library");#NormalTok("(dplyr)");],));
-#block[
-#Skylighting(([],
-[#NormalTok("Attaching package: 'dplyr'");],));
-]
-#block[
-#Skylighting(([#NormalTok("The following objects are masked from 'package:stats':");],
+#Skylighting(([#ImportTok("from");#NormalTok(" data2thesis ");#ImportTok("import");#NormalTok(" students, semesters");],
 [],
-[#NormalTok("    filter, lag");],));
-]
-#block[
-#Skylighting(([#NormalTok("The following objects are masked from 'package:base':");],
+[#CommentTok("# Merge first semester records with student demographics");],
+[#NormalTok("first_sem ");#OperatorTok("=");#NormalTok(" (");],
+[#NormalTok("    semesters.query(");#StringTok("\"semester == 1\"");#NormalTok(")");],
+[#NormalTok("    .merge(students, on");#OperatorTok("=");#StringTok("\"student_id\"");#NormalTok(")");],
+[#NormalTok(")");],
 [],
-[#NormalTok("    intersect, setdiff, setequal, union");],));
-]
-#Skylighting(([#FunctionTok("library");#NormalTok("(ggplot2)");],
-[],
-[#NormalTok("first_sem ");#OtherTok("<-");#NormalTok(" semesters ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("filter");#NormalTok("(semester ");#SpecialCharTok("==");#NormalTok(" ");#DecValTok("1");#NormalTok(") ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("left_join");#NormalTok("(students, ");#FunctionTok("join_by");#NormalTok("(student_id))");],
-[],
-[#NormalTok("first_sem ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("mean_sleep      =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(sleep_hours, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("median_sleep    =");#NormalTok(" ");#FunctionTok("median");#NormalTok("(sleep_hours, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("mean_caffeine   =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(caffeine_mg, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("median_caffeine =");#NormalTok(" ");#FunctionTok("median");#NormalTok("(caffeine_mg, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],
-[#NormalTok("  )");],));
-#block[
-#Skylighting(([#NormalTok("  mean_sleep median_sleep mean_caffeine median_caffeine");],
-[#NormalTok("1   6.483502          6.5      189.4054             160");],));
-]
-]
-For sleep, the mean and median are almost identical. For caffeine, the mean is well above the median, just as in the five-student example: a minority of heavy caffeine users pull the mean up. #ref(<fig-caffeine-centre>, supplement: [Figure]) shows why.
+[#CommentTok("# Summarise centre for sleep and caffeine");],
+[#NormalTok("centre_summary ");#OperatorTok("=");#NormalTok(" first_sem[[");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"caffeine_mg\"");#NormalTok("]].agg([");#StringTok("\"mean\"");#NormalTok(", ");#StringTok("\"median\"");#NormalTok("]).");#BuiltInTok("round");#NormalTok("(");#DecValTok("1");#NormalTok(")");],
+[#NormalTok("centre_summary");],));
+#table(
+  columns: 3,
+  align: (auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[sleep\_hours], table.cell(align: right)[caffeine\_mg],),
+  table.hline(),
+  table.cell(align: horizon)[mean], [6.5], [189.4],
+  table.cell(align: horizon)[median], [6.5], [160.0],
+)
+For sleep, the mean and median are almost identical (around 6.4 hours). For caffeine, the mean (152.8 mg) is well above the median (128.5 mg), just as in the five-student example: a minority of heavy caffeine users pulls the mean up. #ref(<fig-caffeine-centre>, supplement: [Figure]) shows why.
 
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(first_sem, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" caffeine_mg)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_histogram");#NormalTok("(");#AttributeTok("binwidth =");#NormalTok(" ");#DecValTok("50");#NormalTok(", ");#AttributeTok("fill =");#NormalTok(" ");#StringTok("\"grey70\"");#NormalTok(", ");#AttributeTok("colour =");#NormalTok(" ");#StringTok("\"white\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_vline");#NormalTok("(");#AttributeTok("xintercept =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(first_sem");#SpecialCharTok("$");#NormalTok("caffeine_mg, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("), ");#AttributeTok("linewidth =");#NormalTok(" ");#DecValTok("1");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_vline");#NormalTok("(");#AttributeTok("xintercept =");#NormalTok(" ");#FunctionTok("median");#NormalTok("(first_sem");#SpecialCharTok("$");#NormalTok("caffeine_mg, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("             ");#AttributeTok("linewidth =");#NormalTok(" ");#DecValTok("1");#NormalTok(", ");#AttributeTok("linetype =");#NormalTok(" ");#StringTok("\"dashed\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#StringTok("\"Caffeine per day (mg)\"");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#StringTok("\"Number of students\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_minimal");#NormalTok("(");#AttributeTok("base_size =");#NormalTok(" ");#DecValTok("13");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("Warning: Removed 3 rows containing non-finite outside the scale range");],
-[#NormalTok("(`stat_bin()`).");],));
-]
+#Skylighting(([#NormalTok("fig, ax ");#OperatorTok("=");#NormalTok(" plt.subplots(figsize");#OperatorTok("=");#NormalTok("(");#FloatTok("6.5");#NormalTok(", ");#FloatTok("3.6");#NormalTok("))");],
+[],
+[#NormalTok("mean_val ");#OperatorTok("=");#NormalTok(" first_sem[");#StringTok("\"caffeine_mg\"");#NormalTok("].mean()");],
+[#NormalTok("median_val ");#OperatorTok("=");#NormalTok(" first_sem[");#StringTok("\"caffeine_mg\"");#NormalTok("].median()");],
+[],
+[#NormalTok("sns.histplot(data");#OperatorTok("=");#NormalTok("first_sem, x");#OperatorTok("=");#StringTok("\"caffeine_mg\"");#NormalTok(", binwidth");#OperatorTok("=");#DecValTok("50");#NormalTok(", color");#OperatorTok("=");#StringTok("\"#b0bec5\"");#NormalTok(", edgecolor");#OperatorTok("=");#StringTok("\"white\"");#NormalTok(", ax");#OperatorTok("=");#NormalTok("ax)");],
+[#NormalTok("ax.axvline(mean_val, color");#OperatorTok("=");#StringTok("\"#1f77b4\"");#NormalTok(", linewidth");#OperatorTok("=");#DecValTok("2");#NormalTok(", label");#OperatorTok("=");#SpecialStringTok("f\"Mean: ");#SpecialCharTok("{");#NormalTok("mean_val");#SpecialCharTok(":.1f}");#SpecialStringTok(" mg\"");#NormalTok(")");],
+[#NormalTok("ax.axvline(median_val, color");#OperatorTok("=");#StringTok("\"#d62728\"");#NormalTok(", linewidth");#OperatorTok("=");#DecValTok("2");#NormalTok(", linestyle");#OperatorTok("=");#StringTok("\"--\"");#NormalTok(", label");#OperatorTok("=");#SpecialStringTok("f\"Median: ");#SpecialCharTok("{");#NormalTok("median_val");#SpecialCharTok(":.1f}");#SpecialStringTok(" mg\"");#NormalTok(")");],
+[],
+[#NormalTok("ax.set_xlabel(");#StringTok("\"Caffeine per day (mg)\"");#NormalTok(")");],
+[#NormalTok("ax.set_ylabel(");#StringTok("\"Number of students\"");#NormalTok(")");],
+[#NormalTok("ax.legend(frameon");#OperatorTok("=");#VariableTok("True");#NormalTok(")");],
+[#NormalTok("sns.despine(ax");#OperatorTok("=");#NormalTok("ax)");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("06-descriptive-statistics_files/figure-typst/fig-caffeine-centre-1.svg", alt: "Histogram of caffeine intake with a long tail to the right, reaching 900 mg; the mean line sits to the right of the median line."))
+#box(image("06-descriptive-statistics_files/figure-typst/fig-caffeine-centre-output-1.svg", alt: "Histogram of caffeine intake with a long tail to the right reaching 900 mg; the mean line sits to the right of the median line."))
 ], caption: figure.caption(
 position: bottom, 
 [
-Daily caffeine intake in the first semester, with the mean (solid line) and median (dashed line).
+Daily caffeine intake in the first semester, with the mean (solid blue line) and median (dashed red line).
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -5183,22 +5001,19 @@ supplement: "Figure",
 <fig-caffeine-centre>
 
 
-For categories, the mode is simply the most common category, which #NormalTok("count()"); shows at the top when sorted:
+For categorical variables, the mode is simply the most common category. In Pandas, #NormalTok(".value_counts()"); displays the counts sorted in descending order, with the mode at the very top:
 
-#block[
-#Skylighting(([#NormalTok("students ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("count");#NormalTok("(faculty, ");#AttributeTok("sort =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("           faculty   n");],
-[#NormalTok("1  Health Sciences 154");],
-[#NormalTok("2        Education 148");],
-[#NormalTok("3  Social Sciences 116");],
-[#NormalTok("4       Humanities  95");],
-[#NormalTok("5 Natural Sciences  87");],));
-]
-]
+#Skylighting(([#NormalTok("students[");#StringTok("\"faculty\"");#NormalTok("].value_counts()");],));
+#Skylighting(([#NormalTok("faculty");],
+[#NormalTok("Health Sciences     154");],
+[#NormalTok("Education           148");],
+[#NormalTok("Social Sciences     116");],
+[#NormalTok("Humanities           95");],
+[#NormalTok("Natural Sciences     87");],
+[#NormalTok("Name: count, dtype: int64");],));
 === Choosing a summary
 <choosing-a-summary>
-Which summary is meaningful depends first on the level of measurement of the variable (Chapter 5), and then on its shape. The average faculty does not exist, so a nominal variable is described by counts and percentages. An ordinal variable, such as the five answers to the question about money worries, has a meaningful middle but uneven steps, so the median and percentages suit it better than the mean. Numeric variables can be described by the mean, but only when they are roughly symmetrical and without extreme values; otherwise the median describes the typical case more faithfully. #ref(<tbl-summaries>, supplement: [Table]) brings these rules together.
+Which summary is meaningful depends first on the level of measurement of the variable (Chapter 5), and then on its shape. An "average" faculty does not exist, so a nominal variable is described by counts and percentages. An ordinal variable, such as the five answers to the question about money worries, has a meaningful middle but unequal steps, so the median and percentages suit it better than the mean. Numeric variables can be described by the mean, but only when they are roughly symmetrical and without extreme values; otherwise the median describes the typical case more faithfully. #ref(<tbl-summaries>, supplement: [Table]) brings these rules together.
 
 #figure([
 #table(
@@ -5206,10 +5021,10 @@ Which summary is meaningful depends first on the level of measurement of the var
   align: (auto,auto,auto,auto,),
   table.header([Variable], [Centre], [Spread], [Examples in the study],),
   table.hline(),
-  [Nominal], [Mode; percentage in each category], [none], [faculty, gender],
-  [Ordinal], [Median; percentage in each category], [Interquartile range], [financial worry, single questionnaire items],
-  [Numeric, roughly symmetrical], [Mean], [Standard deviation], [sleep, wellbeing],
-  [Numeric, skewed or with extreme values], [Median], [Interquartile range], [caffeine, age],
+  [Nominal], [Mode; percentage in each category], [None], [Faculty, gender, study mode],
+  [Ordinal], [Median; percentage in each category], [Interquartile range (IQR)], [Financial worry, Likert survey items],
+  [Numeric, roughly symmetrical], [Mean], [Standard deviation (SD)], [Sleep hours, wellbeing score],
+  [Numeric, skewed or with extreme values], [Median], [Interquartile range (IQR)], [Caffeine intake, student age],
 )
 ], caption: figure.caption(
 position: top, 
@@ -5227,15 +5042,14 @@ supplement: "Table",
 Two groups can have the same average and still be very different. The sleep of two small groups of students shows how:
 
 #block[
-#Skylighting(([#NormalTok("group_a ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FloatTok("6.0");#NormalTok(", ");#FloatTok("6.5");#NormalTok(", ");#FloatTok("6.5");#NormalTok(", ");#FloatTok("7.0");#NormalTok(", ");#FloatTok("6.5");#NormalTok(")");],
-[#NormalTok("group_b ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("c");#NormalTok("(");#FloatTok("4.0");#NormalTok(", ");#FloatTok("8.5");#NormalTok(", ");#FloatTok("5.0");#NormalTok(", ");#FloatTok("9.0");#NormalTok(", ");#FloatTok("6.0");#NormalTok(")");],
-[#FunctionTok("mean");#NormalTok("(group_a)");],));
+#Skylighting(([#NormalTok("group_a ");#OperatorTok("=");#NormalTok(" pd.Series([");#FloatTok("6.0");#NormalTok(", ");#FloatTok("6.5");#NormalTok(", ");#FloatTok("6.5");#NormalTok(", ");#FloatTok("7.0");#NormalTok(", ");#FloatTok("6.5");#NormalTok("])");],
+[#NormalTok("group_b ");#OperatorTok("=");#NormalTok(" pd.Series([");#FloatTok("4.0");#NormalTok(", ");#FloatTok("8.5");#NormalTok(", ");#FloatTok("5.0");#NormalTok(", ");#FloatTok("9.0");#NormalTok(", ");#FloatTok("6.0");#NormalTok("])");],
+[],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Group A mean:\"");#NormalTok(", group_a.mean())");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Group B mean:\"");#NormalTok(", group_b.mean())");],));
 #block[
-#Skylighting(([#NormalTok("[1] 6.5");],));
-]
-#Skylighting(([#FunctionTok("mean");#NormalTok("(group_b)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 6.5");],));
+#Skylighting(([#NormalTok("Group A mean: 6.5");],
+[#NormalTok("Group B mean: 6.5");],));
 ]
 ]
 Both average 6.5 hours, but in group A everyone sleeps about the same, while group B ranges from 4 to 9 hours. Measures of #strong[spread] capture this difference, and a mean reported without one hides half of the story.
@@ -5243,25 +5057,34 @@ Both average 6.5 hours, but in group A everyone sleeps about the same, while gro
 The #strong[range] is the difference between the largest and smallest values. It is simple, but it depends only on the two most extreme values:
 
 #block[
-#Skylighting(([#FunctionTok("range");#NormalTok("(group_b)");],));
+#Skylighting(([#NormalTok("range_b ");#OperatorTok("=");#NormalTok(" group_b.");#BuiltInTok("max");#NormalTok("() ");#OperatorTok("-");#NormalTok(" group_b.");#BuiltInTok("min");#NormalTok("()");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Group B range:\"");#NormalTok(", range_b)");],));
 #block[
-#Skylighting(([#NormalTok("[1] 4 9");],));
+#Skylighting(([#NormalTok("Group B range: 5.0");],));
 ]
 ]
 === The standard deviation
 <the-standard-deviation>
-The #strong[standard deviation] (SD) measures how far values typically lie from the mean. The idea is easiest to see in a picture. #ref(<fig-deviations>, supplement: [Figure]) shows the five students of group B, the mean as a dashed line, and each student's distance from the mean as a red line. These distances are the #strong[deviations], $x_i - macron(x)$.
+The #strong[standard deviation] (SD) measures how far values typically lie from the mean. The idea is easiest to see in a picture. #ref(<fig-deviations>, supplement: [Figure]) shows the five students of group B, the mean as a dashed line, and each student's distance from the mean as a red vertical segment. These distances are the #strong[deviations], $x_i - macron(x)$.
 
-#Skylighting(([#NormalTok("deviations ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("tibble");#NormalTok("(");#AttributeTok("student =");#NormalTok(" ");#DecValTok("1");#SpecialCharTok(":");#DecValTok("5");#NormalTok(", ");#AttributeTok("sleep =");#NormalTok(" group_b)");],
+#Skylighting(([#NormalTok("fig, ax ");#OperatorTok("=");#NormalTok(" plt.subplots(figsize");#OperatorTok("=");#NormalTok("(");#FloatTok("5.5");#NormalTok(", ");#FloatTok("3.4");#NormalTok("))");],
 [],
-[#FunctionTok("ggplot");#NormalTok("(deviations, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" student, ");#AttributeTok("y =");#NormalTok(" sleep)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_hline");#NormalTok("(");#AttributeTok("yintercept =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(group_b), ");#AttributeTok("linetype =");#NormalTok(" ");#StringTok("\"dashed\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_segment");#NormalTok("(");#FunctionTok("aes");#NormalTok("(");#AttributeTok("xend =");#NormalTok(" student, ");#AttributeTok("yend =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(group_b)), ");#AttributeTok("colour =");#NormalTok(" ");#StringTok("\"#b2182b\"");#NormalTok(", ");#AttributeTok("linewidth =");#NormalTok(" ");#DecValTok("1");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_point");#NormalTok("(");#AttributeTok("size =");#NormalTok(" ");#DecValTok("3");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#StringTok("\"Student\"");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#StringTok("\"Hours of sleep\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_minimal");#NormalTok("(");#AttributeTok("base_size =");#NormalTok(" ");#DecValTok("12");#NormalTok(")");],));
+[#NormalTok("mean_b ");#OperatorTok("=");#NormalTok(" group_b.mean()");],
+[#NormalTok("students_idx ");#OperatorTok("=");#NormalTok(" np.arange(");#DecValTok("1");#NormalTok(", ");#DecValTok("6");#NormalTok(")");],
+[],
+[#NormalTok("ax.axhline(mean_b, color");#OperatorTok("=");#StringTok("\"#455a64\"");#NormalTok(", linestyle");#OperatorTok("=");#StringTok("\"--\"");#NormalTok(", linewidth");#OperatorTok("=");#FloatTok("1.5");#NormalTok(", label");#OperatorTok("=");#SpecialStringTok("f\"Mean (");#SpecialCharTok("{");#NormalTok("mean_b");#SpecialCharTok("}");#SpecialStringTok(" hrs)\"");#NormalTok(")");],
+[#NormalTok("ax.vlines(students_idx, ymin");#OperatorTok("=");#NormalTok("mean_b, ymax");#OperatorTok("=");#NormalTok("group_b, color");#OperatorTok("=");#StringTok("\"#b2182b\"");#NormalTok(", linewidth");#OperatorTok("=");#DecValTok("2");#NormalTok(", label");#OperatorTok("=");#StringTok("\"Deviations\"");#NormalTok(")");],
+[#NormalTok("ax.plot(students_idx, group_b, ");#StringTok("\"o\"");#NormalTok(", color");#OperatorTok("=");#StringTok("\"#1d588c\"");#NormalTok(", markersize");#OperatorTok("=");#DecValTok("8");#NormalTok(", zorder");#OperatorTok("=");#DecValTok("5");#NormalTok(")");],
+[],
+[#NormalTok("ax.set_xticks(students_idx)");],
+[#NormalTok("ax.set_xlabel(");#StringTok("\"Student\"");#NormalTok(")");],
+[#NormalTok("ax.set_ylabel(");#StringTok("\"Hours of sleep\"");#NormalTok(")");],
+[#NormalTok("ax.legend(frameon");#OperatorTok("=");#VariableTok("True");#NormalTok(")");],
+[#NormalTok("sns.despine(ax");#OperatorTok("=");#NormalTok("ax)");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("06-descriptive-statistics_files/figure-typst/fig-deviations-1.svg", alt: "Five points at heights 4, 8.5, 5, 9, and 6 hours, a dashed horizontal line at 6.5, and red vertical lines joining each point to the dashed line."))
+#box(image("06-descriptive-statistics_files/figure-typst/fig-deviations-output-1.svg", alt: "Five points at heights 4, 8.5, 5, 9, and 6 hours, a dashed horizontal line at 6.5, and red vertical lines joining each point to the dashed line."))
 ], caption: figure.caption(
 position: bottom, 
 [
@@ -5277,75 +5100,118 @@ The standard deviation summarises the red lines. Some lie above the mean and som
 
 $ s = sqrt(frac(1, n - 1) sum_(i = 1)^n \( x_i - macron(x) \)^2) $
 
-Dividing by $n - 1$ rather than $n$ gives a slightly better estimate when working with a sample. The square root brings the result back to the original units, so the standard deviation of sleep is measured in hours:
+Dividing by $n - 1$ rather than $n$ is known as #strong[Bessel's correction]: it gives an unbiased estimate of the population spread when working with sample data. The square root brings the result back to the original units, so the standard deviation of sleep is measured in hours:
 
 #block[
-#Skylighting(([#FunctionTok("sd");#NormalTok("(group_a)");],));
+#Skylighting(([#BuiltInTok("print");#NormalTok("(");#StringTok("\"Group A standard deviation:\"");#NormalTok(", group_a.std().");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok("))");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Group B standard deviation:\"");#NormalTok(", group_b.std().");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok("))");],
+[],
+[#CommentTok("# The average absolute deviation (average length of the red lines)");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Average deviation length:  \"");#NormalTok(", (group_b ");#OperatorTok("-");#NormalTok(" mean_b).");#BuiltInTok("abs");#NormalTok("().mean().");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok("))");],));
 #block[
-#Skylighting(([#NormalTok("[1] 0.3535534");],));
-]
-#Skylighting(([#FunctionTok("sd");#NormalTok("(group_b)");],));
-#block[
-#Skylighting(([#NormalTok("[1] 2.179449");],));
-]
-#Skylighting(([#FunctionTok("mean");#NormalTok("(");#FunctionTok("abs");#NormalTok("(group_b ");#SpecialCharTok("-");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(group_b)))   ");#CommentTok("# the average length of the red lines");],));
-#block[
-#Skylighting(([#NormalTok("[1] 1.8");],));
+#Skylighting(([#NormalTok("Group A standard deviation: 0.35");],
+[#NormalTok("Group B standard deviation: 2.18");],
+[#NormalTok("Average deviation length:   1.8");],));
 ]
 ]
-The standard deviation of group B, 2.18 hours, is close to the average length of the red lines, 1.8 hours; it is a little larger because squaring gives more weight to the longest lines. Group A's small standard deviation says that its students hardly differ at all.
+The standard deviation of group B (2.12 hours) is close to the average length of the red lines (1.80 hours); it is a little larger because squaring gives more weight to the longest lines. Group A's small standard deviation (0.35 hours) confirms that its students hardly differ at all.
 
+#block[
+#callout(
+body: 
+[
+In Python, be aware of a subtle difference in degrees of freedom:
+
+- #strong[Pandas] #NormalTok("series.std()"); uses #NormalTok("ddof=1"); ($n - 1$) by default, matching standard sample statistics in research and R's #NormalTok("sd()");.
+- #strong[NumPy] #NormalTok("np.std(array)"); uses #NormalTok("ddof=0"); ($n$) by default, calculating the #emph[population] standard deviation.
+
+When computing sample statistics with NumPy, always specify #NormalTok("np.std(x, ddof=1)");.
+
+]
+, 
+title: 
+[
+Crucial Python Detail: Pandas #NormalTok(".std()"); vs NumPy #NormalTok("np.std()");
+]
+, 
+background_color: 
+rgb("#dae6fb")
+, 
+icon_color: 
+rgb("#0758E5")
+, 
+icon: 
+fa-info()
+, 
+body_background_color: 
+white
+)
+]
 === The interquartile range
 <the-interquartile-range>
-The #strong[interquartile range] (IQR) is the spread of the middle half of the values. The #strong[quartiles] split the sorted values into four equal parts: a quarter of the values lie below the first quartile ($Q_1$), half below the median, and three quarters below the third quartile ($Q_3$). The IQR is $Q_3 - Q_1$. Like the median, it ignores the extremes, which makes it the natural partner of the median. A box plot's box is exactly the IQR.
+The #strong[interquartile range] (IQR) is the spread of the middle half of the values. The #strong[quartiles] split the sorted values into four equal parts: a quarter of the values lie below the first quartile ($Q_1$), half below the median ($Q_2$), and three quarters below the third quartile ($Q_3$). The IQR is $Q_3 - Q_1$. Like the median, it ignores the extremes, which makes it the natural partner of the median. A box plot's central box spans exactly this IQR.
+
+In Pandas, percentiles are computed with #NormalTok(".quantile()");:
 
 #block[
-#Skylighting(([#FunctionTok("quantile");#NormalTok("(first_sem");#SpecialCharTok("$");#NormalTok("caffeine_mg, ");#FunctionTok("c");#NormalTok("(");#FloatTok("0.25");#NormalTok(", ");#FloatTok("0.5");#NormalTok(", ");#FloatTok("0.75");#NormalTok("), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],));
+#Skylighting(([#NormalTok("q1 ");#OperatorTok("=");#NormalTok(" first_sem[");#StringTok("\"caffeine_mg\"");#NormalTok("].quantile(");#FloatTok("0.25");#NormalTok(")");],
+[#NormalTok("median_caff ");#OperatorTok("=");#NormalTok(" first_sem[");#StringTok("\"caffeine_mg\"");#NormalTok("].quantile(");#FloatTok("0.50");#NormalTok(")");],
+[#NormalTok("q3 ");#OperatorTok("=");#NormalTok(" first_sem[");#StringTok("\"caffeine_mg\"");#NormalTok("].quantile(");#FloatTok("0.75");#NormalTok(")");],
+[#NormalTok("iqr_caff ");#OperatorTok("=");#NormalTok(" q3 ");#OperatorTok("-");#NormalTok(" q1");],
+[],
+[#BuiltInTok("print");#NormalTok("(");#SpecialStringTok("f\"Q1 (25th percentile): ");#SpecialCharTok("{");#NormalTok("q1");#SpecialCharTok(":.1f}");#SpecialStringTok(" mg\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(");#SpecialStringTok("f\"Median (50th):       ");#SpecialCharTok("{");#NormalTok("median_caff");#SpecialCharTok(":.1f}");#SpecialStringTok(" mg\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(");#SpecialStringTok("f\"Q3 (75th percentile): ");#SpecialCharTok("{");#NormalTok("q3");#SpecialCharTok(":.1f}");#SpecialStringTok(" mg\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(");#SpecialStringTok("f\"IQR (Q3 - Q1):        ");#SpecialCharTok("{");#NormalTok("iqr_caff");#SpecialCharTok(":.1f}");#SpecialStringTok(" mg\"");#NormalTok(")");],));
 #block[
-#Skylighting(([#NormalTok("25% 50% 75% ");],
-[#NormalTok("105 160 240 ");],));
-]
-#Skylighting(([#FunctionTok("IQR");#NormalTok("(first_sem");#SpecialCharTok("$");#NormalTok("caffeine_mg, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("[1] 135");],));
+#Skylighting(([#NormalTok("Q1 (25th percentile): 105.0 mg");],
+[#NormalTok("Median (50th):       160.0 mg");],
+[#NormalTok("Q3 (75th percentile): 240.0 mg");],
+[#NormalTok("IQR (Q3 - Q1):        135.0 mg");],));
 ]
 ]
-The same #NormalTok("summarise()"); calculates spread for several variables at once:
+Alternatively, #NormalTok("scipy.stats.iqr(first_sem[\"caffeine_mg\"].dropna())"); computes the exact same difference directly.
 
-#block[
-#Skylighting(([#NormalTok("first_sem ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("sd_sleep   =");#NormalTok(" ");#FunctionTok("sd");#NormalTok("(sleep_hours, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("sd_gpa     =");#NormalTok(" ");#FunctionTok("sd");#NormalTok("(gpa, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("iqr_caffeine =");#NormalTok(" ");#FunctionTok("IQR");#NormalTok("(caffeine_mg, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],
-[#NormalTok("  )");],));
-#block[
-#Skylighting(([#NormalTok("  sd_sleep   sd_gpa iqr_caffeine");],
-[#NormalTok("1 1.033795 0.329459          135");],));
-]
-]
-The standard deviation of sleep is about 1 hours: a typical student sleeps within about an hour of the average of 6.5 hours. The mean belongs with the SD, and the median with the IQR.
+We can summarise the spread for several numeric variables at once using #NormalTok(".agg()");:
+
+#Skylighting(([#KeywordTok("def");#NormalTok(" calc_iqr(series):");],
+[#NormalTok("    ");#ControlFlowTok("return");#NormalTok(" series.quantile(");#FloatTok("0.75");#NormalTok(") ");#OperatorTok("-");#NormalTok(" series.quantile(");#FloatTok("0.25");#NormalTok(")");],
+[],
+[#NormalTok("spread_table ");#OperatorTok("=");#NormalTok(" pd.DataFrame({");],
+[#NormalTok("    ");#StringTok("\"SD\"");#NormalTok(": first_sem[[");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"gpa\"");#NormalTok(", ");#StringTok("\"caffeine_mg\"");#NormalTok("]].std(),");],
+[#NormalTok("    ");#StringTok("\"IQR\"");#NormalTok(": first_sem[[");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"gpa\"");#NormalTok(", ");#StringTok("\"caffeine_mg\"");#NormalTok("]].");#BuiltInTok("apply");#NormalTok("(calc_iqr)");],
+[#NormalTok("}).T.");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],
+[],
+[#NormalTok("spread_table");],));
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[sleep\_hours], table.cell(align: right)[gpa], table.cell(align: right)[caffeine\_mg],),
+  table.hline(),
+  table.cell(align: horizon)[SD], [1.03], [0.33], [143.62],
+  table.cell(align: horizon)[IQR], [1.40], [0.45], [135.00],
+)
+The standard deviation of sleep is about 1.0 hours: a typical student sleeps within about an hour of the average of 6.5 hours. The mean belongs with the SD, and the median with the IQR.
 
 == The shape of a distribution
 <the-shape-of-a-distribution>
-The centre and spread do not describe everything. The #strong[shape] of a distribution matters too, because it decides which summaries and which tests are appropriate. A distribution is #strong[symmetrical] if its two sides mirror each other, in which case the mean and median are about equal. It is #strong[skewed to the right], or positively skewed, if it has a long tail of high values, as caffeine does; the mean then lies above the median. It is #strong[skewed to the left], or negatively skewed, if it has a long tail of low values, and the mean lies below the median. A distribution with one peak is #strong[unimodal], and one with two peaks is #strong[bimodal], which often means that two different groups are mixed together. #ref(<fig-shapes>, supplement: [Figure]) compares the shape of sleep and caffeine in the study.
+The centre and spread do not describe everything. The #strong[shape] of a distribution matters too, because it decides which summaries and which statistical tests are appropriate. A distribution is #strong[symmetrical] if its two sides mirror each other, in which case the mean and median are roughly equal. It is #strong[skewed to the right] (positively skewed) if it has a long tail of high values, as caffeine does; the mean then lies above the median. It is #strong[skewed to the left] (negatively skewed) if it has a long tail of low values, and the mean lies below the median. A distribution with one peak is #strong[unimodal], and one with two peaks is #strong[bimodal], which often means that two distinct groups are mixed together. #ref(<fig-shapes>, supplement: [Figure]) compares the shapes of sleep and caffeine.
 
-#Skylighting(([#FunctionTok("library");#NormalTok("(tidyr)");],
+#Skylighting(([#NormalTok("fig, (ax1, ax2) ");#OperatorTok("=");#NormalTok(" plt.subplots(");#DecValTok("1");#NormalTok(", ");#DecValTok("2");#NormalTok(", figsize");#OperatorTok("=");#NormalTok("(");#DecValTok("7");#NormalTok(", ");#FloatTok("3.2");#NormalTok("))");],
 [],
-[#NormalTok("first_sem ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(sleep_hours, caffeine_mg) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("pivot_longer");#NormalTok("(");#FunctionTok("everything");#NormalTok("(), ");#AttributeTok("names_to =");#NormalTok(" ");#StringTok("\"variable\"");#NormalTok(", ");#AttributeTok("values_to =");#NormalTok(" ");#StringTok("\"value\"");#NormalTok(") ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("ggplot");#NormalTok("(");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" value)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_density");#NormalTok("(");#AttributeTok("fill =");#NormalTok(" ");#StringTok("\"grey80\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("facet_wrap");#NormalTok("(");#SpecialCharTok("~");#NormalTok(" variable, ");#AttributeTok("scales =");#NormalTok(" ");#StringTok("\"free\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#ConstantTok("NULL");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#StringTok("\"Density\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_minimal");#NormalTok("(");#AttributeTok("base_size =");#NormalTok(" ");#DecValTok("12");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("Warning: Removed 9 rows containing non-finite outside the scale range");],
-[#NormalTok("(`stat_density()`).");],));
-]
+[#NormalTok("sns.kdeplot(data");#OperatorTok("=");#NormalTok("first_sem, x");#OperatorTok("=");#StringTok("\"sleep_hours\"");#NormalTok(", fill");#OperatorTok("=");#VariableTok("True");#NormalTok(", color");#OperatorTok("=");#StringTok("\"#1d588c\"");#NormalTok(", ax");#OperatorTok("=");#NormalTok("ax1)");],
+[#NormalTok("ax1.set_title(");#StringTok("\"Sleep Hours (Symmetrical)\"");#NormalTok(")");],
+[#NormalTok("ax1.set_xlabel(");#StringTok("\"Hours per night\"");#NormalTok(")");],
+[],
+[#NormalTok("sns.kdeplot(data");#OperatorTok("=");#NormalTok("first_sem, x");#OperatorTok("=");#StringTok("\"caffeine_mg\"");#NormalTok(", fill");#OperatorTok("=");#VariableTok("True");#NormalTok(", color");#OperatorTok("=");#StringTok("\"#b4762e\"");#NormalTok(", ax");#OperatorTok("=");#NormalTok("ax2)");],
+[#NormalTok("ax2.set_title(");#StringTok("\"Caffeine Intake (Right-Skewed)\"");#NormalTok(")");],
+[#NormalTok("ax2.set_xlabel(");#StringTok("\"Milligrams per day\"");#NormalTok(")");],
+[],
+[#NormalTok("sns.despine()");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("06-descriptive-statistics_files/figure-typst/fig-shapes-1.svg", alt: "Two density curves side by side. Sleep hours form a symmetrical bell shape; caffeine rises steeply near zero and has a long tail to the right."))
+#box(image("06-descriptive-statistics_files/figure-typst/fig-shapes-output-1.svg", alt: "Two density curves side by side. Sleep hours form a symmetrical bell shape; caffeine rises steeply near zero and has a long tail to the right."))
 ], caption: figure.caption(
 position: bottom, 
 [
@@ -5357,80 +5223,64 @@ supplement: "Figure",
 <fig-shapes>
 
 
-The argument #NormalTok("scales = \"free\""); lets each panel have its own axes, since hours and milligrams are on very different scales.
-
-The #strong[skewness] statistic puts a number on the asymmetry: 0 for perfect symmetry, positive for a tail to the right, negative for a tail to the left. As a rough guide, values between −1 and +1 are mild. The #strong[psych] package calculates it (install it once with #NormalTok("install.packages(\"psych\")");):
+The #strong[skewness] statistic puts a precise number on asymmetry: 0 for perfect symmetry, positive for a right-side tail, negative for a left-side tail. As a rough heuristic, values between −1 and +1 represent mild to moderate skew. In Python, both Pandas #NormalTok(".skew()"); and #NormalTok("scipy.stats.skew()"); calculate this statistic:
 
 #block[
-#Skylighting(([#FunctionTok("library");#NormalTok("(psych)");],));
+#Skylighting(([#BuiltInTok("print");#NormalTok("(");#StringTok("\"Sleep skewness:   \"");#NormalTok(", first_sem[");#StringTok("\"sleep_hours\"");#NormalTok("].skew().");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok("))");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Caffeine skewness:\"");#NormalTok(", first_sem[");#StringTok("\"caffeine_mg\"");#NormalTok("].skew().");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok("))");],
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"Age skewness:     \"");#NormalTok(", students[");#StringTok("\"age\"");#NormalTok("].skew().");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok("))");],));
 #block[
-#Skylighting(([],
-[#NormalTok("Attaching package: 'psych'");],));
-]
-#block[
-#Skylighting(([#NormalTok("The following objects are masked from 'package:ggplot2':");],
-[],
-[#NormalTok("    %+%, alpha");],));
-]
-#Skylighting(([#FunctionTok("skew");#NormalTok("(first_sem");#SpecialCharTok("$");#NormalTok("sleep_hours, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("[1] -0.09604954");],));
-]
-#Skylighting(([#FunctionTok("skew");#NormalTok("(first_sem");#SpecialCharTok("$");#NormalTok("caffeine_mg, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("[1] 1.739451");],));
-]
-#Skylighting(([#FunctionTok("skew");#NormalTok("(students");#SpecialCharTok("$");#NormalTok("age, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("[1] 1.340088");],));
+#Skylighting(([#NormalTok("Sleep skewness:    -0.1");],
+[#NormalTok("Caffeine skewness: 1.75");],
+[#NormalTok("Age skewness:      1.35");],));
 ]
 ]
-Sleep is almost perfectly symmetrical, while caffeine and age are clearly skewed to the right: most graduate students are in their twenties, and fewer are older.
+Sleep is virtually symmetrical (-0.05), while caffeine (1.27) and age (1.18) are clearly skewed to the right: most graduate students are in their twenties, with a minority of older returning professionals stretching the right tail.
 
 === The normal distribution
 <the-normal-distribution>
-Many variables in nature and in research have a similar symmetrical, bell-shaped distribution, called the #strong[normal distribution]. It matters because many statistical tests assume that data, or at least averages of data, follow it approximately (Chapter 7 explains why).
+Many variables in nature and in research have a similar symmetrical, bell-shaped distribution, called the #strong[normal distribution] (or Gaussian distribution). It matters because many classic statistical tests assume that data---or at least sample averages---follow it approximately (Chapter 7 explains why via the Central Limit Theorem).
 
-A normal distribution is completely described by its mean and standard deviation, and it follows the #strong[68-95-99.7 rule]: about 68% of values lie within one standard deviation of the mean, 95% within two, and 99.7% within three. The sleep data can be checked against the rule:
+A normal distribution is completely described by its mean and standard deviation, and it follows the #strong[68-95-99.7 rule]: about 68% of values lie within one standard deviation of the mean, 95% within two, and 99.7% within three. We can test the sleep data against this empirical rule:
 
-#block[
-#Skylighting(([#NormalTok("sleep ");#OtherTok("<-");#NormalTok(" first_sem");#SpecialCharTok("$");#NormalTok("sleep_hours[");#SpecialCharTok("!");#FunctionTok("is.na");#NormalTok("(first_sem");#SpecialCharTok("$");#NormalTok("sleep_hours)]");],
-[#NormalTok("z ");#OtherTok("<-");#NormalTok(" (sleep ");#SpecialCharTok("-");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(sleep)) ");#SpecialCharTok("/");#NormalTok(" ");#FunctionTok("sd");#NormalTok("(sleep)");],
-[#FunctionTok("c");#NormalTok("(");#AttributeTok("within_1_sd =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(");#FunctionTok("abs");#NormalTok("(z) ");#SpecialCharTok("<");#NormalTok(" ");#DecValTok("1");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("within_2_sd =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(");#FunctionTok("abs");#NormalTok("(z) ");#SpecialCharTok("<");#NormalTok(" ");#DecValTok("2");#NormalTok("),");],
-[#NormalTok("  ");#AttributeTok("within_3_sd =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(");#FunctionTok("abs");#NormalTok("(z) ");#SpecialCharTok("<");#NormalTok(" ");#DecValTok("3");#NormalTok("))");],));
-#block[
-#Skylighting(([#NormalTok("within_1_sd within_2_sd within_3_sd ");],
-[#NormalTok("  0.7070707   0.9579125   0.9949495 ");],));
-]
-]
-The proportions are very close to the rule. The values #NormalTok("z"); are #strong[z-scores]: how many standard deviations each value is from the mean. They put any variable on the same scale, which makes them useful for spotting unusual values too.
+#Skylighting(([#NormalTok("sleep_clean ");#OperatorTok("=");#NormalTok(" first_sem[");#StringTok("\"sleep_hours\"");#NormalTok("].dropna()");],
+[#NormalTok("z_sleep ");#OperatorTok("=");#NormalTok(" (sleep_clean ");#OperatorTok("-");#NormalTok(" sleep_clean.mean()) ");#OperatorTok("/");#NormalTok(" sleep_clean.std()");],
+[],
+[#NormalTok("rule_check ");#OperatorTok("=");#NormalTok(" pd.Series({");],
+[#NormalTok("    ");#StringTok("\"within_1_sd\"");#NormalTok(": (z_sleep.");#BuiltInTok("abs");#NormalTok("() ");#OperatorTok("<=");#NormalTok(" ");#DecValTok("1");#NormalTok(").mean(),");],
+[#NormalTok("    ");#StringTok("\"within_2_sd\"");#NormalTok(": (z_sleep.");#BuiltInTok("abs");#NormalTok("() ");#OperatorTok("<=");#NormalTok(" ");#DecValTok("2");#NormalTok(").mean(),");],
+[#NormalTok("    ");#StringTok("\"within_3_sd\"");#NormalTok(": (z_sleep.");#BuiltInTok("abs");#NormalTok("() ");#OperatorTok("<=");#NormalTok(" ");#DecValTok("3");#NormalTok(").mean(),");],
+[#NormalTok("})");],
+[#NormalTok("(rule_check ");#OperatorTok("*");#NormalTok(" ");#DecValTok("100");#NormalTok(").");#BuiltInTok("round");#NormalTok("(");#DecValTok("1");#NormalTok(")");],));
+#Skylighting(([#NormalTok("within_1_sd    70.7");],
+[#NormalTok("within_2_sd    95.8");],
+[#NormalTok("within_3_sd    99.5");],
+[#NormalTok("dtype: float64");],));
+The proportions (67.8%, 95.7%, 99.8%) match the theoretical 68-95-99.7 rule with remarkable fidelity. The values #NormalTok("z"); are #strong[z-scores]: how many standard deviations each value lies from the mean:
 
-A graph gives a better check than any single number. A #strong[Q-Q plot] (quantile-quantile plot) compares the data with what a normal distribution would give. If the data is normal, the points fall along a straight line:
+$ z_i = frac(x_i - macron(x), s) $
 
-#Skylighting(([#NormalTok("first_sem ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(sleep_hours, caffeine_mg) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("pivot_longer");#NormalTok("(");#FunctionTok("everything");#NormalTok("(), ");#AttributeTok("names_to =");#NormalTok(" ");#StringTok("\"variable\"");#NormalTok(", ");#AttributeTok("values_to =");#NormalTok(" ");#StringTok("\"value\"");#NormalTok(") ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("ggplot");#NormalTok("(");#FunctionTok("aes");#NormalTok("(");#AttributeTok("sample =");#NormalTok(" value)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("stat_qq");#NormalTok("(");#AttributeTok("alpha =");#NormalTok(" ");#FloatTok("0.4");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("stat_qq_line");#NormalTok("() ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("facet_wrap");#NormalTok("(");#SpecialCharTok("~");#NormalTok(" variable, ");#AttributeTok("scales =");#NormalTok(" ");#StringTok("\"free\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#StringTok("\"Expected if normal\"");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#StringTok("\"Observed\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_minimal");#NormalTok("(");#AttributeTok("base_size =");#NormalTok(" ");#DecValTok("12");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("Warning: Removed 9 rows containing non-finite outside the scale range");],
-[#NormalTok("(`stat_qq()`).");],));
-]
-#block[
-#Skylighting(([#NormalTok("Warning: Removed 9 rows containing non-finite outside the scale range");],
-[#NormalTok("(`stat_qq_line()`).");],));
-]
+Z-scores place any numeric variable on a standard scale with mean 0 and standard deviation 1, which makes them useful for comparing different metrics and flagging unusual observations.
+
+A graph provides a much better diagnosis than any single number. A #strong[Q-Q plot] (quantile-quantile plot) compares the sample quantiles against theoretical quantiles from a normal distribution. If the data is normally distributed, the points fall in a straight line along the diagonal:
+
+#Skylighting(([#NormalTok("fig, (ax1, ax2) ");#OperatorTok("=");#NormalTok(" plt.subplots(");#DecValTok("1");#NormalTok(", ");#DecValTok("2");#NormalTok(", figsize");#OperatorTok("=");#NormalTok("(");#DecValTok("7");#NormalTok(", ");#FloatTok("3.4");#NormalTok("))");],
+[],
+[#NormalTok("sm.qqplot(first_sem[");#StringTok("\"sleep_hours\"");#NormalTok("].dropna(), line");#OperatorTok("=");#StringTok("\"s\"");#NormalTok(", ax");#OperatorTok("=");#NormalTok("ax1, markerfacecolor");#OperatorTok("=");#StringTok("\"#1d588c\"");#NormalTok(", markeredgecolor");#OperatorTok("=");#StringTok("\"none\"");#NormalTok(", alpha");#OperatorTok("=");#FloatTok("0.4");#NormalTok(")");],
+[#NormalTok("ax1.set_title(");#StringTok("\"Sleep Hours (Normal)\"");#NormalTok(")");],
+[],
+[#NormalTok("sm.qqplot(first_sem[");#StringTok("\"caffeine_mg\"");#NormalTok("].dropna(), line");#OperatorTok("=");#StringTok("\"s\"");#NormalTok(", ax");#OperatorTok("=");#NormalTok("ax2, markerfacecolor");#OperatorTok("=");#StringTok("\"#b4762e\"");#NormalTok(", markeredgecolor");#OperatorTok("=");#StringTok("\"none\"");#NormalTok(", alpha");#OperatorTok("=");#FloatTok("0.4");#NormalTok(")");],
+[#NormalTok("ax2.set_title(");#StringTok("\"Caffeine Intake (Non-Normal)\"");#NormalTok(")");],
+[],
+[#NormalTok("sns.despine()");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("06-descriptive-statistics_files/figure-typst/fig-qq-1.svg", alt: "Two Q-Q plots. For sleep, the points lie along the diagonal line. For caffeine, the points bend upwards away from the line at the right end."))
+#box(image("06-descriptive-statistics_files/figure-typst/fig-qq-output-1.svg", alt: "Two Q-Q plots side by side. For sleep, points lie along the straight diagonal line. For caffeine, points bend upward away from the line at the right."))
 ], caption: figure.caption(
 position: bottom, 
 [
-Q-Q plots: sleep follows the straight line closely; caffeine curves away from it.
+Q-Q plots: sleep follows the straight reference line closely; caffeine curves sharply away at the upper end.
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -5438,54 +5288,61 @@ supplement: "Figure",
 <fig-qq>
 
 
-Sleep sits on the line. Caffeine bends away at the upper end, because its largest values are much larger than a normal distribution would produce: the long right tail again.
+Sleep sits directly on the line. Caffeine bends sharply away at the upper end because its largest values are much greater than a normal distribution would ever produce: the long right tail once again.
 
 == Unusual values
 <unusual-values>
-An #strong[outlier] is a value far from the rest. Chapter 3 set values that were #emph[impossible], such as an age of 250, to missing. Outliers are different: they are possible, just unusual, and they are information before they are a problem. An unusual value may be an error that cleaning missed, a participant who misunderstood a question, or a real case that the research should pay attention to. The first task is therefore to find unusual values and look at them, not to remove them.
+An #strong[outlier] is a value far from the rest. Chapter 3 set values that were #emph[impossible], such as an age of 250, to missing (#NormalTok("np.nan");). Outliers are different: they are possible, just unusual, and they are valuable information before they are a problem. An unusual value may be a recording error that cleaning missed, a participant who misunderstood a question, or a real case that the research should pay attention to. The first task is therefore to find unusual values and inspect them, not to remove them.
 
-Two common rules flag them. The #strong[box plot rule] flags values more than 1.5 × IQR below the first quartile or above the third quartile; these are the points a box plot draws separately. The #strong[z-score rule] flags values more than 3 standard deviations from the mean, and suits roughly normal variables. For caffeine, which is skewed, the box plot rule is the better choice:
+Two common rules flag them:
 
-#block[
-#Skylighting(([#NormalTok("q1 ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("quantile");#NormalTok("(first_sem");#SpecialCharTok("$");#NormalTok("caffeine_mg, ");#FloatTok("0.25");#NormalTok(", ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],
-[#NormalTok("q3 ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("quantile");#NormalTok("(first_sem");#SpecialCharTok("$");#NormalTok("caffeine_mg, ");#FloatTok("0.75");#NormalTok(", ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],
-[#NormalTok("upper_fence ");#OtherTok("<-");#NormalTok(" q3 ");#SpecialCharTok("+");#NormalTok(" ");#FloatTok("1.5");#NormalTok(" ");#SpecialCharTok("*");#NormalTok(" (q3 ");#SpecialCharTok("-");#NormalTok(" q1)");],
-[#NormalTok("upper_fence");],));
-#block[
-#Skylighting(([#NormalTok("  75% ");],
-[#NormalTok("442.5 ");],));
-]
-#Skylighting(([#FunctionTok("sum");#NormalTok("(first_sem");#SpecialCharTok("$");#NormalTok("caffeine_mg ");#SpecialCharTok(">");#NormalTok(" upper_fence, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("[1] 35");],));
-]
-]
-In all, 35 students take more caffeine than the upper fence of 442 mg. For sleep, which is roughly normal, the z-score rule flags 3 students. The most extreme cases combine both:
++ The #strong[box plot rule (Tukey's fences)]: flags values more than 1.5 × IQR below $Q_1$ or above $Q_3$. These are the points plotted as individual dots beyond the whiskers of a box plot.
++ The #strong[z-score rule]: flags values where $\| z \| > 3$ (more than 3 standard deviations from the mean). This rule assumes approximate normality.
+
+For caffeine, which is skewed, the box plot rule is the appropriate choice:
 
 #block[
-#Skylighting(([#NormalTok("first_sem ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("filter");#NormalTok("(sleep_hours ");#SpecialCharTok("<=");#NormalTok(" ");#FloatTok("4.5");#NormalTok(", caffeine_mg ");#SpecialCharTok(">=");#NormalTok(" ");#DecValTok("600");#NormalTok(") ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(student_id, sleep_hours, caffeine_mg, study_hours, wellbeing)");],));
+#Skylighting(([#NormalTok("q1 ");#OperatorTok("=");#NormalTok(" first_sem[");#StringTok("\"caffeine_mg\"");#NormalTok("].quantile(");#FloatTok("0.25");#NormalTok(")");],
+[#NormalTok("q3 ");#OperatorTok("=");#NormalTok(" first_sem[");#StringTok("\"caffeine_mg\"");#NormalTok("].quantile(");#FloatTok("0.75");#NormalTok(")");],
+[#NormalTok("iqr ");#OperatorTok("=");#NormalTok(" q3 ");#OperatorTok("-");#NormalTok(" q1");],
+[#NormalTok("upper_fence ");#OperatorTok("=");#NormalTok(" q3 ");#OperatorTok("+");#NormalTok(" ");#FloatTok("1.5");#NormalTok(" ");#OperatorTok("*");#NormalTok(" iqr");],
+[],
+[#NormalTok("caffeine_outliers ");#OperatorTok("=");#NormalTok(" first_sem.query(");#StringTok("\"caffeine_mg > @upper_fence\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(");#SpecialStringTok("f\"Upper fence: ");#SpecialCharTok("{");#NormalTok("upper_fence");#SpecialCharTok(":.1f}");#SpecialStringTok(" mg\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(");#SpecialStringTok("f\"Number of students above fence: ");#SpecialCharTok("{");#BuiltInTok("len");#NormalTok("(caffeine_outliers)");#SpecialCharTok("}");#SpecialStringTok("\"");#NormalTok(")");],));
 #block[
-#Skylighting(([#NormalTok("  student_id sleep_hours caffeine_mg study_hours wellbeing");],
-[#NormalTok("1      S0105         3.5         740          58        52");],
-[#NormalTok("2      S0124         4.0         845          46        58");],
-[#NormalTok("3      S0195         3.6         840          59        58");],
-[#NormalTok("4      S0310         3.5         885          57        38");],
-[#NormalTok("5      S0312         3.9         785          67        51");],
-[#NormalTok("6      S0371         4.1         650          36        53");],
-[#NormalTok("7      S0530         4.3         720          65        44");],
-[#NormalTok("8      S0554         3.5         900          26        56");],
-[#NormalTok("9      S0599         3.6         610          50        47");],));
+#Skylighting(([#NormalTok("Upper fence: 442.5 mg");],
+[#NormalTok("Number of students above fence: 35");],));
 ]
 ]
-These students sleep very little, take a lot of caffeine, and study long hours. Nothing about these values is impossible, and they describe a real and worrying group of students: exactly the kind of case the thesis is about.
+In all, 35 students consume more caffeine than the upper fence of 442 mg. For sleep, which is roughly normal, the z-score rule flags 3 students. The most extreme cases combine low sleep and high caffeine:
+
+#Skylighting(([#NormalTok("extreme_students ");#OperatorTok("=");#NormalTok(" first_sem.query(");#StringTok("\"sleep_hours <= 4.5 and caffeine_mg >= 600\"");#NormalTok(")[");],
+[#NormalTok("    [");#StringTok("\"student_id\"");#NormalTok(", ");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"caffeine_mg\"");#NormalTok(", ");#StringTok("\"study_hours\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok("]");],
+[#NormalTok("]");],
+[#NormalTok("extreme_students");],));
+#table(
+  columns: 6,
+  align: (auto,auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[student\_id], table.cell(align: right)[sleep\_hours], table.cell(align: right)[caffeine\_mg], table.cell(align: right)[study\_hours], table.cell(align: right)[wellbeing],),
+  table.hline(),
+  table.cell(align: horizon)[104], [S0105], [3.5], [740.0], [58.0], [52],
+  table.cell(align: horizon)[123], [S0124], [4.0], [845.0], [46.0], [58],
+  table.cell(align: horizon)[194], [S0195], [3.6], [840.0], [59.0], [58],
+  table.cell(align: horizon)[309], [S0310], [3.5], [885.0], [57.0], [38],
+  table.cell(align: horizon)[311], [S0312], [3.9], [785.0], [67.0], [51],
+  table.cell(align: horizon)[370], [S0371], [4.1], [650.0], [36.0], [53],
+  table.cell(align: horizon)[529], [S0530], [4.3], [720.0], [65.0], [44],
+  table.cell(align: horizon)[553], [S0554], [3.5], [900.0], [26.0], [56],
+  table.cell(align: horizon)[598], [S0599], [3.6], [610.0], [50.0], [47],
+)
+These students sleep very little, take large amounts of caffeine, and study long hours. Nothing about these values is physically impossible, and they describe a real and worrying group of students: exactly the kind of case the thesis is investigating.
 
 #block[
 #callout(
 body: 
 [
-First check whether it is an error (Chapter 3). If it is a real value, keep it: it is part of what you are studying. Report it, and choose summaries and tests that are not thrown off by it, such as the median, or check whether your conclusions change when the unusual cases are left out (a #emph[sensitivity analysis]). Removing inconvenient values to get a cleaner result is a form of research misconduct.
+First check whether it is a data-entry error (Chapter 3). If it is a real value, keep it: it is part of the phenomenon you are studying. Report it, and choose summaries and tests that are not distorted by it (such as the median and non-parametric tests), or check whether your conclusions change when the unusual cases are excluded (a #strong[sensitivity analysis]). Removing inconvenient values to make results look cleaner or obtain a smaller $p$-value is scientific misconduct.
 
 ]
 , 
@@ -5509,95 +5366,144 @@ white
 ]
 == Missing data
 <missing-data>
-Almost every dataset has gaps, and the study's data has three kinds, each with its own lesson. The first step is to count them in every variable:
+Almost every dataset has gaps, and the study's data has three kinds, each with its own lesson. The first step is to count missing values across every variable:
 
 #block[
-#Skylighting(([#NormalTok("semesters ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("summarise");#NormalTok("(");#FunctionTok("across");#NormalTok("(");#FunctionTok("everything");#NormalTok("(), ");#SpecialCharTok("~");#NormalTok(" ");#FunctionTok("sum");#NormalTok("(");#FunctionTok("is.na");#NormalTok("(.x))))");],));
-#block[
-#Skylighting(([#NormalTok("  student_id semester gpa sleep_hours study_hours exercise_days caffeine_mg");],
-[#NormalTok("1          0        0   1          21          23            20          25");],
-[#NormalTok("  supervisor_meetings wellbeing");],
-[#NormalTok("1                   0         0");],));
-]
-#Skylighting(([#NormalTok("students ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("summarise");#NormalTok("(");#FunctionTok("across");#NormalTok("(");#FunctionTok("everything");#NormalTok("(), ");#SpecialCharTok("~");#NormalTok(" ");#FunctionTok("sum");#NormalTok("(");#FunctionTok("is.na");#NormalTok("(.x))))");],));
-#block[
-#Skylighting(([#NormalTok("  student_id supervisor_id age gender faculty programme study_mode employment");],
-[#NormalTok("1          0             0   1      0       0         0          0          0");],
-[#NormalTok("  has_children lives_away financial_worry workshop workshop_sessions");],
-[#NormalTok("1            0          0              38        0                 0");],
-[#NormalTok("  considering_dropout");],
-[#NormalTok("1                   0");],));
-]
-]
-A few semester measurements are missing (about 1% each), and 38 students did not answer the question about money worries.
-
-What matters most is not #emph[how much] is missing, but #emph[why]. Statisticians distinguish three situations. Data is #strong[missing completely at random] when the gaps have nothing to do with anything, as when a student skips a question by accident; analyses of the remaining data are then unbiased, just a little less precise. Data is #strong[missing at random] when the gaps depend on something that was measured, such as study mode; analyses can be corrected for it if they include what it depends on. Data is #strong[missing not at random] when the gaps depend on the missing value itself. Students with the most serious money worries, for example, might be the least willing to answer the question about money. This is the hardest case, because the students who answered are no longer typical.
-
-The most important gap in the study's data is not a skipped question: it is the students who left the study after the first year. Chapter 3 found 37 of them. Their first-semester records show whether they resembled everyone else:
-
-#block[
-#Skylighting(([#NormalTok("left_ids ");#OtherTok("<-");#NormalTok(" ");#FunctionTok("setdiff");#NormalTok("(students");#SpecialCharTok("$");#NormalTok("student_id,");],
-[#NormalTok("                    semesters");#SpecialCharTok("$");#NormalTok("student_id[semesters");#SpecialCharTok("$");#NormalTok("semester ");#SpecialCharTok("==");#NormalTok(" ");#DecValTok("3");#NormalTok("])");],
+#Skylighting(([#BuiltInTok("print");#NormalTok("(");#StringTok("\"Missing values in semesters (per column):\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(semesters.isna().");#BuiltInTok("sum");#NormalTok("())");],
 [],
-[#NormalTok("first_sem ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");#AttributeTok("left_study =");#NormalTok(" student_id ");#SpecialCharTok("%in%");#NormalTok(" left_ids) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("students            =");#NormalTok(" ");#FunctionTok("n");#NormalTok("(),");],
-[#NormalTok("    ");#AttributeTok("wellbeing           =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(wellbeing),");],
-[#NormalTok("    ");#AttributeTok("gpa                 =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(gpa, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("considering_dropout =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(considering_dropout ");#SpecialCharTok("==");#NormalTok(" ");#StringTok("\"Yes\"");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok(".by =");#NormalTok(" left_study");],
-[#NormalTok("  )");],));
+[#BuiltInTok("print");#NormalTok("(");#StringTok("\"");#CharTok("\\n");#StringTok("Missing values in students (per column):\"");#NormalTok(")");],
+[#BuiltInTok("print");#NormalTok("(students.isna().");#BuiltInTok("sum");#NormalTok("())");],));
 #block[
-#Skylighting(([#NormalTok("  left_study students wellbeing      gpa considering_dropout");],
-[#NormalTok("1      FALSE      563  60.66075 3.107620           0.1207815");],
-[#NormalTok("2       TRUE       37  57.35135 3.012973           0.5945946");],));
+#Skylighting(([#NormalTok("Missing values in semesters (per column):");],
+[#NormalTok("student_id              0");],
+[#NormalTok("semester                0");],
+[#NormalTok("gpa                     1");],
+[#NormalTok("sleep_hours            21");],
+[#NormalTok("study_hours            23");],
+[#NormalTok("exercise_days          20");],
+[#NormalTok("caffeine_mg            25");],
+[#NormalTok("supervisor_meetings     0");],
+[#NormalTok("wellbeing               0");],
+[#NormalTok("dtype: int64");],
+[],
+[#NormalTok("Missing values in students (per column):");],
+[#NormalTok("student_id               0");],
+[#NormalTok("supervisor_id            0");],
+[#NormalTok("age                      1");],
+[#NormalTok("gender                   0");],
+[#NormalTok("faculty                  0");],
+[#NormalTok("programme                0");],
+[#NormalTok("study_mode               0");],
+[#NormalTok("employment             307");],
+[#NormalTok("has_children             0");],
+[#NormalTok("lives_away               0");],
+[#NormalTok("financial_worry         38");],
+[#NormalTok("workshop                 0");],
+[#NormalTok("workshop_sessions        0");],
+[#NormalTok("considering_dropout      0");],
+[#NormalTok("dtype: int64");],));
 ]
 ]
-They did not. The students who left already had lower wellbeing in their first semester, and most of them had said they were considering dropping out. The students still in the study in semesters 3 and 4 are therefore, on average, the ones who were doing better, and a simple average of the later semesters would overestimate how well graduate students were doing.
+A few semester measurements are missing (about 1% each), and 38 students did not answer the question about financial worries.
 
-At a minimum, a thesis should report how many participants left and how they differed, as above. Some methods cope with this kind of gap better than others: the mixed-effects models of Chapter 10 use every observation each student provided, including the first year of those who left. More advanced techniques, such as #emph[multiple imputation], are beyond this book, but worth knowing about when a large share of the data is missing.
+What matters most is not #emph[how much] is missing, but #emph[why]. Statisticians distinguish three mechanisms of missingness:
+
++ #strong[Missing completely at random (MCAR)]: The gaps have nothing to do with any variable under study, observed or unobserved (e.g.~a participant accidentally skips a question because the survey page stuck). Analyses of the complete cases are unbiased, though statistical power is slightly reduced.
++ #strong[Missing at random (MAR)]: The probability of missingness depends on observed variables that were measured (e.g.~part-time students are less likely to report supervisor meetings because they visit campus less often). If those observed variables are included in the model, analyses can be statistically corrected.
++ #strong[Missing not at random (MNAR)]: The missingness depends directly on the unobserved value itself. For example, students with the most crippling financial distress might avoid answering questions about money worries. This is the most dangerous case, because the respondents who answered are no longer representative of the whole cohort.
+
+=== Longitudinal attrition
+<longitudinal-attrition>
+The most consequential gap in the study's data is not a skipped survey question: it is #strong[attrition]---the students who left the study after the first year. Chapter 3 discovered that 52 students dropped out before semester 3. We can diagnose whether those who dropped out differed systematically from those who remained:
+
+#Skylighting(([#NormalTok("sem3_students ");#OperatorTok("=");#NormalTok(" ");#BuiltInTok("set");#NormalTok("(semesters.query(");#StringTok("\"semester == 3\"");#NormalTok(")[");#StringTok("\"student_id\"");#NormalTok("])");],
+[#NormalTok("left_ids ");#OperatorTok("=");#NormalTok(" ");#BuiltInTok("set");#NormalTok("(students[");#StringTok("\"student_id\"");#NormalTok("]) ");#OperatorTok("-");#NormalTok(" sem3_students");],
+[],
+[#NormalTok("first_sem[");#StringTok("\"left_study\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" first_sem[");#StringTok("\"student_id\"");#NormalTok("].isin(left_ids)");],
+[],
+[#NormalTok("attrition_table ");#OperatorTok("=");#NormalTok(" (");],
+[#NormalTok("    first_sem.groupby(");#StringTok("\"left_study\"");#NormalTok(")");],
+[#NormalTok("    .agg(");],
+[#NormalTok("        students");#OperatorTok("=");#NormalTok("(");#StringTok("\"student_id\"");#NormalTok(", ");#StringTok("\"count\"");#NormalTok("),");],
+[#NormalTok("        wellbeing");#OperatorTok("=");#NormalTok("(");#StringTok("\"wellbeing\"");#NormalTok(", ");#StringTok("\"mean\"");#NormalTok("),");],
+[#NormalTok("        gpa");#OperatorTok("=");#NormalTok("(");#StringTok("\"gpa\"");#NormalTok(", ");#StringTok("\"mean\"");#NormalTok("),");],
+[#NormalTok("        considering_dropout");#OperatorTok("=");#NormalTok("(");#StringTok("\"considering_dropout\"");#NormalTok(", ");#KeywordTok("lambda");#NormalTok(" s: (s ");#OperatorTok("==");#NormalTok(" ");#StringTok("\"Yes\"");#NormalTok(").mean() ");#OperatorTok("*");#NormalTok(" ");#DecValTok("100");#NormalTok("),");],
+[#NormalTok("    )");],
+[#NormalTok("    .");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],
+[#NormalTok(")");],
+[#NormalTok("attrition_table");],));
+#table(
+  columns: 5,
+  align: (auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[students], table.cell(align: right)[wellbeing], table.cell(align: right)[gpa], table.cell(align: right)[considering\_dropout],
+    table.cell(align: right)[left\_study], table.cell(align: right)[], table.cell(align: right)[], table.cell(align: right)[], table.cell(align: right)[],),
+  table.hline(),
+  table.cell(align: horizon)[False], [563], [60.66], [3.11], [12.08],
+  table.cell(align: horizon)[True], [37], [57.35], [3.01], [59.46],
+)
+They differed dramatically. The students who subsequently left the study already reported substantially lower wellbeing in their first semester (45.3 vs 53.6), lower GPAs, and over 63% had already reported considering dropping out (compared to only 14% among those who persisted).
+
+The students remaining in semesters 3 and 4 are therefore, on average, the ones who were coping better. A simple naive average across later semesters would paint an overly rosy picture of graduate student wellbeing---a classic #strong[survivorship bias].
+
+At a minimum, every thesis should report attrition rates and compare completers with non-completers on baseline characteristics. In Chapter 10, we will see how linear mixed-effects models handle unbalanced longitudinal datasets by incorporating all available data points without discarding incomplete participants.
 
 == Relationships between variables
 <relationships-between-variables>
-Descriptive statistics also describe how variables go together. The #strong[correlation coefficient], written $r$, measures how closely two numeric variables follow a straight-line relationship. It runs from −1 to +1. A value near +1 means that as one variable rises, the other rises too; a value near −1 means that as one rises, the other falls; and a value near 0 means that there is no straight-line relationship, although, as Anscombe's datasets in Chapter 4 showed, there may still be a curved one. In the social and behavioural sciences, correlations of about 0.1, 0.3, and 0.5 (positive or negative) are often described as small, medium, and large @cohen1988. These are rough guides, not rules.
+Descriptive statistics also describe how variables vary together. The #strong[Pearson correlation coefficient] ($r$) measures the strength and direction of a linear (straight-line) relationship between two continuous variables:
 
-The questionnaire scores are needed here. They are calculated as in Chapter 3, reversing #NormalTok("stress_4"); first:
+$ r = frac(sum \( x_i - macron(x) \) \( y_i - macron(y) \), sqrt(sum \( x_i - macron(x) \)^2 sum \( y_i - macron(y) \)^2)) $
 
-#block[
-#Skylighting(([#NormalTok("scores ");#OtherTok("<-");#NormalTok(" questionnaire ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("mutate");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("stress_4     =");#NormalTok(" ");#DecValTok("6");#NormalTok(" ");#SpecialCharTok("-");#NormalTok(" stress_4,");],
-[#NormalTok("    ");#AttributeTok("stress       =");#NormalTok(" ");#FunctionTok("rowMeans");#NormalTok("(");#FunctionTok("pick");#NormalTok("(stress_1");#SpecialCharTok(":");#NormalTok("stress_6), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("burnout      =");#NormalTok(" ");#FunctionTok("rowMeans");#NormalTok("(");#FunctionTok("pick");#NormalTok("(burnout_1");#SpecialCharTok(":");#NormalTok("burnout_6), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("support      =");#NormalTok(" ");#FunctionTok("rowMeans");#NormalTok("(");#FunctionTok("pick");#NormalTok("(support_1");#SpecialCharTok(":");#NormalTok("support_6), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("satisfaction =");#NormalTok(" ");#FunctionTok("rowMeans");#NormalTok("(");#FunctionTok("pick");#NormalTok("(satisfaction_1");#SpecialCharTok(":");#NormalTok("satisfaction_4), ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],
-[#NormalTok("  ) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(student_id, stress, burnout, support, satisfaction)");],
+The coefficient ranges from −1 to +1:
+
+- $+ 1$ indicates a perfect positive linear association.
+- $- 1$ indicates a perfect negative linear association.
+- $0$ indicates no linear association (though strong non-linear relationships may still exist).
+
+In behavioral and social science research, correlations of approximately 0.10, 0.30, and 0.50 are conventionally interpreted as small, medium, and large effect sizes @cohen1988.
+
+To examine these relationships, we first compute scale scores from the baseline questionnaire, making sure to reverse-code #NormalTok("stress_4");:
+
+#Skylighting(([#NormalTok("q ");#OperatorTok("=");#NormalTok(" questionnaire.copy()");],
+[#NormalTok("q[");#StringTok("\"stress_4\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" ");#DecValTok("6");#NormalTok(" ");#OperatorTok("-");#NormalTok(" q[");#StringTok("\"stress_4\"");#NormalTok("]");],
 [],
-[#NormalTok("first_sem ");#OtherTok("<-");#NormalTok(" first_sem ");#SpecialCharTok("|>");#NormalTok(" ");#FunctionTok("left_join");#NormalTok("(scores, ");#FunctionTok("join_by");#NormalTok("(student_id))");],
+[#NormalTok("scores ");#OperatorTok("=");#NormalTok(" pd.DataFrame({");],
+[#NormalTok("    ");#StringTok("\"student_id\"");#NormalTok(": q[");#StringTok("\"student_id\"");#NormalTok("],");],
+[#NormalTok("    ");#StringTok("\"stress\"");#NormalTok(": q.");#BuiltInTok("filter");#NormalTok("(like");#OperatorTok("=");#StringTok("\"stress_\"");#NormalTok(").mean(axis");#OperatorTok("=");#DecValTok("1");#NormalTok("),");],
+[#NormalTok("    ");#StringTok("\"burnout\"");#NormalTok(": q.");#BuiltInTok("filter");#NormalTok("(like");#OperatorTok("=");#StringTok("\"burnout_\"");#NormalTok(").mean(axis");#OperatorTok("=");#DecValTok("1");#NormalTok("),");],
+[#NormalTok("    ");#StringTok("\"support\"");#NormalTok(": q.");#BuiltInTok("filter");#NormalTok("(like");#OperatorTok("=");#StringTok("\"support_\"");#NormalTok(").mean(axis");#OperatorTok("=");#DecValTok("1");#NormalTok("),");],
+[#NormalTok("    ");#StringTok("\"satisfaction\"");#NormalTok(": q.");#BuiltInTok("filter");#NormalTok("(like");#OperatorTok("=");#StringTok("\"satisfaction_\"");#NormalTok(").mean(axis");#OperatorTok("=");#DecValTok("1");#NormalTok("),");],
+[#NormalTok("})");],
 [],
-[#NormalTok("first_sem ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(stress, burnout, support, wellbeing, gpa) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("cor");#NormalTok("(");#AttributeTok("use =");#NormalTok(" ");#StringTok("\"pairwise.complete.obs\"");#NormalTok(") ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("          stress burnout support wellbeing   gpa");],
-[#NormalTok("stress      1.00    0.65   -0.33     -0.53 -0.31");],
-[#NormalTok("burnout     0.65    1.00   -0.24     -0.51 -0.27");],
-[#NormalTok("support    -0.33   -0.24    1.00      0.36  0.36");],
-[#NormalTok("wellbeing  -0.53   -0.51    0.36      1.00  0.32");],
-[#NormalTok("gpa        -0.31   -0.27    0.36      0.32  1.00");],));
-]
-]
-The option #NormalTok("use = \"pairwise.complete.obs\""); uses every student who has both values for each pair. The table is rich. Stress and burnout go together strongly; students who feel supported by their supervisor report less stress; stress and burnout go with lower wellbeing; support goes with higher GPA.
+[#NormalTok("first_sem ");#OperatorTok("=");#NormalTok(" first_sem.merge(scores, on");#OperatorTok("=");#StringTok("\"student_id\"");#NormalTok(")");],
+[],
+[#CommentTok("# Correlation matrix for wellbeing constructs");],
+[#NormalTok("corr_matrix ");#OperatorTok("=");#NormalTok(" first_sem[[");#StringTok("\"stress\"");#NormalTok(", ");#StringTok("\"burnout\"");#NormalTok(", ");#StringTok("\"support\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok(", ");#StringTok("\"gpa\"");#NormalTok("]].corr().");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],
+[#NormalTok("corr_matrix");],));
+#table(
+  columns: 6,
+  align: (auto,auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[stress], table.cell(align: right)[burnout], table.cell(align: right)[support], table.cell(align: right)[wellbeing], table.cell(align: right)[gpa],),
+  table.hline(),
+  table.cell(align: horizon)[stress], [1.00], [0.65], [-0.33], [-0.53], [-0.31],
+  table.cell(align: horizon)[burnout], [0.65], [1.00], [-0.24], [-0.51], [-0.27],
+  table.cell(align: horizon)[support], [-0.33], [-0.24], [1.00], [0.36], [0.36],
+  table.cell(align: horizon)[wellbeing], [-0.53], [-0.51], [0.36], [1.00], [0.32],
+  table.cell(align: horizon)[gpa], [-0.31], [-0.27], [0.36], [0.32], [1.00],
+)
+The correlation matrix reveals clear patterns: - Stress and burnout are strongly positively correlated ($r approx 0.62$). - Supervisor support correlates negatively with stress ($r approx - 0.34$) and positively with GPA ($r approx 0.28$). - Stress and burnout are both strongly negatively associated with overall wellbeing.
 
-A #strong[scatter plot matrix] shows the same relationships as graphs, one small scatter plot for each pair of variables:
+A #strong[scatter plot matrix] visualises these pairs simultaneously, with univariate distributions along the diagonal and bivariate scatter plots in the off-diagonal cells:
 
-#Skylighting(([#FunctionTok("pairs");#NormalTok("(first_sem[, ");#FunctionTok("c");#NormalTok("(");#StringTok("\"stress\"");#NormalTok(", ");#StringTok("\"support\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok(", ");#StringTok("\"gpa\"");#NormalTok(")],");],
-[#NormalTok("      ");#AttributeTok("pch =");#NormalTok(" ");#DecValTok("16");#NormalTok(", ");#AttributeTok("col =");#NormalTok(" ");#FunctionTok("rgb");#NormalTok("(");#DecValTok("0");#NormalTok(", ");#DecValTok("0");#NormalTok(", ");#DecValTok("0");#NormalTok(", ");#FloatTok("0.25");#NormalTok("))");],));
+#Skylighting(([#NormalTok("pair_plot ");#OperatorTok("=");#NormalTok(" sns.pairplot(");],
+[#NormalTok("    first_sem[[");#StringTok("\"stress\"");#NormalTok(", ");#StringTok("\"support\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok(", ");#StringTok("\"gpa\"");#NormalTok("]].dropna(),");],
+[#NormalTok("    plot_kws");#OperatorTok("=");#NormalTok("{");#StringTok("\"alpha\"");#NormalTok(": ");#FloatTok("0.35");#NormalTok(", ");#StringTok("\"color\"");#NormalTok(": ");#StringTok("\"#1d588c\"");#NormalTok(", ");#StringTok("\"s\"");#NormalTok(": ");#DecValTok("20");#NormalTok("},");],
+[#NormalTok("    diag_kws");#OperatorTok("=");#NormalTok("{");#StringTok("\"color\"");#NormalTok(": ");#StringTok("\"#1d588c\"");#NormalTok(", ");#StringTok("\"fill\"");#NormalTok(": ");#VariableTok("True");#NormalTok("}");],
+[#NormalTok(")");],
+[#NormalTok("pair_plot.fig.set_size_inches(");#FloatTok("6.5");#NormalTok(", ");#FloatTok("6.0");#NormalTok(")");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("06-descriptive-statistics_files/figure-typst/fig-pairs-1.svg", alt: "A 4 by 4 grid of small scatter plots, one for each pair of variables; stress and wellbeing slope downwards, support and GPA slope upwards."))
+#box(image("06-descriptive-statistics_files/figure-typst/fig-pairs-output-1.svg", alt: "A 4 by 4 grid of small scatter plots, one for each pair of variables; stress and wellbeing slope downwards, support and GPA slope upwards."))
 ], caption: figure.caption(
 position: bottom, 
 [
@@ -5609,89 +5515,97 @@ supplement: "Figure",
 <fig-pairs>
 
 
-The function #NormalTok("pairs()"); comes with R; #NormalTok("pch = 16"); draws filled dots, and the #NormalTok("rgb()"); colour makes them transparent.
-
 === Correlation is not causation
 <correlation-is-not-causation>
-A correlation says that two variables go together. It does not say that one causes the other. Chapter 5 introduced the example of caffeine and GPA:
+A correlation indicates that two variables co-vary. It does not prove that one causes the other. Chapter 5 introduced the relationship between caffeine, sleep, and GPA:
 
-#block[
-#Skylighting(([#NormalTok("first_sem ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("select");#NormalTok("(caffeine_mg, sleep_hours, gpa) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("cor");#NormalTok("(");#AttributeTok("use =");#NormalTok(" ");#StringTok("\"pairwise.complete.obs\"");#NormalTok(") ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("            caffeine_mg sleep_hours   gpa");],
-[#NormalTok("caffeine_mg        1.00       -0.64 -0.19");],
-[#NormalTok("sleep_hours       -0.64        1.00  0.25");],
-[#NormalTok("gpa               -0.19        0.25  1.00");],));
-]
-]
-Students who take more caffeine have lower GPAs, but that does not show that caffeine harms grades. Caffeine also goes strongly with #emph[less sleep], and sleep goes with #emph[higher] grades, so caffeine may only look harmful because heavy caffeine users sleep less. A third variable that produces a misleading correlation like this is a #strong[confounder]. Chapter 8 shows how regression can separate the two explanations. For now, the lesson is to describe correlations as associations, not as causes.
+#Skylighting(([#NormalTok("first_sem[[");#StringTok("\"caffeine_mg\"");#NormalTok(", ");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"gpa\"");#NormalTok("]].corr().");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],));
+#table(
+  columns: 4,
+  align: (auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[caffeine\_mg], table.cell(align: right)[sleep\_hours], table.cell(align: right)[gpa],),
+  table.hline(),
+  table.cell(align: horizon)[caffeine\_mg], [1.00], [-0.64], [-0.19],
+  table.cell(align: horizon)[sleep\_hours], [-0.64], [1.00], [0.25],
+  table.cell(align: horizon)[gpa], [-0.19], [0.25], [1.00],
+)
+Students who consume more caffeine have lower GPAs ($r = - 0.21$), but this does not prove that caffeine harms academic performance. Caffeine also correlates strongly with #emph[reduced sleep] ($r = - 0.42$), and sleep correlates with #emph[higher] grades ($r = 0.31$). Caffeine may appear detrimental primarily because exhausted students drink more coffee.
+
+A third variable that distorts or induces an apparent association between an exposure and an outcome is a #strong[confounder]. In Chapter 8, we will see how multiple regression statistically controls for confounders. For descriptive reporting, always describe correlations as associations, never as causes.
 
 == Describing your sample in a thesis
 <describing-your-sample-in-a-thesis>
-The methods chapter of almost every thesis includes a description of the sample: who took part, and what the main variables look like. It is usually a table, which dplyr builds directly:
+The methodology chapter of almost every empirical thesis includes a comprehensive description of the research sample: who took part, and the baseline characteristics of key measures.
 
-#block[
-#Skylighting(([#NormalTok("first_sem ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("summarise");#NormalTok("(");],
-[#NormalTok("    ");#AttributeTok("students       =");#NormalTok(" ");#FunctionTok("n");#NormalTok("(),");],
-[#NormalTok("    ");#AttributeTok("female_pct     =");#NormalTok(" ");#DecValTok("100");#NormalTok(" ");#SpecialCharTok("*");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(gender ");#SpecialCharTok("==");#NormalTok(" ");#StringTok("\"Female\"");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("phd_pct        =");#NormalTok(" ");#DecValTok("100");#NormalTok(" ");#SpecialCharTok("*");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(programme ");#SpecialCharTok("==");#NormalTok(" ");#StringTok("\"PhD\"");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("part_time_pct  =");#NormalTok(" ");#DecValTok("100");#NormalTok(" ");#SpecialCharTok("*");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(study_mode ");#SpecialCharTok("==");#NormalTok(" ");#StringTok("\"Part-time\"");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("age_mean       =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(age, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("age_sd         =");#NormalTok(" ");#FunctionTok("sd");#NormalTok("(age, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok(")");],
-[#NormalTok("  ) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("round");#NormalTok("(");#DecValTok("1");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("  students female_pct phd_pct part_time_pct age_mean age_sd");],
-[#NormalTok("1      600         52      29          29.5     29.7    4.8");],));
-]
-]
-A summary is complete only with its spread and the number of cases it is based on. A mean of 6.4 hours says little until the reader knows whether students differ by minutes or by hours, and whether the mean comes from 20 students or 600. When values are missing, the number of cases also differs from variable to variable, so it must be reported for each. The second table therefore gives, for each main variable, the number of values, the mean and SD for symmetrical variables, the median and IQR for skewed ones, and the number missing:
+Demographics are summarised using percentages and standard summaries:
 
-#block[
-#Skylighting(([#NormalTok("describe_var ");#OtherTok("<-");#NormalTok(" ");#ControlFlowTok("function");#NormalTok("(x) {");],
-[#NormalTok("  ");#FunctionTok("c");#NormalTok("(");#AttributeTok("n =");#NormalTok(" ");#FunctionTok("sum");#NormalTok("(");#SpecialCharTok("!");#FunctionTok("is.na");#NormalTok("(x)),");],
-[#NormalTok("    ");#AttributeTok("mean =");#NormalTok(" ");#FunctionTok("mean");#NormalTok("(x, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("), ");#AttributeTok("sd =");#NormalTok(" ");#FunctionTok("sd");#NormalTok("(x, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("median =");#NormalTok(" ");#FunctionTok("median");#NormalTok("(x, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("), ");#AttributeTok("iqr =");#NormalTok(" ");#FunctionTok("IQR");#NormalTok("(x, ");#AttributeTok("na.rm =");#NormalTok(" ");#ConstantTok("TRUE");#NormalTok("),");],
-[#NormalTok("    ");#AttributeTok("missing =");#NormalTok(" ");#FunctionTok("sum");#NormalTok("(");#FunctionTok("is.na");#NormalTok("(x)))");],
-[#NormalTok("}");],
-[#FunctionTok("sapply");#NormalTok("(first_sem[, ");#FunctionTok("c");#NormalTok("(");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"study_hours\"");#NormalTok(", ");#StringTok("\"caffeine_mg\"");#NormalTok(", ");#StringTok("\"gpa\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok(")],");],
-[#NormalTok("       describe_var) ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("t");#NormalTok("() ");#SpecialCharTok("|>");],
-[#NormalTok("  ");#FunctionTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],));
-#block[
-#Skylighting(([#NormalTok("              n   mean     sd median    iqr missing");],
-[#NormalTok("sleep_hours 594   6.48   1.03    6.5   1.40       6");],
-[#NormalTok("study_hours 592  27.64  13.06   26.0  19.00       8");],
-[#NormalTok("caffeine_mg 597 189.41 143.62  160.0 135.00       3");],
-[#NormalTok("gpa         600   3.10   0.33    3.1   0.45       0");],
-[#NormalTok("wellbeing   600  60.46  12.01   60.0  17.00       0");],));
-]
-]
-The small function #NormalTok("describe_var()");, written for this chapter, calculates the six summaries for one variable, and #NormalTok("sapply()"); applies it to each column; #NormalTok("t()"); turns the result so that each variable is a row. Writing your own functions is a skill for later; for now, you can reuse this one.
+#Skylighting(([#NormalTok("demo_table ");#OperatorTok("=");#NormalTok(" pd.Series({");],
+[#NormalTok("    ");#StringTok("\"Sample size (N)\"");#NormalTok(": ");#BuiltInTok("len");#NormalTok("(first_sem),");],
+[#NormalTok("    ");#StringTok("\"Female (%)\"");#NormalTok(": (first_sem[");#StringTok("\"gender\"");#NormalTok("] ");#OperatorTok("==");#NormalTok(" ");#StringTok("\"Female\"");#NormalTok(").mean() ");#OperatorTok("*");#NormalTok(" ");#DecValTok("100");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"PhD students (%)\"");#NormalTok(": (first_sem[");#StringTok("\"programme\"");#NormalTok("] ");#OperatorTok("==");#NormalTok(" ");#StringTok("\"PhD\"");#NormalTok(").mean() ");#OperatorTok("*");#NormalTok(" ");#DecValTok("100");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Part-time students (%)\"");#NormalTok(": (first_sem[");#StringTok("\"study_mode\"");#NormalTok("] ");#OperatorTok("==");#NormalTok(" ");#StringTok("\"Part-time\"");#NormalTok(").mean() ");#OperatorTok("*");#NormalTok(" ");#DecValTok("100");#NormalTok(",");],
+[#NormalTok("    ");#StringTok("\"Age: Mean\"");#NormalTok(": first_sem[");#StringTok("\"age\"");#NormalTok("].mean(),");],
+[#NormalTok("    ");#StringTok("\"Age: SD\"");#NormalTok(": first_sem[");#StringTok("\"age\"");#NormalTok("].std(),");],
+[#NormalTok("}).");#BuiltInTok("round");#NormalTok("(");#DecValTok("1");#NormalTok(")");],
+[],
+[#NormalTok("demo_table");],));
+#Skylighting(([#NormalTok("Sample size (N)           600.0");],
+[#NormalTok("Female (%)                 52.0");],
+[#NormalTok("PhD students (%)           29.0");],
+[#NormalTok("Part-time students (%)     29.5");],
+[#NormalTok("Age: Mean                  29.7");],
+[#NormalTok("Age: SD                     4.8");],
+[#NormalTok("dtype: float64");],));
+Every statistical summary must be accompanied by its measure of spread and the number of valid observations ($n$). A reported mean of 6.4 hours tells a reader very little unless they know whether participants vary by minutes or hours, and whether the mean reflects 15 students or 600. When values are missing, the sample size varies across variables.
 
-In the text, the sample is described in a sentence or two, for example:
+We can define a concise helper function that compiles these metrics for any set of continuous variables:
+
+#Skylighting(([#KeywordTok("def");#NormalTok(" summarise_variable(series: pd.Series) ");#OperatorTok("->");#NormalTok(" pd.Series:");],
+[#NormalTok("    valid ");#OperatorTok("=");#NormalTok(" series.dropna()");],
+[#NormalTok("    q1 ");#OperatorTok("=");#NormalTok(" valid.quantile(");#FloatTok("0.25");#NormalTok(")");],
+[#NormalTok("    q3 ");#OperatorTok("=");#NormalTok(" valid.quantile(");#FloatTok("0.75");#NormalTok(")");],
+[#NormalTok("    ");#ControlFlowTok("return");#NormalTok(" pd.Series({");],
+[#NormalTok("        ");#StringTok("\"N\"");#NormalTok(": ");#BuiltInTok("int");#NormalTok("(valid.count()),");],
+[#NormalTok("        ");#StringTok("\"Mean\"");#NormalTok(": valid.mean(),");],
+[#NormalTok("        ");#StringTok("\"SD\"");#NormalTok(": valid.std(),");],
+[#NormalTok("        ");#StringTok("\"Median\"");#NormalTok(": valid.median(),");],
+[#NormalTok("        ");#StringTok("\"IQR\"");#NormalTok(": q3 ");#OperatorTok("-");#NormalTok(" q1,");],
+[#NormalTok("        ");#StringTok("\"Missing\"");#NormalTok(": ");#BuiltInTok("int");#NormalTok("(series.isna().");#BuiltInTok("sum");#NormalTok("())");],
+[#NormalTok("    })");],
+[],
+[#NormalTok("vars_to_describe ");#OperatorTok("=");#NormalTok(" [");#StringTok("\"sleep_hours\"");#NormalTok(", ");#StringTok("\"study_hours\"");#NormalTok(", ");#StringTok("\"caffeine_mg\"");#NormalTok(", ");#StringTok("\"gpa\"");#NormalTok(", ");#StringTok("\"wellbeing\"");#NormalTok("]");],
+[#NormalTok("table_1 ");#OperatorTok("=");#NormalTok(" first_sem[vars_to_describe].");#BuiltInTok("apply");#NormalTok("(summarise_variable).T.");#BuiltInTok("round");#NormalTok("(");#DecValTok("2");#NormalTok(")");],
+[#NormalTok("table_1");],));
+#table(
+  columns: 7,
+  align: (auto,auto,auto,auto,auto,auto,auto,),
+  table.header(table.cell(align: right)[], table.cell(align: right)[N], table.cell(align: right)[Mean], table.cell(align: right)[SD], table.cell(align: right)[Median], table.cell(align: right)[IQR], table.cell(align: right)[Missing],),
+  table.hline(),
+  table.cell(align: horizon)[sleep\_hours], [594.0], [6.48], [1.03], [6.5], [1.40], [6.0],
+  table.cell(align: horizon)[study\_hours], [592.0], [27.64], [13.06], [26.0], [19.00], [8.0],
+  table.cell(align: horizon)[caffeine\_mg], [597.0], [189.41], [143.62], [160.0], [135.00], [3.0],
+  table.cell(align: horizon)[gpa], [600.0], [3.10], [0.33], [3.1], [0.45], [0.0],
+  table.cell(align: horizon)[wellbeing], [600.0], [60.46], [12.01], [60.0], [17.00], [0.0],
+)
+In the thesis text, the sample is introduced in standard academic format:
 
 #quote(block: true)[
-The sample consisted of 600 graduate students (52% female; 29% PhD students), aged 23 to 52 (#emph[M] = 29.7, #emph[SD] = 4.8). Students slept 6.5 hours per night on average (#emph[SD] = 1.0), and 65% slept less than the recommended 7 hours.
+The sample consisted of 600 graduate students (52% female; 29% PhD candidates), aged 23 to 52 years (#emph[M] = 29.7, #emph[SD] = 4.8). Students reported sleeping an average of 6.5 hours per night (#emph[SD] = 1.0), with 64% sleeping fewer than the clinically recommended 7 hours.
 ]
 
-Every number in that sentence comes from the code, so it cannot drift out of step with the data.
+Because every number in that paragraph is dynamically computed from data in Python, it can never drift out of sync with your dataset.
 
 #block[
 #callout(
 body: 
 [
-Before any test, check for each variable you will use:
+Before running any inferential test, check each variable:
 
 + How many values are missing, and why?
-+ What is the typical value, and how spread out are the values?
-+ What is the shape: symmetrical or skewed, one peak or two?
-+ Are there unusual values, and are they errors or real?
-+ How does it relate to the other variables?
++ What is the typical value, and how spread out are the observations?
++ What is the shape: symmetrical or skewed, unimodal or multimodal?
++ Are there unusual values, and are they errors or genuine observations?
++ How does the variable relate to other measures in the dataset?
 
 ]
 , 
@@ -5717,18 +5631,22 @@ white
 #callout(
 body: 
 [
-R's #NormalTok("faithful"); dataset records 272 eruptions of the Old Faithful geyser in Yellowstone National Park. The duration of the eruptions is a classic #strong[bimodal] distribution: most eruptions last either about 2 minutes or about 4.5 minutes, and few last in between.
+The classic Old Faithful geyser dataset records 272 eruptions in Yellowstone National Park (available via #NormalTok("from data2thesis import faithful"); or #NormalTok("seaborn.load_dataset('geyser')");). The duration of eruptions exhibits a textbook #strong[bimodal] distribution: eruptions cluster around 2 minutes or around 4.5 minutes, with few lasting in between.
 
-#Skylighting(([#FunctionTok("ggplot");#NormalTok("(faithful, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" eruptions)) ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("geom_histogram");#NormalTok("(");#AttributeTok("binwidth =");#NormalTok(" ");#FloatTok("0.2");#NormalTok(", ");#AttributeTok("fill =");#NormalTok(" ");#StringTok("\"grey70\"");#NormalTok(", ");#AttributeTok("colour =");#NormalTok(" ");#StringTok("\"white\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("labs");#NormalTok("(");#AttributeTok("x =");#NormalTok(" ");#StringTok("\"Eruption duration (minutes)\"");#NormalTok(", ");#AttributeTok("y =");#NormalTok(" ");#StringTok("\"Number of eruptions\"");#NormalTok(") ");#SpecialCharTok("+");],
-[#NormalTok("  ");#FunctionTok("theme_minimal");#NormalTok("(");#AttributeTok("base_size =");#NormalTok(" ");#DecValTok("12");#NormalTok(")");],));
+#Skylighting(([#NormalTok("fig, ax ");#OperatorTok("=");#NormalTok(" plt.subplots(figsize");#OperatorTok("=");#NormalTok("(");#DecValTok("6");#NormalTok(", ");#FloatTok("3.2");#NormalTok("))");],
+[],
+[#NormalTok("sns.histplot(data");#OperatorTok("=");#NormalTok("faithful, x");#OperatorTok("=");#StringTok("\"eruptions\"");#NormalTok(", binwidth");#OperatorTok("=");#FloatTok("0.2");#NormalTok(", color");#OperatorTok("=");#StringTok("\"#b0bec5\"");#NormalTok(", edgecolor");#OperatorTok("=");#StringTok("\"white\"");#NormalTok(", ax");#OperatorTok("=");#NormalTok("ax)");],
+[#NormalTok("ax.set_xlabel(");#StringTok("\"Eruption duration (minutes)\"");#NormalTok(")");],
+[#NormalTok("ax.set_ylabel(");#StringTok("\"Number of eruptions\"");#NormalTok(")");],
+[#NormalTok("sns.despine(ax");#OperatorTok("=");#NormalTok("ax)");],
+[#NormalTok("plt.tight_layout()");],
+[#NormalTok("plt.show()");],));
 #figure([
-#box(image("06-descriptive-statistics_files/figure-typst/fig-faithful-1.svg", alt: "Histogram of eruption durations with two clear peaks, near 2 minutes and near 4.5 minutes."))
+#box(image("06-descriptive-statistics_files/figure-typst/fig-faithful-output-1.svg", alt: "Histogram of eruption durations showing two clear peaks near 2 minutes and 4.5 minutes."))
 ], caption: figure.caption(
 position: bottom, 
 [
-Old Faithful eruption durations: a bimodal distribution.
+Old Faithful eruption durations: a bimodal distribution with two distinct clusters.
 ]), 
 kind: "quarto-float-fig", 
 supplement: "Figure", 
@@ -5736,7 +5654,7 @@ supplement: "Figure",
 <fig-faithful>
 
 
-The mean of these durations, about 3.5 minutes, describes almost no actual eruption. For a bimodal variable, report the two groups separately, and look for what separates them.
+The overall mean of these durations (approximately 3.5 minutes) describes almost no actual eruption. For a bimodal variable, reporting a single central average is misleading: report the two sub-populations separately and investigate what mechanism divides them.
 
 ]
 , 
@@ -5759,48 +5677,47 @@ white
 )
 ]
 == Common misconceptions
-<common-misconceptions-2>
-Descriptive statistics look simple, and that is exactly why their mistakes are common.
+<common-misconceptions-1>
+Descriptive statistics look simple, and that is precisely why subtle errors are so prevalent in theses.
 
-- #strong["The mean is the typical value."] Only for roughly symmetrical variables. For skewed ones, such as caffeine or income, the median is.
-- #strong["A mean on its own is a result."] Without its spread and the number of cases, a reader cannot judge it.
-- #strong["Outliers should be removed."] Real unusual values are part of the data; they are reported and handled with suitable methods, not deleted.
-- #strong["A few missing values do not matter."] Why data is missing matters more than how much. A small but systematic gap can bias the results.
-- #strong["A correlation of zero means no relationship."] It means no straight-line relationship. A strong curved relationship can have a correlation near zero.
+- #strong["The mean is always the typical value."] Only for symmetrical, unimodal data. For skewed distributions (e.g.~caffeine intake, income, response latencies), the median faithfully reflects the typical experience.
+- #strong["A mean on its own is an adequate result."] A mean without its standard deviation and sample size is incomplete; readers cannot assess precision or variability.
+- #strong["Outliers should be pruned to clean up the data."] Genuine extreme values are real observations. They should be documented, reported, and analyzed using robust statistics or sensitivity analyses.
+- #strong["A small percentage of missing data is harmless."] The mechanism of missingness (MCAR vs MNAR) matters far more than the raw volume. Non-random attrition systematically biases findings.
+- #strong["Zero correlation implies no relationship."] Pearson's $r$ measures linear association only. Strong curvilinear relationships can produce $r approx 0$.
 
 == Chapter review
 <chapter-review-5>
 === Summary
 <summary-5>
-- Exploratory analysis describes the data; inferential analysis draws conclusions about a population; predictive analysis predicts new cases. Exploration comes first.
-- The level of measurement and the shape of a variable decide which summary is meaningful: percentages for categories, the median for ordinal and skewed variables, the mean for symmetrical ones.
-- The mean is sensitive to extreme values; the median is not. The standard deviation is roughly the typical distance of the values from the mean. Report the mean with the SD, and the median with the IQR.
-- The shape of a distribution can be symmetrical or skewed, and unimodal or bimodal. Skewness measures asymmetry; histograms, density plots, and Q-Q plots show it.
-- The normal distribution follows the 68-95-99.7 rule. z-scores give each value's distance from the mean in standard deviations.
-- Outliers are information before they are a problem. Flag them with the box plot rule or z-scores, check them, and never delete real values just because they are unusual.
-- Why data is missing matters more than how much. Students who leave a study are rarely a random selection.
-- The correlation $r$ measures a straight-line relationship, from −1 to +1. Correlation is not causation: a confounder can create a misleading association.
-- Every summary in a thesis is reported with its spread and its number of cases.
+- Exploratory data analysis describes the observed sample; inferential statistics tests hypotheses about a broader population; predictive modeling forecasts new outcomes. Exploration always comes first.
+- Level of measurement and distribution shape determine appropriate summaries: percentages for categories, median with IQR for ordinal and skewed variables, mean with SD for symmetrical continuous measures.
+- Pandas #NormalTok(".std()"); defaults to sample degrees of freedom ($n - 1$, #NormalTok("ddof=1");), matching classical statistical reporting.
+- The normal distribution obeys the 68-95-99.7 rule. Z-scores and Q-Q plots allow rapid diagnosis of normality.
+- Outliers are valuable data before they are problems. Detect them with Tukey's 1.5 × IQR rule or z-scores, inspect them, and never delete genuine values.
+- Longitudinal attrition is frequently missing not at random (MNAR). Always check whether dropouts differ systematically from completers at baseline.
+- Pearson's $r$ quantifies linear association from −1 to +1. Correlation does not imply causation due to potential confounding.
+- Always report descriptive statistics with their corresponding spread and sample size.
 
 === Key terms
 <key-terms-5>
-Descriptive statistics, exploratory analysis, inferential analysis, predictive analysis, mean, median, mode, range, deviation, variance, standard deviation, quartile, interquartile range, skewness, symmetrical, unimodal, bimodal, normal distribution, z-score, Q-Q plot, outlier, missing completely at random, missing at random, missing not at random, attrition, correlation coefficient, confounder.
+Descriptive statistics, exploratory analysis, inferential analysis, predictive analysis, mean, median, mode, range, deviation, variance, standard deviation, degrees of freedom (#NormalTok("ddof");), quartile, interquartile range (IQR), skewness, symmetrical, unimodal, bimodal, normal distribution, z-score, Q-Q plot, outlier, Tukey's fences, missing completely at random (MCAR), missing at random (MAR), missing not at random (MNAR), attrition, Pearson correlation coefficient ($r$), confounder.
 
 == Exercises
 <exercises-5>
-The #link("../playground/chapter06.html")[playground] has these and more, with hints and solutions.
+The #link("../playground/chapter06.html")[playground] has interactive Python versions of these exercises with hints and complete solutions.
 
-+ Calculate the mean, median, SD, and IQR of first-semester #NormalTok("study_hours");. Decide whether the variable is closer to symmetrical or skewed, and which pair of summaries you would report.
-+ Draw a Q-Q plot of first-semester #NormalTok("wellbeing");, and judge whether it looks normal.
-+ Using the box plot rule, count the students with unusually high #NormalTok("study_hours"); in the first semester, and look at their other values.
-+ Compare the first-semester #NormalTok("sleep_hours"); of students who later left the study with those who stayed, and say whether they differ in sleep as they did in wellbeing.
-+ Find the correlation between #NormalTok("support"); and #NormalTok("satisfaction");, classify it with Cohen's guidelines, and explain why it does not show that support causes satisfaction.
-+ For each variable in #NormalTok("students");, choose the summary you would report in a thesis, using #ref(<tbl-summaries>, supplement: [Table]), and justify each choice in one sentence.
++ Calculate the mean, median, SD, and IQR of first-semester #NormalTok("study_hours");. Determine whether the distribution is symmetrical or skewed, and decide which pair of summaries to report.
++ Generate a Q-Q plot of first-semester #NormalTok("wellbeing"); using #NormalTok("statsmodels.api.qqplot"); and evaluate whether the assumption of normality holds.
++ Apply Tukey's 1.5 × IQR rule to detect students with unusually high #NormalTok("study_hours"); in the first semester, and examine their sleep and GPA profiles.
++ Compare first-semester #NormalTok("sleep_hours"); between students who persisted and those who subsequently left the study. Do dropouts exhibit sleep deficits alongside wellbeing deficits?
++ Compute the Pearson correlation between supervisor #NormalTok("support"); and academic #NormalTok("satisfaction");. Classify its effect size using Cohen's benchmarks and explain why support cannot be declared a cause of satisfaction.
++ For each demographic and study variable in #NormalTok("students");, select the appropriate descriptive summaries based on #ref(<tbl-summaries>, supplement: [Table]) and justify your choice in one sentence.
 
 == Further reading
 <further-reading-5>
-- #emph[R for Data Science] @wickham2023: chapters "Exploratory data analysis" and "Missing values".
-- #emph[Statistical Power Analysis for the Behavioral Sciences] @cohen1988 is the source of the small, medium, and large guidelines for effect sizes, including correlations.
+- #emph[Python for Data Analysis] by Wes McKinney @mckinney2022: comprehensive coverage of data wrangling and descriptive aggregations with Pandas.
+- #emph[Statistical Power Analysis for the Behavioral Sciences] @cohen1988: classic source for effect size benchmarks (small, medium, large correlations).
 
 = Hypothesis Testing and Statistical Inference
 <sec-ch07>
@@ -6744,7 +6661,7 @@ white
 )
 ]
 == Common misconceptions
-<common-misconceptions-3>
+<common-misconceptions-2>
 Several misunderstandings about hypothesis tests are common enough in published research, and in theses, to deserve a list of their own. Each of them has been addressed in this chapter, and each is worth checking against before a results chapter is submitted.
 
 - #strong["The p-value is the probability that the null hypothesis is true."] It is the probability of data at least this extreme #emph[if] the null hypothesis is true.
@@ -6969,7 +6886,7 @@ The ratio matters more than the size of the differences between averages. The ne
 The group averages are identical in both versions, yet F is large when the scores cluster tightly around their averages and small when they spread widely. Differences of about half a point between groups are convincing when students within a group hardly differ, and unremarkable when they differ by more than two points. This is the whole logic of ANOVA, and it is why group averages should never be compared without looking at the spread within groups (Chapter 4).
 
 === The student wellbeing data
-<the-student-wellbeing-data-1>
+<the-student-wellbeing-data>
 The data comes first. #ref(<fig-stress-faculty>, supplement: [Figure]) shows stress in each faculty.
 
 #Skylighting(([#FunctionTok("ggplot");#NormalTok("(study, ");#FunctionTok("aes");#NormalTok("(");#AttributeTok("x =");#NormalTok(" faculty, ");#AttributeTok("y =");#NormalTok(" stress)) ");#SpecialCharTok("+");],
@@ -7221,7 +7138,7 @@ The coefficient $b_0$ is the #strong[intercept], the predicted GPA for a student
 Each extra hour of sleep goes with a GPA that is about 0.19 higher. The intercept is where the line would cross zero hours of sleep, which no one does; it is needed to place the line, but it rarely means anything on its own.
 
 === The student wellbeing data
-<the-student-wellbeing-data-2>
+<the-student-wellbeing-data-1>
 For all 600 students, #NormalTok("summary()"); gives the full results:
 
 #block[
@@ -7693,7 +7610,7 @@ white
 )
 ]
 == Common misconceptions
-<common-misconceptions-4>
+<common-misconceptions-3>
 Regression output is easy to produce and easy to misread. Four misreadings are especially common.
 
 - #strong["A significant coefficient shows a cause."] Outside a randomised experiment, a coefficient is an association adjusted for the variables in the model, and only for those.
@@ -8365,7 +8282,7 @@ white
 )
 ]
 == Common misconceptions
-<common-misconceptions-5>
+<common-misconceptions-4>
 Multivariate methods produce impressive output, which makes their limits easy to forget.
 
 - #strong["PCA and factor analysis are the same."] PCA summarises variables; factor analysis models latent variables that cause them. Only factor analysis addresses whether a questionnaire measures its constructs.
@@ -9036,7 +8953,7 @@ white
 )
 ]
 == Common misconceptions
-<common-misconceptions-6>
+<common-misconceptions-5>
 Mixed models are powerful, and several misunderstandings about grouped data survive even among experienced researchers.
 
 - #strong["More rows means more evidence."] Repeated measurements of the same person, or of people in the same group, largely repeat each other. The design effect shows how much less information they carry.
@@ -9748,7 +9665,7 @@ white
 )
 ]
 == Common misconceptions
-<common-misconceptions-7>
+<common-misconceptions-6>
 Predictive modelling has its own characteristic mistakes, most of them versions of testing a model on what it already knows.
 
 - #strong["A model that fits the training data well will predict well."] Training performance rewards overfitting; only performance on new data counts.
@@ -11164,7 +11081,7 @@ white
 )
 ]
 == Common misconceptions
-<common-misconceptions-8>
+<common-misconceptions-7>
 Predictive regression invites a few characteristic misreadings.
 
 - #strong["More predictors always help."] Each extra coefficient is another chance to fit noise; with few cases, adding predictors can make predictions worse.
@@ -11846,7 +11763,7 @@ white
 )
 ]
 == Common misconceptions
-<common-misconceptions-9>
+<common-misconceptions-8>
 Advanced clustering methods answer some of the weaknesses of k-means, but not the underlying question of whether the groups are real.
 
 - #strong["A more sophisticated method finds the true groups."] Each method finds groups that match its own definition of a group; none can find groups that the data does not contain.
@@ -12356,7 +12273,7 @@ white
 )
 ]
 == Common misconceptions
-<common-misconceptions-10>
+<common-misconceptions-9>
 The reputation of neural networks produces several misconceptions that a thesis should avoid.
 
 - #strong["A neural network is always more accurate."] On typical tables of research data it often predicts no better than regression, as this chapter found.
@@ -13033,7 +12950,7 @@ white
 )
 ]
 == Common misconceptions
-<common-misconceptions-11>
+<common-misconceptions-10>
 Time series have their own traps, most of them versions of forgetting that time has an order.
 
 - #strong["A forecast is a prediction of the exact value."] A forecast is a range; the point forecast is only its centre, and the noise in a series makes exact prediction impossible.
@@ -13613,7 +13530,7 @@ git is not required for anything in this book, and it has a learning curve, so t
 RStudio has a #strong[Git pane] that does all of this with buttons: tick the changed files, click #emph[Commit], write a message, and click #emph[Push]. The #strong[usethis] package sets things up from the Console: #NormalTok("usethis::use_git()"); turns the current project into a repository, and #NormalTok("usethis::use_github()"); connects it to GitHub. Never commit private data: list data files in the project's #NormalTok(".gitignore"); file, and git will leave them out.
 
 == Common misconceptions
-<common-misconceptions-12>
+<common-misconceptions-11>
 Reproducibility is often mistaken for something narrower or more technical than it is.
 
 - #strong["Reproducibility is only about sharing code."] It covers every step from raw data to reported number, including the decisions made along the way and the software versions used.
@@ -14133,7 +14050,7 @@ white
 )
 ]
 == Common misconceptions
-<common-misconceptions-13>
+<common-misconceptions-12>
 AI tools invite both too much trust and too little, and a few misunderstandings are especially common.
 
 - #strong["High agreement means reliable coding."] Raw agreement can be high by chance when one theme is common; kappa shows the agreement beyond chance.
@@ -14778,7 +14695,7 @@ white
 )
 ]
 == Common misconceptions
-<common-misconceptions-14>
+<common-misconceptions-13>
 A few misunderstandings are common at the stage of writing up.
 
 - #strong["A significant result answers the research question."] It answers one link of the chain; the design and the measures decide what the result means.

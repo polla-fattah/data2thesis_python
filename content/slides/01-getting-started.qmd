@@ -1,20 +1,23 @@
 ---
-title: "Getting Started with R"
-description: "Chapter 1: why research is written in code, RStudio, objects, types, missing values, functions, scripts, projects, packages, and a first look at the student wellbeing data."
+title: "Getting Started with Python"
+description: "Chapter 1: why research is written in code, VS Code, variables, types, missing values, functions, scripts, projects, packages, and a first look at the student wellbeing data."
 format: deck-html
 execute:
   echo: false
   freeze: auto
 ---
 
-```{r}
+```{python}
 #| include: false
-library(data2thesis)
-mean_age    <- mean(students$age, na.rm = TRUE)
-missing_age <- sum(is.na(students$age))
+import data2thesis as dt
+import pandas as pd
+
+students = dt.students
+mean_age = float(students["age"].mean())
+missing_age = int(students["age"].isna().sum())
 ```
 
-# Getting Started with R
+# Getting Started with Python
 
 Research written in code
 
@@ -26,24 +29,24 @@ Polla Fattah
 
 ## By the end of today you can
 
-- explain why researchers write their analysis in R;
-- find your way around RStudio;
-- run code in the Console and in a script;
-- store values in objects and recognise the basic types of data;
-- handle missing values;
-- use functions and their arguments, and get help;
-- organise work in an RStudio Project and install packages;
-- open the student wellbeing data and answer a first question.
+- explain why researchers write their analysis in Python;
+- find your way around VS Code and interactive Python;
+- run code in an interactive window and in a `.py` script;
+- store values in variables and recognise basic data types;
+- handle missing values (`NaN` and `None`);
+- use functions, methods, and arguments, and inspect help documentation;
+- organise work in a project folder and install packages with `pip`;
+- open the student wellbeing data and answer a first research question.
 
 ---
 
 ## Every analysis is a chain of decisions
 
 - which cases are kept and which are excluded;
-- how a messy answer is corrected;
-- which variables are combined into a score;
-- which test is used;
-- how the result is rounded.
+- how an inconsistent survey answer is cleaned;
+- which questionnaire items are combined into a scale score;
+- which statistical model is fitted;
+- how results are reported and rounded.
 
 Each choice shapes the final numbers, and each should be open to inspection.
 
@@ -57,678 +60,545 @@ flowchart LR
     D["An examiner asks: how?"] -.-> B
 ```
 
-Weeks later, not even the researcher can say exactly how the number was produced.
+Months later, not even the researcher can reconstruct exactly which cells were selected or which checkboxes were clicked.
 
 ---
 
 ## Code is a record of the analysis
 
-A script records every step, in order.
+A script records every step, in order:
 
-- a supervisor can read it;
-- an examiner can check it;
-- the researcher can run it again after fixing a mistake or receiving new data.
+- your supervisor can read it;
+- an examiner can audit it;
+- you can re-run it in seconds when new data arrives or a mistake is found.
 
-> **An analysis written as code can be shown step by step.**
-
----
-
-## What R is
-
-R is a free program for cleaning, analysing, and presenting data.
-
-It began in the early 1990s at the University of Auckland, written by Ross Ihaka and Robert Gentleman for teaching.
-
-Today it is used in universities, hospitals, governments, and companies around the world.
+> **An analysis written as code can be proven step by step.**
 
 ---
 
-## Four reasons researchers use R
+## What Python is
+
+Python is an open-source, general-purpose programming language renowned for clear, readable syntax.
+
+Created in 1991 by Guido van Rossum, Python has become the global standard in data science, artificial intelligence, scientific computing, and academia.
+
+Libraries like `pandas`, `numpy`, `scipy`, and `seaborn` turn Python into an extraordinarily powerful statistical environment.
+
+---
+
+## Four reasons researchers use Python
 
 | Property | Why it matters |
 |---|---|
-| made for data | tests, models, and graphs are part of the language |
-| free and open source | anyone can check your work without a licence |
-| reproducible | the same code gives exactly the same results |
-| a large community | thousands of free packages for every field |
+| built for modern data | industry-leading packages for tables, stats, and visualization |
+| free and open source | anyone worldwide can inspect and run your code without software licenses |
+| reproducible | identical code produces identical outputs on any operating system |
+| massive global community | solutions, tutorials, and documentation for every research discipline |
 
-The price: you type instead of click. It feels slow at first and fast surprisingly soon.
+The price: you type code rather than clicking menus. It feels deliberate at first, but becomes vastly faster and safer.
 
 ---
 
 ## For users of SPSS or Excel
 
 ```text
-SPSS / Excel:  click  → the program changes the data
-R:             write  → R carries out the instruction
+SPSS / Excel:  click  → the software silently alters data in memory
+Python:        write  → Python executes explicit, repeatable instructions
 ```
 
-The instructions are saved in a file.
+The instructions are saved in a plain-text `.py` file.
 
-Next time, you run the file instead of clicking through the menus again.
+Next semester, you re-run the file instead of repeating hundreds of mouse clicks.
 
 ---
 
 ## The study behind the data
 
-A two-year study of 600 graduate students from five faculties:
+A two-year study of 600 graduate students across five faculties:
 
-- a questionnaire at the start;
-- sleep, study, and wellbeing recorded at the end of every semester;
+- a background questionnaire at enrollment;
+- sleep, study hours, and wellbeing recorded at the end of each semester;
 - a six-week wellbeing workshop, with half the students invited at random.
 
-The questions: how do sleep, stress, and supervisor support relate to wellbeing, grades, and thoughts of dropping out, and does the workshop help?
+The questions: how do sleep, stress, and supervisor support relate to wellbeing, GPA, and dropout intentions, and does the workshop help?
 
 ---
 
 ## The data is fictional
 
-The student wellbeing data was generated by a computer program to look like a realistic survey.
+The student wellbeing data was generated by a computer program to emulate a realistic university cohort.
 
-Its patterns were built in by the author, not discovered.
+Its statistical patterns were designed by the author, not discovered in human subjects.
 
-It describes no real people. Do not cite or use it as findings about real students.
+It describes no real individuals. Do not cite it as medical or psychological evidence about real students.
 
 ---
 
-## Two programs: R and RStudio
+## Two pieces: Python and VS Code
 
 ```{mermaid}
 flowchart LR
-    A["You write code<br>in RStudio"] --> B["R does the work"] --> C["Results appear<br>in RStudio"]
+    A["You write code<br>in VS Code"] --> B["Python executes<br>the code"] --> C["Results appear<br>in VS Code"]
 ```
 
-**R** is the engine. **RStudio** is where you drive it.
+**Python** is the engine that executes calculations. **VS Code** (or Positron / Jupyter) is your interactive dashboard.
 
-You almost never open R itself.
-
----
-
-## Installing both
-
-1. Install R from [cran.r-project.org](https://cran.r-project.org/) for your operating system.
-2. Install RStudio Desktop from [posit.co](https://posit.co/download/rstudio-desktop/).
-
-R must be installed first. Appendix A walks through both, with solutions to common problems.
-
-**Positron**, a newer editor from the same company, is a good alternative if you also use Python.
+You type your scripts in VS Code, which delegates execution to Python.
 
 ---
 
-## The four panes of RStudio
+## Setting up your environment
 
-| Where | Pane | What it is for |
-|---|---|---|
-| top left | Source | writing and saving scripts |
-| bottom left | Console | running code and showing results |
-| top right | Environment | the objects you have created |
-| bottom right | Files, Plots, Packages, Help | files, graphs, packages, help pages |
+1. Download and install Python (3.10+) from [python.org](https://www.python.org/).
+2. Install **VS Code** from [code.visualstudio.com](https://code.visualstudio.com/).
+3. In VS Code, install the official **Python** and **Jupyter** extensions from the Extensions tab (`Ctrl+Shift+X`).
+
+Appendix A provides step-by-step guidance for Windows, macOS, and Linux.
 
 ---
 
-## The Console answers straight away
+## Python as a calculator
 
-```r
+```python
 2 + 2
-#> [1] 4
-```
+# 4
 
-Type in the Console and press Enter.
-
-`[1]` means "this is the first value of the result". Ignore it for now.
-
----
-
-## R as a calculator
-
-```r
-(6.5 + 7 + 5.5) / 3
-#> [1] 6.333333
+(6.5 + 7.0 + 5.5) / 3
+# 6.333333333333333
 ```
 
 Three nights of sleep, averaged.
 
-The symbols: `+`, `-`, `*` (multiply), `/` (divide), `^` (power).
+Standard arithmetic operators:
+- `+` (addition), `-` (subtraction)
+- `*` (multiplication), `/` (true division)
+- `**` (exponentiation / power)
 
 ---
 
-## Brackets decide the order
+## Parentheses decide calculation order
 
-```r
-6.5 + 7 + 5.5 / 3
-#> [1] 15.33333
+```python
+6.5 + 7.0 + 5.5 / 3
+# 15.333333333333334
 ```
 
-Without brackets, R divides only the last number by 3.
+Without parentheses, Python follows standard precedence: division occurs before addition.
 
-Multiplication and division come before addition and subtraction; brackets come first of all.
+Always use parentheses `()` to make grouping clear and unambiguous.
 
 ---
 
-## Store a value under a name
+## Store values in variables
 
-```r
-nights <- 3
-nights * 7
-#> [1] 21
+```python
+nights = 3
+hours_per_night = 7.0
+total_hours = nights * hours_per_night
+print(total_hours)
+# 21.0
 ```
 
-The stored value is an **object**. The **assignment arrow** `<-` reads as "gets".
+The equals sign `=` is the **assignment operator**. It reads: *"evaluate the expression on the right and assign it to the name on the left."*
 
-Nothing is printed on assignment, but the object appears in the Environment pane.
+Variables hold values in memory and can be referenced in later calculations.
 
 ---
 
-## Several values in one object
+## Several values in a list
 
-```r
-sleep <- c(6.5, 7, 5.5)
-sum(sleep) / nights
-#> [1] 6.333333
+```python
+sleep = [6.5, 7.0, 5.5]
+average_sleep = sum(sleep) / len(sleep)
+print(average_sleep)
+# 6.333333333333333
 ```
 
-`c()` stands for *combine*. The result is a **vector** (Chapter 2).
+Square brackets `[...]` define a Python **list**: an ordered collection of values.
 
-Named values make code clearer than bare numbers.
+`sum()` adds the elements; `len()` counts how many items are in the list.
 
 ---
 
-## Rules for names
+## Rules for naming variables
 
-| Rule | Good | Not allowed or unwise |
+| Rule | Good | Invalid or discouraged |
 |---|---|---|
-| start with a letter | `sleep_week1` | `1week` |
-| no spaces | `sleep_hours` | `sleep hours` |
-| case matters | `sleep` ≠ `Sleep` | mixing both by accident |
-| say what it holds | `sleep_hours` | `x` |
+| start with a letter | `sleep_week1` | `1week` (SyntaxError) |
+| use `snake_case` | `sleep_hours` | `sleep hours` (SyntaxError) |
+| case-sensitive | `sleep` ≠ `Sleep` | accidental mixing of cases |
+| meaningful names | `participant_age` | `x`, `temp2` |
 
-Your future self will be grateful for clear names.
+Descriptive variable names make your code self-documenting.
 
 ---
 
-## Reassignment replaces silently
+## Reassignment replaces values silently
 
-```r
-nights <- 4
-nights
-#> [1] 4
+```python
+nights = 3
+nights = 4
+print(nights)
+# 4
 ```
 
-The old value is gone, without a warning.
+Assigning a new value to an existing variable name replaces the previous value without warning.
 
-Check the Environment pane when a result surprises you.
+Keep variable definitions clear and avoid reusing identical names for different concepts.
 
 ---
 
 ## Every value has a type
 
-| Type | Holds | Example |
+| Type | Name | Examples |
 |---|---|---|
-| numeric | numbers | `6.5`, `600` |
-| character | text in quotes | `"Education"` |
-| logical | yes or no | `TRUE`, `FALSE` |
+| `int` | Integer | `3`, `600`, `-12` |
+| `float` | Floating-point number | `6.5`, `3.14159` |
+| `str` | String (text) | `"Education"`, `"Male"` |
+| `bool` | Boolean | `True`, `False` |
 
-The type decides what can be done: hours of sleep can be averaged, faculty names cannot.
+The data type determines what operations are valid: numeric values can be averaged; text strings cannot.
 
 ---
 
-## `class()` reports the type
+## Checking types with `type()`
 
-```r
-hours   <- 6.5
-faculty <- "Education"
-invited <- TRUE
+```python
+hours = 6.5
+faculty = "Education"
+invited = True
 
-class(hours)     #> "numeric"
-class(faculty)   #> "character"
-class(invited)   #> "logical"
+print(type(hours))    # <class 'float'>
+print(type(faculty))  # <class 'str'>
+print(type(invited))  # <class 'bool'>
 ```
 
 ---
 
-## Text needs quotes
+## Text requires quotation marks
 
-```r
-faculty <- Education
-#> Error: object 'Education' not found
+```python
+faculty = Education
+# NameError: name 'Education' is not defined
 ```
 
-Without quotes, R looks for an object called `Education`.
+Without quotes, Python assumes `Education` is the name of a variable.
 
-One of the most common beginner errors, and the message says exactly what went wrong.
+Strings must be enclosed in single (`'...'`) or double (`"..."`) quotation marks.
 
 ---
 
-## `NA` marks a missing value
+## Missing values: `None` and `NaN`
 
-```r
-sleep_with_gap <- c(6.5, NA, 5.5)
-mean(sleep_with_gap)
-#> [1] NA
+In raw Python, `None` denotes the absence of a value.
+
+In numeric data tables (`pandas` / `numpy`), missing observations are represented as `NaN` ("Not a Number"):
+
+```python
+import pandas as pd
+
+sleep_with_gap = pd.Series([6.5, None, 5.5])
+print(sleep_with_gap.isna())
+# 0    False
+# 1     True
+# 2    False
 ```
 
-`NA` means *not available*: not zero, not empty text, but "we do not know".
-
-If one value is unknown, the average is unknown too. R does not guess.
-
 ---
 
-## Functions take input and return a result
+## Functions take input and return output
 
-```r
-mean(sleep)     #> 6.333333
-max(sleep)      #> 7
-length(sleep)   #> 3
+```python
+sleep = [6.5, 7.0, 5.5]
+
+print(sum(sleep))     # 19.0
+print(max(sleep))     # 7.0
+print(len(sleep))     # 3
+print(round(6.333, 1)) # 6.3
 ```
 
-A function name is followed by brackets, with the input inside.
-
-You have already used `c()`, `sum()`, `mean()`, and `class()`.
+Function calls use parentheses `()` containing the arguments (inputs), separated by commas.
 
 ---
 
-## Arguments are the inputs
+## Getting help in Python
 
-```r
-round(6.333333, digits = 1)
-#> [1] 6.3
+```python
+help(round)
 ```
 
-Arguments are separated by commas, and they have names.
-
-`round(6.333333, 1)` gives the same result, but the named version is easier to read.
-
----
-
-## `na.rm` leaves missing values out
-
-```r
-mean(sleep_with_gap, na.rm = TRUE)
-#> [1] 6
+In Jupyter or VS Code Interactive:
+```python
+round?
 ```
 
-`na.rm` is short for "NA remove".
-
-The average of the values R does know.
+Python displays the docstring showing:
+- function signature;
+- description of all parameters;
+- return value.
 
 ---
 
-## Functions inside functions
+## Scripts preserve your thinking
 
-```r
-round(mean(sleep), digits = 1)
-#> [1] 6.3
+Commands typed in an interactive REPL disappear when the session ends.
+
+A **Python script** is a plain-text file ending in `.py`:
+- opens in VS Code;
+- lines can be executed individually (`Shift+Enter`);
+- the whole file can be executed top to bottom (`python script.py`).
+
+---
+
+## Comments explain the scientific rationale
+
+```python
+# Student self-reported sleep hours (first week of semester)
+sleep_hours = [6.5, 7.0, 5.5, 8.0, 6.0]
+
+# Calculate mean sleep, rounded to 1 decimal place for the thesis table
+mean_sleep = sum(sleep_hours) / len(sleep_hours)
+print(round(mean_sleep, 1))
 ```
 
-R works from the inside out: first the mean, then the rounding.
+Lines beginning with `#` are comments: Python ignores them.
+
+Comments explain *why* an analytical choice was made.
 
 ---
 
-## Getting help
-
-```r
-?mean
-```
-
-The help page opens in the Help pane. Start with three parts:
-
-- **Usage**: how to call the function;
-- **Arguments**: what each input means;
-- **Examples**: code you can copy and run.
-
----
-
-## Treat suggested code with care
-
-Code from a search engine or an AI assistant is like advice from a knowledgeable stranger.
-
-Often right, sometimes wrong, always worth checking.
-
-Chapter 18 shows how to use AI tools well.
-
----
-
-## Console code disappears
-
-Code typed in the Console is gone when RStudio closes.
-
-A **script** is a plain text file, ending in `.R`, that holds your instructions in order.
-
-**File > New File > R Script** opens one in the Source pane.
-
----
-
-## Working in a script
-
-| Action | Windows | Mac |
-|---|---|---|
-| run the line or selection | Ctrl+Enter | Cmd+Enter |
-| save the script | Ctrl+S | Cmd+S |
-
-The code is sent to the Console, and the result appears there.
-
----
-
-## Comments explain why
-
-```r
-# Sleep last week, in hours per night
-sleep <- c(6.5, 7, 5.5)
-
-# Average, rounded for reporting
-round(mean(sleep), digits = 1)
-```
-
-Lines starting with `#` are ignored by R. They are notes for people.
-
-When a supervisor asks how a number was obtained, the script is the answer.
-
----
-
-## An RStudio Project keeps one piece of work together
+## Organizing your thesis project folder
 
 ```text
-wellbeing-thesis/
-├── wellbeing-thesis.Rproj
+thesis_project/
 ├── data/
+│   └── students.csv
 ├── figures/
-└── analysis.R
+│   └── wellbeing_distribution.png
+├── outputs/
+│   └── table1_summary.csv
+└── 01_explore_sample.py
 ```
 
-**File > New Project > New Directory > New Project.**
+Keep raw data, generated figures, and Python scripts neatly organized in dedicated folders.
 
-Open the project by double-clicking the `.Rproj` file.
+Always navigate to the project root directory when executing scripts.
 
 ---
 
-## The working directory
+## Packages add specialized capabilities
 
-The folder R looks in for files is the **working directory**.
+Python's core is lean; specialized scientific tools live in packages.
 
-In a project, it is the project folder:
-
-```r
-students <- read.csv("students.csv")
+```bash
+# In the terminal (run once per computer/environment):
+pip install pandas seaborn data2thesis
 ```
 
-A file stored there opens by its name alone.
+```python
+# In your Python script (run at the top of each script):
+import pandas as pd
+import seaborn as sns
+import data2thesis as dt
+```
 
 ---
 
-## `here()` builds paths from the project folder
-
-```r
-library(here)
-students <- read.csv(here("data", "students.csv"))
-```
-
-The same code works on any computer, and in any subfolder.
-
----
-
-## Avoid `setwd()`
-
-```r
-setwd("C:/Users/me/Documents/thesis")
-```
-
-That line works only on the computer where it was written.
-
-Use a project, and your code works for your supervisor too.
-
----
-
-## Packages add new abilities
-
-```r
-install.packages("here")   # once per computer
-library(here)              # once per session
-```
-
-Install downloads the package from CRAN, R's official collection.
-
-Load makes it available in the current session.
-
----
-
-## Installing is buying, loading is reading
+## Installing vs Importing
 
 ```{mermaid}
 flowchart LR
-    A["install.packages()<br>buy the book once"] --> B["On your shelf"]
-    B --> C["library()<br>take it down each session"]
+    A["pip install<br>Download book to shelf (once)"] --> B["On your hard drive"]
+    B --> C["import<br>Open book on desk (each script)"]
 ```
 
-Forgetting `library()` is the usual cause of "could not find function".
+`pip install` downloads the code from the Python Package Index (PyPI).
+
+`import` loads the package into your current running Python process.
 
 ---
 
-## The data package: data2thesis
+## The companion package: `data2thesis`
 
-```r
-install.packages(
-  "https://polla-fattah.github.io/data2thesis_r/downloads/data2thesis_1.1.0.tar.gz",
-  repos = NULL, type = "source")
+The companion package bundles all datasets for the book:
 
-library(data2thesis)
+```python
+import data2thesis as dt
+
+# Load the core cohort dataset
+students = dt.students
+
+print(students.shape)
+# (600, 14)
 ```
 
-It is not on CRAN, so it is installed from the book's website.
+600 graduate students across 14 measured variables.
 
 ---
 
-## Data frames: one row per case
+## Inspecting a DataFrame
 
-The package holds several **data frames**: tables with one row per case and one column per variable.
-
-The main one is `students`, one row per student.
-
-```r
-nrow(students)   #> 600
-ncol(students)   #> 14
+```python
+students.head()       # first 5 rows
+students.tail(3)      # last 3 rows
+students.columns      # list of column names
+students.info()       # data types and non-null counts
 ```
 
+Always inspect your data before running inferential statistics.
+
 ---
 
-## Looking at the data
+## Accessing columns with bracket notation
 
-```r
-head(students)    # the first six rows
-names(students)   # the variable names
-?students         # what each variable means
+```python
+ages = students["age"]
+print(type(ages))
+# <class 'pandas.core.series.Series'>
 ```
 
-Look before you analyse: what is in each column, and what does one row represent?
+A DataFrame is a 2D table composed of named columns.
+
+Each single column is a **pandas Series**.
 
 ---
 
-## `$` picks out one variable
+## Research question: how old are the students?
 
-```r
-students$age
+```python
+print(students["age"].mean())
+# 29.724540901502505
 ```
 
-The data frame's name, a dollar sign, the variable's name.
+Pandas automatically handles missing values by default (`skipna=True`).
 
-The result is a vector of every student's age.
+The average student age is approximately 29.7 years.
 
 ---
 
-## A first question: how old are the students?
+## Always audit missing observations
 
-```r
-mean(students$age)
-#> [1] NA
+```python
+print(students["age"].isna().sum())
+# 1
 ```
 
-One age is missing, and R will not guess.
+`students["age"].isna()` produces a boolean Series (`True` for missing entries).
 
-The solution is already familiar.
+`.sum()` counts the `True` values: exactly 1 student did not report their age.
+
+A thesis must report both the statistic and the sample size ($N = 599$).
 
 ---
 
-## Leaving the missing age out
+## Counting categories with `.value_counts()`
 
-```r
-mean(students$age, na.rm = TRUE)
-#> [1] 29.72454
+```python
+print(students["faculty"].value_counts())
+# faculty
+# Arts & Humanities       148
+# Social Sciences         134
+# Science                 125
+# Business & Law          102
+# Medicine & Health        91
+# Name: count, dtype: int64
 ```
 
-The students are `r round(mean_age, 1)` years old on average.
+`.value_counts()` summarizes frequency distributions across categorical factors.
 
 ---
 
-## Counting missing values
+## Inspecting sample datasets: Seaborn
 
-```r
-sum(is.na(students$age))
-#> [1] 1
+Seaborn includes built-in practice datasets:
+
+```python
+import seaborn as sns
+
+penguins = sns.load_dataset("penguins")
+print(penguins.shape)
+print(penguins["species"].value_counts())
 ```
 
-`is.na()` marks each missing value as `TRUE`.
-
-`sum()` counts them, because R counts every `TRUE` as 1. Chapter 3 shows why the age is missing.
+The same pandas methods apply to any dataset across biology, education, or psychology.
 
 ---
 
-## `table()` counts categories
+## Practical lab: Chapter 1 Playground
 
-```r
-table(students$faculty)
-table(students$workshop)
-```
+Practice these concepts interactively in your browser with Pyodide:
 
-Five faculties, from `r min(table(students$faculty))` to `r max(table(students$faculty))` students each.
+- Starter code with blanks (`______`)
+- Instant feedback and revealable hints
+- Python code cells executable without local setup
 
-Exactly `r sum(students$workshop == "Invited")` students were invited to the workshop: half, chosen at random (Chapter 5).
-
----
-
-## In your field: agriculture
-
-```r
-head(PlantGrowth)
-table(PlantGrowth$group)
-mean(PlantGrowth$weight)
-```
-
-Dried plant weight under a control and two treatments, 10 plants each.
-
-The same functions work on any data frame. `data()` lists R's built-in datasets.
+Download `chapter01.zip` to run in VS Code on your computer.
 
 ---
 
-## Practical lab: the Chapter 1 playground
+## Practical exercises 1–3: variables & types
 
-Work through the playground exercises in your browser, with hints and solutions.
-
-Every exercise also runs in RStudio, from the downloadable chapter project.
-
----
-
-## Practical exercises 1–3: objects and types
-
-1. Store a supervisor's four nights of sleep and find the rounded average.
-2. Compare `class("600")` and `class(600)`, and explain the difference.
-3. Explain why `mean(c(4, NA, 6))` returns `NA`, then average the known values.
+1. Store a supervisor's sleep hours in a list and compute the rounded mean.
+2. Compare `type("600")` and `type(600)` and explain the `TypeError` when adding them.
+3. Compute the mean of `pd.Series([4, None, 6])` and explain how `NaN` is handled.
 
 ---
 
-## Practical exercises 4–6: the data
+## Practical exercises 4–6: cohort data
 
-4. Find the youngest and the oldest student; `min()` and `max()` also take `na.rm`.
-5. Count the part-time students with `table()`.
-6. List three decisions in a point-and-click analysis that a reader could not check.
-
----
-
-## Try this yourself
-
-Create an RStudio Project for your own thesis.
-
-- add `data/` and `figures/` folders;
-- write a script that loads data2thesis;
-- count the students in each faculty;
-- add a comment above each line explaining why.
-
-Then close RStudio, reopen the project, and run the script again from the top.
+4. Find the minimum and maximum student age using `.min()` and `.max()`.
+5. Count full-time vs part-time students using `.value_counts()`.
+6. Identify three researcher degrees of freedom hidden in point-and-click spreadsheets.
 
 ---
 
-## Troubleshooting guide (Part 1)
+## Troubleshooting common Python errors
 
-| Symptom | Likely cause |
-|---|---|
-| `object 'Education' not found` | text written without quotes |
-| `could not find function` | the package is not loaded with `library()` |
-| the result is `NA` | a missing value; add `na.rm = TRUE` |
-| `+` appears in the Console | an unfinished line, often a missing bracket |
-
----
-
-## Troubleshooting guide (Part 2)
-
-| Symptom | Likely cause |
-|---|---|
-| a file cannot be found | not working inside the project |
-| code works only on your computer | `setwd()` with a personal path |
-| a value changed unexpectedly | the name was reassigned silently |
-| yesterday's work is gone | code typed in the Console, not a script |
+| Error | Root cause | Fix |
+|---|---|---|
+| `NameError: name 'x' is not defined` | Typo or variable not assigned | Check spelling or assign variable above |
+| `TypeError: unsupported operand` | Mixing incompatible types (e.g. str + int) | Convert with `int()` or `float()` |
+| `SyntaxError: '(' was never closed` | Missing closing parenthesis | Check balance of `()` and `[]` |
+| `ModuleNotFoundError` | Package not installed | Run `pip install <package>` |
+| `FileNotFoundError` | Incorrect relative file path | Verify current working directory |
 
 ---
 
-## Completion checklist
+## Chapter 1 Checklist
 
-- [ ] R and RStudio are installed;
-- [ ] the thesis has its own RStudio Project;
-- [ ] code is written in a script, not only the Console;
-- [ ] objects have names that say what they hold;
-- [ ] comments explain why, not what;
-- [ ] data2thesis is installed and loads;
-- [ ] missing values are counted before averaging.
+- [ ] Python (3.10+) and VS Code installed;
+- [ ] Dedicated thesis project directory created;
+- [ ] Code saved in `.py` scripts, not just scratch cells;
+- [ ] Variables given descriptive, snake_case names;
+- [ ] Comments document the *why* of analytical choices;
+- [ ] `data2thesis` and `pandas` installed and imported;
+- [ ] Missing values audited (`isna().sum()`) before reporting stats.
 
 ---
 
-## Misconceptions to leave behind (Part 1)
+## Misconceptions to leave behind
 
 | Misconception | Better mental model |
 |---|---|
-| R and RStudio are the same program | R is the engine; RStudio is where you drive it |
-| `NA` is the same as zero | `NA` means "we do not know" |
-| installing a package makes it available | it must also be loaded each session |
+| "Code is only for computer scientists" | Code is an audit log of research choices |
+| "A missing value is equivalent to zero" | Missing means unknown; treat explicitly |
+| "`pip install` is needed in every script" | Install once per computer; `import` in each script |
+| "Interactive cells are enough" | Scripts ensure end-to-end reproducibility |
 
 ---
 
-## Misconceptions to leave behind (Part 2)
+## Summary
 
-| Misconception | Better mental model |
-|---|---|
-| code is only for programmers | code is a written record of research decisions |
-| the Console is where work is kept | scripts keep the work |
-| `setwd()` sets up a project | a Project makes paths portable |
-
----
-
-## The chapter in one sentence
-
-> **Write the analysis as code in a script inside a project, so every number in the thesis can be shown step by step.**
+> **Write your thesis analysis as Python code in structured scripts so every table and figure can be independently verified from raw data.**
 
 ---
 
 ## Next: Chapter 2
 
-The next chapter looks at data as measurement:
+In Chapter 2, we dive deeper into data structures:
 
-- levels of measurement and vectors;
-- factors for categories;
-- data frames, matrices, and lists;
-- importing CSV, Excel, and SPSS files;
-- codebooks, exporting, and reading error messages.
-
----
-
-## Questions
-
-Think of one number in a thesis or paper you have read.
-
-Could its author show you, step by step, how it was produced?
+- Python collections: lists, tuples, and dictionaries;
+- Vectorized computation with NumPy arrays and Pandas Series;
+- Indexing with `.loc` and `.iloc` (0-based indexing);
+- Importing real-world files: CSV, Excel (`.xlsx`), and SPSS (`.sav`);
+- Constructing data codebooks and managing survey variables.

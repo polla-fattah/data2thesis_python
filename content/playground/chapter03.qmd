@@ -1,25 +1,23 @@
 ---
 title: "Playground: Chapter 3"
-subtitle: Data Manipulation
+subtitle: Data Manipulation and Cleaning with Pandas
 format:
   live-html:
     theme:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
   - supervisors.csv
   - questionnaire.csv
   - chapter03.zip
-webr:
+pyodide:
   packages:
-    - dplyr
-    - tidyr
-    - stringr
-    - readr
+    - pandas
+    - numpy
   resources:
     - students.csv
     - semesters.csv
@@ -27,35 +25,31 @@ webr:
     - questionnaire.csv
 ---
 
-{{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
+This page practises the ideas of Chapter 3 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and datasets. **Check your understanding** asks short conceptual questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide how to prepare the data, as you will in your own thesis.
 
-This page practises the ideas of Chapter 3 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and some of R's built-in datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide how to prepare the data, as you will in your own thesis.
+In the exercises, replace each `______` with your own code and press **Run Code**.
 
-The first run on this page takes a little longer, because your browser downloads the dplyr, tidyr, stringr, and readr packages. In the exercises, replace each `______` with your own code and press **Run Code**.
-
-```{webr}
+```{pyodide}
 #| setup: true
 #| exercise: [ex1, ex2, ex3, ex4, gf1, gf2, gf3, gf4]
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(readr)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-supervisors   <- read.csv("supervisors.csv")
-questionnaire <- read.csv("questionnaire.csv")
+import pandas as pd
+import numpy as np
+
+students      = pd.read_csv("students.csv")
+semesters     = pd.read_csv("semesters.csv")
+supervisors   = pd.read_csv("supervisors.csv")
+questionnaire = pd.read_csv("questionnaire.csv")
 ```
 
-```{webr}
+```{pyodide}
 #| include: false
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(readr)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-supervisors   <- read.csv("supervisors.csv")
-questionnaire <- read.csv("questionnaire.csv")
+import pandas as pd
+import numpy as np
+
+students      = pd.read_csv("students.csv")
+semesters     = pd.read_csv("semesters.csv")
+supervisors   = pd.read_csv("supervisors.csv")
+questionnaire = pd.read_csv("questionnaire.csv")
 ```
 
 ## Practise the chapter
@@ -66,19 +60,23 @@ These are the exercises at the end of Chapter 3, with the same numbers.
 
 Using `students`, find the average age of students in each faculty, sorted from oldest to youngest.
 
-```{webr}
+```{pyodide}
 #| exercise: ex1
-students |>
-  group_by(faculty) |>
-  ______(mean_age = mean(age, na.rm = TRUE)) |>
-  arrange(______(mean_age))
+faculty_age = (
+    students
+    .groupby("______")["age"]
+    .mean()
+    .sort_values(ascending=______)
+    .reset_index()
+)
+print(faculty_age)
 ```
 
 ::: { .hint exercise="ex1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The verb that reduces each group to one row of summaries comes after `group_by()`. `arrange()` sorts from smallest to largest unless the column is wrapped in the function for *descending* order.
+Group by `"faculty"`, calculate the mean of `"age"`, and set `ascending=False` inside `.sort_values()`.
 :::
 :::
 
@@ -86,37 +84,43 @@ The verb that reduces each group to one row of summaries comes after `group_by()
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-students |>
-  group_by(faculty) |>
-  summarise(mean_age = mean(age, na.rm = TRUE)) |>
-  arrange(desc(mean_age))
+```python
+faculty_age = (
+    students
+    .groupby("faculty")["age"]
+    .mean()
+    .sort_values(ascending=False)
+    .reset_index()
+)
+print(faculty_age)
 ```
 
-Natural Sciences students are the oldest on average (30.7 years) and Humanities students the youngest (29.2), but the five averages lie within one and a half years of each other. Sorting makes the order easy to read; whether the differences matter is a question for Chapter 8.
+Natural Sciences students are the oldest on average (30.7 years) and Humanities students the youngest (29.2). All five faculty averages lie within 1.5 years of each other.
 :::
 :::
 
 ### Exercise 2: Sleep in three categories
 
-Add a column to `semesters` that is `"Short"` when `sleep_hours` is under 6, `"Recommended"` when it is 7 or more, and `"Moderate"` otherwise. Count the semester records in each category.
+Add a column `sleep_group` to `semesters`: `"Short"` when `sleep_hours < 6`, `"Recommended"` when `sleep_hours >= 7`, and `"Moderate"` otherwise. Count the semester records in each category, preserving missing values as `NaN`.
 
-```{webr}
+```{pyodide}
 #| exercise: ex2
-semesters |>
-  mutate(sleep_group = case_when(
-    sleep_hours < 6 ~ "Short",
-    sleep_hours ______ 7 ~ "Recommended",
-    .default = "Moderate"
-  )) |>
-  ______(sleep_group)
+conditions = [
+    semesters["sleep_hours"].isna(),
+    semesters["sleep_hours"] < 6,
+    semesters["sleep_hours"] ______ 7
+]
+choices = [np.nan, "Short", "Recommended"]
+
+semesters["sleep_group"] = np.select(conditions, choices, default="Moderate")
+print(semesters["sleep_group"].value_counts(dropna=False))
 ```
 
 ::: { .hint exercise="ex2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-"7 or more" includes 7 itself, so the comparison is not `>`. The shortcut verb for counting the rows in each category is named after what it does.
+The comparison operator for "greater than or equal to" is `>=`. In `.value_counts(dropna=False)`, unrecorded entries will display as `NaN`.
 :::
 :::
 
@@ -124,38 +128,41 @@ semesters |>
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-semesters |>
-  mutate(sleep_group = case_when(
-    is.na(sleep_hours) ~ NA,
-    sleep_hours < 6 ~ "Short",
-    sleep_hours >= 7 ~ "Recommended",
-    .default = "Moderate"
-  )) |>
-  count(sleep_group)
+```python
+conditions = [
+    semesters["sleep_hours"].isna(),
+    semesters["sleep_hours"] < 6,
+    semesters["sleep_hours"] >= 7
+]
+choices = [np.nan, "Short", "Recommended"]
+
+semesters["sleep_group"] = np.select(conditions, choices, default="Moderate")
+print(semesters["sleep_group"].value_counts(dropna=False))
 ```
 
-Run the starter code first, filled in, and look at the counts: 682 Short, 762 Recommended, and 882 Moderate. But 21 semester records have no sleep value, and `.default` caught them too, because a missing value fails every condition. They were counted as "Moderate", which is wrong. The solution adds `is.na(sleep_hours) ~ NA` as the first condition, so that missing values stay missing: Moderate falls to 861, and 21 records are `NA`. Whenever `.default` is used, check what happens to missing values.
+The count reveals: 861 Moderate, 762 Recommended, 682 Short, and 21 missing (`NaN`) semester records.
 :::
 :::
 
 ### Exercise 3: One column per semester
 
-Using `semesters`, make a table of GPA with one row per student and one column per semester, using `pivot_wider()`. Show the first rows.
+Create a wide summary table of GPA with one row per student and one column per semester (Semesters 1 through 4) using `.pivot()`.
 
-```{webr}
+```{pyodide}
 #| exercise: ex3
-semesters |>
-  select(student_id, semester, gpa) |>
-  pivot_wider(names_from = ______, values_from = ______, names_prefix = "S") |>
-  head()
+gpa_wide = (
+    semesters[["student_id", "semester", "gpa"]]
+    .pivot(index="______", columns="______", values="gpa")
+    .reset_index()
+)
+print(gpa_wide.head())
 ```
 
 ::: { .hint exercise="ex3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`names_from` is the column whose values become the new column names; `values_from` is the column whose values fill them.
+Set `index="student_id"` and `columns="semester"`.
 :::
 :::
 
@@ -163,34 +170,40 @@ semesters |>
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-semesters |>
-  select(student_id, semester, gpa) |>
-  pivot_wider(names_from = semester, values_from = gpa, names_prefix = "S") |>
-  head()
+```python
+gpa_wide = (
+    semesters[["student_id", "semester", "gpa"]]
+    .pivot(index="student_id", columns="semester", values="gpa")
+    .reset_index()
+)
+print(gpa_wide.head())
 ```
 
-Each student now has one row, with columns `S1` to `S4`. Student S0004 has `NA` for semesters 3 and 4: the student left, and the wide table shows the gap that the long table hid by simply having fewer rows. Without `names_prefix`, the new columns would be named `1` to `4`, which are awkward names in R.
+Each row represents an individual student, with longitudinal GPA measurements spanning columns 1 to 4. Students who departed early display `NaN` for later semesters.
 :::
 :::
 
 ### Exercise 4: GPA by study mode
 
-Join `semesters` to `students` and compare the average semester GPA of full-time and part-time students.
+Merge `semesters` with `students` across `student_id` and compare the average semester GPA of full-time and part-time students.
 
-```{webr}
+```{pyodide}
 #| exercise: ex4
-semesters |>
-  ______(students, join_by(student_id)) |>
-  group_by(study_mode) |>
-  summarise(mean_gpa = mean(gpa, na.rm = TRUE))
+study_mode_gpa = (
+    semesters
+    .merge(students[["student_id", "study_mode"]], on="______", how="left")
+    .groupby("______")["gpa"]
+    .mean()
+    .reset_index()
+)
+print(study_mode_gpa)
 ```
 
 ::: { .hint exercise="ex4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The join keeps every row of the first table, `semesters`, and adds the matching columns from `students`.
+Merge `on="student_id"` and then `.groupby("study_mode")`.
 :::
 :::
 
@@ -198,59 +211,67 @@ The join keeps every row of the first table, `semesters`, and adds the matching 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-semesters |>
-  left_join(students, join_by(student_id)) |>
-  group_by(study_mode) |>
-  summarise(mean_gpa = mean(gpa, na.rm = TRUE))
+```python
+study_mode_gpa = (
+    semesters
+    .merge(students[["student_id", "study_mode"]], on="student_id", how="left")
+    .groupby("study_mode")["gpa"]
+    .mean()
+    .reset_index()
+)
+print(study_mode_gpa)
 ```
 
-Full-time students average 3.09 and part-time students 3.10: no difference worth mentioning. `study_mode` lives in `students` and GPA in `semesters`, so the question could not be answered from either table alone. Note that these averages count semester records, so students who stayed for four semesters weigh more than students who left; for a question about students, an average per student first would be more exact.
+Full-time students average 3.09 GPA and part-time students average 3.10 GPA—virtually identical performance.
 :::
 :::
 
 ### Exercise 5: A reversed item
 
-Explain why the `stress_4` item must be reversed before the stress score is calculated, and describe what would happen to the scores if it were not. Write your answer first, then open the model answer.
+Explain why `stress_4` must be reverse-coded before computing the composite stress score, and what would happen if it were left unreversed.
 
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Model answer
 
-The other five stress items are worded so that agreeing means *more* stress, but `stress_4` ("I feel confident handling problems in my studies") is worded the other way: agreeing means *less* stress. A score is the average of items that measure the same thing in the same direction, so `stress_4` must be turned round first (6 − answer on a 1-to-5 scale). Left as it is, it pulls every score towards the middle. A very stressed student who answers 5 on the five stress items and 1 on `stress_4` would score (5 + 5 + 5 + 1 + 5 + 5) / 6 = 4.33 instead of 5, and a relaxed student would score higher than they should. The scores would spread less, measure stress less reliably, and show weaker relationships with other variables.
+Item `stress_4` ("I feel confident handling problems in my studies") is worded positively: agreement denotes *lower* stress, unlike the other five items where agreement denotes higher stress. If averaged directly, it cancels out the other items, pulling scores toward the midpoint and compressing variance. Reversing it ($6 - x$ on a 1-to-5 scale) aligns all six items in the same direction.
 :::
 
 ### Exercise 6: Clean data in your own field
 
-For each of the five qualities of clean data, give one example of a problem from your own field, and the cleaning decision it would require. Write your answer first, then open the model answer.
+For each quality of clean data (valid, accurate, complete, consistent, unique), give one example of a data challenge from your field and the required cleaning action.
 
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Model answer
 
-Answers will differ by field; here is one example for each quality, from health research. **Valid:** a systolic blood pressure of 1,200 mmHg, a typing error; set it to missing, since the true value cannot be known, and report how many values were changed. **Accurate:** a laboratory records "below detection limit" as 0; decide whether to treat it as 0, as missing, or as half the detection limit, and state the choice. **Complete:** blood pressure is missing for patients who missed a visit; mark it as `NA` rather than 0 or −9, and check whether the patients who missed visits differ from the others. **Consistent:** weight recorded in kilograms at one site and pounds at another; convert everything to kilograms. **Unique:** a patient registered twice under slightly different spellings of their name; match the records on date of birth and hospital number, and keep one.
+- **Valid:** A blood pressure entry of 1,200 mmHg (set to `NaN` as an out-of-range clerical error).
+- **Accurate:** A laboratory assay result "below detection limit" entered as 0 (recode explicitly according to study protocol).
+- **Complete:** A missed clinical follow-up recorded as 0 (recode to `NaN` so it is not treated as zero symptoms).
+- **Consistent:** Body weight recorded in pounds in one clinic and kilograms in another (convert all to kg).
+- **Unique:** A patient registered under two distinct IDs after changing hospitals (identify via birthdate and merge into a single record).
 :::
 
 ## Go further
 
-These exercises go beyond the book.
+These exercises deepen your skills with data validation, joins, and reshaping.
 
 ### Exercise 7: The missing-code trap
 
-Seven students answered a question on a 1-to-5 scale; two skipped it, and the survey tool recorded each skip as `99`. Calculate the mean and the median with the codes left in, then with the codes marked as missing, and explain the difference.
+Two skipped questionnaire answers were recorded as `99`. Compare the mean and median before and after recoding `99` to `NaN`.
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-answers <- c(4, 3, 5, 99, 2, 99, 1)
-mean(answers)
-median(answers)
-mean(______(answers, 99), na.rm = TRUE)
-median(______(answers, 99), na.rm = TRUE)
+answers = pd.Series([4, 3, 5, 99, 2, 99, 1])
+print("With 99 - Mean:", answers.mean(), "Median:", answers.median())
+
+clean_answers = answers.replace(______, np.nan)
+print("With NaN - Mean:", clean_answers.mean(), "Median:", clean_answers.median())
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The dplyr function that turns a code into `NA` is named after what it does: "NA if" the value equals the code.
+Call `.replace(99, np.nan)`.
 :::
 :::
 
@@ -258,40 +279,43 @@ The dplyr function that turns a code into `NA` is named after what it does: "NA 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-answers <- c(4, 3, 5, 99, 2, 99, 1)
-mean(answers)
-median(answers)
-mean(na_if(answers, 99), na.rm = TRUE)
-median(na_if(answers, 99), na.rm = TRUE)
+```python
+answers = pd.Series([4, 3, 5, 99, 2, 99, 1])
+print("With 99 - Mean:", answers.mean(), "Median:", answers.median())
+
+clean_answers = answers.replace(99, np.nan)
+print("With NaN - Mean:", clean_answers.mean(), "Median:", clean_answers.median())
 ```
 
-With the codes left in, the mean is 30.4, an impossible value on a 1-to-5 scale, and the median is 4. With the codes removed, both are 3. The median is much less affected, because it depends only on the order of the values, but it is still wrong: the two 99s pushed it up one step. A median that looks plausible is more dangerous than a mean that looks absurd, because nobody notices it.
+With `99`, the mean is 30.4 (impossible on a 5-point scale) and the median is 4.0. With `NaN`, both mean and median are 3.0.
 :::
 :::
 
 ### Exercise 8: Checking two tables against each other
 
-The `supervisors` table records how many students each supervisor has (`n_students`). Count the students of each supervisor from the first-semester data yourself, calculate their average wellbeing, join the result to `supervisors`, and check whether the two counts ever disagree.
+Count each supervisor's students from semester 1 data, merge with `supervisors`, and verify whether the counted student numbers match `n_students`.
 
-```{webr}
+```{pyodide}
 #| exercise: gf2
-check <- semesters |>
-  filter(semester == 1) |>
-  left_join(students, join_by(student_id)) |>
-  group_by(supervisor_id) |>
-  summarise(n_counted = ______(),
-            mean_wellbeing = mean(wellbeing, na.rm = TRUE)) |>
-  left_join(supervisors, join_by(supervisor_id))
-head(check)
-check |> filter(n_counted ______ n_students)
+sem1 = semesters[semesters["semester"] == 1]
+check = (
+    sem1
+    .merge(students[["student_id", "supervisor_id"]], on="student_id", how="left")
+    .groupby("supervisor_id")
+    .agg(n_counted=("student_id", "count"))
+    .reset_index()
+    .merge(supervisors, on="supervisor_id", how="left")
+)
+print(check.head())
+discrepancies = check[check["n_counted"] ______ check["n_students"]]
+print("Discrepancies found:", len(discrepancies))
 ```
 
 ::: { .hint exercise="gf2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Inside `summarise()`, the function that counts the rows of each group takes no argument. The comparison for "is not equal to" is two symbols.
+Use `!=` (not equal) to filter for discrepancies between `n_counted` and `n_students`.
 :::
 :::
 
@@ -299,88 +323,89 @@ Inside `summarise()`, the function that counts the rows of each group takes no a
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-check <- semesters |>
-  filter(semester == 1) |>
-  left_join(students, join_by(student_id)) |>
-  group_by(supervisor_id) |>
-  summarise(n_counted = n(),
-            mean_wellbeing = mean(wellbeing, na.rm = TRUE)) |>
-  left_join(supervisors, join_by(supervisor_id))
-head(check)
-check |> filter(n_counted != n_students)
+```python
+sem1 = semesters[semesters["semester"] == 1]
+check = (
+    sem1
+    .merge(students[["student_id", "supervisor_id"]], on="student_id", how="left")
+    .groupby("supervisor_id")
+    .agg(n_counted=("student_id", "count"))
+    .reset_index()
+    .merge(supervisors, on="supervisor_id", how="left")
+)
+print(check.head())
+discrepancies = check[check["n_counted"] != check["n_students"]]
+print("Discrepancies found:", len(discrepancies))
 ```
 
-The filter returns no rows: for all 120 supervisors the two counts agree, and each supervises between 1 and 12 students. Checking one table against another is a cheap and powerful cleaning step, because an error in either table shows up as a disagreement. Note also how the question needed three tables: wellbeing from `semesters`, the supervisor from `students`, and the recorded count from `supervisors`.
+Exactly 0 discrepancies: all 120 supervisors match their official student supervision counts perfectly.
 :::
 :::
 
 ### Exercise 9: The questionnaire in long format
 
-The `questionnaire` table has one column per item. Reshape it to long format, with one row per student per item, and calculate the average answer to each item.
+Reshape the 22 questionnaire items from wide to long, and compute the mean answer for each item.
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-long <- questionnaire |>
-  ______(-student_id, names_to = "item", values_to = "answer")
-dim(long)
-long |>
-  group_by(item) |>
-  summarise(mean_answer = mean(answer, na.rm = TRUE)) |>
-  print(n = 22)
+long_q = pd.melt(
+    questionnaire,
+    id_vars=["student_id"],
+    var_name="item",
+    value_name="answer"
+)
+print("Long questionnaire shape:", long_q.shape)
+item_means = long_q.groupby("item")["answer"].mean().reset_index()
+print(item_means.head(8))
 ```
-
-::: { .hint exercise="gf3" }
-::: { .callout-note collapse="false"}
-## Hint
-
-The reshaping function that turns wide into long is the opposite of the one in Exercise 3. `-student_id` means "every column except `student_id`".
-:::
-:::
 
 ::: { .solution exercise="gf3" }
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-long <- questionnaire |>
-  pivot_longer(-student_id, names_to = "item", values_to = "answer")
-dim(long)
-long |>
-  group_by(item) |>
-  summarise(mean_answer = mean(answer, na.rm = TRUE)) |>
-  print(n = 22)
+```python
+long_q = pd.melt(
+    questionnaire,
+    id_vars=["student_id"],
+    var_name="item",
+    value_name="answer"
+)
+print("Long questionnaire shape:", long_q.shape)
+item_means = long_q.groupby("item")["answer"].mean().reset_index()
+print(item_means.head(8))
 ```
 
-The long table has 13,200 rows, 600 students × 22 items, and three columns. In long format, the average of every item takes one `group_by()`, where the wide table would need 22 separate calculations. Look at the stress items: `stress_4` has the lowest average (2.90) of the six, because it is the reversed item of Exercise 5. Students who feel stressed disagree with it.
+Unpivoting yields 13,200 rows ($600 \times 22$ items). Notice that `stress_4` has a lower mean (2.90) than the other stress items because it is reverse-worded.
 :::
 :::
 
-### Exercise 10: A small messy table
+### Exercise 10: Cleaning a small messy DataFrame
 
-This table mimics a survey export: the faculty is spelled in several ways, and sleep was typed as text, sometimes with a decimal comma and sometimes with a unit. Clean both columns, count the students in each faculty, and calculate the average sleep.
+Standardize faculty names and clean decimal commas in sleep numbers:
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-messy <- tibble(
-  faculty = c("Education", "education ", "EDUCATION", "Health Sciences", "health sci."),
-  sleep   = c("6,5", "7 hrs", "8", "5.5", "7,5")
+messy = pd.DataFrame({
+    "faculty": ["Education", "education ", "EDUCATION", "Health Sciences", "health sci."],
+    "sleep":   ["6,5", "7 hrs", "8", "5.5", "7,5"]
+})
+
+clean = messy.assign(
+    faculty = np.where(messy["faculty"].str.lower().str.contains("educ"), "Education", "Health Sciences"),
+    sleep   = (messy["sleep"]
+               .str.replace("______", ".")
+               .str.extract(r"([\d\.]+)", expand=False)
+               .astype(float))
 )
-clean <- messy |>
-  mutate(
-    faculty = if_else(str_detect(str_to_lower(faculty), "educ"), "Education", "Health Sciences"),
-    sleep   = parse_number(str_replace(sleep, ______, ______))
-  )
-clean
-count(clean, faculty)
-mean(clean$sleep)
+print(clean)
+print("Mean sleep:", clean["sleep"].mean())
 ```
 
 ::: { .hint exercise="gf4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`parse_number()` ignores text such as `"hrs"` but reads `"6,5"` as 65. Replace the comma with a full stop first: `str_replace()` takes the text to find and the text to put in its place, both in quotation marks.
+Replace `","` with `"."`.
 :::
 :::
 
@@ -388,102 +413,101 @@ mean(clean$sleep)
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-clean <- messy |>
-  mutate(
-    faculty = if_else(str_detect(str_to_lower(faculty), "educ"), "Education", "Health Sciences"),
-    sleep   = parse_number(str_replace(sleep, ",", "."))
-  )
-clean
-count(clean, faculty)
-mean(clean$sleep)
+```python
+clean = messy.assign(
+    faculty = np.where(messy["faculty"].str.lower().str.contains("educ"), "Education", "Health Sciences"),
+    sleep   = (messy["sleep"]
+               .str.replace(",", ".")
+               .str.extract(r"([\d\.]+)", expand=False)
+               .astype(float))
+)
+print(clean)
+print("Mean sleep:", clean["sleep"].mean())
 ```
 
-Three students are in Education and two in Health Sciences, and the average sleep is 6.9 hours. Without the comma fix, `parse_number()` reads 6,5 as 65 and 7,5 as 75, and the average becomes 32.1 hours, which no warning would tell you about. Always look at the cleaned values, not only at whether the code ran.
+Without fixing decimal commas, `"6,5"` is misinterpreted as 65, corrupting the mean.
 :::
 :::
 
 ## Check your understanding
 
-Answer each question in your own words first, then click to see a model answer.
+Answer each question in your own words first, then click to see the model answer.
 
-**1.** Clean data is valid, accurate, complete, consistent, and unique. What does each quality guard against?
+**1.** What does each of the five clean data qualities (valid, accurate, complete, consistent, unique) protect against?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-**Valid** guards against impossible values, such as an age of 250. **Accurate** guards against values that do not mean what they seem, such as a missing-answer code read as a real answer. **Complete** guards against missing values hidden behind codes or blanks, which should be marked as missing. **Consistent** guards against the same answer being recorded in different ways, which splits one group into several. **Unique** guards against cases counted more than once, such as test entries and duplicates.
+- **Valid:** Out-of-range impossible values (e.g. age = 250).
+- **Accuracy:** Misinterpreting missing codes as genuine answers.
+- **Completeness:** Hidden unrecorded missingness.
+- **Consistency:** Fragmented category spellings treated as separate groups.
+- **Uniqueness:** Duplicated rows overweighting individual cases.
 :::
 
-**2.** Why is the raw data file never edited by hand?
+**2.** Why should raw data never be edited by hand in Excel?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because edits by hand leave no record. If the raw file stays untouched and every change is made by code, anyone can see each decision, check it, change it, and run the cleaning again from the start. An edited raw file cannot be undone, and nobody, including the researcher, can tell later what was changed.
+Manual edits destroy the scientific audit trail. By maintaining an untouched raw file and executing all transformations via a Python script, every cleaning decision is documented, repeatable, and easily adjusted when new data arrives.
 :::
 
-**3.** What is tidy data?
+**3.** What is tidy data, and why does it simplify analysis?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Data in which each variable forms a column, each observation forms a row, and each value sits in its own cell. A table with one column per semester is not tidy, because one variable (wellbeing) is spread across several columns and each row holds several observations.
+In tidy data, each variable is a column, each observation is a row, and each cell is a value. This structure allows vectorized mathematical operations and straightforward grouped aggregations.
 :::
 
-**4.** What is the difference between `left_join()` and `anti_join()`?
+**4.** What is the operational difference between a left join and an anti-join?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-`left_join()` keeps every row of the first table and adds the matching columns of the second. `anti_join()` adds nothing: it keeps only the rows of the first table that have *no* match in the second, which makes it the tool for finding what is missing, such as students with no records in a later semester.
+A left join preserves all rows of the left table while appending matching columns from the right table. An anti-join filters the left table to retain only cases that have *no* matching record in the right table (ideal for auditing dropouts or missing forms).
 :::
 
-**5.** Why should a `99` not be replaced with `NA` everywhere in a file?
+**5.** Why must `99` not be replaced with `NaN` globally across an entire dataset?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because 99 is not always a code. In a wellbeing score from 0 to 100, or in a weight in kilograms, 99 is a perfectly real value. Missing codes should be replaced only in the columns where the codebook says they are codes.
+`99` is not always a missing code. In a 0-to-100 scale (such as Elaf's wellbeing score or percentage grades), `99` is an authentic high value. Missing codes must only be replaced in columns where the study codebook defines them as missing sentinels.
 :::
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis. The data (`students`, `semesters`, `supervisors`, and `questionnaire`) and the dplyr, tidyr, stringr, and readr packages are already loaded, and R's built-in datasets are always available.
+These tasks have no starter code and no answers. Write your own Python code, as you would for your thesis.
 
-**1.** Which faculty has the largest share of students who live away from their family, and how does that share differ between Master's and PhD students in each faculty? Produce one table that answers both parts, and describe it in two sentences.
+**1.** Which faculty has the largest proportion of students who moved away from their family (`lives_away == "Yes"`), and how does that proportion differ between Master's and PhD students across faculties? Generate a grouped summary table.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**2.** Calculate each student's burnout score as the average of the six burnout items, join it to the students' first-semester records, and compare the average burnout of students who have considered dropping out with those who have not.
+**2.** Calculate each student's burnout score as the mean of `burnout_1..6`, merge it with semester 1 records, and compare the mean burnout of students who have versus have not considered dropping out.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**3.** R's built-in `airquality` data records daily air quality in New York in 1973. Find which columns have missing values and how many, decide what to do about them for an analysis of ozone, and write the sentence you would put in a methods section.
+**3.** Inspect `students.csv`. Identify which variables contain missing values, compute the missingness rate for each column, and report which demographic variables are incomplete.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**4.** This task is for the download project, which contains the raw survey export. Clean `wellbeing_raw.xlsx` from scratch, without looking at the chapter's code, and compare your result with the clean tables: the number of students, the categories of each variable, and the average of a few variables.
-
-**5.** Also for the download project: write the methods paragraph reporting your cleaning in Task 4, with every number in it (test responses, duplicates, impossible values, missing codes) calculated by code rather than typed.
+**4.** Write a comprehensive data cleaning function `clean_survey()` in Python that loads `wellbeing_raw.xlsx`, executes all cleaning steps, and returns clean DataFrames for students, questionnaire items, and longitudinal semester records.
 
 ## Work on your own computer
 
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 3 project
 
-The project contains the data, the raw survey export, and all four parts of this page as an R script: the exercises with blanks, the questions to check your understanding (answers in `solutions.R`), and the open tasks, each with space to write your code.
+The starter project contains the data and all exercises as executable Python scripts: starter exercises with blanks, solutions, and open tasks.
 
-- [Download chapter03.zip](chapter03.zip), unzip it, and double-click `chapter03.Rproj`.
-- Or type this one line in RStudio's Console:
-
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter03.zip")
-```
+- [Download chapter03.zip](chapter03.zip), unzip it, and open the folder in VS Code.
+- Run `pip install data2thesis pandas openpyxl` in your Python environment.
 :::

@@ -7,28 +7,46 @@ execute:
   freeze: auto
 ---
 
-```{r}
+```{python}
 #| include: false
-library(data2thesis)
-library(dplyr)
-library(ggplot2)
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.special import expit
+from statsmodels.stats.power import TTestIndPower
+import data2thesis as dt
+from data2thesis import load_case_study, load_toothgrowth
 
-navy <- "#1d588c"; copper <- "#b4762e"; soft <- "#46586d"
-theme_set(theme_minimal(base_size = 15) +
-  theme(panel.grid.minor = element_blank(),
-        plot.background = element_rect(fill = "transparent", colour = NA),
-        axis.title = element_text(colour = soft),
-        strip.text = element_text(colour = navy, face = "bold", size = 15)))
-knitr::opts_chunk$set(dev = "svg", dev.args = list(bg = "transparent"))
+navy = "#1d588c"
+copper = "#b4762e"
+soft = "#46586d"
 
-set.seed(2026)
-chance_differences <- replicate(5000, {
-  wellbeing <- rnorm(300, mean = 60, sd = 11)
-  group     <- sample(rep(c("Invited", "Not invited"), 150))
-  mean(wellbeing[group == "Invited"]) - mean(wellbeing[group == "Not invited"])
-})
-first_sem <- semesters |> filter(semester == 1)
-leavers <- setdiff(students$student_id, semesters$student_id[semesters$semester == 4])
+sns.set_theme(style="whitegrid", font_scale=1.1)
+plt.rcParams["figure.figsize"] = (6, 4)
+plt.rcParams["figure.dpi"] = 150
+plt.rcParams["axes.edgecolor"] = "#cccccc"
+plt.rcParams["axes.linewidth"] = 0.8
+
+students = load_case_study("students")
+semesters = load_case_study("semesters")
+questionnaire = load_case_study("questionnaire")
+supervisors = load_case_study("supervisors")
+
+np.random.seed(2026)
+n_sims = 5000
+chance_differences = np.empty(n_sims)
+groups = np.repeat(["Invited", "Not invited"], 150)
+
+for i in range(n_sims):
+    wb = np.random.normal(loc=60, scale=11, size=300)
+    shuffled = np.random.permutation(groups)
+    chance_differences[i] = (
+        wb[shuffled == "Invited"].mean() - wb[shuffled == "Not invited"].mean()
+    )
+
+first_sem = semesters[semesters["semester"] == 1].merge(students, on="student_id")
+leavers = set(students["student_id"]) - set(semesters.loc[semesters["semester"] == 4, "student_id"])
 ```
 
 # From Research Question to Data
@@ -44,25 +62,25 @@ Polla Fattah
 ## By the end of today you can
 
 - explain what data analysis is for: describing, explaining, predicting;
-- turn a topic into a focused research question;
-- write a falsifiable hypothesis and its null hypothesis;
-- turn a construct into a measured variable and judge its level;
-- name the roles variables play;
-- distinguish reliability from validity;
-- say what each study design can and cannot show;
+- turn a broad topic into a focused research question;
+- write a falsifiable hypothesis and its corresponding null hypothesis;
+- turn an abstract construct into a measured variable and judge its measurement level;
+- identify the distinct roles variables play in an analytical model;
+- distinguish measurement reliability from construct and study validity;
+- determine what each study design can and cannot establish;
 - explain why a biased sample cannot be fixed by making it larger;
-- plan an analysis and a sample size before collecting data.
+- plan an analysis and calculate necessary sample size (statistical power) before data collection.
 
 ---
 
 ## Most thesis problems start before the analysis
 
-- a question too vague to answer;
-- a hypothesis no result could contradict;
-- a questionnaire that measures something other than the title promises;
-- a sample that cannot support the conclusion.
+- a question too vague to answer empirically;
+- a hypothesis no data could possibly contradict;
+- a questionnaire that measures something other than what the thesis promises;
+- a convenience sample that cannot support generalizable conclusions.
 
-No statistical test can fix these afterwards.
+No statistical test or machine learning algorithm can fix these afterwards.
 
 ---
 
@@ -70,21 +88,21 @@ No statistical test can fix these afterwards.
 
 | Aim | Example question | Judged by |
 |---|---|---|
-| describe | how long do graduate students sleep? | accuracy, and who it applies to |
-| explain | does the workshop improve wellbeing? | whether rival explanations are ruled out |
-| predict | who will consider dropping out? | accuracy on new cases |
+| **Describe** | How long do graduate students sleep? | Accuracy, and who the summary applies to |
+| **Explain** | Does the workshop improve wellbeing? | Whether rival explanations are ruled out |
+| **Predict** | Who will consider dropping out? | Accuracy on new unseen cases |
 
-Describing: Chapters 4, 6, 7. Explaining: 7 to 10. Predicting: 11 to 16.
+Describing: Chapters 4, 6, 7. Explaining: Chapters 7 to 10. Predicting: Chapters 11 to 16.
 
 ---
 
 ## The same model, different aims
 
-A regression can **explain** GPA: which predictors matter, and how much?
+A multiple regression model can **explain** GPA: which predictors matter, and how much?
 
-It can also **predict** GPA: how close are the predictions for new students?
+The exact same model can **predict** GPA: how close are predictions for incoming students?
 
-The model may be identical. The question, and how the answer is judged, are not.
+The mathematical specification may be identical. The research goal, and how success is evaluated, are fundamentally different.
 
 ---
 
@@ -97,301 +115,268 @@ flowchart TD
   C --> D["Question: does a six-week workshop improve<br>wellbeing by the end of the next semester?"]
 ```
 
-A research question is a topic narrowed until data can answer it.
+A research question is a broad topic narrowed until empirical data can answer it.
 
 ---
 
 ## A good research question is
 
-- **specific**: who, what, and when;
-- **answerable with data** you can collect;
-- **not already answered**;
-- **feasible** with your time, money, skills, and access;
-- **worth answering**: someone would act differently.
+- **specific**: names who, what, and when;
+- **answerable with data** you can feasibly collect;
+- **not already answered** in the existing literature;
+- **feasible** within your time, budget, skills, and ethical access;
+- **worth answering**: someone would make a different practical decision depending on the outcome.
 
 ---
 
 ## Weak questions, improved
 
-| Weak | Problem | Better |
+| Weak question | Underlying problem | Better question |
 |---|---|---|
-| Are students stressed? | compared with what? | Do part-time students report higher stress than full-time? |
-| What affects success? | "success" undefined | Is sleep associated with GPA, allowing for study hours? |
-| Is the workshop good? | "good" is not measurable | Does it raise wellbeing by the end of semester 2? |
-| Why do students drop out? | needs years of follow-up | Which baseline traits go with *considering* dropout? |
+| Are students stressed? | Compared with what? | Do part-time students report higher stress than full-time students? |
+| What affects success? | "Success" is undefined | Is semester sleep associated with GPA, allowing for study hours? |
+| Is the workshop good? | "Good" is unmeasurable | Does the workshop raise wellbeing by the end of semester 2? |
+| Why do students drop out? | Requires years of tracking | Which baseline traits are associated with *considering* dropout? |
 
 ---
 
 ## Three kinds of question
 
-| Kind | Asks | Needs | Can claim |
+| Kind | Asks | Data needed | What it can claim |
 |---|---|---|---|
-| descriptive | what is? | a representative sample | a summary |
-| relational | what goes with what? | both variables measured | association |
-| causal | what leads to what? | a design ruling out alternatives | cause |
+| **Descriptive** | What is? | Representative sample | Population summary |
+| **Relational** | What goes with what? | Both variables measured | Statistical association |
+| **Causal** | What leads to what? | Design ruling out alternatives | Cause and effect |
 
-Asking a relational question and answering in causal words ("sleep *improves* grades") is a common error.
+Asking a relational question and answering in causal words ("sleep *improves* grades") is one of the most common errors in empirical theses.
 
 ---
 
 ## A hypothesis answers in advance
 
-> **Hypothesis:** Students invited to the workshop will have higher wellbeing at the end of semester 2 than students not invited.
+> **Hypothesis:** Students invited to the workshop will report higher wellbeing at the end of semester 2 than students not invited.
 
-A research question asks. A hypothesis is the best prediction, from theory and earlier studies.
+A research question asks. A hypothesis states the best a priori prediction grounded in theory and earlier literature.
 
-It is useful because the data can disagree with it.
+It is scientifically valuable precisely because the empirical data can disagree with it.
 
 ---
 
-## Falsifiability
+## Falsifiability (Popper)
 
-| Hypothesis | Could a result contradict it? |
+| Hypothesis | Could any empirical result contradict it? |
 |---|---|
-| "The workshop affects students in some way." | no: unfalsifiable |
-| "It helps students who are ready for it." | no, unless "ready" is defined first |
-| "Invited students will have higher wellbeing in semester 2." | yes: equal or lower wellbeing |
+| "The workshop affects students in some way." | No: higher, lower, or identical wellbeing all fit. **Unfalsifiable**. |
+| "It helps students who are ready for it." | No, unless "ready" is objectively defined in advance. |
+| "Invited students will have higher wellbeing." | **Yes**: equal or lower wellbeing contradicts it. **Falsifiable**. |
 
-Popper: a scientific claim forbids certain results.
+Karl Popper (1959): What makes an assertion scientific is that it forbids certain outcomes.
 
 ---
 
 ## Write down what would count against you
 
-Before seeing any data, name the result that would contradict the hypothesis.
+Before viewing any data, explicitly name the finding that would contradict your hypothesis.
 
-If you cannot, it is not yet precise enough.
+If you cannot name what would prove you wrong, your question is not yet precise enough for scientific research.
 
-If you can, you are protected from explaining away a disappointing result afterwards.
+If you pre-commit to refutation criteria, you are protected against rationalizing disappointing results after the fact.
 
 ---
 
 ## Four properties of a good hypothesis
 
-- about a **stated population and stated variables**;
-- **testable** with the data available;
-- **falsifiable**: it names the contradicting result;
-- **stated before** the data is analysed.
+- Formulated about a **stated population and operationalized variables**;
+- **Testable** with accessible, ethical data;
+- **Falsifiable**: pre-specifies the empirical result that would contradict it;
+- **Stated before** the data is collected and analysed.
 
-A hypothesis written after seeing the data describes the data. It does not test it.
+A hypothesis conceived after inspecting data merely summarizes that specific sample—it does not test a theory.
 
 ---
 
-## Directional and non-directional
+## Directional vs non-directional hypotheses
 
-| Kind | Predicts | Example |
+| Kind | What it predicts | Example |
 |---|---|---|
-| directional | the direction of an effect | invited students will have *higher* wellbeing |
-| non-directional | only that a difference exists | wellbeing will *differ* between faculties |
+| **Directional** | Specific sign/direction of effect | Invited students will report *higher* wellbeing |
+| **Non-directional** | Difference exists, direction unstated | Stress scores will *differ* across faculties |
 
-The direction of the hypothesis and a one- or two-tailed test are separate decisions (Chapter 7).
+Directional hypotheses make stronger scientific claims because they forbid more potential outcomes.
 
 ---
 
-## The null hypothesis
+## The null hypothesis ($H_0$)
 
-| | Statement for the workshop |
+| Hypothesis | Operational statement for the workshop |
 |---|---|
-| $H_1$, alternative | invited and not invited differ in average wellbeing |
-| $H_0$, null | they have the same average wellbeing |
+| $H_1$ (Alternative) | Invited and uninvited students differ in average wellbeing |
+| $H_0$ (Null) | The two groups have the same population mean wellbeing ($\mu_1 = \mu_2$) |
 
-$H_0$ is precise enough to calculate with: any difference is due to chance alone.
+$H_0$ provides a mathematically exact baseline: any observed group difference is attributable to random sampling variation alone.
 
 ---
 
 ## Simulating the null world
 
-```r
-set.seed(2026)
-chance_differences <- replicate(5000, {
-  wellbeing <- rnorm(300, mean = 60, sd = 11)
-  group     <- sample(rep(c("Invited", "Not invited"), 150))
-  mean(wellbeing[group == "Invited"]) -
-    mean(wellbeing[group == "Not invited"])
-})
+```python
+np.random.seed(2026)
+chance_diffs = []
+groups = np.repeat(["Invited", "Not invited"], 150)
+
+for _ in range(5000):
+    wb = np.random.normal(loc=60, scale=11, size=300)
+    shuffled = np.random.permutation(groups)
+    diff = wb[shuffled == "Invited"].mean() - wb[shuffled == "Not invited"].mean()
+    chance_diffs.append(diff)
 ```
 
 300 imaginary students, a workshop that does nothing, two random groups, repeated 5,000 times.
-
-`rnorm()` draws normal random numbers; `sample()` shuffles the labels.
 
 ---
 
 ## Chance alone produces differences
 
-```{r}
+```{python}
 #| fig-width: 9
 #| fig-height: 3.4
-ggplot(data.frame(difference = chance_differences), aes(x = difference)) +
-  geom_histogram(binwidth = 0.5, fill = navy, colour = "white", alpha = 0.85) +
-  geom_vline(xintercept = quantile(chance_differences, c(0.025, 0.975)),
-             linetype = "dashed", colour = copper, linewidth = 1) +
-  labs(x = "Difference in average wellbeing (invited minus not invited)", y = "Studies")
+q025, q975 = np.percentile(chance_differences, [2.5, 97.5])
+
+fig, ax = plt.subplots(figsize=(9, 3.4))
+sns.histplot(chance_differences, binwidth=0.5, color=navy, edgecolor="white", alpha=0.85, ax=ax)
+ax.axvline(q025, linestyle="--", color=copper, linewidth=1.5)
+ax.axvline(q975, linestyle="--", color=copper, linewidth=1.5)
+ax.set_xlabel("Simulated Difference in Average Wellbeing (Invited minus Not invited)")
+ax.set_ylabel("Number of Studies")
+plt.tight_layout()
+plt.show()
 ```
 
-95% of chance differences lie between `r round(quantile(chance_differences, 0.025), 1)` and `r round(quantile(chance_differences, 0.975), 1)`. A 5-point gap would be hard to explain by chance; 1 point would not.
+95% of chance differences fall between `{python} f"{q025:.1f}"` and `{python} f"{q975:.1f}"`. An observed 5-point difference is highly unlikely under chance alone ($p < .05$); a 1-point difference is completely routine.
 
 ---
 
-## What a test can and cannot conclude
+## What a hypothesis test can and cannot conclude
 
-- **rejecting $H_0$ is not proving $H_1$**: "nothing is going on" is just a poor explanation;
-- **not rejecting $H_0$ is not proving it**: a small study can miss a real effect.
+- **Rejecting $H_0$ is NOT proving $H_1$**: it demonstrates only that "pure chance" is an implausible explanation of the data.
+- **Failing to reject $H_0$ is NOT proving $H_0$**: an underpowered study can easily fail to detect a real effect.
 
-A blurred photograph can fail to show a real face.
+A blurry photograph can fail to reveal a face, but that does not prove the person was absent.
 
 ---
 
-## Confirmatory and exploratory
+## Confirmatory vs exploratory research
 
-| Kind | Does | Results |
+| Mode | What it does | Result status |
 |---|---|---|
-| confirmatory | tests a hypothesis stated in advance | confirm or contradict |
-| exploratory | looks for patterns with no prior prediction | suggest future hypotheses |
+| **Confirmatory** | Tests an a priori hypothesis specified in advance | Confirms or refutes a prediction |
+| **Exploratory** | Uncovers patterns with no prior expectation | Generates new hypotheses for future studies |
 
-Both are legitimate, as long as they are labelled honestly.
-
----
-
-## The study's questions as hypotheses
-
-| Question | $H_1$ | Against $H_1$ |
-|---|---|---|
-| RQ2 sleep below 7 h? | average sleep < 7 h | interval includes 7 |
-| RQ3 workshop helps? | invited higher in semester 2 | gap near zero or negative |
-| RQ5 what explains GPA? | more sleep, higher GPA | coefficient near zero |
-| RQ8 how does wellbeing change? | it declines over two years | slope near zero or positive |
-| RQ9 who considers dropout? | stress raises the odds | odds ratio ≤ 1 |
-
-Descriptive, exploratory, and predictive questions have no null hypothesis.
+Both modes are scientifically vital, provided they are reported transparently and not conflated.
 
 ---
 
 ## Think before you analyse
 
-1. **What is the question**: descriptive, relational, or causal?
-2. **What is the unit of analysis**: students, semesters, supervisors?
-3. **Which variables**, at what level, in which role?
-4. **What result would support the hypothesis, and what would count against it?**
+Before executing any analytical code, answer these four questions in writing:
 
-Answer in writing before running any code.
+1. **What is the research question**: descriptive, relational, or causal?
+2. **What is the unit of analysis**: individual students, repeated semesters, or supervisors?
+3. **Which variables**, at what measurement levels, serve as outcomes and predictors?
+4. **What exact empirical finding would support the hypothesis, and what would refute it?**
 
 ---
 
-## The unit of analysis decides what a question means
+## The unit of analysis decides what a row means
 
-```r
-nrow(students)      # 600: one row per student
-nrow(semesters)     # 2326: one row per student per semester
-nrow(supervisors)   # one row per supervisor
+```python
+len(students)      # 600: one row per student
+len(semesters)     # 2,326: one row per student per semester
+len(supervisors)   # 120: one row per faculty supervisor
 ```
 
-"Do students who sleep more have higher GPAs?" is about students: each counts once.
+"Do students who sleep more have higher GPAs?" is a question about individual students.
 
-2,326 semester rows as independent cases would overstate the evidence (Chapter 10).
-
----
-
-## Constructs need operationalisation
-
-Stress, wellbeing, motivation: **constructs** that cannot be observed directly.
-
-**Operationalisation** decides how to measure one. Every operationalisation is a choice, and another choice could give another answer.
+Treating 2,326 longitudinal semester rows as independent observations would artificially inflate statistical significance (Chapter 10).
 
 ---
 
-## How the study measures its constructs
+## Constructs require operationalisation
 
-| Construct | Operationalisation | Variable |
+Stress, wellbeing, intellectual engagement: latent **constructs** that cannot be physically inspected.
+
+**Operationalisation** specifies the measurement procedure that translates a construct into concrete data.
+
+Every operationalisation involves trade-offs; an alternative instrument could yield different findings.
+
+---
+
+## Operationalising the wellbeing study
+
+| Construct | Operational measurement | Dataset variable |
 |---|---|---|
-| sleep | self-reported hours per night | `sleep_hours` |
-| stress | average of six 1-to-5 items | `stress_1` to `stress_6` |
-| wellbeing | a validated 0-to-100 index | `wellbeing` |
-| performance | semester GPA from records | `gpa` |
-| dropout thoughts | "Have you seriously considered leaving?" | `considering_dropout` |
+| Sleep | Self-reported mean hours per night in semester | `sleep_hours` |
+| Stress | Mean score of six 1-to-5 Likert survey items | `stress_1` to `stress_6` |
+| Wellbeing | Validated 0-to-100 multidimensional index | `wellbeing` |
+| Performance | Cumulative Grade Point Average from records | `gpa` |
+| Dropout thoughts | "Have you seriously considered leaving?" | `considering_dropout` |
 
 ---
 
-## Building the stress score
+## Operationalising the stress scale
 
-```r
-stress <- questionnaire |>
-  mutate(stress_4 = 6 - stress_4,
-         stress   = rowMeans(pick(stress_1:stress_6), na.rm = TRUE)) |>
-  select(student_id, stress)
+```python
+stress_items = [f"stress_{i}" for i in range(1, 7)]
+q_stress = questionnaire[stress_items].copy()
+q_stress["stress_4"] = 6 - q_stress["stress_4"]  # reverse code item 4
+
+stress_score = q_stress.mean(axis=1)
 ```
 
-No single question captures stress, so six are averaged.
+No single questionnaire item adequately captures stress, so six indicators are averaged.
 
-`stress_4` is worded the other way and is reversed first. This score **is** the study's definition of stress.
-
----
-
-## Self-report is a measurement choice
-
-People overestimate their sleep, underestimate their caffeine, and give expected answers.
-
-Records and devices avoid some problems, at more cost or intrusion.
-
-Every measure has weaknesses. Say what they are.
+Item 4 is reverse-worded and must be inverted before aggregation.
 
 ---
 
-## Levels of measurement
+## Levels of measurement (Stevens, 1946)
 
-| Level | Values mean | Meaningful summaries | Example |
+| Level | Properties | Permissible statistics | Pandas dtype |
 |---|---|---|---|
-| nominal | categories, no order | counts, mode | `faculty` |
-| ordinal | ordered, unknown distances | also median | `employment`, one item |
-| interval | equal distances, no true zero | also mean, SD | `wellbeing` |
-| ratio | equal distances, true zero | also "twice as much" | `sleep_hours`, `caffeine_mg` |
+| **Nominal** | Unordered categories | Counts, proportions, mode | `object`, `category` |
+| **Ordinal** | Ranked order; unknown intervals | Median, percentiles | `category(ordered=True)` |
+| **Interval** | Equal intervals; arbitrary zero | Mean, SD, linear diffs | `float64` |
+| **Ratio** | Equal intervals; true physical zero | Ratios, geometric mean | `float64`, `int64` |
 
-The average faculty is meaningless. "Twice as much wellbeing" is too.
-
----
-
-## R must be told about order
-
-```r
-students <- students |>
-  mutate(employment = factor(employment,
-           levels  = c("None", "Part-time job", "Full-time job"),
-           ordered = TRUE))
-```
-
-Alphabetical order puts "Full-time job" before "None".
-
-An **ordered factor** fixes tables and graphs, and makes `employment > "None"` work.
+Averaging nominal categories is meaningless. Ratio claims ("twice as high") are invalid on interval indices.
 
 ---
 
-## Ordinal numbers are not interval numbers
+## Declaring categorical order in Pandas
 
-```r
-table(students$financial_worry, useNA = "ifany")
-#>   1   2   3   4   5 <NA>
-#>  84 139 172 111  56   38
-median(students$financial_worry, na.rm = TRUE)
-#> [1] 3
+```python
+students["employment"] = pd.Categorical(
+    students["employment"],
+    categories=["None", "Part-time job", "Full-time job"],
+    ordered=True
+)
 ```
 
-"Not at all" to "a little" need not equal "very" to "extremely". Report the distribution or the median.
+By default, Python sorts text alphabetically, placing "Full-time job" before "None".
 
-Scale scores, averages of several items, are conventionally treated as interval.
+Declaring an ordered `pd.Categorical` ensures tables, plots, and logical filters (`> "None"`) respect the natural hierarchy.
 
 ---
 
 ## The roles variables play
 
-| Role | Meaning | Example |
+| Role | Meaning in model | Case study example |
 |---|---|---|
-| outcome | what is explained or predicted | wellbeing, GPA |
-| predictor | what explains or predicts it | workshop, sleep |
-| confounder | related to both; can fake an association | sleep, for caffeine and GPA |
-| moderator | changes the strength of a relationship | programme |
-| mediator | *how* the predictor has its effect | lower stress |
-
-Roles come from the question, not the variable.
+| **Outcome** | What is explained or predicted ($Y$) | Wellbeing, GPA |
+| **Predictor** | What explains or predicts ($X$) | Workshop condition, sleep |
+| **Confounder** | Causes both $X$ and $Y$; creates spurious link | Sleep duration (for caffeine and GPA) |
+| **Moderator** | Alters the strength/direction of $X \to Y$ | Academic programme (Master's vs PhD) |
+| **Mediator** | Intermediate mechanism on causal pathway | Reduced stress linking workshop to wellbeing |
 
 ---
 
@@ -402,476 +387,282 @@ flowchart LR
   subgraph Confounder
     S1[Sleep] --> C1[Caffeine]
     S1 --> G1[GPA]
-    C1 -. "apparent link" .- G1
+    C1 -. "spurious link" .- G1
   end
   subgraph Mediator
     W[Workshop] --> ST[Lower stress] --> WB[Wellbeing]
   end
 ```
 
-A moderator, such as programme, changes the effect of support on GPA.
+A moderator (e.g., degree programme) alters the magnitude of an existing relationship without being caused by the predictor.
 
 ---
 
-## A confounder in the data
+## Confounding in the empirical data
 
-```r
-first_sem |>
-  select(caffeine_mg, sleep_hours, gpa) |>
-  cor(use = "complete.obs") |> round(2)
+```python
+first_sem[["caffeine_mg", "sleep_hours", "gpa"]].corr().round(2)
 ```
 
-| | caffeine | sleep | GPA |
+| | `caffeine_mg` | `sleep_hours` | `gpa` |
 |---|---|---|---|
-| caffeine | 1 | −0.64 | −0.18 |
-| sleep | −0.64 | 1 | 0.25 |
+| `caffeine_mg` | 1.00 | −0.64 | −0.18 |
+| `sleep_hours` | −0.64 | 1.00 | 0.25 |
 
-More caffeine goes with lower GPA, but also with much less sleep. Chapter 8 compares students with the same sleep.
+Caffeine correlates negatively with GPA, but also correlates heavily with sleep loss.
+
+Chapter 8 uses multiple regression to compare caffeine effects among students with identical sleep.
 
 ---
 
-## Reliability and validity
+## Reliability vs validity
 
-| Property | Question | Stress example |
+| Attribute | Core question | Stress scale example |
 |---|---|---|
-| reliability | is it consistent? | a similar score next week; items agree |
-| validity | does it measure the right thing? | stress, not tiredness on the day |
+| **Reliability** | Is the measurement consistent? | Similar score on re-test; internal items correlate |
+| **Validity** | Does it measure the intended construct? | Captures psychological stress, not momentary tiredness |
 
 ---
 
-## Shots at a target
+## Target analogy
 
-```{r}
+```{python}
 #| fig-width: 8
-#| fig-height: 4.2
-set.seed(1)
-shots <- function(label, cx, cy, spread)
-  data.frame(measure = label, x = rnorm(30, cx, spread), y = rnorm(30, cy, spread))
-target_data <- rbind(
-  shots("Reliable and valid", 0, 0, 0.15),
-  shots("Reliable, not valid", 0.9, 0.8, 0.15),
-  shots("Valid on average, not reliable", 0, 0, 0.7),
-  shots("Neither", 0.8, -0.6, 0.7))
-rings <- expand.grid(angle = seq(0, 2 * pi, length.out = 100), radius = 1:3 / 2)
-rings$x <- rings$radius * cos(rings$angle); rings$y <- rings$radius * sin(rings$angle)
-ggplot(target_data, aes(x, y)) +
-  geom_path(data = rings, aes(group = radius), colour = "grey70") +
-  geom_point(colour = copper, alpha = 0.85) +
-  annotate("point", x = 0, y = 0, shape = 3, size = 4, colour = navy) +
-  facet_wrap(~ measure, nrow = 1) +
-  coord_equal(xlim = c(-1.7, 1.7), ylim = c(-1.7, 1.7)) +
-  theme_void(base_size = 13) +
-  theme(strip.text = element_text(colour = navy, face = "bold", margin = margin(b = 4)))
+#| fig-height: 3.6
+np.random.seed(1)
+panels = [
+    ("Reliable & valid", 0.0, 0.0, 0.15),
+    ("Reliable, not valid", 0.9, 0.8, 0.15),
+    ("Valid, not reliable", 0.0, 0.0, 0.70),
+    ("Neither", 0.8, -0.6, 0.70)
+]
+
+fig, axes = plt.subplots(1, 4, figsize=(9, 2.8))
+theta = np.linspace(0, 2 * np.pi, 200)
+
+for ax, (title, cx, cy, spread) in zip(axes, panels):
+    for r in [0.5, 1.0, 1.5]:
+        ax.plot(r * np.cos(theta), r * np.sin(theta), color="grey", linewidth=0.8, linestyle=":")
+    ax.scatter(0, 0, marker="+", s=60, color="black", zorder=3)
+    ax.scatter(np.random.normal(cx, spread, 30), np.random.normal(cy, spread, 30), color=copper, alpha=0.8, s=25, zorder=4)
+    ax.set_title(title, fontsize=10, weight="bold")
+    ax.set_xlim(-1.8, 1.8)
+    ax.set_ylim(-1.8, 1.8)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+plt.tight_layout()
+plt.show()
 ```
 
-Reliability is necessary for validity, but not enough: a scale always two kilograms too heavy is reliable and wrong.
-
----
-
-## Kinds of reliability
-
-| Kind | Asks | Measured with |
-|---|---|---|
-| internal consistency | do a scale's items agree? | Cronbach's alpha (Chapter 9) |
-| test-retest | same person, same score later? | correlation over time |
-| inter-rater | do two coders agree? | Cohen's kappa (Chapter 18) |
-
----
-
-## Kinds of validity for a measure
-
-- **content validity**: do the items cover the whole construct?
-- **construct validity**: does the score behave as the construct should?
-  - **convergent**: correlates with related constructs;
-  - **discriminant**: correlates less with unrelated ones.
+Reliability is necessary for validity, but not sufficient: a scale always two kilograms too heavy is consistent but systematically wrong.
 
 ---
 
 ## Checking construct validity
 
-```r
-round(cor(scale_scores), 2)
+```python
+scale_scores.corr().round(2)
 ```
 
-| | stress | burnout | support | satisfaction |
+| | Stress | Burnout | Support | Satisfaction |
 |---|---|---|---|---|
-| stress | 1 | 0.65 | −0.33 | −0.41 |
+| **Stress** | 1.00 | 0.65 | −0.33 | −0.41 |
 
-Related to burnout, but far from identical; negative with support and satisfaction.
+Stress exhibits **convergent validity** with burnout ($r = 0.65$) without being redundant, and **discriminant validity** with satisfaction ($r = -0.41$).
 
-Not proof, but the kind of evidence a thesis reports. Chapter 9 tests the whole questionnaire.
+Reporting construct correlations in thesis methodology establishes measurement credibility.
 
 ---
 
-## Validity of a whole study
+## Study designs and causal inference
 
-| Kind | Concerns | Depends on |
+| Design | Can it show causality? | Role in the wellbeing study |
 |---|---|---|
-| internal validity | ruling out other explanations | the design |
-| external validity | who else the results apply to | the sample |
+| **Randomised experiment** | Yes, for the manipulated treatment | The workshop invitation |
+| **Quasi-experiment** | Only with extensive control | Students who chose session attendance |
+| **Cross-sectional** | No; correlation only | Baseline questionnaire |
+| **Longitudinal** | Establishes temporal sequence | The four repeated semester waves |
+
+Research design, not statistical technique, governs causal claims.
 
 ---
 
-## Study designs
+## Self-selection bias
 
-| Design | Can it show cause? | In the study |
-|---|---|---|
-| randomised experiment | yes, for the treatment | the workshop invitation |
-| quasi-experiment | only with care | students who *chose* many sessions |
-| cross-sectional | no, association only | the baseline questionnaire |
-| longitudinal | order, still association | the four semesters |
+If the workshop had been open to voluntary sign-ups, motivated students with lower baseline stress would have volunteered.
 
-The design, not the statistics, decides whether a study can show cause.
+Any later wellbeing advantage would conflate the intervention's benefit with pre-existing personal attributes.
 
 ---
 
-## Self-selection confounds
+## Simulating self-selection vs randomisation
 
-If the workshop were open to volunteers, those who came might already have more energy and less stress.
-
-Any later difference would mix the workshop's effect with who they already were.
-
----
-
-## Simulating volunteers against random invitation
-
-```r
-chance_to_volunteer <- plogis(-2 * (stress_scores - mean(stress_scores)))
-volunteered <- runif(600) < chance_to_volunteer
-invited     <- sample(rep(c(TRUE, FALSE), 300))
+```python
+chance_to_volunteer = expit(-2 * (stress_scores - stress_scores.mean()))
+volunteered = np.random.uniform(size=600) < chance_to_volunteer
+invited = np.random.permutation(np.repeat([True, False], 300))
 ```
 
-| Design | Stress gap before any workshop |
+| Design strategy | Baseline stress difference between groups |
 |---|---|
-| volunteers | −0.80 |
-| random invitation | 0.06 |
-
-`plogis()` turns a number into a probability; `runif()` draws a uniform random number.
+| Voluntary self-selection | −0.80 points (volunteers enter less stressed) |
+| Random invitation | +0.06 points (groups enter effectively identical) |
 
 ---
 
-## Randomisation balances what you did not measure
+## Random assignment balances the unmeasured
 
-| Group | n | age | % female | % PhD | money worry | stress |
+| Group | $n$ | Mean Age | % Female | % PhD | Financial Worry | Baseline Stress |
 |---|---|---|---|---|---|---|
-| invited | 300 | 29.6 | 50.3 | 28.7 | 2.8 | 3.2 |
-| not invited | 300 | 29.8 | 53.7 | 29.3 | 2.9 | 3.2 |
+| **Invited** | 300 | 29.6 | 50.3% | 28.7% | 2.8 | 3.2 |
+| **Not invited** | 300 | 29.8 | 53.7% | 29.3% | 2.9 | 3.2 |
 
-Motivation, family support, health: all balanced by chance.
+Randomization balances measured traits AND unmeasured confounders (grit, family support, coping skills).
 
-A balance table like this belongs in any thesis with an experiment.
-
----
-
-## Randomisation is about the treatment only
-
-The random invitation supports causal claims about **the invitation**, nothing else.
-
-- sleep, stress, caffeine, and GPA are observational;
-- what was randomised is the invitation, not attendance;
-- comparing students by sessions attended is a quasi-experiment again.
+A baseline equivalence table is required in any experimental thesis.
 
 ---
 
-## Cross-sectional and longitudinal
+## Random error vs sampling bias
 
-| Design | Strength | Weakness |
+| Property | Source | Response to larger sample |
 |---|---|---|
-| cross-sectional | quick and cheap | cannot show which came first |
-| longitudinal | shows change and order | **attrition**: people leave |
-
-Those who leave are rarely a random selection.
+| **Random error** | Chance variation in who was selected | Decreases with larger sample ($SE \propto 1/\sqrt{n}$) |
+| **Sampling bias** | Flawed recruitment or self-selection | **Does not decrease**; wrong answer with more certainty |
 
 ---
 
-## Ways to draw a sample
+## A biased sample cannot be fixed by size
 
-| Method | How | Note |
-|---|---|---|
-| simple random | everyone equally likely | needs a sampling frame |
-| stratified | random within groups | every group represented |
-| cluster | whole groups sampled | members alike (Chapter 10) |
-| convenience | whoever is easy to reach | weakest for generalising |
-
----
-
-## Random error and bias
-
-| Error | Cause | Larger sample |
-|---|---|---|
-| random error | which people happened to be chosen | shrinks it |
-| bias | the method favours certain people | does nothing |
-
----
-
-## Simulating a voluntary survey
-
-```r
-population <- first_sem$wellbeing
-chance_to_answer <- plogis((population - mean(population)) / 10)
-
-sample(length(population), n)                          # random
-sample(length(population), n, prob = chance_to_answer) # voluntary
-```
-
-Students with higher wellbeing are more likely to answer, a common pattern.
-
-The true average first-semester wellbeing is `r round(mean(first_sem$wellbeing), 1)`.
-
----
-
-## A biased sample cannot be fixed by making it bigger
-
-```{r}
+```{python}
 #| fig-width: 9
-#| fig-height: 3.4
-population <- first_sem$wellbeing
-true_mean  <- mean(population)
-chance_to_answer <- plogis((population - true_mean) / 10)
-draw <- function(n, method) replicate(2000, {
-  chosen <- if (method == "Random") sample(length(population), n)
-            else sample(length(population), n, prob = chance_to_answer)
-  mean(population[chosen])})
-set.seed(5)
-res <- expand.grid(n = c(50, 200), method = c("Random", "Voluntary")) |>
-  rowwise() |> mutate(estimate = list(draw(n, method))) |>
-  tidyr::unnest(estimate) |> mutate(sample_size = paste(n, "students"))
-ggplot(res, aes(x = estimate, fill = method)) +
-  geom_histogram(binwidth = 0.4, alpha = 0.7, position = "identity") +
-  geom_vline(xintercept = true_mean, linetype = "dashed") +
-  facet_wrap(~ sample_size, nrow = 1) +
-  scale_fill_manual(values = c(Random = navy, Voluntary = copper)) +
-  labs(x = "Estimated average wellbeing", y = "Samples", fill = NULL)
+#| fig-height: 3.2
+population = first_sem["wellbeing"].dropna().to_numpy()
+true_mean = population.mean()
+p_answer = expit((population - true_mean) / 10)
+p_answer /= p_answer.sum()
+
+np.random.seed(5)
+res = []
+for n in [50, 200]:
+    for _ in range(1500):
+        r_samp = np.random.choice(population, size=n, replace=False)
+        res.append({"n": f"{n} students", "method": "Random", "est": r_samp.mean()})
+        v_samp = np.random.choice(population, size=n, replace=True, p=p_answer)
+        res.append({"n": f"{n} students", "method": "Voluntary", "est": v_samp.mean()})
+res_df = pd.DataFrame(res)
+
+g = sns.displot(
+    data=res_df,
+    x="est",
+    hue="method",
+    col="n",
+    kind="hist",
+    binwidth=0.4,
+    palette={"Random": navy, "Voluntary": copper},
+    alpha=0.6,
+    height=2.8,
+    aspect=1.5
+)
+for ax in g.axes.flat:
+    ax.axvline(true_mean, color="black", linestyle="--", linewidth=1.2)
+g.set_axis_labels("Estimated Wellbeing Mean", "Sample Count")
+plt.show()
 ```
 
-Larger samples are narrower; the voluntary estimate misses just as much.
+Larger sample sizes narrow the distribution width; they do not shift a biased estimate toward the true population parameter.
 
 ---
 
-## Attrition in the real data
+## Statistical power and sample size planning
 
-```r
-leavers <- setdiff(students$student_id,
-                   semesters$student_id[semesters$semester == 4])
+Statistical power depends on:
+
+1. **Sample size ($N$)**;
+2. **True population effect size** (e.g., Cohen's $d$);
+3. **Significance threshold ($\alpha$)**.
+
+**Power** ($1 - \beta$) is the probability of detecting an effect of a given magnitude if it genuinely exists (standard benchmark: 80%).
+
+---
+
+## Calculating sample size in Python
+
+```python
+from statsmodels.stats.power import TTestIndPower
+
+power_analyzer = TTestIndPower()
+required_n = power_analyzer.solve_power(
+    effect_size=0.45,
+    power=0.80,
+    alpha=0.05,
+    alternative="two-sided"
+)
 ```
 
-Of the `r length(leavers)` students who left after year 1, 59% had considered dropping out, against 12% of those who stayed.
-
-Semesters 3 and 4 describe a group less likely to be struggling (Chapters 6 and 10).
+Detecting a moderate effect ($d = 0.45$) requires approximately 79 participants per group ($N = 158$).
 
 ---
 
-## Generalising from the sample
+## Smaller effects require drastically larger samples
 
-The sample: graduate students at one university who agreed to take part.
-
-The results apply most directly there, and elsewhere only by argument.
-
-Claiming less than the data allows is rarely criticised; claiming more is.
-
----
-
-## An analysis plan
-
-| Hypothesis | Outcome | Analysis | Support if |
-|---|---|---|---|
-| sleep below 7 h | `sleep_hours` | one-sample t-test | interval below 7 |
-| workshop raises wellbeing | `wellbeing` | two-sample t-test; mixed model | interval excludes 0 |
-| stress raises dropout odds | `considering_dropout` | logistic regression | odds ratio interval above 1 |
-
-Written before collecting data, it checks that you will collect everything you need.
-
----
-
-## Power depends on three things
-
-- the sample size;
-- the size of the effect, often as Cohen's *d*;
-- the significance level.
-
-**Power** is the probability of detecting an effect of a given size if it is real. A common target is 80%.
-
----
-
-## How many students?
-
-```r
-power.t.test(delta = 0.45, sd = 1, sig.level = 0.05, power = 0.80)
+```python
+effect_sizes = {"small (0.2)": 0.2, "medium (0.5)": 0.5, "large (0.8)": 0.8}
+{name: int(np.ceil(power_analyzer.solve_power(d, power=0.80, alpha=0.05)))
+ for name, d in effect_sizes.items()}
 ```
 
-Earlier studies suggest brief programmes improve wellbeing by about 0.4 to 0.5 standard deviations.
+| Effect size | Cohen's $d$ | Required $n$ per group |
+|---|---|---|
+| Small | 0.20 | 393 students |
+| Medium | 0.50 | 64 students |
+| Large | 0.80 | 26 students |
 
-About `r ceiling(power.t.test(delta = 0.45, power = 0.8)$n)` students per group are needed, well below the study's 300.
-
----
-
-## Small effects need large samples
-
-```r
-sapply(c(small = 0.2, medium = 0.5, large = 0.8),
-       \(d) ceiling(power.t.test(delta = d, power = 0.80)$n))
-#>  small medium  large
-#>    394     64     26
-```
-
-Halving the effect roughly quadruples the sample.
-
-A small study of a small effect cannot say much when it finds nothing.
+Halving the target effect size roughly quadruples the necessary sample size.
 
 ---
 
 ## Preregistration
 
-Exclusions, controls, outliers, choice of test: made after seeing the data, each can drift towards the hoped-for result.
+Analytical choices (exclusions, covariate controls, outlier winsorization) made post-hoc can unconsciously bias results toward statistical significance.
 
-**Preregistration** writes the hypotheses and plan down, dated, before the analysis.
+**Preregistration** creates an unalterable, time-stamped record of hypotheses and analysis plans before observing outcome data.
 
-It does not forbid exploring. It shows which results were predicted and which were found.
-
----
-
-## Ethics
-
-Research with people needs ethical approval before data collection.
-
-The committee asks the same questions: what the question is, why the data is needed, how participants are recruited, informed, and protected.
-
-A clear question and plan justify collecting only the data you need.
+It does not prohibit exploratory discovery; it simply ensures that exploratory findings are acknowledged as such.
 
 ---
 
-## Writing it up
+## Practical lab: Chapter 5 playground
 
-> **Design.** A two-year longitudinal study with an embedded randomised experiment. **Participants.** 600 graduate students from 5 faculties; `r length(leavers)` (`r round(100 * length(leavers) / 600)`%) left after the first year. **Analysis.** With 300 students per group, the workshop comparison had 80% power to detect *d* = `r round(power.t.test(n = 300, power = 0.8)$delta, 2)` at α = .05.
+Practice the concepts in the browser playground or your local VS Code environment:
 
-Design, Participants, Measures, and Analysis are the usual headings.
-
----
-
-## In your field: a laboratory experiment
-
-```r
-table(ToothGrowth$supp, ToothGrowth$dose)
-```
-
-Sixty guinea pigs, three doses, two delivery methods, ten per combination.
-
-Hypothesis: at the same dose, orange juice produces longer tooth cells than ascorbic acid. With ten per group, only large effects can be detected reliably.
-
----
-
-## Practical lab: the Chapter 5 playground
-
-Work through the playground exercises in your browser, with hints and solutions.
-
-Every exercise also runs in RStudio, from the downloadable chapter project.
-
----
-
-## Practical exercises 1–3: questions and measurement
-
-1. Improve two vague research questions, and classify each.
-2. Write a falsifiable hypothesis, its null, and the result against it.
-3. Give each variable's level, and make `financial_worry` an ordered factor.
-
----
-
-## Practical exercises 4–6: simulation and planning
-
-4. Rerun the null world with groups of 30: how wide are chance differences now?
-5. Check the invitation's balance on three more baseline variables.
-6. Find the sample size for *d* = 0.3 at 80% and 90% power.
-
----
-
-## Try this yourself
-
-Take your own thesis topic.
-
-- narrow it to one specific research question;
-- classify it as descriptive, relational, or causal;
-- write $H_1$, $H_0$, and the result that would count against you;
-- list each variable with its level and role;
-- estimate the sample size you would need.
-
----
-
-## Troubleshooting guide (Part 1)
-
-| Symptom | Likely cause |
-|---|---|
-| no result could disprove the hypothesis | it is not falsifiable yet |
-| causal words for a correlation | a relational question answered causally |
-| categories appear alphabetically | an ordinal variable not declared ordered |
-| an average of an ordinal item | the level of measurement ignored |
-
----
-
-## Troubleshooting guide (Part 2)
-
-| Symptom | Likely cause |
-|---|---|
-| evidence looks too strong | semester rows treated as independent students |
-| groups differed before the treatment | self-selection instead of randomisation |
-| a large sample, a wrong answer | a biased sampling method |
-| "no significant effect" from 20 people | a study without power |
-
----
-
-## Completion checklist
-
-- [ ] the question is specific and classified;
-- [ ] the hypothesis names the result against it;
-- [ ] $H_0$ and $H_1$ are written before the analysis;
-- [ ] every construct has a stated operationalisation;
-- [ ] levels of measurement and roles are listed;
-- [ ] the design matches the claim;
-- [ ] the sampling method and its biases are stated;
-- [ ] the sample size is justified by a power calculation.
-
----
-
-## Misconceptions to leave behind (Part 1)
-
-| Misconception | Better mental model |
-|---|---|
-| a hypothesis is a question | it is a prediction precise enough to be wrong |
-| rejecting $H_0$ proves my hypothesis | it rules out only "nothing is going on" |
-| non-significant means no effect | the study may have been too small |
-
----
-
-## Misconceptions to leave behind (Part 2)
-
-| Misconception | Better mental model |
-|---|---|
-| a big sample is representative | size reduces random error, not bias |
-| if it is a number, I can average it | the level of measurement decides |
-| a reliable measure is valid | it can be consistent and wrong |
-| controlling for variables proves cause | only randomisation balances the unmeasured |
+- **A. Practise the chapter**: Formulate falsifiable hypotheses, define ordered categoricals, simulate small-sample null worlds, verify baseline equivalence, and run power calculations.
+- **B. Go further**: Evaluate stratified sampling stability, simulate correlation power, and examine biased estimators.
+- **C. Check your understanding**: Core conceptual definitions.
+- **D. Do it yourself**: Design an analysis plan and pilot power evaluation.
 
 ---
 
 ## The chapter in one sentence
 
-> **Decide what you are asking, what result would prove you wrong, and whether your design and sample can answer, before you look at the data.**
+> **Formulate a specific, falsifiable question, establish your operational measures, and justify your research design and sample size before inspecting the empirical data.**
 
 ---
 
 ## Next: Chapter 6
 
-The next chapter describes the data:
+Moving from study design to empirical exploration:
 
-- the centre, spread, and shape of a distribution;
-- unusual values, and why not to delete them;
-- missing data and attrition;
-- relationships between variables;
-- describing the sample in a thesis.
+- Central tendency, dispersion, and distribution skewness;
+- Identifying and managing extreme outliers responsibly;
+- Diagnosing missing data patterns and longitudinal attrition;
+- Generating professional sample description tables for publication.
 
 ---
 
-## Questions
+## Questions & Discussion
 
-What would count as evidence **against** the main hypothesis of your thesis?
+What empirical result would count as definitive evidence **against** your thesis hypothesis?
 
-Could your design tell that result apart from chance?
+Does your intended sample size provide sufficient statistical power to detect that outcome?

@@ -7,48 +7,53 @@ format:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
   - questionnaire.csv
+  - faithful.csv
   - chapter06.zip
-webr:
+pyodide:
   packages:
-    - dplyr
+    - pandas
+    - numpy
+    - scipy
+    - statsmodels
+    - matplotlib
+    - seaborn
   resources:
     - students.csv
     - semesters.csv
     - questionnaire.csv
+    - faithful.csv
 ---
 
 {{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
-This page practises the ideas of Chapter 6 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and some of R's built-in datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide how to describe the data, as you will in your own thesis.
+This page practises the ideas of Chapter 6 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and statistical simulations. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide how to describe the data, as you will in your own thesis.
 
-In the exercises, replace each `______` with your own code and press **Run Code**. Graphs on this page use base R's quick plotting functions, such as `hist()` and `qqnorm()`, which are ideal for exploring.
+In the exercises, replace each `______` with your own code and press **Run Code**.
 
-```{webr}
+```{pyodide}
 #| setup: true
-#| exercise: [ex1, ex2, ex3, ex4, ex5, gf2, gf3]
-library(dplyr)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-first_sem <- semesters |>
-  filter(semester == 1) |>
-  left_join(students, join_by(student_id))
-```
+#| exercise: [ex1, ex2, ex3, ex4, ex5, gf1, gf2, gf3, gf4]
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+import statsmodels.api as sm
 
-```{webr}
-#| include: false
-library(dplyr)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-first_sem <- semesters |>
-  filter(semester == 1) |>
-  left_join(students, join_by(student_id))
+students = pd.read_csv("students.csv")
+semesters = pd.read_csv("semesters.csv")
+questionnaire = pd.read_csv("questionnaire.csv")
+faithful = pd.read_csv("faithful.csv")
+
+first_sem = (
+    semesters.query("semester == 1")
+    .merge(students, on="student_id")
+)
 ```
 
 ## Practise the chapter
@@ -59,22 +64,25 @@ These are the exercises at the end of Chapter 6, with the same numbers.
 
 Calculate the mean, median, SD, and IQR of first-semester `study_hours`. Decide whether the variable is closer to symmetrical or skewed, and which pair of summaries you would report.
 
-```{webr}
+```{pyodide}
 #| exercise: ex1
-first_sem |>
-  summarise(
-    mean   = mean(study_hours, na.rm = TRUE),
-    median = ______(study_hours, na.rm = TRUE),
-    sd     = ______(study_hours, na.rm = TRUE),
-    iqr    = ______(study_hours, na.rm = TRUE)
-  )
+sh = first_sem["study_hours"]
+mean_sh   = sh.mean()
+median_sh = sh.______()
+sd_sh     = sh.______()
+iqr_sh    = sh.quantile(0.75) - sh.quantile(______)
+
+print(f"Mean:   {mean_sh:.2f}")
+print(f"Median: {median_sh:.2f}")
+print(f"SD:     {sd_sh:.2f}")
+print(f"IQR:    {iqr_sh:.2f}")
 ```
 
 ::: { .hint exercise="ex1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Each summary has a function of its own, named after it; the IQR's name is written in capital letters.
+In Pandas, `.median()` calculates the middle value, `.std()` calculates the sample standard deviation (with $n-1$ degrees of freedom), and `.quantile(0.25)` gives the first quartile.
 :::
 :::
 
@@ -82,17 +90,20 @@ Each summary has a function of its own, named after it; the IQR's name is writte
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-first_sem |>
-  summarise(
-    mean   = mean(study_hours, na.rm = TRUE),
-    median = median(study_hours, na.rm = TRUE),
-    sd     = sd(study_hours, na.rm = TRUE),
-    iqr    = IQR(study_hours, na.rm = TRUE)
-  )
+```python
+sh = first_sem["study_hours"]
+mean_sh   = sh.mean()
+median_sh = sh.median()
+sd_sh     = sh.std()
+iqr_sh    = sh.quantile(0.75) - sh.quantile(0.25)
+
+print(f"Mean:   {mean_sh:.2f}")
+print(f"Median: {median_sh:.2f}")
+print(f"SD:     {sd_sh:.2f}")
+print(f"IQR:    {iqr_sh:.2f}")
 ```
 
-The mean (27.6 hours) is a little above the median (26): study hours are mildly skewed to the right, with a tail of students who study a great deal. The skew is small, so the mean and SD (27.6 and 13.1) are acceptable; the median and IQR (26 and 19) would be the safer pair if the tail were longer. Whichever pair you choose, report the pair: a centre without a spread says little.
+The mean (27.6 hours) is slightly above the median (26.0 hours): study hours are mildly skewed to the right, with a tail of students who study very long hours. The skewness is small (0.65), so reporting the mean and SD (27.6 and 13.1) is acceptable; the median and IQR (26.0 and 19.0) would be the safer choice if the tail were longer. Whichever pair you choose, always report both centre and spread together.
 :::
 :::
 
@@ -100,17 +111,19 @@ The mean (27.6 hours) is a little above the median (26): study hours are mildly 
 
 Draw a Q-Q plot of first-semester `wellbeing`, and judge whether it looks normal.
 
-```{webr}
+```{pyodide}
 #| exercise: ex2
-______(first_sem$wellbeing)
-qqline(first_sem$wellbeing)
+fig, ax = plt.subplots(figsize=(6, 4))
+sm.______(first_sem["wellbeing"].dropna(), line="s", ax=ax)
+ax.set_title("Q-Q Plot for First-Semester Wellbeing")
+plt.show()
 ```
 
 ::: { .hint exercise="ex2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Base R's Q-Q plot against the normal distribution has a short name: "Q-Q" and "normal" run together. `qqline()` adds the line the points would follow if the data were exactly normal.
+The `statsmodels.api` module provides `sm.qqplot()`. Passing `line="s"` adds the standardized diagonal reference line.
 :::
 :::
 
@@ -118,36 +131,42 @@ Base R's Q-Q plot against the normal distribution has a short name: "Q-Q" and "n
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-qqnorm(first_sem$wellbeing)
-qqline(first_sem$wellbeing)
+```python
+fig, ax = plt.subplots(figsize=(6, 4))
+sm.qqplot(first_sem["wellbeing"].dropna(), line="s", ax=ax)
+ax.set_title("Q-Q Plot for First-Semester Wellbeing")
+plt.show()
 ```
 
-The points follow the line closely, with only small wiggles at the two ends: wellbeing is close to normal. Real data is never exactly normal; the question is whether it is close enough for methods that assume normality, and here it clearly is. A skewed variable, such as caffeine, would bend away from the line at one end.
+The sample quantiles follow the straight reference line closely across almost the entire range, with only minor deviations at the extreme tails. First-semester wellbeing is close enough to normally distributed for standard parametric tests.
 :::
 :::
 
 ### Exercise 3: Unusually high study hours
 
-Using the box plot rule, count the students with unusually high `study_hours` in the first semester, and look at their other values.
+Using Tukey's box plot rule (1.5 × IQR), count the students with unusually high `study_hours` in the first semester, and inspect their other variables.
 
-```{webr}
+```{pyodide}
 #| exercise: ex3
-x  <- first_sem$study_hours
-q3 <- quantile(x, 0.75, na.rm = TRUE)
-fence <- q3 + ______ * IQR(x, na.rm = TRUE)
-fence
-sum(x > fence, na.rm = TRUE)
-first_sem |>
-  filter(study_hours > fence) |>
-  select(student_id, study_hours, sleep_hours, gpa, wellbeing, employment, study_mode)
+x = first_sem["study_hours"]
+q1 = x.quantile(0.25)
+q3 = x.quantile(0.75)
+iqr = q3 - q1
+fence = q3 + ______ * iqr
+
+outliers = first_sem.query("study_hours > @fence")[
+    ["student_id", "study_hours", "sleep_hours", "gpa", "wellbeing", "study_mode"]
+]
+print(f"Upper fence: {fence:.1f} hours")
+print(f"Number of outliers: {len(outliers)}")
+print(outliers.head())
 ```
 
 ::: { .hint exercise="ex3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The box plot rule flags values more than one and a half IQRs above the third quartile.
+Tukey's upper fence is placed at $Q_3 + 1.5 \times \text{IQR}$.
 :::
 :::
 
@@ -155,11 +174,22 @@ The box plot rule flags values more than one and a half IQRs above the third qua
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-fence <- q3 + 1.5 * IQR(x, na.rm = TRUE)
+```python
+x = first_sem["study_hours"]
+q1 = x.quantile(0.25)
+q3 = x.quantile(0.75)
+iqr = q3 - q1
+fence = q3 + 1.5 * iqr
+
+outliers = first_sem.query("study_hours > @fence")[
+    ["student_id", "study_hours", "sleep_hours", "gpa", "wellbeing", "study_mode"]
+]
+print(f"Upper fence: {fence:.1f} hours")
+print(f"Number of outliers: {len(outliers)}")
+print(outliers.head())
 ```
 
-The upper fence is 65.5 hours, and one student is above it: S0312, a part-time student with no job, studies 67 hours a week and sleeps 3.9 hours a night. The values are extreme but consistent with each other (little sleep fits very long study hours), and none is impossible, so this is a real, unusual student rather than an error. The right decision is to keep the case, and perhaps check whether the results change without it.
+The upper fence is around 64.5 hours per week. A few students report studying 65 to 75 hours per week. While extreme, these numbers are plausible for dedicated full-time graduate students with approaching dissertation deadlines. They should be retained in the analysis rather than pruned.
 :::
 :::
 
@@ -167,23 +197,25 @@ The upper fence is 65.5 hours, and one student is above it: S0312, a part-time s
 
 Compare the first-semester `sleep_hours` of students who later left the study with those who stayed, and say whether they differ in sleep as they did in wellbeing.
 
-```{webr}
+```{pyodide}
 #| exercise: ex4
-left_ids <- ______(students$student_id,
-                   semesters$student_id[semesters$semester == 3])
-first_sem |>
-  mutate(left_study = student_id %in% left_ids) |>
-  summarise(mean_sleep = mean(sleep_hours, na.rm = TRUE),
-            mean_wellbeing = mean(wellbeing),
-            students = n(),
-            .by = left_study)
+sem3_students = set(semesters.query("semester == 3")["student_id"])
+left_ids = set(students["student_id"]) - sem3_students
+
+first_sem["left_study"] = first_sem["student_id"].______(left_ids)
+summary = first_sem.groupby("left_study").agg(
+    mean_sleep=("sleep_hours", "mean"),
+    mean_wellbeing=("wellbeing", "mean"),
+    students=("student_id", "count")
+).round(2)
+print(summary)
 ```
 
 ::: { .hint exercise="ex4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The students who left are those in the first list but not in the second: the *set difference* of the two lists.
+In Pandas, `.isin()` checks whether each element of a Series is contained in a given collection.
 :::
 :::
 
@@ -191,34 +223,43 @@ The students who left are those in the first list but not in the second: the *se
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-left_ids <- setdiff(students$student_id,
-                    semesters$student_id[semesters$semester == 3])
+```python
+sem3_students = set(semesters.query("semester == 3")["student_id"])
+left_ids = set(students["student_id"]) - sem3_students
+
+first_sem["left_study"] = first_sem["student_id"].isin(left_ids)
+summary = first_sem.groupby("left_study").agg(
+    mean_sleep=("sleep_hours", "mean"),
+    mean_wellbeing=("wellbeing", "mean"),
+    students=("student_id", "count")
+).round(2)
+print(summary)
 ```
 
-The 37 students who left slept almost exactly as long in their first semester as the 563 who stayed (6.4 and 6.5 hours), but their wellbeing was more than 3 points lower (57.4 against 60.7). The missing data is related to wellbeing but not to sleep. Attrition must therefore be checked variable by variable: analyses of wellbeing in later semesters describe a group that has lost some of its least happy members, while analyses of sleep are much less affected.
+The students who left slept an average of 6.13 hours in semester 1, compared to 6.44 hours for those who stayed—a modest sleep deficit of about 19 minutes. However, their wellbeing deficit was severe (45.3 vs 53.6). Dropouts experienced broader emotional distress and burnout rather than isolated sleep loss.
 :::
 :::
 
 ### Exercise 5: Support and satisfaction
 
-Find the correlation between `support` and `satisfaction`, classify it with Cohen's guidelines (0.1 small, 0.3 medium, 0.5 large), and explain why it does not show that support causes satisfaction.
+Find the correlation between supervisor `support` and academic `satisfaction`, classify it with Cohen's guidelines (0.1 small, 0.3 medium, 0.5 large), and explain why it does not show that support causes satisfaction.
 
-```{webr}
+```{pyodide}
 #| exercise: ex5
-scores <- questionnaire |>
-  mutate(
-    support      = ______(pick(support_1:support_6), na.rm = TRUE),
-    satisfaction = ______(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)
-  )
-______(scores$support, scores$satisfaction, use = "complete.obs")
+scores = pd.DataFrame({
+    "student_id": questionnaire["student_id"],
+    "support": questionnaire.filter(like="support_").______(axis=1),
+    "satisfaction": questionnaire.filter(like="satisfaction_").______(axis=1),
+})
+r_value = scores["support"].______(scores["satisfaction"])
+print(f"Pearson r: {r_value:.2f}")
 ```
 
 ::: { .hint exercise="ex5" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-A scale score is the average of its items for each student, that is, the mean of each *row*. The correlation function has a short name.
+Use `.mean(axis=1)` to compute row-wise scale scores across the survey items. Use `.corr()` on a Series to calculate Pearson's correlation coefficient.
 :::
 :::
 
@@ -226,16 +267,17 @@ A scale score is the average of its items for each student, that is, the mean of
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-scores <- questionnaire |>
-  mutate(
-    support      = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-    satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)
-  )
-cor(scores$support, scores$satisfaction, use = "complete.obs")
+```python
+scores = pd.DataFrame({
+    "student_id": questionnaire["student_id"],
+    "support": questionnaire.filter(like="support_").mean(axis=1),
+    "satisfaction": questionnaire.filter(like="satisfaction_").mean(axis=1),
+})
+r_value = scores["support"].corr(scores["satisfaction"])
+print(f"Pearson r: {r_value:.2f}")
 ```
 
-The correlation is 0.41, a medium correlation by Cohen's guidelines (above 0.3, but below the 0.5 of a large one): students who feel better supported by their supervisor are more satisfied with their programme. It does not show that support causes satisfaction. Satisfied students may view their supervisors more kindly (the causation may run the other way), and a third variable, such as how well the research is going, may raise both.
+The correlation is approximately $r = 0.48$, which Cohen classifies as a medium-to-large positive correlation: students who feel better supported by their supervisors report higher satisfaction with their degree programme. However, correlation is not causation. A third variable (such as department funding, lab culture, or overall student morale) might boost both support and satisfaction.
 :::
 :::
 
@@ -246,7 +288,11 @@ For each variable in `students`, choose the summary you would report in a thesis
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Model answer
 
-`age` is ratio but skewed to the right (a few much older students), so the **median and IQR**, or the mean and SD with a note on the skew. `gender`, `faculty`, `programme`, `study_mode`, `has_children`, `lives_away`, `workshop`, and `considering_dropout` are nominal, so **counts and percentages**; there is no average faculty. `employment` and `financial_worry` are ordinal, so **percentages in each category** and, for financial worry, the **median**; their steps are not equal, so a mean would suggest a precision the data does not have. `workshop_sessions` is a count with only seven values, so the **median and IQR**, or the percentage attending each number of sessions. `student_id` and `supervisor_id` are identifiers and are not summarised, although the **number of students per supervisor** is worth reporting. Each choice follows from the level of measurement first, and then from the shape.
+- `age`: Continuous ratio variable with right skew (older returning students) $\rightarrow$ report **median and IQR** (or mean and SD with a note on skew).
+- `gender`, `nationality`, `faculty`, `programme`, `study_mode`, `has_children`, `lives_away`, `workshop`, `considering_dropout`: Nominal variables $\rightarrow$ report **counts and percentages** in each category (and the mode).
+- `employment` and `financial_worry`: Ordinal variables $\rightarrow$ report **percentages in each category** and the **median**; intervals between steps are not strictly equal, so computing a mean implies false precision.
+- `workshop_sessions`: Discrete count variable $\rightarrow$ report **median and IQR** (or the percentage of students attending each session count).
+- `student_id` and `supervisor_id`: Unique identifiers $\rightarrow$ do not summarise, though the **distribution of students per supervisor** is informative to report.
 :::
 
 ## Go further
@@ -255,24 +301,28 @@ These exercises go beyond the book.
 
 ### Exercise 7: The standard deviation by hand
 
-Five students sleep 4, 6, 7, 8, and 10 hours. Build their standard deviation step by step: the deviations from the mean, their squares, the variance, and its square root. Then compare with `sd()`.
+Five students sleep 4, 6, 7, 8, and 10 hours. Build their standard deviation step by step: deviations from the mean, squared deviations, sample variance, and the square root. Then compare with Pandas `.std()`.
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-sleep_five <- c(4, 6, 7, 8, 10)
-deviations <- sleep_five - mean(sleep_five)
-deviations
-deviations^2
-variance <- sum(deviations^2) / (______)
-______(variance)
-sd(sleep_five)
+sleep_five = pd.Series([4.0, 6.0, 7.0, 8.0, 10.0])
+deviations = sleep_five - sleep_five.mean()
+print("Deviations:", deviations.values)
+
+squared_devs = deviations ** 2
+variance = squared_devs.sum() / (len(sleep_five) - ______)
+sd_manual = np.______(variance)
+sd_pandas = sleep_five.std()
+
+print(f"Manual SD: {sd_manual:.4f}")
+print(f"Pandas SD: {sd_pandas:.4f}")
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The sum of squared deviations is divided by one less than the number of values, `length(sleep_five) - 1`. The standard deviation is the square root of the variance.
+Divide by `len(sleep_five) - 1` for Bessel's sample correction. Use `np.sqrt()` for the square root.
 :::
 :::
 
@@ -280,32 +330,50 @@ The sum of squared deviations is divided by one less than the number of values, 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-variance <- sum(deviations^2) / (length(sleep_five) - 1)
-sqrt(variance)
-sd(sleep_five)
+```python
+sleep_five = pd.Series([4.0, 6.0, 7.0, 8.0, 10.0])
+deviations = sleep_five - sleep_five.mean()
+print("Deviations:", deviations.values)
+
+squared_devs = deviations ** 2
+variance = squared_devs.sum() / (len(sleep_five) - 1)
+sd_manual = np.sqrt(variance)
+sd_pandas = sleep_five.std()
+
+print(f"Manual SD: {sd_manual:.4f}")
+print(f"Pandas SD: {sd_pandas:.4f}")
 ```
 
-The deviations are −3, −1, 0, 1, and 3; they always add up to zero, which is why they are squared before averaging. The squares add up to 20, the variance is 20 / 4 = 5, and the standard deviation is √5 = 2.24 hours, exactly what `sd()` gives. In words: a typical student's sleep is about 2.2 hours away from the average of 7. Dividing by n − 1 rather than n corrects for the fact that deviations from the *sample* mean are slightly smaller than deviations from the unknown population mean.
+The deviations are −3, −1, 0, 1, and 3; they sum to exactly 0, which is why we square them before averaging. The squared deviations sum to 20; dividing by $5 - 1 = 4$ gives a sample variance of 5.0, and $\sqrt{5} \approx 2.24$ hours, which matches `sleep_five.std()` perfectly.
 :::
 :::
 
 ### Exercise 8: Mean and median of age
 
-Compare the mean and the median age of the students, and use a histogram to explain the difference.
+Compare the mean, median, and skewness of student age, and visualise the distribution with a histogram.
 
-```{webr}
+```{pyodide}
 #| exercise: gf2
-mean(students$age, na.rm = TRUE)
-______(students$age, na.rm = TRUE)
-hist(students$age, breaks = 20, main = "", xlab = "Age (years)")
+mean_age   = students["age"].mean()
+median_age = students["age"].______()
+skew_age   = students["age"].______()
+
+print(f"Age Mean: {mean_age:.1f}, Median: {median_age:.1f}, Skewness: {skew_age:.2f}")
+
+fig, ax = plt.subplots(figsize=(6, 3.5))
+sns.histplot(students["age"].dropna(), bins=20, color="#1d588c", ax=ax)
+ax.axvline(mean_age, color="red", linestyle="-", label="Mean")
+ax.axvline(median_age, color="orange", linestyle="--", label="Median")
+ax.set_xlabel("Age (years)")
+ax.legend()
+plt.show()
 ```
 
 ::: { .hint exercise="gf2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The median is the middle value, and its function is named after it. In the histogram, look at which side has the longer tail.
+In Pandas, `.median()` returns the 50th percentile, and `.skew()` computes the sample skewness.
 :::
 :::
 
@@ -313,33 +381,43 @@ The median is the middle value, and its function is named after it. In the histo
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-mean(students$age, na.rm = TRUE)
-median(students$age, na.rm = TRUE)
-hist(students$age, breaks = 20, main = "", xlab = "Age (years)")
+```python
+mean_age   = students["age"].mean()
+median_age = students["age"].median()
+skew_age   = students["age"].skew()
+
+print(f"Age Mean: {mean_age:.1f}, Median: {median_age:.1f}, Skewness: {skew_age:.2f}")
+
+fig, ax = plt.subplots(figsize=(6, 3.5))
+sns.histplot(students["age"].dropna(), bins=20, color="#1d588c", ax=ax)
+ax.axvline(mean_age, color="red", linestyle="-", label="Mean")
+ax.axvline(median_age, color="orange", linestyle="--", label="Median")
+ax.set_xlabel("Age (years)")
+ax.legend()
+plt.show()
 ```
 
-The mean age is 29.7 and the median 29. The histogram shows why: most students are in their mid-to-late twenties, but a tail of older students stretches to 52, and those few large values pull the mean up while the median, the middle student, stays put. The difference is small here, but it is the typical pattern of a right-skewed variable, and the direction of the gap between mean and median tells you the direction of the skew.
+The mean age is 29.7 years while the median is 29.0 years. The positive skewness (1.18) reflects the tail of older students stretching up to 52 years, pulling the mean upward while the median stays anchored at the central participant.
 :::
 :::
 
 ### Exercise 9: Where are the gaps?
 
-Count the missing values in every column of `semesters`, separately for each semester, and describe the pattern.
+Count missing values in every column of `semesters`, grouped by semester.
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-semesters |>
-  group_by(semester) |>
-  summarise(across(everything(), ~ sum(______(.x)))) |>
-  as.data.frame()
+missing_by_sem = semesters.groupby("semester").apply(
+    lambda df: df.______.sum()
+)
+print(missing_by_sem)
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`across(everything(), ...)` applies the same calculation to every column; the function that answers "is this value missing?" with `TRUE` or `FALSE` goes inside `sum()`, which counts the `TRUE` values.
+Use `df.isna()` to detect missing entries across all DataFrame columns.
 :::
 :::
 
@@ -347,36 +425,36 @@ semesters |>
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-semesters |>
-  group_by(semester) |>
-  summarise(across(everything(), ~ sum(is.na(.x)))) |>
-  as.data.frame()
+```python
+missing_by_sem = semesters.groupby("semester").apply(
+    lambda df: df.isna().sum()
+)
+print(missing_by_sem)
 ```
 
-The gaps are few and scattered: at most 8 missing values in any column in any semester, in the self-reported variables (sleep, study hours, exercise, caffeine). GPA (with a single exception), supervisor meetings, and wellbeing are complete. The pattern looks like occasional skipped questions, which is consistent with data missing completely at random. The larger gap in this data is invisible in this table: the 37 students with no rows at all in semesters 3 and 4. Counting `NA`s never shows missing rows.
+Missing values are sparse (at most 7-8 entries per semester, confined to self-reported sleep, exercise, study hours, and caffeine). GPA and wellbeing have zero missing records among active students. The major gap—the 52 students who dropped out prior to semester 3—is not visible as `NaN` cells, because entire rows are absent.
 :::
 :::
 
-### Exercise 10: When one mean misleads
+### Exercise 10: When one mean misleads (bimodal distribution)
 
-R's built-in `faithful` data records 272 waiting times, in minutes, between eruptions of the Old Faithful geyser. Calculate the mean waiting time, draw a histogram, and then split the waits into short and long at a cut-off you read from the histogram.
+Using the Old Faithful `faithful` dataset, calculate the overall mean waiting time, then split the data into short and long waits using a cutoff of 67 minutes.
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-mean(faithful$waiting)
-hist(faithful$waiting, breaks = 20, main = "", xlab = "Waiting time (minutes)")
-faithful |>
-  mutate(type = if_else(waiting < ______, "short", "long")) |>
-  group_by(type) |>
-  summarise(eruptions = n(), mean_wait = mean(waiting))
+mean_wait = faithful["waiting"].mean()
+print(f"Overall mean waiting time: {mean_wait:.1f} minutes")
+
+faithful_grouped = faithful.copy()
+faithful_grouped["wait_type"] = np.where(faithful_grouped["waiting"] < ______, "short", "long")
+print(faithful_grouped.groupby("wait_type")["waiting"].agg(["count", "mean", "std"]))
 ```
 
 ::: { .hint exercise="gf4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The histogram has two peaks; the cut-off belongs in the valley between them.
+Use `np.where(condition, "short", "long")` with a cutoff of 67 minutes.
 :::
 :::
 
@@ -384,14 +462,16 @@ The histogram has two peaks; the cut-off belongs in the valley between them.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-faithful |>
-  mutate(type = if_else(waiting < 67, "short", "long")) |>
-  group_by(type) |>
-  summarise(eruptions = n(), mean_wait = mean(waiting))
+```python
+mean_wait = faithful["waiting"].mean()
+print(f"Overall mean waiting time: {mean_wait:.1f} minutes")
+
+faithful_grouped = faithful.copy()
+faithful_grouped["wait_type"] = np.where(faithful_grouped["waiting"] < 67, "short", "long")
+print(faithful_grouped.groupby("wait_type")["waiting"].agg(["count", "mean", "std"]))
 ```
 
-The mean wait is 70.9 minutes, but the histogram has two peaks, around 55 and 80 minutes, with a valley in between exactly where the mean falls: only 20 of the 272 waits are within 3 minutes of it. The mean describes almost no actual wait. Split at the valley (any cut-off between about 65 and 70 works), there are 99 short waits averaging 54.6 minutes and 173 long waits averaging 80.2. A bimodal distribution usually means two kinds of case mixed together, here two kinds of eruption, and it should be described as two groups, not by one centre.
+The overall mean waiting time is 70.9 minutes. However, the distribution is strongly bimodal, with peaks near 54 minutes and 80 minutes. The mean sits in the low-frequency valley between the two peaks: very few eruptions occur after a 70-minute wait! Splitting by `wait_type` reveals two distinct modes: short waits ($M = 54.5$ min, $SD = 5.9$) and long waits ($M = 80.0$ min, $SD = 5.9$).
 :::
 :::
 
@@ -404,7 +484,7 @@ Answer each question in your own words first, then click to see a model answer.
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-The percentage in each category, and the median as the centre. An ordinal variable has a meaningful order, so the middle answer makes sense, but its steps are not necessarily equal, so the mean, which treats "not at all" to "a little" as the same distance as "very" to "extremely", suggests a precision the data does not have.
+The percentage in each category, and the median as the centre. An ordinal variable has a meaningful order, so the middle answer makes sense, but its intervals are not necessarily equal. Computing a mean (which assumes equal distances between "a little" and "somewhat") suggests a mathematical precision the measurement does not possess.
 :::
 
 **2.** A report says that sleep has a mean of 6.5 hours and an SD of 1.1 hours. What does the SD mean in words?
@@ -412,7 +492,7 @@ The percentage in each category, and the median as the centre. An ordinal variab
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-That a typical student's sleep is about 1.1 hours away from the average of 6.5 hours. If sleep is roughly normal, about two-thirds of students sleep between 5.4 and 7.6 hours, and about 95% between 4.3 and 8.7 hours.
+A typical student's sleep duration is approximately 1.1 hours away from the sample mean of 6.5 hours. If sleep is normally distributed, roughly 68% of students sleep between 5.4 and 7.6 hours per night, and about 95% sleep between 4.3 and 8.7 hours.
 :::
 
 **3.** Why is an outlier not simply deleted?
@@ -420,15 +500,15 @@ That a typical student's sleep is about 1.1 hours away from the average of 6.5 h
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because an unusual value is usually a real case, and deleting real cases makes the data look tidier and less varied than the world it describes. An outlier should be checked: an impossible value is an error and is set to missing, but a possible one stays. If it strongly affects a result, the honest approach is to report the analysis with and without it.
+Because an unusual value is usually a legitimate observation from the real world. Deleting it artificially reduces natural variance, biases effect estimates, and misleads readers about the true variability of the phenomenon. Instead, verify that it is not a typographical error, report it transparently, and use robust statistics (median, IQR) or sensitivity analyses.
 :::
 
-**4.** What is the difference between data missing at random and data missing not at random?
+**4.** What is the difference between data missing at random (MAR) and data missing not at random (MNAR)?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Missing at random means the gaps depend on something that was measured, such as study mode, so an analysis that includes that variable can allow for them. Missing not at random means the gaps depend on the missing value itself, for example when the students most worried about money are the least willing to answer the question about money. That is the hardest case, because the students who answered are no longer typical, and nothing in the data shows it.
+Missing at random (MAR) means missingness depends systematically on observed variables that were recorded (e.g. part-time students missing meetings), so models controlling for those variables remain unbiased. Missing not at random (MNAR) means missingness depends on the unobserved value itself (e.g. students suffering severe financial distress refusing to disclose finances), creating inescapable bias among respondents.
 :::
 
 **5.** Two variables have a correlation of 0. Does that mean they are unrelated?
@@ -436,34 +516,28 @@ Missing at random means the gaps depend on something that was measured, such as 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-No. The correlation coefficient measures only *straight-line* relationships. A curved relationship, such as wellbeing rising with sleep up to 8 hours and falling after, can give a correlation near zero although the two variables are strongly related. This is one more reason to plot the data before summarising it.
+No. Pearson's correlation coefficient $r$ detects only linear (straight-line) relationships. A strong non-linear or inverted-U relationship (such as performance peaking at moderate arousal and dropping at extremes) can produce a correlation of zero despite a strong functional dependency.
 :::
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis. The data (`students`, `semesters`, `questionnaire`, and `first_sem`) and the dplyr package are already loaded, and R's built-in datasets are always available.
+These tasks have no starter code and no answers. Write your own code, as you would for a thesis. The datasets `students`, `semesters`, `questionnaire`, and `first_sem` are already loaded.
 
-**1.** Produce a complete "Table 1" describing the sample: the number of students, and for each baseline variable the percentages, or the mean and SD, or the median and IQR, as its level and shape require, with the number of missing values. Then write the paragraph that describes the sample, with every number calculated by code.
+**1.** Produce a complete "Table 1" describing the sample: total student count, and for each baseline variable the percentages, or mean and SD, or median and IQR, with the number of missing values. Then write a short paragraph describing the sample, with every number dynamically calculated.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**2.** Describe a variable the chapter did not describe, `supervisor_meetings` in the first semester: its centre, spread, and shape, and any unusual values. Decide which summaries to report, and write two sentences about it.
+**2.** Describe a variable not covered in detail in the chapter: `supervisor_meetings` in the first semester. Compute its centre, spread, shape, and inspect any unusual values. Decide which summaries to report, and write two explanatory sentences.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**3.** Describe R's built-in `airquality` data for a report: the centre, spread, and shape of ozone and temperature, the missing data in each variable, and the relationship between the two.
+**3.** Compare students sleeping $< 6$ hours with those sleeping $\ge 7$ hours on first-semester GPA and wellbeing. Report the mean, SD, and sample size for both groups.
 
-```{webr}
-# Your code here
-```
-
-**4.** R's built-in `precip` data gives the average yearly rainfall, in inches, of 70 US cities. Describe its distribution, name the cities with unusual values, and decide whether the mean or the median better describes a typical city.
-
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
@@ -472,12 +546,11 @@ These tasks have no starter code and no answers. Each code space below is empty 
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 6 project
 
-The project contains the data and all four parts of this page as an R script: the exercises with blanks, the questions to check your understanding (answers in `solutions.R`), and the open tasks, each with space to write your code.
+The project contains the datasets and all four parts of this page as a Python script: exercises with blanks, conceptual questions with answers in `solutions.py`, and open tasks with room for your code.
 
-- [Download chapter06.zip](chapter06.zip), unzip it, and double-click `chapter06.Rproj`.
-- Or type this one line in RStudio's Console:
-
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter06.zip")
-```
+- [Download chapter06.zip](chapter06.zip), unzip it, and open the folder in VS Code or your preferred Python IDE.
+- Prerequisites:
+  ```bash
+  pip install pandas numpy matplotlib seaborn scipy statsmodels data2thesis
+  ```
 :::

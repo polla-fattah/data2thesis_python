@@ -1,15 +1,25 @@
 ---
-title: "Data Manipulation"
-description: "Chapter 3: clean and tidy data, the pipe, dplyr verbs, reshaping, joins, and a step-by-step cleaning of the raw survey export."
+title: "Data Manipulation and Cleaning with Pandas"
+description: "Chapter 3: clean and tidy data, method chaining, Pandas operations, reshaping, joins, and step-by-step cleaning of a raw survey export."
 format: deck-html
 execute:
   echo: false
   freeze: auto
 ---
 
-# Data Manipulation
+```{python}
+#| include: false
+import data2thesis as dt
+import pandas as pd
+import numpy as np
 
-Cleaning is part of the analysis
+students = dt.students
+semesters = dt.semesters
+```
+
+# Data Manipulation and Cleaning with Pandas
+
+Cleaning is an essential phase of scientific analysis
 
 **Chapter 3**
 
@@ -19,79 +29,85 @@ Polla Fattah
 
 ## By the end of today you can
 
-- explain what clean data means, and why every decision is recorded;
-- recognise data that is not tidy;
-- chain steps with the pipe `|>`;
-- choose cases and variables, sort, create variables, and summarise by group;
-- reshape between wide and long, and join tables;
-- clean a real survey export from start to finish;
-- compute scale scores with reversed items;
-- report the cleaning in a thesis.
+- explain the five qualities of clean data, and why decisions must be scripted;
+- structure tabular data according to tidy data principles;
+- chain analytical operations fluently in Pandas;
+- filter, select, sort, create variables, and aggregate by group;
+- reshape tables between wide and long representations;
+- merge relational tables across keys and identify participant attrition;
+- clean an uncurated survey export from start to finish;
+- compute composite scale scores with reverse-coded items;
+- write an auditable data preparation section for a thesis.
 
 ---
 
-## Raw data is never ready
+## Raw data is never immediately ready
 
-- test responses sit alongside real ones;
-- the same form is submitted twice;
-- one person types "female", another "F";
-- missing answers are stored as `99`;
-- a slip of the finger turns 25 into 250.
+- test submissions sit alongside real participants;
+- the same web form is submitted multiple times;
+- one respondent enters "female", another "F", another "Female ";
+- skipped survey answers are logged as `99` or `-9`;
+- a clerical slip turns an age of 25 into 250.
 
-None of this is unusual, and none of it is harmless.
+None of this is rare, and none of it is harmless.
 
 ---
 
-## Five qualities of clean data
+## The five qualities of clean data
 
-| Quality | Meaning | Failure in the export |
+| Quality | Meaning | Flaw in the raw export |
 |---|---|---|
-| valid | every value is possible | an age of 250 |
-| accurate | values mean what was meant | `99` read as an answer |
-| complete | gaps are marked, not hidden | missing codes |
-| consistent | one answer, one spelling | "F", "female", "Female" |
-| unique | each case exactly once | tests and duplicates |
+| **Valid** | values conform to permissible domains | an age of 250 years |
+| **Accurate** | values record what was truly intended | `99` misread as an answer |
+| **Complete** | omissions are marked, not masked | missing-data codes |
+| **Consistent** | uniform category nomenclature | "F", "female", "Female" |
+| **Unique** | each case appears exactly once | tests and duplicates |
 
 ---
 
-## One missing code shifts the average
+## The missing-code trap
 
-```r
-answers <- c(4, 3, 5, 99, 2)
-mean(answers)
-#> [1] 22.6
-mean(na_if(answers, 99), na.rm = TRUE)
-#> [1] 3.5
+```python
+import pandas as pd
+import numpy as np
+
+answers = pd.Series([4, 3, 5, 99, 2])
+print(answers.mean())
+# 22.6
+
+clean = answers.replace(99, np.nan)
+print(clean.mean())
+# 3.5
 ```
 
-With the code left in, the average is impossible on a 1-to-5 scale.
+With `99` included, the mean is impossible on a 1-to-5 Likert scale.
 
-In real data the distortion is smaller, and so harder to notice.
+In large datasets, minor distortions are subtle and easily missed without automated checks.
 
 ---
 
-## Three rules for every cleaning decision
+## Three rules for scientific data cleaning
 
 ```{mermaid}
 flowchart LR
-    A["Raw file<br>never edited"] --> B["Code makes<br>every change"] --> C["Check after<br>every step"]
+    A["Raw primary file<br>never edited"] --> B["Python script executes<br>every transformation"] --> C["Audit shapes & values<br>after every step"]
 ```
 
-Record every decision in the script, and in the thesis where it affects the results.
+Document every exclusion and recode in your Python script.
 
-Many cleaning mistakes produce no error message at all.
-
----
-
-## Tidy data
-
-> **Each variable forms a column, each observation forms a row, each value sits in its own cell.**
-
-Once data is tidy, every tool in today's lecture works on it.
+Many data-cleaning bugs produce no error messages or exceptions.
 
 ---
 
-## A table that looks neat but is not tidy
+## Tidy data principles
+
+> **Each variable forms a column, each observation forms a row, and each value sits in its own cell.**
+
+When data is tidy, vectorized Pandas operations operate seamlessly.
+
+---
+
+## An untidy table
 
 | student | wellbeing_s1 | wellbeing_s2 |
 |---|---|---|
@@ -99,13 +115,11 @@ Once data is tidy, every tool in today's lecture works on it.
 | S2 | 71 | 70 |
 | S3 | 64 | 69 |
 
-One variable, wellbeing, is spread over two columns.
-
-A second variable, the semester, is hidden in the column names.
+A single construct (`wellbeing`) is spread over two columns, and a second variable (`semester`) is embedded in column headers.
 
 ---
 
-## The same data, tidy
+## The same data in tidy format
 
 | student | semester | wellbeing |
 |---|---|---|
@@ -113,739 +127,223 @@ A second variable, the semester, is hidden in the column names.
 | S1 | 2 | 63 |
 | S2 | 1 | 71 |
 | S2 | 2 | 70 |
+| S3 | 1 | 64 |
+| S3 | 2 | 69 |
 
-One row is one student in one semester.
-
-"Average wellbeing per semester" becomes a simple grouped summary.
-
----
-
-## The tidyverse
-
-| Package | Job |
-|---|---|
-| dplyr | working with rows and columns |
-| tidyr | reshaping data |
-| stringr | working with text |
-| readr | turning text into numbers, reading and writing files |
-
-`library(tidyverse)` loads them all. This course loads only what each chapter needs.
+Each row represents one observation: one student in one semester.
 
 ---
 
-## Nested functions read inside out
+## Method chaining in Pandas
 
-```r
-round(mean(sleep), 1)
-```
+Operations can be chained inside parentheses `(...)`:
 
-First the mean, then the rounding, but written the other way round.
-
-As steps multiply, this gets hard to follow.
-
----
-
-## The pipe reads in order
-
-```r
-sleep |> mean() |> round(1)
-```
-
-The pipe passes the result on its left as the first argument on its right.
-
-Read it as **"and then"**. Ctrl+Shift+M types it in RStudio.
-
-Older code uses `%>%`, which does the same job.
-
----
-
-## dplyr verbs each do one job
-
-| Verb | Job |
-|---|---|
-| `filter()` | choose cases |
-| `select()` | choose variables |
-| `arrange()` | sort |
-| `mutate()` | create or change variables |
-| `summarise()` | reduce to summaries |
-| `count()` | count |
-
-Every verb takes a data frame first and returns a data frame, so verbs chain.
-
----
-
-## A tiny table to learn on
-
-```r
-pilot <- tibble(
-  student = c("S1", "S2", "S3", "S4", "S5"),
-  faculty = c("Education", "Humanities", "Education",
-              "Health Sciences", "Humanities"),
-  sleep   = c(6.5, 7.5, 5.5, 8, 6),
-  stress  = c(3.2, 2.1, 4.5, 1.8, 3.9)
+```python
+# Fluent, readable analytical pipeline:
+result = (
+    students
+    .query("sleep_hours < 7")
+    .sort_values("gpa", ascending=False)
+    .assign(sleep_minutes=lambda df: df["sleep_hours"] * 60)
 )
 ```
 
-A **tibble** is the tidyverse's data frame, which prints more neatly.
+Chaining eliminates unnecessary intermediate variables and creates an auditable workflow.
 
 ---
 
-## `filter()` chooses cases
+## Filtering observations
 
-```r
-pilot |> filter(sleep < 7)
-pilot |> filter(sleep < 7, faculty == "Education")
-pilot |> filter(faculty %in% c("Education", "Humanities"))
+```python
+# Boolean indexing:
+pilot[pilot["sleep"] < 7]
+
+# Multiple conditions combined with & (AND):
+pilot[(pilot["sleep"] < 7) & (pilot["faculty"] == "Education")]
+
+# Matching against a list:
+pilot[pilot["faculty"].isin(["Education", "Humanities"])]
+
+# Query syntax:
+pilot.query("sleep < 7 and faculty == 'Education'")
 ```
 
-Conditions separated by commas must all be true. `%in%` matches any of several values.
+Every filtering step represents an explicit sampling decision.
 
 ---
 
-## Every filter is a decision about the sample
+## Selecting and sorting columns
 
-"Students who completed all four semesters" is a different population from "all students".
+```python
+# Keep specific columns:
+pilot[["student", "sleep"]]
 
-Report each filter, and the number of cases it removed.
+# Drop unneeded columns:
+pilot.drop(columns=["faculty"])
 
----
-
-## `select()` and `arrange()`
-
-```r
-pilot |> select(student, sleep)     # keep two columns
-pilot |> select(-faculty)           # drop one column
-pilot |> arrange(desc(stress))      # most stressed first
+# Sort by a variable in descending order:
+pilot.sort_values("stress", ascending=False)
 ```
 
-`select()` keeps columns in the order named. `desc()` sorts largest first.
+---
+
+## Creating and deriving variables
+
+```python
+# Assign new calculated columns:
+pilot = pilot.assign(
+    sleep_minutes = pilot["sleep"] * 60,
+    short_sleep   = pilot["sleep"] < 7
+)
+
+# Multi-condition categorization with np.select:
+conditions = [pilot["stress"] >= 4.0, pilot["stress"] >= 2.5]
+choices    = ["High", "Medium"]
+pilot["stress_level"] = np.select(conditions, choices, default="Low")
+```
+
+Continuous measurements should generally remain continuous in primary models.
 
 ---
 
-## `mutate()` creates variables
+## Grouped summaries: `.groupby().agg()`
 
-```r
-pilot |> mutate(
-  sleep_minutes = sleep * 60,
-  short_sleep   = sleep < 7
+```python
+# Calculate mean and sample size by group:
+faculty_summary = (
+    pilot
+    .groupby("faculty")["sleep"]
+    .agg(mean_sleep="mean", count="count")
+    .reset_index()
 )
 ```
 
-A total score, a unit conversion, a category from a number: all new columns from existing ones.
+`.groupby()` partitions data by factor levels, and `.agg()` applies summary functions to each subset.
 
 ---
 
-## `case_when()` sorts values into categories
+## Reshaping: Wide to Long with `pd.melt()`
 
-```r
-pilot |> mutate(
-  stress_level = case_when(
-    stress >= 4   ~ "High",
-    stress >= 2.5 ~ "Medium",
-    .default = "Low"
-  )
+```python
+long = pd.melt(
+    wide,
+    id_vars=["student"],
+    value_vars=["wellbeing_1", "wellbeing_2"],
+    var_name="semester",
+    value_name="wellbeing"
 )
 ```
 
-Conditions are checked in order; the first true one wins. `.default` catches the rest.
+Unpivots multiple columns into rows for panel modeling and visualization.
 
 ---
 
-## Categories lose information
+## Reshaping: Long to Wide with `.pivot()`
 
-A stress score of 3.9 and one of 2.6 both become "Medium".
+```python
+wide_again = long.pivot(
+    index="student",
+    columns="semester",
+    values="wellbeing"
+).reset_index()
+```
 
-Useful for description, but analyses should normally keep the original number.
+Ideal for structuring summary tables in thesis chapters.
 
 ---
 
-## `summarise()` reduces a table
+## Joining relational tables with `pd.merge()`
 
-```r
-pilot |> summarise(
-  mean_sleep = mean(sleep),
-  students   = n()
+```python
+# Left join brings supervisor rank into student records:
+students.merge(
+    supervisors[["supervisor_id", "rank"]],
+    on="supervisor_id",
+    how="left"
 )
 ```
 
-One row of summaries. `n()` counts the rows.
+Preserves all participant records while appending matching secondary attributes.
 
 ---
 
-## `.by` summarises each group
+## Detecting study attrition (Anti-joins)
 
-```r
-pilot |> summarise(
-  mean_sleep = mean(sleep),
-  students   = n(),
-  .by = faculty
-)
-pilot |> count(faculty)
+```python
+# Find students who did not complete Semester 3:
+sem3_students = semesters[semesters["semester"] == 3]["student_id"]
+left_cohort = students[~students["student_id"].isin(sem3_students)]
+
+print(len(left_cohort))  # 37 students
+print(left_cohort["considering_dropout"].value_counts())
 ```
 
-The real power of summaries. Older code writes `group_by(faculty) |> summarise(...)`, with the same result.
+Attrition is rarely random: tracking departures prevents survivorship bias.
 
 ---
 
-## Verbs chained answer real questions
+## Cleaning a survey export: Step by Step
 
-```r
-semesters |>
-  left_join(students |> select(student_id, workshop),
-            join_by(student_id)) |>
-  summarise(mean_wellbeing = mean(wellbeing),
-            students = n(),
-            .by = c(semester, workshop)) |>
-  arrange(semester, workshop)
+1. **Audit:** Inspect table dimensions and data types (`raw.shape`).
+2. **De-duplicate:** Exclude test accounts (`"TEST"`) and drop duplicates (`.drop_duplicates()`).
+3. **Rename:** Map cryptic headers to snake_case (`.rename(columns=...)`).
+4. **Normalize:** Strip whitespace and resolve category spellings (`np.where`, `np.select`).
+5. **Recode:** Replace sentinel codes (`99`, `-9`) with `np.nan`.
+6. **Clean strings:** Standardize decimal commas and extract numeric digits.
+7. **Screen:** Recode impossible values to `np.nan`.
+8. **Composite scores:** Reverse-code inverted items and compute scale averages.
+9. **Reshape:** Unpivot repeated longitudinal waves into long panel format.
+10. **Validate:** Verify row counts and clean distributions against study protocol.
+
+---
+
+## Reverse-coding Likert scale items
+
+```python
+# Item stress_4 is worded inversely:
+# (1 = Strongly Disagree to 5 = Strongly Agree)
+reversed_stress_4 = 6 - questionnaire["stress_4"]
+
+# Compute composite scale score as row-wise mean:
+scores["stress_score"] = pd.concat([
+    questionnaire[["stress_1", "stress_2", "stress_3", "stress_5", "stress_6"]],
+    reversed_stress_4.rename("stress_4")
+], axis=1).mean(axis=1)
 ```
 
-Semester records, *and then* the workshop group, *and then* averages per semester and group, *and then* sort.
+On a 1-to-5 scale, $6 - x$ maps $1 \to 5$ and $5 \to 1$.
 
 ---
 
-## What the chain shows
+## Writing up data preparation in your thesis
 
-| Semester | Not invited | Invited |
-|---|---|---|
-| 1 | 60.3 | 60.6 |
-| 2 | 60.2 | 65.5 |
-| 3 | 59.2 | 63.2 |
-| 4 | 58.4 | 60.9 |
-
-Level before the workshop, invited students ahead from semester 2. Chapter 7 tests it.
-
-From semester 3 there are 563 students, not 600: some left the study.
+> *"The institutional survey export contained 615 submissions. Removing 3 test entries and 12 duplicate submissions left 600 students. Categorical variables were standardized, and sentinel missing-data codes (99, −9) were converted to missing values. Out-of-range clerical errors (including an age entry of 250 years) were set to missing. Reverse-worded item `stress_4` was recoded before computing composite scale scores. Multi-wave records were unpivoted into longitudinal panel format ($N = 2,326$ student-semesters), excluding unobserved waves resulting from participant attrition."*
 
 ---
 
-## Wide and long
+## Practical lab: Chapter 3 Playground
 
-```{mermaid}
-flowchart LR
-    W["Wide<br>one column per occasion"] -->|pivot_longer| L["Long<br>one row per measurement"]
-    L -->|pivot_wider| W
-```
+Practice these concepts interactively in your browser with Pyodide:
 
-Spreadsheets and SPSS often use wide. Analysis in R is usually easier in long.
-
----
-
-## `pivot_longer()` stacks columns
-
-```r
-long <- wide |>
-  pivot_longer(
-    cols         = c(wellbeing_1, wellbeing_2),
-    names_to     = "semester",
-    names_prefix = "wellbeing_",
-    values_to    = "wellbeing"
-  )
-```
-
-| Argument | Says |
-|---|---|
-| `cols` | which columns to stack |
-| `names_to` | where the old names go |
-| `names_prefix` | which part of the names to drop |
-| `values_to` | where the values go |
+- Filter and summarize grouped cohorts
+- Re-pivot multi-wave datasets
+- Clean uncurated text and numerical formats
+- Download `chapter03.zip` to run directly in VS Code
 
 ---
 
-## `pivot_wider()` is for presenting
+## Summary
 
-```r
-long |> pivot_wider(names_from = semester,
-                    values_from = wellbeing)
-```
-
-A wide table is easier for a reader.
-
-The semester-by-workshop table two slides back was made with `pivot_wider()`.
-
----
-
-## Joins combine tables by an identifier
-
-The study keeps students, semester records, and supervisors in separate tables.
-
-```r
-people <- tibble(student = c("S1", "S2", "S3"),
-                 faculty = c("Education", "Humanities", "Education"))
-scores <- tibble(student   = c("S1", "S1", "S2", "S4"),
-                 wellbeing = c(58, 63, 71, 66))
-```
-
----
-
-## `left_join()` keeps every row of the first table
-
-```r
-scores |> left_join(people, join_by(student))
-```
-
-Matching information from `people` is added to each score.
-
-`S4` has a score but no entry in `people`, so their faculty is `NA`.
-
----
-
-## `anti_join()` finds what is missing
-
-```r
-people |> anti_join(scores, join_by(student))
-```
-
-The rows of the first table with **no** match in the second.
-
-Here: `S3`, the student without any scores.
-
----
-
-## A join answers a new question
-
-```r
-students |>
-  left_join(supervisors |> select(supervisor_id, rank),
-            join_by(supervisor_id)) |>
-  summarise(considering_dropout = mean(considering_dropout == "Yes"),
-            students = n(), .by = rank)
-```
-
-Considering dropout by supervisor rank: from about 12% to about 18%.
-
-Differences this small could easily be chance (Chapter 7).
-
----
-
-## Who left the study?
-
-```r
-left <- students |>
-  anti_join(semesters |> filter(semester == 3),
-            join_by(student_id))
-nrow(left)
-#> [1] 37
-```
-
-37 students have no semester 3 record, and 22 of them had said they were considering dropping out.
-
-Those who left are not a random selection (Chapter 6).
-
----
-
-## Cleaning the survey export
-
-```{mermaid}
-flowchart TB
-    subgraph R1[" "]
-        direction LR
-        A[Inspect] --> B[Tests and<br>duplicates] --> C[Names] --> D[Categories]
-    end
-    subgraph R2[" "]
-        direction LR
-        E[Missing codes<br>and text] --> F[Impossible<br>values] --> G[Scale scores] --> H[Check]
-    end
-    R1 --> R2
-```
-
-Each step is short. The order matters, and so does checking after each one.
-
----
-
-## Inspect first
-
-```r
-raw <- read_excel(data2thesis_example("wellbeing_raw.xlsx"))
-dim(raw)
-#> [1] 615  64
-raw |> count(Q3_Gender)
-```
-
-615 rows for 600 students. Gender is spelled six ways: `F`, `Female`, `female`, `M`, `Male`, `male`.
-
-Names with spaces, such as `` `Q1_Student ID` ``, need backticks.
-
----
-
-## Remove tests and duplicates
-
-```r
-responses <- raw |>
-  filter(!str_detect(str_to_upper(`Q1_Student ID`), "^TEST")) |>
-  select(-`Response ID`) |>
-  distinct()
-nrow(responses)
-#> [1] 600
-```
-
-`!` is "not", `^` is "at the start". The response ID differs even between duplicates, so it is dropped before `distinct()`.
-
-3 test responses and 12 duplicates removed: one row per student.
-
----
-
-## Usable variable names
-
-```r
-responses <- responses |>
-  rename(
-    student_id      = `Q1_Student ID`,
-    age             = Q2_Age,
-    financial_worry = `Q10_How worried are you about money? (1-5)`
-    # ... and the rest
-  ) |>
-  rename_with(~ item_names, .cols = Q11_1:Q11_22)
-```
-
-`rename()` puts the new name first. The questionnaire wording belongs in the codebook.
-
----
-
-## Naming items in one go
-
-```r
-item_names <- c(paste0("stress_", 1:6), paste0("burnout_", 1:6),
-                paste0("support_", 1:6), paste0("satisfaction_", 1:4))
-```
-
-`paste0("stress_", 1:6)` builds `stress_1` to `stress_6`.
-
-`rename_with()` gives all 22 items their scale names at once.
-
----
-
-## Fix categories by pattern
-
-```r
-responses <- responses |>
-  mutate(
-    gender  = if_else(str_starts(str_to_lower(str_trim(gender)), "f"),
-                      "Female", "Male"),
-    faculty = case_when(
-      str_detect(str_to_lower(faculty), "educ")    ~ "Education",
-      str_detect(str_to_lower(faculty), "social")  ~ "Social Sciences",
-      str_detect(str_to_lower(faculty), "natural|^sciences$") ~ "Natural Sciences"
-      # ... and the other faculties
-    ))
-```
-
-Lower-case and trim first, then look for a pattern instead of listing every spelling.
-
----
-
-## Order and `across()`
-
-"Social sciences" also contains "sciences", so Social Sciences is checked before Natural Sciences.
-
-```r
-across(c(has_children, lives_away, considering_dropout),
-       ~ if_else(str_starts(str_to_lower(.x), "y"), "Yes", "No"))
-```
-
-`across()` applies one change to several columns. Count the categories again after each fix.
-
----
-
-## Missing codes and numbers stored as text
-
-```r
-responses <- responses |>
-  mutate(
-    financial_worry = financial_worry |> na_if("99") |> na_if("-9") |>
-                      as.integer(),
-    across(all_of(item_names), ~ as.integer(na_if(.x, "99"))),
-    age = parse_number(age)
-  )
-```
-
-`na_if()` turns a code into `NA`; `as.integer()` turns text into whole numbers.
-
----
-
-## Do not replace `99` everywhere
-
-A `99` is not always a code.
-
-On a wellbeing score from 0 to 100, it is a perfectly real value.
-
-Replace missing codes only in the columns where you know they are codes.
-
----
-
-## `parse_number()` and the decimal comma
-
-```r
-parse_number(c("7 hrs", "6.5", "6,5"))
-#> [1]  7.0  6.5 65.0
-parse_number(str_replace(c("7 hrs", "6.5", "6,5"), ",", "."))
-#> [1] 7.0 6.5 6.5
-```
-
-`parse_number()` reads the number out of text, but a comma separates thousands in English.
-
-No error message warns you. Only checking does.
-
----
-
-## Impossible values become `NA`
-
-```r
-responses |> filter(age > 100) |> select(student_id, age)
-responses <- responses |>
-  mutate(age = if_else(age > 100, NA, age))
-```
-
-Student S0007's age is 250. It might have been 25, or 50: the honest fix is `NA`, not a guess.
-
-Unusual but possible values, such as 4 hours of sleep, are real data and stay.
-
----
-
-## Reversed items point the other way
-
-`stress_4`: "I feel confident handling problems in my studies."
-
-Agreeing means **less** stress. Averaged as it stands, it cancels part of the scale.
-
-On a 1-to-5 scale, `6 - x` reverses it: 1 becomes 5, 2 becomes 4.
-
----
-
-## Scale scores
-
-```r
-scores <- questionnaire_clean |>
-  mutate(
-    stress_4      = 6 - stress_4,
-    stress_score  = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    support_score = rowMeans(pick(support_1:support_6), na.rm = TRUE)
-    # ... burnout and satisfaction
-  ) |>
-  select(student_id, ends_with("_score"))
-```
-
-`pick()` selects a scale's items; `rowMeans()` averages each student's answers.
-
----
-
-## Decisions inside a scale score
-
-With `na.rm = TRUE`, a student who skipped one item still gets a score.
-
-How many skipped items is too many is a decision to report.
-
-Keep the original items: Chapter 9 needs them to check the scales.
-
----
-
-## Semesters from wide to long
-
-```r
-semesters_clean <- responses |>
-  select(student_id, matches("_S[1-4]$")) |>
-  pivot_longer(cols      = -student_id,
-               names_to  = c(".value", "semester"),
-               names_sep = "_S")
-```
-
-`GPA_S1` holds two pieces of information: the variable and the semester.
-
-`.value` uses the first piece as a column name.
-
----
-
-## The same steps, on the semesters
-
-```r
-semesters_clean <- semesters_clean |>
-  mutate(
-    sleep_hours = parse_number(str_replace(sleep_hours, ",", ".")),
-    sleep_hours = if_else(sleep_hours > 24, NA, sleep_hours),
-    study_hours = if_else(study_hours > 168, NA, study_hours),
-    gpa         = if_else(gpa > 4, NA, gpa)
-  ) |>
-  filter(!if_all(gpa:wellbeing, is.na))
-```
-
-The last line removes empty rows for students who had left the study.
-
----
-
-## Check the missing values
-
-```r
-semesters_clean |> summarise(across(everything(), ~ sum(is.na(.x))))
-```
-
-About 1% of the records still have gaps: answers really not given, and impossible values set to `NA`.
-
-These are genuine gaps (Chapter 6).
-
----
-
-## Compare with a trusted result
-
-```r
-same(questionnaire_clean |> arrange(student_id),
-     questionnaire |> arrange(student_id))
-#> [1] TRUE
-same(semesters_clean |> arrange(student_id, semester),
-     semesters |> arrange(student_id, semester))
-#> [1] TRUE
-```
-
-The package's clean tables came from the same export, so the cleaning matches exactly.
-
----
-
-## Writing it up
-
-> The survey export contained 615 responses. Test responses (3) and duplicate submissions (12) were removed, leaving 600 students. Missing-answer codes (99 and −9) were recoded as missing, and impossible values (4 in all) were set to missing. The reverse-worded item `stress_4` was recoded before scale scores were computed.
-
-In the thesis, fill these numbers in with code.
-
----
-
-## Save the cleaning as a script
-
-```r
-# 01-clean-data.R: from the raw file to the clean tables
-write_csv(semesters_clean, here::here("data", "semesters_clean.csv"))
-```
-
-Never edit the raw file by hand.
-
-A new problem next month is fixed in the script and run again, and every step stays on record.
-
----
-
-## In your field: environmental and public health
-
-```r
-airquality |>
-  summarise(mean_ozone   = mean(Ozone, na.rm = TRUE),
-            missing_days = sum(is.na(Ozone)),
-            .by = Month)
-```
-
-Ozone peaks in July and August, and June has 21 missing days.
-
-If the missing days were mostly hot ones, the June average would be too low.
-
----
-
-## Practical lab: the Chapter 3 playground
-
-Work through the playground exercises in your browser, with hints and solutions.
-
-Every exercise also runs in RStudio, from the downloadable chapter project.
-
----
-
-## Practical exercises 1–3: verbs and reshaping
-
-1. Average age by faculty, sorted from oldest to youngest.
-2. Classify semester sleep as Short, Moderate, or Recommended, and count each.
-3. A table of GPA with one row per student and one column per semester.
-
----
-
-## Practical exercises 4–6: joins and judgement
-
-4. Join `semesters` to `students` and compare full-time and part-time GPA.
-5. Explain what happens to stress scores if `stress_4` is not reversed.
-6. Give one example of each quality of clean data from your own field.
-
----
-
-## Try this yourself
-
-Take any messy spreadsheet you have used.
-
-- list its problems under the five qualities;
-- write the cleaning as one script from the untouched file;
-- count the categories after every fix;
-- write a three-sentence cleaning report.
-
-Then change one value in the raw file and run the script again.
-
----
-
-## Troubleshooting guide (Part 1)
-
-| Symptom | Likely cause |
-|---|---|
-| an impossible average | a missing code left in the data |
-| more rows than participants | test responses or duplicates |
-| one category appears three times | inconsistent spelling or trailing spaces |
-| `distinct()` removes nothing | a column such as the response ID differs |
-
----
-
-## Troubleshooting guide (Part 2)
-
-| Symptom | Likely cause |
-|---|---|
-| 6.5 hours became 65 | a decimal comma read by `parse_number()` |
-| real 99s disappeared | a missing code replaced in every column |
-| a scale's reliability is low | a reversed item not recoded |
-| everyone lands in the wrong `case_when()` group | conditions in the wrong order |
-
----
-
-## Completion checklist
-
-- [ ] the raw file is untouched;
-- [ ] test and duplicate rows are removed and counted;
-- [ ] every category has one spelling;
-- [ ] missing codes are `NA` in the right columns only;
-- [ ] text columns are converted to numbers and checked;
-- [ ] impossible values are set to `NA`;
-- [ ] reversed items are recoded before scoring;
-- [ ] the cleaning is one script, reported in the thesis.
-
----
-
-## Misconceptions to leave behind (Part 1)
-
-| Misconception | Better mental model |
-|---|---|
-| cleaning is a chore before the analysis | cleaning decisions shape every result |
-| no error message means no mistake | many mistakes are silent; check each step |
-| a neat spreadsheet is tidy | tidy means one variable per column |
-
----
-
-## Misconceptions to leave behind (Part 2)
-
-| Misconception | Better mental model |
-|---|---|
-| an impossible value can be corrected by guessing | set it to `NA` |
-| `99` is always a missing code | only where the codebook says so |
-| scale scores can replace the items | keep the items for checking the scales |
-
----
-
-## The chapter in one sentence
-
-> **Clean in code from an untouched file, check after every step, and report every decision.**
+> **Data cleaning is not a preliminary chore; it is an analytical foundation. Using Pandas method chaining, tidy reshaping, and auditable pipelines, every empirical table in your thesis remains reproducible and defensible.**
 
 ---
 
 ## Next: Chapter 4
 
-The next chapter turns clean data into graphs:
+In Chapter 4, we explore publication-quality data visualization:
 
-- what a graph is for, and how people read graphs;
-- choosing a graph for the question;
-- the grammar of graphics with ggplot2;
-- graphs for publication, and honest graphs;
-- exporting figures.
-
----
-
-## Questions
-
-What is the messiest dataset you have worked with?
-
-Which of its problems would have been silent?
+- The grammar of graphics in Python with **Seaborn** and **Matplotlib**;
+- Visualizing distributions: histograms, KDE density plots, and box plots;
+- Visualizing associations: scatter plots with regression trend lines;
+- Visualizing trajectories: longitudinal lines across study waves;
+- Customizing themes, colorblind-friendly palettes, and export settings.

@@ -1,14 +1,14 @@
-# FROM DATA TO THESIS: Using R for Non-Technical
+# FROM DATA TO THESIS: Using Python for Non-Technical
 
 <p align="left">
-  <a href="https://github.com/polla-fattah/data2thesis_r"><img src="https://img.shields.io/badge/Open_Source-Project-181717?style=for-the-badge&logo=github&logoColor=white" alt="Open Source Project"></a>
+  <a href="https://github.com/polla-fattah/data2thesis_python"><img src="https://img.shields.io/badge/Open_Source-Project-181717?style=for-the-badge&logo=github&logoColor=white" alt="Open Source Project"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg?style=for-the-badge" alt="License: Apache 2.0"></a>
-  <a href="https://github.com/polla-fattah/data2thesis_r"><img src="https://img.shields.io/badge/Amendments-Welcomed-2ea44f?style=for-the-badge&logo=github&logoColor=white" alt="Amendments Welcomed"></a>
+  <a href="https://github.com/polla-fattah/data2thesis_python"><img src="https://img.shields.io/badge/Amendments-Welcomed-2ea44f?style=for-the-badge&logo=github&logoColor=white" alt="Amendments Welcomed"></a>
 </p>
 
-A practical guide to analysing research data with R, for researchers with no programming or statistics background. The book follows Elaf, a Master's student, through her thesis on graduate student wellbeing, introducing each method as the answer to one of her research questions.
+A practical guide to analysing research data with Python, for researchers with no programming or statistics background. The book follows Elaf, a Master's student, through her thesis on graduate student wellbeing, introducing each method as the answer to one of her research questions.
 
-**Read it online:** https://polla-fattah.github.io/data2thesis_r
+**Read it online:** https://polla-fattah.github.io/data2thesis_python
 
 ## Repository layout
 
@@ -38,11 +38,11 @@ data2thesis/
 | `build.ps1` | The PowerShell build and preview script |
 | `data/` | Case study raw datasets and specification |
 | `data-raw/` | Scripts that generate data and build the packages/zips |
-| `data2thesis/` | Source of the `data2thesis` R package |
+| `data2thesis/` | Source of the `data2thesis` Python package |
 
 ## Building and running the site locally
 
-Requires [Quarto](https://quarto.org), R, and Python (only for the local web server). On Windows, the script `build.ps1` in the project root does everything. Open a PowerShell terminal in the project folder and run:
+Requires [Quarto](https://quarto.org) and Python. On Windows, the script `build.ps1` in the project root does everything. Open a PowerShell terminal in the project folder and run:
 
 ```powershell
 .\build.ps1
@@ -55,54 +55,58 @@ It renders the entire website (landing page, book, playground, and slides) in a 
 | `.\build.ps1` | Build the entire site (book, playground, slides) and serve |
 | `.\build.ps1 -NoBuild` | Serve what is already built |
 | `.\build.ps1 -NoServe` | Build only |
+| `.\build.ps1 -Package` | Synchronize and build the `data2thesis` Python wheel |
 | `.\build.ps1 -Chapter 07-hypothesis-testing.qmd` | Render one book chapter only, then serve |
 | `.\build.ps1 -Playground` | Also rebuild the playground download zips (after changing `playground-src/`) |
 | `.\build.ps1 -Port 4400` | Serve on another port |
 
-Chapters whose code has not changed are not re-executed: their results are stored in `_freeze/`, so a full build takes seconds. Commit `_freeze/` after changing code, so the site can be published by GitHub Actions (`.github/workflows/publish.yml`) without R.
+Chapters whose code has not changed are not re-executed: their results are stored in `_freeze/`, so a full build takes seconds. Commit `_freeze/` after changing code, so the site can be published by GitHub Actions (`.github/workflows/publish.yml`).
 
 ## Outline
 
 *Every chapter ends with a chapter review: a short summary and a list of key terms, which are collected in the glossary (Appendix B).*
 
-## **Part 1: Foundations of R Programming and Data Handling**
+## **Part 1: Foundations of Python Programming and Data Handling**
 
-### **Chapter 1: Getting Started with R**
+### **Chapter 1: Getting Started with Python**
 
-- Why researchers use R; installing R and RStudio (Positron as an alternative).
-- A tour of RStudio: Source, Console, Environment, and Files/Plots/Packages/Help panes.
-- R as a calculator, objects and assignment, and the basic types of data, including missing values (`NA`).
-- Functions, arguments, and getting help.
-- Writing scripts; organizing work with RStudio Projects and reliable file paths (`here`).
-- Installing and loading packages, including the `data2thesis` data package.
-- A first look at Elaf's data.
+- Why researchers use Python; installing Python and VS Code (Positron and Jupyter as alternatives).
+- A tour of VS Code: Editor, Interactive Window / Terminal, Extensions, and File Explorer.
+- Python as a calculator, variables and assignment, and the basic types of data (`int`, `float`, `str`, `bool`), including missing values (`None`, `NaN`).
+- Functions, methods, arguments, docstrings, and getting help.
+- Writing scripts (`.py`); organizing work with project folders and virtual environments.
+- Installing packages with `pip` and importing them, including the `data2thesis` companion package.
+- A first look at Elaf's data with Pandas.
 
-### **Chapter 2: Data Structures in R**
+### **Chapter 2: Data Structures in Python**
 
-- Vectors: working with whole vectors, logical indexing, and changing values.
-- Factors for categories, with ordered levels.
-- Data frames: structure, selecting rows and columns, and adding columns.
-- Matrices and lists, met as results (correlation matrices, test results).
-- Importing CSV, Excel (`readxl`), and SPSS (`haven`) files, keeping variable and value labels; exporting data.
-- Coming from SPSS or Excel: how familiar tasks map to R.
-- Reading common error messages; a first summary of the data.
+- Pandas Series: working with 1D vectors, vectorization, boolean indexing, and updating values.
+- Categoricals for discrete groups, with ordered levels (`pd.Categorical`).
+- DataFrames: structure, selecting rows and columns with `.loc` and `.iloc`, and adding columns.
+- Matrices and Dictionaries, met as results (correlation matrices, statistical test objects).
+- Importing CSV (`read_csv`), Excel (`read_excel`), and SPSS (`read_spss` / `pyreadstat`) files, keeping question and value labels; exporting data with `.to_csv()`.
+- Coming from SPSS or Excel: how familiar tasks map to Python and Pandas.
+- Reading common error tracebacks (`NameError`, `KeyError`, `TypeError`); rapid descriptive summaries (`.describe()`).
 
-### **Chapter 3: Data Manipulation with dplyr and tidyr**
+### **Chapter 3: Data Manipulation and Cleaning with Pandas**
 
-- The tidyverse, tidy data, and the native pipe `|>`.
-- dplyr verbs: `filter()`, `select()`, `arrange()`, `mutate()`, `case_when()`, and `summarise()` with `.by`.
-- Reshaping with `pivot_longer()` and `pivot_wider()`.
-- Joining tables with `left_join()` and `anti_join()` (`join_by()`).
-- Case study: cleaning Elaf's survey export (test and duplicate rows, names, categories, missing codes, text to numbers, impossible values), computing scale scores with a reversed item, and reshaping the semester records; checked against the clean data.
+- Tidy data principles in Python and method chaining with Pandas.
+- Core Pandas methods: `.query()`, `[]` filtering, `.filter()`, `.sort_values()`, `.assign()`, `.replace()`, and `.groupby()` with `.agg()`.
+- Reshaping tables with `.melt()` (long) and `.pivot()` / `.pivot_table()` (wide).
+- Joining tables with `pd.merge()` (`how="left"`, `how="inner"`, `how="outer"`).
+- Case study: cleaning Elaf's survey export (`wellbeing_raw.xlsx`: removing test and duplicate rows, standardizing names, recoding categories, handling missing codes, converting text to numbers, fixing impossible values), computing scale scores with reverse-coded items, and reshaping semester records; verified against canonical data.
 
-### **Chapter 4: Data Visualization with ggplot2**  
 
-- The grammar of graphics: data, aesthetic mappings, and geoms.
-- Histograms, bar charts, box plots, scatter plots with trend lines, and line charts of change over time.
-- Mapping versus setting colours.
-- Labels, scales, colour-blind-friendly palettes, themes, annotations, and honest axis ranges.
-- Facets, density plots, and correlation heat maps.
-- Exporting publication-quality figures with `ggsave()`.
+### **Chapter 4: Data Visualization with Seaborn and Matplotlib**
+
+- Visual perception and graphical hierarchy (Cleveland & McGill): why position and length outperform angle and area.
+- Visualizing distributions and categories with Seaborn: `sns.histplot()`, `sns.countplot()`, and `sns.boxplot()`.
+- Bivariate relationships: scatter plots, opacity (`alpha`), and regression trend lines with `sns.regplot()`.
+- Longitudinal change over time: `sns.lineplot()` with marker aesthetics and custom palettes.
+- Data mapping (`hue`) versus fixed styling (`color`).
+- Explanatory graphics: custom labels, theoretical limits, zero baselines, annotations with `ax.axvline()` and `ax.text()`.
+- Small multiples (`sns.FacetGrid`, `sns.lmplot`), kernel density estimation (`sns.kdeplot`), and correlation matrices with `sns.heatmap()`.
+- Exporting publication-ready raster (PNG at 300 DPI) and vector (PDF, SVG) graphics with `plt.savefig(bbox_inches="tight")`.
 
 ## **Part 2: Statistical Analysis for Research**
 
@@ -164,9 +168,9 @@ Chapters whose code has not changed are not re-executed: their results are store
 - Generalised linear mixed models for counts (supervisor meetings) and binary outcomes.
 - Reporting a mixed-effects model.
 
-## **Part 3: Machine Learning with R**
+## **Part 3: Machine Learning with Python**
 
-### **Chapter 11: Introduction to Machine Learning in R**
+### **Chapter 11: Introduction to Machine Learning in Python**
 
 - Supervised and unsupervised learning; prediction versus explanation.
 - The tidymodels framework: splitting (rsample), recipes, model specifications (parsnip), workflows, tuning, and yardstick.
@@ -227,7 +231,7 @@ Chapters whose code has not changed are not re-executed: their results are store
 - Open science: sharing data and code with a DOI and a licence, protecting participants (small cells), preregistration and registered reports.
 - Optional: keeping a project's history with git and GitHub.
 
-### **Chapter 18: Using AI with R**
+### **Chapter 18: Using AI with Python**
 
 - How large language models work, and why they make confident mistakes (hallucinations, outdated knowledge).
 - Using AI assistants to write, explain, and debug R code, and checking what they produce; AI inside RStudio and Positron.
@@ -247,6 +251,6 @@ Chapters whose code has not changed are not re-executed: their results are store
 
 - **Appendix A:** Installation and Setup: R on Windows, macOS, and Linux; RStudio (and Positron); recommended settings; the book's packages and the data2thesis package; common problems and keeping R up to date.
 - **Appendix B:** Glossary: every key term from the chapter reviews with a plain-language definition and chapter references, and a table of frequently used R functions.
-- **Appendix C:** R Packages: every package used in the book, what it is for, the chapters that use it, and its version; finding, judging, and citing packages.
+- **Appendix C:** Python Packages: every package used in the book, what it is for, the chapters that use it, and its version; finding, judging, and citing packages.
 - **Appendix D:** Common Errors and How to Fix Them: real messages (errors, warnings, and silent mistakes) from starting out, files, data, plots, tests and models, and machine learning, with what each means and how to fix it; what to do when stuck.
 - **Appendix E:** Further Learning Resources: free books by topic (including Tyson Barrett's *R for Researchers*), courses and practice, and communities.

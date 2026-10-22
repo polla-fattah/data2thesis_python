@@ -316,7 +316,7 @@ def generate_template(chapters_data, foreword_html, total_chapters, total_append
             qmd_name = ch['filename'].replace('.html', '.qmd')
             pencil_button_html = f'''
               <div style="margin-top: 8px;">
-                <a href="https://github.com/polla-fattah/data2thesis_r/edit/main/content/book/{qmd_name}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px; font-size: 0.82rem; font-weight: 600; color: var(--brand-copper, #b4762e); background: rgba(180, 118, 46, 0.08); border: 1px solid rgba(180, 118, 46, 0.25); border-radius: 6px; text-decoration: none;">
+                <a href="https://github.com/polla-fattah/data2thesis_python/edit/main/content/book/{qmd_name}" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px; font-size: 0.82rem; font-weight: 600; color: var(--brand-copper, #b4762e); background: rgba(180, 118, 46, 0.08); border: 1px solid rgba(180, 118, 46, 0.25); border-radius: 6px; text-decoration: none;">
                   <i class="fa-solid fa-pen-to-square"></i> Amendments are welcomed
                 </a>
               </div>
@@ -332,7 +332,7 @@ def generate_template(chapters_data, foreword_html, total_chapters, total_append
               <h1 class="chapter-main-title">{ch['title']}</h1>
               {pencil_button_html}
               <div class="chapter-meta-banner">
-                FROM DATA TO THESIS: Using R for Non-Technical · Comprehensive Online Reader
+                FROM DATA TO THESIS: Using Python for Non-Technical · Comprehensive Online Reader
               </div>
             </div>
             

@@ -1,5 +1,5 @@
 ---
-pagetitle: "FROM DATA TO THESIS: Using R for Non-Technical"
+pagetitle: "FROM DATA TO THESIS: Using Python for Non-Technical"
 page-layout: custom
 toc: false
 ---
@@ -12,7 +12,7 @@ toc: false
   <div class="td-site-container">
     <div class="td-landing-hero__copy">
       <div class="td-landing-hero__top-bar">
-        <a href="https://github.com/polla-fattah/data2thesis_r" target="_blank" rel="noopener noreferrer" class="td-landing-oss-badge" title="Open Source Project on GitHub · Amendments welcomed">
+        <a href="https://github.com/polla-fattah/data2thesis_python" target="_blank" rel="noopener noreferrer" class="td-landing-oss-badge" title="Open Source Project on GitHub · Amendments welcomed">
           <svg class="td-landing-oss-badge__icon" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
             <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
           </svg>
@@ -30,8 +30,8 @@ toc: false
         </span>
         <span class="td-landing-hero__title-text">FROM DATA TO THESIS</span>
       </h1>
-      <p class="td-landing-hero__subtitle">Using R for Non-technical</p>
-      <p class="td-landing-hero__lead">Follow one Master's thesis from a messy survey export to results that can be defended. Every method in the book answers one of the study's research questions, so you learn R the way you will use it: on a real research project.</p>
+      <p class="td-landing-hero__subtitle">Using Python for Non-technical</p>
+      <p class="td-landing-hero__lead">Follow one Master's thesis from a messy survey export to results that can be defended. Every method in the book answers one of the study's research questions, so you learn Python the way you will use it: on a real research project.</p>
       <div class="td-landing-hero__actions">
         <a class="td-landing-button td-landing-button--primary" href="content/book/index.html">
           <i class="bi bi-book-open" aria-hidden="true"></i>
@@ -41,14 +41,14 @@ toc: false
           <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
           <span>Download PDF</span>
         </a>
-        <a class="td-landing-button td-landing-button--github" href="https://github.com/polla-fattah/data2thesis_r" target="_blank" rel="noopener noreferrer">
+        <a class="td-landing-button td-landing-button--github" href="https://github.com/polla-fattah/data2thesis_python" target="_blank" rel="noopener noreferrer">
           <i class="bi bi-github" aria-hidden="true"></i>
           <span>GitHub</span>
         </a>
       </div>
     </div>
     <div class="td-landing-hero__media">
-      <img src="images/cover-front.png" alt="Book cover: FROM DATA TO THESIS – Using R for Non-technical by Polla Fattah" />
+      <img src="images/cover-front.png" alt="Book cover: FROM DATA TO THESIS – Using Python for Non-technical by Polla Fattah" />
     </div>
   </div>
 </section>
@@ -58,7 +58,7 @@ toc: false
     <h2>The book in numbers</h2>
   </div>
   <div class="row g-3">
-    <div class="col-12 col-md-4 metric"><div class="value">19</div><div class="label">chapters</div><div class="note">from a first R command to a finished thesis chapter</div></div>
+    <div class="col-12 col-md-4 metric"><div class="value">19</div><div class="label">chapters</div><div class="note">from a first Python command to a finished thesis chapter</div></div>
     <div class="col-12 col-md-4 metric"><div class="value">600</div><div class="label">students</div><div class="note">in the case study, followed over four semesters</div></div>
     <div class="col-12 col-md-4 metric"><div class="value">12</div><div class="label">research questions</div><div class="note">each one answered with a different method</div></div>
   </div>
@@ -75,7 +75,7 @@ toc: false
       <div class="step"><div class="num">2</div><div><h3>A tiny example</h3><p>The new idea is shown on a handful of numbers, so you can see exactly what it does.</p></div></div>
       <div class="step"><div class="num">3</div><div><h3>The case-study data</h3><p>The same tool is applied to the real case study, and you learn how to report the result in a thesis.</p></div></div>
       <div class="step"><div class="num">4</div><div><h3>In your field</h3><p>A short box shows the same method in health, agriculture, or business research.</p></div></div>
-      <div class="step"><div class="num">5</div><div><h3>Practise</h3><p>Exercises in the playground: in your browser, or as a project to download and open in RStudio.</p></div></div>
+      <div class="step"><div class="num">5</div><div><h3>Practise</h3><p>Exercises in the playground: in your browser, or as a project to download and open in VS Code.</p></div></div>
     </div>
   </div>
 </section>
@@ -86,8 +86,8 @@ toc: false
     <p>Start where you are.</p>
   </div>
   <div class="row g-4">
-    <div class="col-md-6 col-lg-3"><div class="path-card"><div class="tag">No experience needed</div><h3>The complete path</h3><p>All chapters in order, from installing R to presenting your results.</p></div></div>
-    <div class="col-md-6 col-lg-3"><div class="path-card"><div class="tag">Used SPSS or Excel</div><h3>Coming from SPSS</h3><p>See how familiar tasks map to R, import your SPSS files with their labels, then move on to Part 2.</p></div></div>
+    <div class="col-md-6 col-lg-3"><div class="path-card"><div class="tag">No experience needed</div><h3>The complete path</h3><p>All chapters in order, from installing Python to presenting your results.</p></div></div>
+    <div class="col-md-6 col-lg-3"><div class="path-card"><div class="tag">Used SPSS or Excel</div><h3>Coming from SPSS</h3><p>See how familiar tasks map to Python, import your SPSS files with their labels, then move on to Part 2.</p></div></div>
     <div class="col-md-6 col-lg-3"><div class="path-card"><div class="tag">Classic statistics</div><h3>Statistics for your thesis</h3><p>Parts 1 and 2: describing data, hypothesis tests, ANOVA, regression, and mixed models.</p></div></div>
     <div class="col-md-6 col-lg-3"><div class="path-card"><div class="tag">Know the basics</div><h3>Towards machine learning</h3><p>Part 3: prediction, classification, clustering, neural networks, and forecasting.</p></div></div>
   </div>
@@ -100,9 +100,9 @@ toc: false
   <div class="row justify-content-center">
     <div class="col-lg-8">
       <div class="timeline">
-        <div class="item"><div class="when">Part 1 · Chapters 1 to 4</div><h3>Foundations</h3><p>R and RStudio, data structures, cleaning and reshaping a messy survey export, and your first plots.</p></div>
+        <div class="item"><div class="when">Part 1 · Chapters 1 to 4</div><h3>Foundations</h3><p>Python and VS Code / Jupyter, data structures, cleaning and reshaping a messy survey export, and your first plots.</p></div>
         <div class="item"><div class="when">Part 2 · Chapters 5 to 10</div><h3>Statistical analysis for research</h3><p>Research questions and hypotheses, describing data, hypothesis tests, ANOVA and regression, questionnaire scales, and change over time.</p></div>
-        <div class="item"><div class="when">Part 3 · Chapters 11 to 16</div><h3>Machine learning with R</h3><p>Predicting who might drop out, finding student profiles, neural networks, and forecasting.</p></div>
+        <div class="item"><div class="when">Part 3 · Chapters 11 to 16</div><h3>Machine learning with Python</h3><p>Predicting who might drop out, finding student profiles, neural networks, and forecasting.</p></div>
         <div class="item"><div class="when">Part 4 · Chapters 17 to 19</div><h3>Reproducible research and applications</h3><p>Quarto reports, Shiny dashboards, using AI tools responsibly, and a complete project from raw data to thesis chapter.</p></div>
       </div>
     </div>
@@ -115,34 +115,41 @@ toc: false
     <p>All free and open source.</p>
   </div>
   <div class="row g-3">
-    <div class="col-6 col-md-4 col-lg-2"><div class="tool"><strong>R</strong><span>the language for analysis</span></div></div>
-    <div class="col-6 col-md-4 col-lg-2"><div class="tool"><strong>RStudio / Positron</strong><span>where you write R</span></div></div>
-    <div class="col-6 col-md-4 col-lg-2"><div class="tool"><strong>tidyverse</strong><span>cleaning and plotting</span></div></div>
-    <div class="col-6 col-md-4 col-lg-2"><div class="tool"><strong>tidymodels</strong><span>machine learning</span></div></div>
+    <div class="col-6 col-md-4 col-lg-2"><div class="tool"><strong>Python</strong><span>the language for analysis</span></div></div>
+    <div class="col-6 col-md-4 col-lg-2"><div class="tool"><strong>VS Code / Jupyter</strong><span>where you write Python</span></div></div>
+    <div class="col-6 col-md-4 col-lg-2"><div class="tool"><strong>pandas & seaborn</strong><span>cleaning and plotting</span></div></div>
+    <div class="col-6 col-md-4 col-lg-2"><div class="tool"><strong>scikit-learn</strong><span>machine learning</span></div></div>
     <div class="col-6 col-md-4 col-lg-2"><div class="tool"><strong>Quarto</strong><span>reproducible reports</span></div></div>
-    <div class="col-6 col-md-4 col-lg-2"><div class="tool"><strong>webR</strong><span>R in your browser</span></div></div>
+    <div class="col-6 col-md-4 col-lg-2"><div class="tool"><strong>Pyodide</strong><span>Python in your browser</span></div></div>
   </div>
 </section>
 
 <section id="get-the-data">
   <div class="section-head">
     <h2>Get the data</h2>
-    <p>The student wellbeing data comes as ordinary files and as an R package. The book teaches both.</p>
+    <p>The student wellbeing data comes as ordinary files and as a Python package. The book teaches both.</p>
   </div>
   <div class="row justify-content-center">
     <div class="col-lg-8">
 ```
 
-Install the package from this website:
+Install the package via pip:
 
-```r
-install.packages("https://polla.dev/data2thesis_r/downloads/data2thesis_1.1.0.tar.gz",
-                 repos = NULL, type = "source")
-library(data2thesis)
-head(students)
+```bash
+pip install data2thesis
 ```
 
-Or download the [package file](downloads/data2thesis_1.1.0.tar.gz) and the [data files on GitHub](https://github.com/polla-fattah/data2thesis_r/tree/main/data).
+Or load directly in Python:
+
+```python
+import data2thesis as dt
+
+# Instant access to DataFrames
+print(dt.students.head())
+print(dt.semesters.describe())
+```
+
+Download the [built package wheel](downloads/data2thesis-1.1.0-py3-none-any.whl) and the [data files on GitHub](https://github.com/polla-fattah/data2thesis_python/tree/main/data).
 
 **Please note:** the case study and its data are fictional: the data was generated by a computer program to look realistic, and its patterns were built in by the author. It describes no real people and is not evidence about real students; do not cite or use it as research findings.
 
@@ -161,7 +168,7 @@ Or download the [package file](downloads/data2thesis_1.1.0.tar.gz) and the [data
         <summary>What is this book about? (Full back-cover description)</summary>
         <p><strong>Turn messy data into a defended, publication-ready thesis.</strong></p>
         <p>For many postgraduate and academic researchers, collecting data is only the beginning of the real challenge. The hardest hurdle is turning spreadsheets, surveys, and lab observations into robust statistical models and defendable written arguments. Commercial point-and-click tools leave your analysis opaque, while standard programming textbooks bury you in abstract computer science theory.</p>
-        <p><em>From Data to Thesis</em> bridges that divide. Written specifically for graduate students, doctoral researchers, and academic professionals, this book provides a complete, modern roadmap for empirical research using <strong>R</strong>. Rather than abstract mathematics, every concept is taught through a single, realistic running case study following 600 students across four semesters.</p>
+        <p><em>From Data to Thesis</em> bridges that divide. Written specifically for graduate students, doctoral researchers, and academic professionals, this book provides a complete, modern roadmap for empirical research using <strong>Python</strong>. Rather than abstract mathematics, every concept is taught through a single, realistic running case study following 600 students across four semesters.</p>
         <p><strong>Every chapter guides you through five clear steps:</strong></p>
         <ol>
           <li><strong>A Concrete Research Question</strong> — Rooted in authentic academic inquiry.</li>
@@ -174,9 +181,9 @@ Or download the [package file](downloads/data2thesis_1.1.0.tar.gz) and the [data
         <hr>
         <p><strong>Inside you will discover:</strong></p>
         <ul>
-          <li>How to clean, reshape, and visualize complex data using modern <strong>tidyverse</strong> workflows.</li>
+          <li>How to clean, reshape, and visualize complex data using modern <strong>pandas & seaborn</strong> workflows.</li>
           <li>How to choose the right statistical test—and how to diagnose and fix common assumption violations.</li>
-          <li>Practical machine learning and predictive modeling without the computational overwhelm.</li>
+          <li>Practical machine learning and predictive modeling with <strong>scikit-learn</strong> without the computational overwhelm.</li>
           <li>Reproducible research workflows using <strong>Quarto</strong> that generate thesis-ready tables and figures.</li>
           <li>Interactive browser playgrounds to practice every method without installing a single package.</li>
         </ul>
@@ -185,8 +192,8 @@ Or download the [package file](downloads/data2thesis_1.1.0.tar.gz) and the [data
       <details><summary>Do I need to know programming or statistics?</summary><p>No. The book starts from zero and explains every term when it first appears. Each new idea is shown first on a tiny example before it is used on real data.</p></details>
       <details><summary>Is the data real?</summary><p>No. The student, her study, and her data are fictional. The data was generated by a computer program to look like a realistic survey of graduate students, so that every method in this book has something to find. It describes no real people, and its patterns (for example, that the workshop raised wellbeing, or that students who sleep more have higher grades) were built into the program by the author, not discovered. Nothing in this book is evidence about the wellbeing of real students, and the data and results must not be cited or used as findings about students, universities, or any real situation. The same applies to the counselling service's records and to the students' written answers. It was designed so that every method in the book finds something worth interpreting, including some honest "no effect" results. The script that generates it is published, so anyone can check or regenerate it.</p></details>
       <details><summary>My research is not in education. Is the book for me?</summary><p>Yes. The methods are the same in every field. "In your field" boxes in each chapter show the same method on real data from health, agriculture, and business research.</p></details>
-      <details><summary>Do I need to install anything to start?</summary><p>Not for the playground: its exercises run in your browser. To follow the book on your own computer you will install R and RStudio, and Chapter 1 shows you how.</p></details>
-      <details><summary>Does it cover AI tools?</summary><p>Yes. Chapter 18 shows how to use AI assistants to write and check R code, how to analyse open-ended answers with a language model, and how to use AI responsibly in research.</p></details>
+      <details><summary>Do I need to install anything to start?</summary><p>Not for the playground: its exercises run in your browser. To follow the book on your own computer you will install Python and VS Code, and Chapter 1 shows you how.</p></details>
+      <details><summary>Does it cover AI tools?</summary><p>Yes. Chapter 18 shows how to use AI assistants to write and check Python code, how to analyse open-ended answers with a language model, and how to use AI responsibly in research.</p></details>
     </div>
   </div>
 </section>

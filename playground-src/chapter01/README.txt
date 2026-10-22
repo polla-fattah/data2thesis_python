@@ -1,20 +1,20 @@
-FROM DATA TO THESIS: Using R for Non-Technical
-Playground, Chapter 1: Getting Started with R
+FROM DATA TO THESIS: Using Python for Non-Technical
+Playground, Chapter 1: Getting Started with Python
 
 How to use this project
-1. Double-click chapter01.Rproj. RStudio opens with this folder as the working directory.
-2. Open exercises.R. It has four parts:
+1. Open this folder in VS Code (or your preferred Python editor/Jupyter environment).
+2. Open exercises.py. It has four parts:
    A. Practise the chapter       the book's exercises, with blanks (______) to fill
    B. Go further                 new exercises beyond the book
    C. Check your understanding   short questions to answer in your own words
    D. Do it yourself             open tasks: no starter code and no answers
-   Run a line with Ctrl+Enter (Cmd+Enter on a Mac).
-3. Check parts A to C in solutions.R, after you have tried each one yourself.
+   Run in VS Code using Shift+Enter (Send selection/line to Python Interactive terminal) or run the file directly.
+3. Check parts A to C in solutions.py, after you have tried each one yourself.
    Part D has no solutions: the tasks are open, as in your own thesis.
 
 Files
-- exercises.R    the four parts, with starter code for parts A and B
-- solutions.R    solutions for parts A and B, model answers for part C
+- exercises.py   the four parts, with starter code for parts A and B
+- solutions.py   solutions for parts A and B, model answers for part C
 - students.csv   one row per student in the wellbeing study (600 students)
 - semesters.csv  one row per student per semester
 
@@ -24,4 +24,4 @@ author. It describes no real people and is not evidence about real students;
 do not cite or use it as research findings.
 
 All four parts can also be done in your browser at:
-https://polla-fattah.github.io/data2thesis_r/playground/chapter01.html
+https://polla-fattah.github.io/data2thesis_python/playground/chapter01.html

@@ -1,40 +1,48 @@
 ---
 title: "Playground: Chapter 1"
-subtitle: Getting Started with R
+subtitle: Getting Started with Python
 format:
   live-html:
     theme:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
   - chapter01.zip
-webr:
+pyodide:
+  packages:
+    - pandas
+    - numpy
+    - seaborn
   resources:
     - students.csv
     - semesters.csv
 ---
 
-{{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
+This page practises the ideas of Chapter 1 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide how to write the code, as you will in your own thesis.
 
-This page practises the ideas of Chapter 1 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and some of R's built-in datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide how to write the code, as you will in your own thesis.
+Python runs right in your browser via Pyodide, so the first run can take a few seconds while the Python environment loads. In the exercises, replace each `______` with your own code and press **Run Code**.
 
-R runs in your browser, so the first run can take a few seconds while R starts. In the exercises, replace each `______` with your own code and press **Run Code**.
-
-```{webr}
+```{pyodide}
 #| setup: true
 #| exercise: [ex4, ex5, gf2]
-students  <- read.csv("students.csv")
-semesters <- read.csv("semesters.csv")
+import pandas as pd
+import numpy as np
+
+students = pd.read_csv("students.csv")
+semesters = pd.read_csv("semesters.csv")
 ```
 
-```{webr}
+```{pyodide}
 #| include: false
-students  <- read.csv("students.csv")
-semesters <- read.csv("semesters.csv")
+import pandas as pd
+import numpy as np
+
+students = pd.read_csv("students.csv")
+semesters = pd.read_csv("semesters.csv")
 ```
 
 ## Practise the chapter
@@ -43,19 +51,20 @@ These are the exercises at the end of Chapter 1, with the same numbers.
 
 ### Exercise 1: A supervisor's sleep
 
-A supervisor sleeps 8, 7.5, 6, and 7 hours on four nights. Store the numbers in an object called `supervisor_sleep` and find the average, rounded to one decimal place.
+A supervisor sleeps 8, 7.5, 6, and 7 hours on four nights. Store the numbers in a list called `supervisor_sleep` and find the average, rounded to one decimal place.
 
-```{webr}
+```{pyodide}
 #| exercise: ex1
-supervisor_sleep <- ______(8, 7.5, 6, 7)
-round(mean(supervisor_sleep), ______)
+supervisor_sleep = [8, 7.5, 6, 7]
+average_sleep = sum(supervisor_sleep) / ______(supervisor_sleep)
+round(average_sleep, ______)
 ```
 
 ::: { .hint exercise="ex1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Several values become one object with the function that *combines* them. The second argument of `round()` is the number of decimal places.
+The number of items in a Python list is found with `len()`. The second argument of `round()` is the number of decimal places.
 :::
 :::
 
@@ -63,30 +72,31 @@ Several values become one object with the function that *combines* them. The sec
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-supervisor_sleep <- c(8, 7.5, 6, 7)
-round(mean(supervisor_sleep), 1)
+```python
+supervisor_sleep = [8, 7.5, 6, 7]
+average_sleep = sum(supervisor_sleep) / len(supervisor_sleep)
+round(average_sleep, 1)
 ```
 
-The average is 7.125 hours, which rounds to 7.1. The object keeps all four values, so you can calculate anything else from it later without typing the numbers again.
+The average is 7.125 hours, which rounds to 7.1. Storing the values in a list preserves them in memory, so you can calculate standard deviations, medians, or plot them later without retyping the numbers.
 :::
 :::
 
 ### Exercise 2: Text and numbers
 
-Check the types of `"600"` and `600` with `class()`, and explain the difference.
+Check the types of `"600"` and `600` with Python's built-in `type()`, and explain the difference.
 
-```{webr}
+```{pyodide}
 #| exercise: ex2
-class("600")
-class(______)
+print(type("600"))
+print(type(______))
 ```
 
 ::: { .hint exercise="ex2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The only difference between the two values is the quotation marks.
+Pass the integer `600` (without quotes) to `type()`.
 :::
 :::
 
@@ -94,30 +104,32 @@ The only difference between the two values is the quotation marks.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-class("600")
-class(600)
+```python
+print(type("600"))
+print(type(600))
 ```
 
-`"600"` is `character`: text that happens to contain digits. `600` is `numeric`: a number R can calculate with. Try `"600" + 1` to see the difference: R refuses to add a number to text. A column of numbers read in as text, often because of one stray word such as "missing", is one of the most common problems in real data (Chapter 3).
+`"600"` is `str` (a string): text that happens to consist of numeric digits. `600` is `int` (an integer): a number Python can calculate with. Try `"600" + 1` in Python to see the result: Python raises a `TypeError` because it strictly protects data integrity and refuses to add a number to text.
 :::
 :::
 
-### Exercise 3: A missing value
+### Exercise 3: Missing values and calculations
 
-Explain in your own words why `mean(c(4, NA, 6))` returns `NA`, and show how to get the average of the two known values.
+In data analysis, missing observations are represented as missing data (`NaN` or `None`). When using pandas, calculate the mean of `[4, None, 6]` and explain how pandas handles missing values.
 
-```{webr}
+```{pyodide}
 #| exercise: ex3
-mean(c(4, NA, 6))
-mean(c(4, NA, 6), ______ = TRUE)
+import pandas as pd
+
+values = pd.Series([4, None, 6])
+values.______()
 ```
 
 ::: { .hint exercise="ex3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The argument's name is short for "NA remove".
+Pandas Series objects have a method named `.mean()` that calculates the arithmetic average while skipping missing entries by default.
 :::
 :::
 
@@ -125,30 +137,32 @@ The argument's name is short for "NA remove".
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-mean(c(4, NA, 6))
-mean(c(4, NA, 6), na.rm = TRUE)
+```python
+import pandas as pd
+
+values = pd.Series([4, None, 6])
+values.mean()
 ```
 
-`NA` means "not available": the value exists but is unknown. The average of 4, an unknown number, and 6 is itself unknown, so R answers `NA` rather than guess. With `na.rm = TRUE`, R removes the missing value and averages the other two, giving 5. The choice to remove it is yours, and a thesis should say how many values were missing.
+Pandas converts `None` in numeric vectors to `NaN` ("Not a Number"). By default, `values.mean()` skips missing values (using `skipna=True`), producing `5.0`. When reporting statistics in your thesis, always state both the summary statistic and the number of missing observations (`values.isna().sum()`).
 :::
 :::
 
 ### Exercise 4: The youngest and the oldest student
 
-Using `students`, find the youngest and the oldest student.
+Using the `students` DataFrame, find the age of the youngest and the oldest student.
 
-```{webr}
+```{pyodide}
 #| exercise: ex4
-______(students$age, na.rm = TRUE)
-______(students$age, na.rm = TRUE)
+print(students["age"].______())
+print(students["age"].______())
 ```
 
 ::: { .hint exercise="ex4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The two functions are named after the smallest and the largest value. Like `mean()`, they return `NA` if a value is missing, which is why `na.rm = TRUE` is already there.
+The two methods on a pandas Series are `.min()` and `.max()`.
 :::
 :::
 
@@ -156,29 +170,29 @@ The two functions are named after the smallest and the largest value. Like `mean
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-min(students$age, na.rm = TRUE)
-max(students$age, na.rm = TRUE)
+```python
+print(students["age"].min())
+print(students["age"].max())
 ```
 
-The youngest student is 23 and the oldest 52. Checking the smallest and largest values is also a quick test of data quality: an age of 2 or 200 would reveal a typing error at once.
+The youngest student is 23 and the oldest is 52. Checking minimums and maximums is a critical first step in data validation: an age of 2 or 200 immediately reveals data entry errors.
 :::
 :::
 
 ### Exercise 5: Part-time students
 
-Using `table()`, find out how many students are studying part-time (the variable is `study_mode`).
+Using the `.value_counts()` method, find out how many students are studying full-time versus part-time (the variable is `study_mode`).
 
-```{webr}
+```{pyodide}
 #| exercise: ex5
-______(students$study_mode)
+students["study_mode"].______()
 ```
 
 ::: { .hint exercise="ex5" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The function that counts how many times each value appears is named in the exercise.
+Call `.value_counts()` on the column `students["study_mode"]`.
 :::
 :::
 
@@ -186,46 +200,48 @@ The function that counts how many times each value appears is named in the exerc
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-table(students$study_mode)
+```python
+students["study_mode"].value_counts()
 ```
 
-177 of the 600 students study part-time, and 423 full-time.
+177 of the 600 students study part-time, and 423 study full-time.
 :::
 :::
 
 ### Exercise 6: Decisions without a record
 
-Think of an analysis you have done, or read about, with a point-and-click program. List three decisions in it that a reader could not check without a written record. Write your answer first, then open the model answer.
+Think of an analysis you have done, or read about, using a point-and-click spreadsheet. List three decisions in it that a reader could not verify without a written record. Write your answer first, then open the model answer.
 
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Model answer
 
-Any three of these, or similar ones from your own experience: which cases were removed, and why (for example, participants who did not finish the questionnaire); how missing values were handled; which questionnaire items were reversed before adding them up; how a continuous variable was grouped into categories, and where the cut-offs were; which test was chosen, with which options; and which of several analyses tried is the one reported. Each decision can change the result, and none of them is visible in a table of results. A script records all of them, in order.
+Any three of these, or similar ones from your own experience: which outlier cases were deleted and under what criteria; how missing survey answers were imputed or filtered; which survey items were reverse-coded; where demographic age categories were cut; and which specific statistical models were tried before arriving at the final report. In a spreadsheet, these transformations leave no audit trail. In a Python script, every transformation is documented in executable code.
 :::
 
 ## Go further
 
-These exercises go beyond the book.
+These exercises go beyond the basic chapter examples.
 
-### Exercise 7: Calculating with a whole week
+### Exercise 7: Vectorized calculations with a whole week
 
-Arithmetic in R works on every value of an object at once. A student slept 6.5, 7, 5.5, 8, 7.5, 6, and 9 hours over a week. Convert the week to minutes, find the difference between the longest and the shortest night in minutes, and count the nights under 7 hours.
+Pandas Series allow arithmetic across every observation at once. A student slept 6.5, 7, 5.5, 8, 7.5, 6, and 9 hours over a week. Convert the week to minutes, find the difference between the longest and shortest night in minutes, and count the nights under 7 hours.
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-week <- c(6.5, 7, 5.5, 8, 7.5, 6, 9)
-minutes <- week * ______
-minutes
-max(minutes) - min(minutes)
-sum(week ______ 7)
+import pandas as pd
+
+week = pd.Series([6.5, 7, 5.5, 8, 7.5, 6, 9])
+minutes = week * ______
+print(minutes)
+print(minutes.max() - minutes.min())
+print((week ______ 7).sum())
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-An hour has 60 minutes. A comparison such as `week > 8` gives `TRUE` or `FALSE` for each night, and `sum()` counts the `TRUE` values.
+Multiply hours by 60 to obtain minutes. The comparison `week < 7` creates a boolean Series where `True` equals 1 and `False` equals 0; `.sum()` counts the `True` values.
 :::
 :::
 
@@ -233,34 +249,36 @@ An hour has 60 minutes. A comparison such as `week > 8` gives `TRUE` or `FALSE` 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-week <- c(6.5, 7, 5.5, 8, 7.5, 6, 9)
-minutes <- week * 60
-minutes
-max(minutes) - min(minutes)
-sum(week < 7)
+```python
+import pandas as pd
+
+week = pd.Series([6.5, 7, 5.5, 8, 7.5, 6, 9])
+minutes = week * 60
+print(minutes)
+print(minutes.max() - minutes.min())
+print((week < 7).sum())
 ```
 
-The longest and the shortest night differ by 210 minutes (three and a half hours), and 3 of the 7 nights are under 7 hours. `week * 60` multiplied all seven values in one step, and `sum(week < 7)` counted by adding up `TRUE` values, each of which counts as 1. Both tricks are used throughout the book.
+The longest and shortest night differ by 210 minutes (3.5 hours), and 3 of the 7 nights are under 7 hours. Vectorized operations and boolean counting are fundamental tools throughout this book.
 :::
 :::
 
-### Exercise 8: Master's and PhD students
+### Exercise 8: Master's and PhD proportions
 
-Find how many students are in each programme, and the share of PhD students.
+Find how many students are enrolled in each degree programme, and calculate the proportion of PhD students.
 
-```{webr}
+```{pyodide}
 #| exercise: gf2
-counts <- table(students$programme)
-counts
-counts["PhD"] / ______(counts)
+counts = students["programme"].value_counts()
+print(counts)
+print(counts["PhD"] / counts.______())
 ```
 
 ::: { .hint exercise="gf2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-A share is a count divided by the total. The total is the result of adding up all the counts in the table.
+Divide the PhD count by the total sum of counts using `.sum()`. Alternatively, you can run `students["programme"].value_counts(normalize=True)`.
 :::
 :::
 
@@ -268,33 +286,33 @@ A share is a count divided by the total. The total is the result of adding up al
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-counts <- table(students$programme)
-counts
-counts["PhD"] / sum(counts)
+```python
+counts = students["programme"].value_counts()
+print(counts)
+print(counts["PhD"] / counts.sum())
 ```
 
-426 students are on a Master's programme and 174 on a PhD, so 29% are PhD students. `nrow(students)` would give the same total here, but `sum(counts)` also works when the table leaves out missing values, as `table()` does by default.
+426 students are Master's students and 174 are PhD candidates, meaning 29.0% are PhD students.
 :::
 :::
 
-### Exercise 9: Reading error messages
+### Exercise 9: Reading Python error messages
 
-Every R user sees error messages every day. Reading them is a skill. The code below has three mistakes. Run it, read the message, fix the mistake it points to, and run it again until all three lines work.
+Every Python programmer encounters error messages daily. The code below contains three common syntax and name errors. Inspect and fix each one:
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-sleep_week <- c(6.5, 7, 5.5, 8)
-round(mean(sleep_week), 1
-mean(sleep_wek)
-toupper(wellbeing)
+sleep_week = [6.5, 7, 5.5, 8]
+print(round(sum(sleep_week) / len(sleep_week), 1)
+print(sum(sleep_wek))
+print("wellbeing".upper()
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-R reads the whole box before it runs anything, so a missing bracket stops every line, and "unexpected end of input" means that R was still waiting for something when the code ended. "Object not found" means that R does not know the name: either it is misspelled, or it was meant to be text and needs quotation marks.
+Check for missing closing parentheses `)` on lines 2 and 4, and check the spelling of `sleep_week` on line 3.
 :::
 :::
 
@@ -302,34 +320,36 @@ R reads the whole box before it runs anything, so a missing bracket stops every 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-sleep_week <- c(6.5, 7, 5.5, 8)
-round(mean(sleep_week), 1)
-mean(sleep_week)
-toupper("wellbeing")
+```python
+sleep_week = [6.5, 7, 5.5, 8]
+print(round(sum(sleep_week) / len(sleep_week), 1))
+print(sum(sleep_week))
+print("wellbeing".upper())
 ```
 
-The first mistake is a missing closing bracket, which gives *unexpected end of input*. The second is the misspelled object `sleep_wek`, and the third is a word without quotation marks, which R takes for the name of an object; both give *object not found*. Most errors in practice are one of these three, and the message usually says which.
+Python gives helpful tracebacks: a `SyntaxError: '(' was never closed` points to unclosed brackets, while `NameError: name 'sleep_wek' is not defined` points to typos in variable names.
 :::
 :::
 
-### Exercise 10: A built-in dataset
+### Exercise 10: Inspecting Seaborn's built-in penguins dataset
 
-R comes with dozens of small datasets for practice. `PlantGrowth` records the dried weight of plants grown under a control condition and two treatments. Find how many plants there are, their average weight, and the number of plants in each group.
+Seaborn includes sample datasets for practice. Load the `penguins` dataset, inspect its first rows, its total shape, and count penguins by species.
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-head(PlantGrowth)
-______(PlantGrowth)
-mean(PlantGrowth$weight)
-______(PlantGrowth$group)
+import seaborn as sns
+
+penguins = sns.load_dataset("penguins")
+print(penguins.______())
+print(penguins.shape)
+print(penguins["species"].______())
 ```
 
 ::: { .hint exercise="gf4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The number of plants is the number of rows. Counting the plants in each group is the same job as counting students in each faculty.
+Use `.head()` to view the first five rows, and `.value_counts()` on the `species` column.
 :::
 :::
 
@@ -337,14 +357,16 @@ The number of plants is the number of rows. Counting the plants in each group is
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-head(PlantGrowth)
-nrow(PlantGrowth)
-mean(PlantGrowth$weight)
-table(PlantGrowth$group)
+```python
+import seaborn as sns
+
+penguins = sns.load_dataset("penguins")
+print(penguins.head())
+print(penguins.shape)
+print(penguins["species"].value_counts())
 ```
 
-There are 30 plants, 10 in each group, with an average weight of 5.07. Type `?PlantGrowth` to read where the data came from; every built-in dataset has a help page like this, which is a model of the short description of data that a thesis needs.
+The dataset contains 344 rows and 7 columns, covering three penguin species: Adelie (152), Gentoo (124), and Chinstrap (68).
 :::
 :::
 
@@ -352,83 +374,77 @@ There are 30 plants, 10 in each group, with an average weight of 5.07. Type `?Pl
 
 Answer each question in your own words first, then click to see a model answer.
 
-**1.** When R prints a result, it starts the line with `[1]`. What does the `[1]` mean?
+**1.** What is the difference between running code in an interactive Python REPL/cell versus writing a `.py` script?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-It is the position of the first value on that line. A single result is value number 1. When a result is long enough to take several lines, each line starts with the position of its first value, such as `[1]`, `[13]`, and `[25]`, which helps you find your place.
+Commands run in an interactive REPL or temporary scratch cell are ephemeral. Code written in a version-controlled `.py` script or Quarto document is saved permanently, can be audited, executed from top to bottom, and reproduced by collaborators.
 :::
 
-**2.** Why does `mean()` return `NA` when one value is missing, instead of averaging the others?
+**2.** Why does `values.isna().sum()` matter before computing statistical summaries?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because the honest answer is unknown: the average of known values and an unknown value is itself unknown. R does not drop the value silently, because removing missing values is a decision that can change the result, and the researcher should make it on purpose, with `na.rm = TRUE`, and report it.
+Pandas statistical methods like `.mean()` and `.median()` skip missing values (`NaN`) by default. If 200 out of 600 students did not answer an item, `.mean()` will still return a number based only on the 400 respondents. Checking `.isna().sum()` ensures you know and report the true sample size ($N$) for every variable.
 :::
 
-**3.** What is the difference between typing code in the Console and writing it in a script?
+**3.** What is the difference between `pip install` and `import`?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Code typed in the Console runs once and is gone. Code in a script is saved in a file, so it can be read, corrected, run again from the start, and shared. The Console is for quick checks; the analysis itself belongs in a script.
+`pip install package_name` downloads and installs a library from PyPI onto your machine's environment (done once per environment). `import package_name` loads that installed library into the active Python session (done at the top of each script).
 :::
 
-**4.** What does `library()` do that `install.packages()` does not?
+**4.** Why does Python use 0-indexed positions (e.g. `list[0]`)?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-`install.packages()` downloads a package and stores it on your computer, which you do once. `library()` loads an installed package into the current R session so that its functions can be used, which you do in every session, usually at the top of each script.
+In Python and many programming languages, indices represent the distance or offset from the start of the collection. The first element is at offset 0 from the start, so it is accessed at index `[0]`.
 :::
 
-**5.** Why is a script called a record of the decisions in an analysis?
+**5.** Why is a Python script called an audit trail of scientific decisions?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Every step of the analysis is written in it, in order: which file was read, which cases were removed, how variables were changed, and which tests were run with which options. Anyone, including you six months later, can read the decisions, check them, and repeat the analysis exactly. A point-and-click analysis leaves only the result.
+Every transformation—from reading the raw CSV file to handling outliers, encoding survey factors, computing descriptive statistics, and fitting models—is explicitly written out in sequence. Anyone can run the script and obtain identical results without relying on unrecorded mouse clicks.
 :::
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis. The data (`students` and `semesters`) is already loaded, and R's built-in datasets are always available.
+These tasks have no starter code and no answers. Write your own code, as you would for your thesis. The data (`students` and `semesters`) is already loaded in your environment.
 
-**1.** Write a short script, with a comment above each step, that stores your own hours of sleep for the last seven nights and reports the average, the shortest night, and the number of nights under 7 hours.
+**1.** Write a short script that stores your hours of sleep for seven nights in a list or pandas Series, and computes the average, minimum, maximum, and the number of nights under 7 hours.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**2.** Using `students`, report three facts about the sample, each from one line of code: for example, the number of faculties, the share of women, and the median age.
+**2.** Using `students`, report three key descriptive facts about the sample using single lines of pandas code (for example: the number of distinct departments, the proportion of female students, and the median age).
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**3.** R's built-in `women` data gives the average height (in inches) and weight (in pounds) of American women aged 30 to 39. Find how many rows it has, convert both variables to centimetres and kilograms (1 inch = 2.54 cm, 1 pound = 0.4536 kg), and report the average height and weight in the new units.
+**3.** Load the built-in `tips` dataset from seaborn (`sns.load_dataset("tips")`), print its dimensions (`.shape`), and calculate the average total bill grouped by whether the customer was a smoker or non-smoker.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**4.** This task is for your own computer. Set up an RStudio Project for your thesis, with a `data/` folder for raw data and a first script that reads a file and prints its number of rows and columns. Use any data file you have, or `students.csv` from the download below.
+**4.** On your own computer: Create a dedicated thesis project folder with a `data/` directory. Place `students.csv` in `data/`, open the folder in VS Code, and write a script `analysis.py` that loads the data using pandas and prints the shape and column names.
 
 ## Work on your own computer
 
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 1 project
 
-The project contains the data and all four parts of this page as an R script: the exercises with blanks, the questions to check your understanding (answers in `solutions.R`), and the open tasks, each with space to write your code.
+The starter project contains the data and all four parts of this playground as executable Python scripts: starter exercises with blanks, solutions, and open tasks.
 
-- [Download chapter01.zip](chapter01.zip), unzip it, and double-click `chapter01.Rproj`.
-- Or type this one line in RStudio's Console to download, unzip, and open it:
-
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter01.zip")
-```
-
-If R says there is no package called `usethis`, install it first with `install.packages("usethis")`.
+- [Download chapter01.zip](chapter01.zip), unzip it, and open the folder in VS Code.
+- Run `pip install data2thesis pandas seaborn` to set up your Python environment.
 :::

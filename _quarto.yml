@@ -16,8 +16,8 @@ project:
 website:
   title: "FROM DATA TO THESIS"
   favicon: images/logo.svg
-  site-url: https://polla-fattah.github.io/data2thesis_r
-  repo-url: https://github.com/polla-fattah/data2thesis_r
+  site-url: https://polla-fattah.github.io/data2thesis_python
+  repo-url: https://github.com/polla-fattah/data2thesis_python
   page-navigation: true
   search: true
   navbar:
@@ -36,7 +36,7 @@ website:
       - text: "PDF Book"
         href: downloads/From-Data-to-Thesis.pdf
       - icon: github
-        href: https://github.com/polla-fattah/data2thesis_r
+        href: https://github.com/polla-fattah/data2thesis_python
         aria-label: GitHub
   sidebar:
     - id: book
@@ -45,12 +45,12 @@ website:
       search: true
       contents:
         - content/book/index.qmd
-        - section: "Foundations of R Programming and Data Handling"
+        - section: "Foundations of Python Programming and Data Handling"
           contents:
             - href: content/book/01-getting-started.qmd
-              text: "1  Getting Started with R"
+              text: "1  Getting Started with Python"
             - href: content/book/02-data-structures.qmd
-              text: "2  Data Structures in R"
+              text: "2  Data Structures in Python"
             - href: content/book/03-data-manipulation.qmd
               text: "3  Data Manipulation"
             - href: content/book/04-data-visualization.qmd
@@ -69,10 +69,10 @@ website:
               text: "9  Multivariate Statistical Methods"
             - href: content/book/10-mixed-models.qmd
               text: "10  Mixed-Effects Models"
-        - section: "Machine Learning with R"
+        - section: "Machine Learning with Python"
           contents:
             - href: content/book/11-machine-learning.qmd
-              text: "11  Introduction to Machine Learning in R"
+              text: "11  Introduction to Machine Learning in Python"
             - href: content/book/12-classification.qmd
               text: "12  Classification Models"
             - href: content/book/13-predictive-regression.qmd
@@ -88,7 +88,7 @@ website:
             - href: content/book/17-reproducible-research.qmd
               text: "17  Reproducible Research"
             - href: content/book/18-ai.qmd
-              text: "18  Using AI with R"
+              text: "18  Using AI with Python"
             - href: content/book/19-putting-it-together.qmd
               text: "19  Putting It All Together"
         - content/book/references.qmd
@@ -99,7 +99,7 @@ website:
             - href: content/book/b-glossary.qmd
               text: "B  Glossary"
             - href: content/book/c-packages.qmd
-              text: "C  R Packages"
+              text: "C  Python Packages"
             - href: content/book/d-common-errors.qmd
               text: "D  Common Errors and How to Fix Them"
             - href: content/book/e-resources.qmd
@@ -110,12 +110,12 @@ website:
       search: true
       contents:
         - content/playground/index.qmd
-        - section: "Foundations of R Programming and Data Handling"
+        - section: "Foundations of Python Programming and Data Handling"
           contents:
             - href: content/playground/chapter01.qmd
-              text: "1  Getting Started with R"
+              text: "1  Getting Started with Python"
             - href: content/playground/chapter02.qmd
-              text: "2  Data Structures in R"
+              text: "2  Data Structures in Python"
             - href: content/playground/chapter03.qmd
               text: "3  Data Manipulation"
             - href: content/playground/chapter04.qmd
@@ -134,10 +134,10 @@ website:
               text: "9  Multivariate Statistical Methods"
             - href: content/playground/chapter10.qmd
               text: "10  Mixed-Effects Models"
-        - section: "Machine Learning with R"
+        - section: "Machine Learning with Python"
           contents:
             - href: content/playground/chapter11.qmd
-              text: "11  Introduction to Machine Learning in R"
+              text: "11  Introduction to Machine Learning in Python"
             - href: content/playground/chapter12.qmd
               text: "12  Classification Models"
             - href: content/playground/chapter13.qmd
@@ -153,7 +153,7 @@ website:
             - href: content/playground/chapter17.qmd
               text: "17  Reproducible Research"
             - href: content/playground/chapter18.qmd
-              text: "18  Using AI with R"
+              text: "18  Using AI with Python"
             - href: content/playground/chapter19.qmd
               text: "19  Putting It All Together"
     - id: slides
@@ -162,12 +162,12 @@ website:
       search: true
       contents:
         - content/slides/index.qmd
-        - section: "Foundations of R Programming and Data Handling"
+        - section: "Foundations of Python Programming and Data Handling"
           contents:
             - href: content/slides/01-getting-started.qmd
-              text: "1  Getting Started with R"
+              text: "1  Getting Started with Python"
             - href: content/slides/02-data-structures.qmd
-              text: "2  Data Structures in R"
+              text: "2  Data Structures in Python"
             - href: content/slides/03-data-manipulation.qmd
               text: "3  Data Manipulation"
             - href: content/slides/04-data-visualization.qmd
@@ -186,10 +186,10 @@ website:
               text: "9  Multivariate Statistical Methods"
             - href: content/slides/10-mixed-models.qmd
               text: "10  Mixed-Effects Models"
-        - section: "Machine Learning with R"
+        - section: "Machine Learning with Python"
           contents:
             - href: content/slides/11-machine-learning.qmd
-              text: "11  Introduction to Machine Learning in R"
+              text: "11  Introduction to Machine Learning in Python"
             - href: content/slides/12-classification.qmd
               text: "12  Classification Models"
             - href: content/slides/13-predictive-regression.qmd
@@ -205,14 +205,16 @@ website:
             - href: content/slides/17-reproducible-research.qmd
               text: "17  Reproducible Research"
             - href: content/slides/18-ai.qmd
-              text: "18  Using AI with R"
+              text: "18  Using AI with Python"
             - href: content/slides/19-putting-it-together.qmd
               text: "19  Putting It All Together"
   page-footer:
-    left: "© Polla Fattah. *FROM DATA TO THESIS: Using R for Non-Technical*."
+    left: "© Polla Fattah. *FROM DATA TO THESIS: Using Python for Non-Technical*."
     right: "Built with [Quarto](https://quarto.org)"
 
 bibliography: content/book/references.bib
+
+jupyter: python3
 
 execute:
   freeze: auto
@@ -246,7 +248,7 @@ format:
             if (!match) return;
 
             var chapterFile = match[1] + "-" + match[2] + ".qmd";
-            var editUrl = "https://github.com/polla-fattah/data2thesis_r/edit/main/content/book/" + chapterFile;
+            var editUrl = "https://github.com/polla-fattah/data2thesis_python/edit/main/content/book/" + chapterFile;
 
             function initChapterEdit() {
               if (document.getElementById("d2t-chapter-pencil-init")) return;

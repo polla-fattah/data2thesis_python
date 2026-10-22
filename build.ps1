@@ -4,6 +4,7 @@
 #   .\build.ps1 -NoBuild       serve what is already built
 #   .\build.ps1 -NoServe       build only
 #   .\build.ps1 -Playground    also rebuild the playground download zips first
+#   .\build.ps1 -Package       synchronize and build data2thesis package wheel
 #   .\build.ps1 -Chapter 07-hypothesis-testing.qmd
 #                              render one book chapter only, then serve
 #
@@ -17,21 +18,32 @@ param(
   [switch]$NoBuild,
   [switch]$NoServe,
   [switch]$Playground,
+  [switch]$Package,
   [string]$Chapter = "",
   [int]$Port = 4300
 )
 
 $ErrorActionPreference = "Stop"
-$root    = $PSScriptRoot
-$quarto  = "C:\Program Files\Quarto\bin\quarto.exe"
-$rscript = "C:\Program Files\R\R-4.4.3\bin\Rscript.exe"
-$env:QUARTO_R = $rscript
+$root   = $PSScriptRoot
+$quarto = "C:\Program Files\Quarto\bin\quarto.exe"
+if (-not (Test-Path $quarto)) {
+  $quarto = "quarto"
+}
+$python = "python"
 
 if (-not $NoBuild) {
+  if ($Package) {
+    Write-Host "Synchronizing and building data2thesis Python package..." -ForegroundColor Cyan
+    Push-Location $root
+    & $python data-raw/build_package.py
+    & pip wheel ./data2thesis --no-deps -w downloads
+    Pop-Location
+  }
+
   if ($Playground) {
     Write-Host "Building the playground download zips..." -ForegroundColor Cyan
     Push-Location $root
-    & $rscript data-raw/build_playground.R
+    & $python data-raw/build_playground.py
     Pop-Location
   }
 
@@ -45,11 +57,11 @@ if (-not $NoBuild) {
 
     # Build Full Book Online Edition
     Write-Host "Building Full Book Single-Page Edition..." -ForegroundColor Cyan
-    python (Join-Path $root "scripts/build_full_book.py")
+    & $python (Join-Path $root "scripts/build_full_book.py")
 
     # Build PDF Book with Covers
     Write-Host "Building PDF Book with Front and Back Covers..." -ForegroundColor Cyan
-    python (Join-Path $root "scripts/build_pdf.py")
+    & $python (Join-Path $root "scripts/build_pdf.py")
 
     # Mirror content/ paths to root URLs for backward compatibility
     if (Test-Path "$root/_site/content") {
@@ -61,5 +73,5 @@ if (-not $NoBuild) {
 if (-not $NoServe) {
   Write-Host ""
   Write-Host "Serving http://localhost:$Port  (press Ctrl+C to stop)" -ForegroundColor Green
-  python -m http.server $Port --directory (Join-Path $root "_site")
+  & $python -m http.server $Port --directory (Join-Path $root "_site")
 }

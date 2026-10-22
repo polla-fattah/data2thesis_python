@@ -2,28 +2,34 @@
 number-offset: 1
 ---
 
-# Data Structures in R {#sec-ch02}
+# Data Structures in Python {#sec-ch02}
 
-```{r}
+```{python}
 #| label: setup
 #| include: false
-library(data2thesis)
+import data2thesis as dt
+import pandas as pd
+import numpy as np
+
+students = dt.students
+semesters = dt.semesters
 ```
 
-Data is the written result of measurement. Each value records one observation about one case: a student's age, the faculty she belongs to, how many hours she slept in a semester, her answer to a questionnaire item. Before any analysis, a researcher has to know what each value stands for, what kind of measurement produced it, and how the values are arranged. The same questions arise whether the data comes from a questionnaire, a laboratory instrument, or an administrative register, and they decide which summaries and tests make sense later.
+Data is the recorded outcome of scientific measurement. Each value captures one observation about one entity: a student's age, the faculty they belong to, the hours they slept during a semester, or their response to a Likert questionnaire item. Before conducting any statistical analysis, a researcher must clarify what each value signifies, what level of measurement generated it, and how the data is organized in computer memory. These foundations determine which summary statistics, visualizations, and inferential models are scientifically valid.
 
-Research data rarely arrives in one neat file. In the wellbeing study, the survey tool produced an Excel export, the university's records office sent the semester results as CSV files, and a colleague who helped with an earlier pilot study works in SPSS, so part of the data exists as an SPSS file too. Before any of these files can be opened, it helps to know how R holds data once it is inside. R has a small number of ways to hold data, called **data structures**. This chapter introduces them as the tools for recording measurements: vectors for the values of one variable, factors for categories, and data frames for whole tables of cases. It then shows how to bring files of every common format into R, and how to keep track of what each variable means.
+Research data rarely arrives in a single pristine file. In Elaf's wellbeing study, the online survey software generated an Excel export (`wellbeing_raw.xlsx`), the university registrar exported semester records as CSV files (`semesters.csv`), and a collaborator from a previous pilot study stored historical records in SPSS (`wellbeing.sav`). Before analyzing these heterogeneous sources, we need to understand how Python organizes data in memory. Python provides specialized structures tailored for data science: **lists** and **NumPy arrays** for basic sequences, **Pandas Series** for single measurement variables, **Categorical Series** for discrete groups, and **DataFrames** for rectangular tables of cases. This chapter introduces these structures, demonstrates how to import files from every common format, and shows how to generate an automated codebook linking every column to its underlying survey question.
 
 ::: {.callout-tip appearance="simple"}
 ## By the end of this chapter you will be able to
 
-- Describe data as a table of cases and variables, and identify the unit of analysis.
-- Create vectors and factors, and pick out and change their values.
-- Explain what a data frame is, and select rows and columns from one.
-- Recognise matrices and lists when you meet them.
-- Import data from CSV, Excel, and SPSS files, keeping SPSS labels, and export data again.
-- Build a codebook that links each variable to the question behind it.
-- Map familiar SPSS and Excel tasks to R, and read R's most common error messages.
+- Conceptualize data as a rectangular matrix of cases and variables, and identify the unit of analysis.
+- Create Pandas Series, perform vectorized arithmetic, and filter observations with boolean indexing.
+- Manage categorical and ordinal measurements using Pandas `Categorical` types.
+- Construct, inspect, and slice two-dimensional DataFrames using `.loc` and `.iloc`.
+- Understand dictionaries and 2D matrices when encountered in statistical output.
+- Import real-world data from CSV, Excel (`.xlsx`), and SPSS (`.sav`) files, preserving survey question labels.
+- Build an automated codebook that documents variable definitions and measurement scales.
+- Map familiar SPSS and Excel procedures to Python idioms, and debug common Python error tracebacks.
 :::
 ::: {.callout-note appearance="simple" icon="false"}
 **Teaching & Practice:** [Interactive Lecture Slides](../slides/02-data-structures.html) · [Browser Playground Exercises](../playground/chapter02.html)
@@ -32,450 +38,472 @@ Research data rarely arrives in one neat file. In the wellbeing study, the surve
 
 ## Data as measurement
 
-Almost all research data can be arranged as a table in which each row is a **case** and each column a **variable**. A case is the thing being measured: a student, a patient, a plot of land, a school. A variable is one characteristic measured on every case, such as age or faculty. Each cell then holds one value: the measurement of one variable on one case. This arrangement, sometimes called the **data matrix**, is the starting point of nearly every method in this book.
+Almost all empirical research data can be conceptualized as a rectangular grid: each row represents a **case** (or observation), and each column represents a **variable**. A case is the individual unit under observation—a student, a patient, an experimental plot, or an institution. A variable is a measured property recorded across all cases, such as chronological age, anxiety score, or study hours. Every cell in the grid contains a single value representing the measurement of that variable for that specific case. This structure, known as the **data matrix**, forms the backbone of statistical modeling.
 
-What counts as a case depends on the study, and the choice is called the **unit of analysis**. The wellbeing study has more than one. In the `students` table, each row is a student. In the `semesters` table, each row is one student in one semester, so each student appears up to four times:
+What constitutes a case depends on the research design, defining the **unit of analysis**. Elaf's wellbeing study involves multiple units of analysis across different tables. In the `students` table, each row represents an individual student ($N = 600$). In the `semesters` table, however, each row represents a single student in a specific academic semester, meaning each student appears up to four times:
 
-```{r}
-head(semesters, 5)
+```{python}
+semesters.head(5)
 ```
 
-The first four rows all belong to student `S0001`, one for each semester. Confusing the two units is a common source of error. A question about students should count each student once; a question about change over time needs all the semester rows, together with methods that know that rows from the same student belong together (Chapter 10). Chapter 5 returns to the unit of analysis when research questions are turned into data.
+The first four rows all correspond to student `S0001`, documenting their trajectory across semesters 1 through 4. Confusing the unit of analysis is one of the most frequent errors in quantitative research. A demographic question concerning baseline enrollment must count each student exactly once. Conversely, an inquiry into GPA trajectories across time requires repeated-measures observations, coupled with statistical techniques that account for within-subject dependency (@sec-ch10). In @sec-ch05, we explore how research hypotheses dictate the appropriate unit of analysis.
 
 ## Variables and their values
 
-In R, the values of one variable are held in a **vector**. You met vectors in Chapter 1: a set of values combined with `c()`. They are the basic building block of R, and almost everything else is built from them.
+In Python's data science ecosystem, a single variable's values are held in a **Pandas Series** (or a NumPy 1D array). A Series is an indexed, one-dimensional array capable of holding numbers, text, or boolean flags:
 
-```{r}
-sleep <- c(6.5, 7, 5.5, 8, 6)
+```{python}
+sleep = pd.Series([6.5, 7.0, 5.5, 8.0, 6.0])
 sleep
 ```
 
-A vector holds values of **one type** only. If you mix types, R quietly converts everything to the most flexible type, which is usually text:
+A Series enforces a single homogeneous data type (`dtype`). If you inadvertently mix numbers with text, Pandas converts the entire Series to an `object` (or string) dtype to accommodate the text:
 
-```{r}
-mixed <- c(6.5, "seven", 5.5)
+```{python}
+mixed = pd.Series([6.5, "seven", 5.5])
 mixed
-class(mixed)
 ```
 
-The numbers are now text, in quotes, and they can no longer be averaged. This matters more than it seems. If one person in a survey types "seven" instead of 7, the whole column arrives in R as text. The Excel file later in this chapter shows exactly this.
+Notice that the numbers `6.5` and `5.5` have become text strings. They can no longer be averaged or plotted numerically. This behavior is vital to understand: if a single survey respondent types `"seven"` or `"N/A"` into a numeric field in a web form, the entire column imports into Python as text. We will encounter this exact issue when inspecting the raw Excel export later in this chapter.
 
-### Operations on a whole vector
+### Operations on a whole Series (Vectorization)
 
-Most things you do to a vector happen to every value at once. Converting the sleep values from hours into minutes needs only one multiplication:
+A defining strength of Pandas is **vectorization**: mathematical and logical operations apply across every value in the collection simultaneously, without needing explicit `for` loops. Converting sleep durations from hours to minutes requires a single multiplication:
 
-```{r}
+```{python}
 sleep * 60
 ```
 
-Comparisons work the same way, and give one `TRUE` or `FALSE` for each value. The nights shorter than the recommended 7 hours are marked by:
+Logical comparisons work identically, generating a boolean Series containing `True` or `False` for each entry. For example, identifying nights falling short of the clinical recommendation of 7 hours:
 
-```{r}
+```{python}
 sleep < 7
 ```
 
-Because R counts `TRUE` as 1 and `FALSE` as 0, `sum()` counts the short nights, and `mean()` gives their share:
+Because Python evaluates `True` as 1 and `False` as 0 in numerical contexts, calling `.sum()` counts the qualifying nights, and `.mean()` calculates their proportion:
 
-```{r}
-sum(sleep < 7)
-mean(sleep < 7)
+```{python}
+print("Count of short nights:", (sleep < 7).sum())
+print("Proportion of short nights:", (sleep < 7).mean())
 ```
 
-Three of the five nights, or 60%, were short. The same line of code would work just as well on 2,000 nights.
+Three of the five nights (60%) were short. This vectorized code operates at identical speed whether analyzing 5 observations or 500,000 observations.
 
 ### Selecting values
 
-Square brackets pick values from a vector by their position. Positions start at 1:
+Python uses **0-based indexing**: the first element resides at position `0`, the second at position `1`, and so on. Think of an index as the offset or distance from the start of the array.
 
-```{r}
-sleep[1]         # the first night
-sleep[c(1, 3)]   # the first and third nights
-sleep[-2]        # every night except the second
+To select values by positional integer index in a Pandas Series, use `.iloc[]`:
+
+```{python}
+print("First night:", sleep.iloc[0])
+print("First and third nights:\n", sleep.iloc[[0, 2]])
 ```
 
-Values can also be picked with a condition, by putting a `TRUE`/`FALSE` vector inside the brackets. R keeps the values where the condition is `TRUE`:
+Values can also be extracted using a boolean condition inside square brackets. Pandas filters the Series, retaining only observations where the condition evaluates to `True`:
 
-```{r}
+```{python}
 sleep[sleep < 7]
 ```
 
-The line reads aloud as "sleep, where sleep is less than 7". This way of selecting, called **logical indexing**, is one of the most useful ideas in R, and you will use it constantly.
+This syntax, termed **boolean indexing** (or logical filtering), reads naturally: *"give me the elements of sleep where sleep is less than 7."* It is one of the most widely used idioms in quantitative Python.
 
 ### Changing values
 
-Brackets on the left of the arrow change values. Suppose the second night turns out to have been 7.5 hours, not 7:
+Placing an indexed selection on the left side of the assignment operator updates the underlying data. If a participant later clarifies that their second night was 7.5 hours rather than 7.0:
 
-```{r}
-sleep[2] <- 7.5
+```{python}
+sleep.iloc[1] = 7.5
 sleep
 ```
 
-## Categories
+## Categories (Categorical Data)
 
-Research data is full of categories: faculty, gender, treatment group, agreement on a scale. R stores categories as **factors**. A factor looks like text but knows the complete set of possible values, called its **levels**:
+Research datasets frequently contain qualitative categories: faculty division, experimental arm, gender identity, or Likert response levels. Pandas represents categorical variables using the specialized `category` dtype (similar to factors in R or value labels in SPSS). A categorical Series displays text labels but stores them internally as compact integers mapped to a defined list of **categories**:
 
-```{r}
-faculty <- factor(c("Education", "Humanities", "Education", "Health Sciences"))
-faculty
-levels(faculty)
-table(faculty)
-```
-
-By default, levels are in alphabetical order. When the categories have a natural order, set it yourself with the `levels` argument, so that tables and graphs show them in that order:
-
-```{r}
-employment <- factor(
-  c("None", "Full-time job", "Part-time job", "None"),
-  levels = c("None", "Part-time job", "Full-time job")
+```{python}
+faculty = pd.Series(
+    ["Education", "Humanities", "Education", "Health Sciences"],
+    dtype="category"
 )
-table(employment)
+print(faculty)
+print("Categories:", faculty.cat.categories)
 ```
 
-Factors matter most in statistics and graphs. When groups are compared in Chapter 7, or plotted in Chapter 4, R uses the factor's levels to decide which groups exist and in which order to show them.
+By default, categories are arranged in alphanumeric order. However, when categories possess an intrinsic hierarchy (such as employment intensity or Likert scales), you can define an **ordered category** using `pd.Categorical`:
 
-### Kinds of measurement and R's types
+```{python}
+employment = pd.Series(
+    pd.Categorical(
+        ["None", "Full-time job", "Part-time job", "None"],
+        categories=["None", "Part-time job", "Full-time job"],
+        ordered=True
+    )
+)
+employment.value_counts(sort=False)
+```
 
-The choice between a factor and a number is not a matter of convenience; it follows from the kind of measurement that produced the values. Categories without an order, such as faculty, are **nominal**. Categories with an order but uneven or unknown distances between them, such as none, part-time, and full-time employment, are **ordinal**. Measurements on a scale with equal distances, such as hours of sleep or a wellbeing index, are numeric. @tbl-measurement-types shows how each kind is stored in R. Chapter 5 explains these levels of measurement in full, and why they decide which summaries are meaningful.
+Specifying explicit category orders ensures that subsequent summary tables and plots display categories logically from lowest to highest rather than alphabetically.
 
-| Kind of measurement | Example | Stored in R as |
+### Levels of measurement and Python types
+
+The distinction between continuous numbers and categories is not merely aesthetic; it reflects the underlying mathematical properties of the measurement. Categories without an order (such as faculty or academic discipline) are **nominal**. Categories with a strict ranking but unequal or unquantified intervals (such as Likert scales or employment tiers) are **ordinal**. Measurements with uniform, quantifiable units (such as sleep hours, age, or GPA) are **interval** or **ratio** (numeric). @tbl-measurement-types outlines how each measurement level corresponds to a Python data type.
+
+| Measurement Level | Example Variables | Python Data Type |
 |---|---|---|
-| Categories, no order (nominal) | faculty, gender | factor |
-| Ordered categories (ordinal) | employment, agreement on a scale | factor with levels in order, or an ordered factor |
-| Quantities with equal distances | sleep hours, age, wellbeing | numeric |
-| Yes or no | invited to the workshop | logical, or a factor with two levels |
+| Nominal (unordered categories) | Faculty, Gender, Department | `category` (or `object` / `string`) |
+| Ordinal (ordered categories) | Agreement scale, Education level | `category` (`ordered=True`) |
+| Interval / Ratio (continuous quantities) | Sleep hours, Age, GPA, Scale sum | `float64`, `int64` |
+| Binary / Dichotomous | Invited to workshop (Yes/No) | `bool` or two-level `category` |
 
-: Kinds of measurement and how R stores them {#tbl-measurement-types}
+: Levels of measurement and their representation in Python {#tbl-measurement-types}
 
-## A table of cases
+## A table of cases: The DataFrame
 
-Most research data is a table of this kind: one row for each case, one column for each variable. In R, such a table is a **data frame**. Each column is a vector, so each column has one type, but different columns can have different types.
+Most empirical data is organized as a two-dimensional table where each row represents a case and each column represents a variable. In Python, this table is a Pandas **DataFrame**. Each column is a Series sharing a common index. While each column must have a uniform data type, different columns across the DataFrame can store different types.
 
-A small data frame can be built with `data.frame()`:
+You can construct a DataFrame manually from a Python dictionary:
 
-```{r}
-pilot <- data.frame(
-  student = c("S1", "S2", "S3", "S4"),
-  faculty = c("Education", "Humanities", "Education", "Health Sciences"),
-  sleep   = c(6.5, 7.5, 5.5, 8),
-  invited = c(TRUE, FALSE, TRUE, FALSE)
-)
+```{python}
+pilot = pd.DataFrame({
+    "student": ["S1", "S2", "S3", "S4"],
+    "faculty": pd.Categorical(["Education", "Humanities", "Education", "Health Sciences"]),
+    "sleep": [6.5, 7.5, 5.5, 8.0],
+    "invited": [True, False, True, False]
+})
 pilot
 ```
 
-The quickest way to understand a data frame is `str()`, short for *structure*. It lists every column with its type and first few values:
+The most comprehensive way to inspect a DataFrame's architecture is the `.info()` method, which summarizes column names, non-null counts, and data types:
 
-```{r}
-str(pilot)
+```{python}
+pilot.info()
 ```
 
 ### Selecting columns and rows
 
-A single column is picked with `$`, as in Chapter 1:
+To extract a single column as a Series, use square bracket notation with the column name:
 
-```{r}
-pilot$sleep
+```{python}
+pilot["sleep"]
 ```
 
-Square brackets work on data frames too, with two positions separated by a comma: rows first, then columns. An empty position means "all":
+To slice rows and columns simultaneously, Pandas provides two primary indexers:
+1. `.iloc[row_pos, col_pos]`: selects by **integer position** (0-based offset).
+2. `.loc[row_label, col_label]`: selects by **label name** or **boolean mask**.
 
-```{r}
-pilot[2, ]                        # the second row, all columns
-pilot[, c("student", "sleep")]    # all rows, two columns
-pilot[pilot$sleep < 7, ]          # rows where sleep is under 7
+```{python}
+# Select the second row across all columns
+pilot.iloc[1, :]
+
+# Select all rows for two specific columns
+pilot.loc[:, ["student", "sleep"]]
+
+# Filter rows where sleep is under 7 hours
+pilot.loc[pilot["sleep"] < 7, :]
 ```
 
-The last line combines a data frame with logical indexing: "pilot, the rows where sleep is under 7, all columns". It is the R version of SPSS's *Select Cases*.
+The final expression combines a DataFrame with boolean indexing: *"retrieve all columns for rows where sleep is less than 7."* This is Python's direct equivalent of SPSS's *Select Cases* or Excel's *Filter*.
 
-### Adding columns
+### Adding new columns
 
-Assigning to a new column name adds a column:
+Assigning an expression to a new column name appends it to the DataFrame:
 
-```{r}
-pilot$short_sleep <- pilot$sleep < 7
+```{python}
+pilot["short_sleep"] = pilot["sleep"] < 7
 pilot
 ```
 
-### The student wellbeing data
+### The student wellbeing cohort
 
-The `students` data frame from the `data2thesis` package has the same structure as `pilot`, only larger:
+The `students` dataset bundled in `data2thesis` follows this exact DataFrame architecture across 600 participants:
 
-```{r}
-str(students)
+```{python}
+students.info()
 ```
 
-In this listing, `chr` means character, `int` whole numbers, and `num` numbers with decimals. The categories, such as `faculty`, arrive as text, and they are converted into factors when they are needed as categories:
+In this output, `object` indicates text strings, `int64` denotes integers, and `float64` denotes decimal numbers. Columns representing categories, such as `faculty`, can be converted to categorical types whenever discrete factor levels are needed:
 
-```{r}
-students$faculty <- factor(students$faculty)
-levels(students$faculty)
+```{python}
+students["faculty"] = students["faculty"].astype("category")
+students["faculty"].cat.categories
 ```
 
-Selection works as before. The number of PhD students in Health Sciences, for example, is found with two conditions:
+Subsetting with multiple criteria uses Python's bitwise logical operators: `&` (AND) and `|` (OR). In Pandas, each individual condition must be enclosed in parentheses `()` because bitwise operators take precedence over comparison operators (`==`, `>`, `<`):
 
-```{r}
-hs_phd <- students[students$faculty == "Health Sciences" & students$programme == "PhD", ]
-nrow(hs_phd)
+```{python}
+hs_phd = students[
+    (students["faculty"] == "Health Sciences") & (students["programme"] == "PhD")
+]
+print("Health Sciences PhD candidates:", len(hs_phd))
 ```
-
-Two symbols are new here. The double equals sign, `==`, means "is equal to"; a single `=` is used for arguments, so comparisons need two. The ampersand, `&`, means "and": both conditions must be `TRUE`. Its partner `|` means "or".
 
 ::: {.callout-tip}
-## Looking at data like a spreadsheet
-
-In RStudio, `View(students)` opens the data in a spreadsheet-style viewer, where you can scroll, sort, and filter. It is only for looking: changes you want to keep should be made with code, so they are recorded.
+## Inspecting Data Visually in VS Code
+In VS Code, opening any DataFrame in the **Interactive Window** or **Data Viewer** provides an interactive spreadsheet grid where you can sort, filter, and inspect columns visually without altering the underlying code.
 :::
 
-## Matrices and lists
+## Matrices and Dictionaries
 
-Two more structures appear regularly, even though they are rarely built by hand.
+Beyond Series and DataFrames, two additional data structures frequently appear in quantitative workflows: 2D numerical matrices and dictionaries.
 
-### Matrices
+### Matrices and correlation grids
 
-A **matrix** is a grid of values of one type, usually numbers. Matrices appear most often as results. The function `cor()`, for example, calculates the correlations between several variables and returns them as a matrix. The correlations below use the first semester only, so that each student counts once:
+A numerical matrix is a two-dimensional grid of homogeneous numbers. Matrices arise naturally as the mathematical output of statistical procedures, such as calculating bivariate correlation coefficients across multiple metrics:
 
-```{r}
-first_semester <- semesters[semesters$semester == 1, ]
-vars <- first_semester[, c("gpa", "sleep_hours", "study_hours", "wellbeing")]
-correlations <- cor(vars, use = "complete.obs")
+```{python}
+first_semester = semesters[semesters["semester"] == 1]
+metric_vars = first_semester[["gpa", "sleep_hours", "study_hours", "wellbeing"]]
+
+# Compute bivariate correlation matrix
+correlations = metric_vars.corr()
 round(correlations, 2)
 ```
 
-Every variable correlates perfectly with itself, hence the 1s on the diagonal. Chapter 6 explains how to read correlations. For now, notice that values are picked from a matrix exactly as from a data frame, with `[row, column]`:
+Each variable correlates perfectly with itself ($r = 1.00$) along the main diagonal. Specific pairwise correlations can be extracted using `.loc[row, col]`:
 
-```{r}
-correlations["sleep_hours", "wellbeing"]
+```{python}
+correlations.loc["sleep_hours", "wellbeing"]
 ```
 
-### Lists
+### Dictionaries and statistical results
 
-A **list** is a container that can hold anything: vectors of different lengths, data frames, even other lists. Its parts are usually named:
+A **dictionary** (`dict`) is Python's fundamental key-value container. It stores named attributes enclosed in curly braces `{}`:
 
-```{r}
-student <- list(
-  id        = "S0001",
-  programme = "Master's",
-  sleep     = c(7.2, 8.4, 7.8, 7.2)
-)
-student$sleep
+```{python}
+student = {
+    "id": "S0001",
+    "programme": "Master's",
+    "sleep": [7.2, 8.4, 7.8, 7.2]
+}
+student["sleep"]
 ```
 
-Lists are rarely built by hand, but R's statistical functions return their results as lists. A preview of a test from Chapter 7, which examines whether students sleep 7 hours on average in their first semester, shows this:
+While researchers rarely build complex dictionaries by hand, many Python scientific packages return statistical test results as structured objects or dictionary-like containers. For instance, running a one-sample $t$-test with `scipy.stats` to test whether first-semester students sleep 7 hours on average:
 
-```{r}
-result <- t.test(first_semester$sleep_hours, mu = 7)
-names(result)
-result$estimate
+```{python}
+import scipy.stats as stats
+
+result = stats.ttest_1samp(first_semester["sleep_hours"], popmean=7.0, nan_policy="omit")
+print("t-statistic:", round(result.statistic, 2))
+print("p-value:", result.pvalue)
 ```
 
-The function `names()` lists everything the test calculated, and `$` picks out one part, here the students' average sleep. This is how a number from a statistical test is retrieved for a report.
+The resulting object encapsulates the computed test statistic, degrees of freedom, and $p$-value as named attributes ready for automated reporting in your thesis.
 
-## Importing data
+## Importing research data
 
-Each file format has its own function for reading it, and every one of them gives back a data frame. The files used below come with the `data2thesis` package, and `data2thesis_example()` finds them on your computer. For your own data, you would put the file in your RStudio Project and give its name instead (see Chapter 1).
+Different software packages store tabular data in distinct binary or text formats. Python provides dedicated reader functions for every standard format, each parsing the input directly into a clean Pandas DataFrame. The sample files below are installed with `data2thesis` and located via `dt.example_file()`:
 
 ### CSV files
 
-A CSV file (*comma-separated values*) is a plain text table, where commas separate the columns. It is the most common format for sharing data, and R reads it with `read.csv()`:
+A CSV file (*comma-separated values*) is a plain-text table where commas delimit adjacent columns. Because CSV files are universally supported and human-readable, they represent the gold standard for long-term open science archiving. In Python, CSV files are imported using `pd.read_csv()`:
 
-```{r}
-path <- data2thesis_example("semesters.csv")
-semester_file <- read.csv(path)
-head(semester_file, 3)
+```{python}
+path = dt.example_file("semesters.csv")
+semester_data = pd.read_csv(path)
+semester_data.head(3)
 ```
 
-In your own project, this would simply be `read.csv("semesters.csv")`, or `read.csv(here::here("data", "semesters.csv"))` with a data folder.
+In your own thesis project, you will typically point directly to your project's data directory: `pd.read_csv("data/semesters.csv")`.
 
-### Excel files
+### Excel spreadsheets
 
-The **readxl** package reads Excel files. Install it once with `install.packages("readxl")`:
+Real-world survey platforms frequently export multi-column workbooks (`.xlsx`). Pandas reads modern Excel files via `pd.read_excel()` (powered by the `openpyxl` engine):
 
-```{r}
-library(readxl)
-raw <- read_excel(data2thesis_example("wellbeing_raw.xlsx"))
-dim(raw)
+```{python}
+raw_path = dt.example_file("wellbeing_raw.xlsx")
+raw_data = pd.read_excel(raw_path)
+print("Dimensions (rows, columns):", raw_data.shape)
 ```
 
-This is the export from the study's survey tool, and it shows what real survey exports look like. The function `dim()` gives its size: `r nrow(raw)` rows (more than the 600 students) and `r ncol(raw)` columns. The first rows are:
+This file represents an unfiltered export from the wellbeing survey. The `.shape` property indicates `r raw_data.shape[0]` rows and `r raw_data.shape[1]` columns. Let's inspect the first few entries across the initial six columns:
 
-```{r}
-head(raw[, 1:6])
+```{python}
+raw_data.iloc[:5, :6]
 ```
 
-The printout looks a little different from before, because `read_excel()` returns a **tibble**: a modern kind of data frame that prints more compactly and shows each column's type under its name. It can be used exactly like a data frame.
+Notice the irregularities typical of real-world research data: test records (`TEST`), unstandardized text variations (`Male`, `male`), and arbitrary missing value codes (`99` for missing age). In @sec-ch03, we walk through systematic cleaning pipelines to sanitize this raw export.
 
-Several problems are already visible. There are test responses (`TEST`), odd codes such as `99` for missing age, and the same answer spelled several ways (`Male`, `male`). Every column shown is `<chr>`, text, even the ages, because a few entries are not plain numbers. Chapter 3 is devoted to cleaning this file; for now, it is enough to be able to open it.
+If an Excel workbook contains multiple worksheets, you can target a specific sheet using the `sheet_name` argument (e.g., `pd.read_excel("study.xlsx", sheet_name="Semester 2")`).
 
-If a workbook has several sheets, choose one with the `sheet` argument, for example `read_excel("file.xlsx", sheet = "Semester 2")`.
+### SPSS data files
 
-### SPSS files
+Quantitative social scientists frequently receive archives from colleagues formatted as SPSS files (`.sav`). The `pyreadstat` package enables Python to read `.sav` files while preserving variable metadata and response value labels:
 
-The **haven** package reads SPSS files (`.sav`), and also Stata and SAS files:
+```{python}
+import pyreadstat
 
-```{r}
-library(haven)
-spss <- read_sav(data2thesis_example("wellbeing.sav"))
-spss[1:3, c("student_id", "gender", "faculty", "stress_1")]
+spss_path = dt.example_file("wellbeing.sav")
+spss_df, meta = pyreadstat.read_sav(spss_path)
+
+spss_df.loc[:2, ["student_id", "gender", "faculty", "stress_1"]]
 ```
 
-SPSS files carry **labels**, and haven keeps them. Each value is stored as a number, with its label shown in square brackets: `2 [Health Sciences]`. The question behind each variable is kept too:
+SPSS files store underlying survey questions as variable labels. `pyreadstat` extracts these labels into the `meta` object:
 
-```{r}
-attr(spss$stress_1, "label")
+```{python}
+print("Question text for stress_1:", meta.column_names_to_labels["stress_1"])
 ```
 
-To analyse a labelled variable as categories, turn it into a factor with `as_factor()`, which uses the labels as levels:
+Alternatively, if you wish to import an SPSS file directly with numeric category codes decoded into human-readable text categories, Pandas provides `pd.read_spss()`:
 
-```{r}
-table(as_factor(spss$faculty))
+```{python}
+spss_labeled = pd.read_spss(spss_path)
+spss_labeled["faculty"].value_counts()
 ```
 
-This is one of the great conveniences for anyone moving from SPSS: the work put into labelling the data is not lost.
+This seamless interoperability ensures that years of meticulous labeling in SPSS are instantly accessible inside Python.
 
-## A codebook
+## Automated codebook generation
 
-A value such as `4` in the column `stress_1` means nothing on its own. It becomes a measurement only when the reader knows the question behind it ("I feel unable to control important things in my studies"), the scale of the answers (1 = strongly disagree, 5 = strongly agree), and how missing answers are recorded. A **codebook** is the document that records this for every variable: its name, its meaning, its type, its possible values, and how it was measured. It is the bridge between the questionnaire that the participants saw and the table that the researcher analyses, and most theses include one in an appendix.
+In an empirical dataset, a cryptic column header like `stress_1` or a numeric value like `4` is scientifically uninterpretable on its own. It acquires meaning only when accompanied by documentation specifying the original prompt ("I feel unable to control important things in my studies"), the response options (1 = Strongly Disagree to 5 = Strongly Agree), and missing data conventions. A **codebook** provides this reference, serving as the bridge between participant questionnaires and statistical analysis.
 
-The labels in the SPSS file already contain much of a codebook, and R can collect them into a table. The code below takes the label of every variable, and the type in which it is stored:
+Because `pyreadstat` parses embedded SPSS metadata, we can programmatically assemble a comprehensive codebook DataFrame:
 
-```{r}
-codebook <- data.frame(
-  variable = names(spss),
-  label    = sapply(spss, function(x) attr(x, "label")),
-  type     = sapply(spss, function(x) class(x)[1]),
-  row.names = NULL
-)
-head(codebook, 12)
+```{python}
+codebook = pd.DataFrame({
+    "variable": meta.column_names,
+    "label": meta.column_labels,
+    "dtype": [str(spss_df[col].dtype) for col in meta.column_names]
+})
+codebook.head(10)
 ```
 
-The function `sapply()` applies a function to every column in turn and collects the results. A labelled categorical variable also records which number stands for which category, its **value labels**:
+For categorical items, the mapping between underlying integer codes and verbal labels is preserved in `meta.variable_value_labels`:
 
-```{r}
-attr(spss$faculty, "labels")
+```{python}
+print("Value labels for faculty:", meta.variable_value_labels.get("faculty"))
 ```
 
-A codebook built in this way can be written to a file with the functions in the next section and completed by hand, adding the answer scales and any notes on how variables were coded. Keeping it next to the data means that anyone who opens the data, including the researcher a year later, can tell what every value means.
+Exporting this table into an appendix provides an automated, error-free documentation trail for your thesis committee and future secondary analysts.
 
 ## Exporting data
 
-A data frame is saved with the matching `write` function. Each of these creates a file in the project folder:
+Once raw data has been cleaned, validated, or transformed, the resulting DataFrame can be exported into standard file formats:
 
-```r
-write.csv(students, "students_clean.csv", row.names = FALSE)   # CSV
-writexl::write_xlsx(students, "students_clean.xlsx")           # Excel (writexl package)
-haven::write_sav(spss, "students_clean.sav")                   # SPSS
+```python
+# Export to CSV (suppressing automatic integer index column)
+students.to_csv("students_clean.csv", index=False)
+
+# Export to Excel workbook
+students.to_excel("students_clean.xlsx", index=False)
+
+# Export to SPSS system file with pyreadstat
+import pyreadstat
+pyreadstat.write_sav(students, "students_clean.sav")
 ```
 
-The argument `row.names = FALSE` stops R from adding an extra column of row numbers to the CSV file.
+Setting `index=False` is essential when saving CSV and Excel files; otherwise, Pandas inserts an unlabelled leading column of row numbers into the file.
 
-Original data files should stay untouched. Cleaned or changed versions are saved under new names, and the script records how one became the other.
+> [!IMPORTANT]
+> **Preserve Raw Data Immutability:** Never overwrite primary data files. Save processed datasets under descriptive filenames (e.g., `students_clean.csv`), ensuring that your Python script can recreate the clean data from raw inputs at any time.
 
-## SPSS and Excel equivalents
+## Mapping SPSS and Excel workflows to Python
 
-Most tasks done in SPSS or Excel have a direct equivalent in R. @tbl-spss collects the ones from this chapter and the last.
+Moving from point-and-click tools to scripted programming involves mapping familiar conceptual operations to Python commands (@tbl-spss).
 
-| In SPSS or Excel | In R |
-|---|---|
-| Open a data file | `read_sav()`, `read_excel()`, `read.csv()` |
-| Variable View: names, types, labels | `str()`; `attr(x, "label")` for a variable label |
-| Data View | `View()` |
-| Select Cases | `data[condition, ]` |
-| Compute Variable | `data$new <- ...` |
-| Frequencies | `table()` |
-| Descriptives | `mean()`, `summary()` |
-| Save As | `write_sav()`, `write_xlsx()`, `write.csv()` |
+| Analytical Task | SPSS / Excel Procedure | Python / Pandas Idiom |
+|---|---|---|
+| Open data file | File > Open > Data | `pd.read_csv()`, `pd.read_excel()`, `pd.read_spss()` |
+| Variable View (types & labels) | Variable View tab | `df.info()`, `df.dtypes`, `meta.column_names_to_labels` |
+| Inspect data matrix | Data View / Spreadsheet grid | `df.head()`, VS Code Interactive Data Viewer |
+| Select cases (filtering) | Data > Select Cases | `df[condition]` or `df.loc[condition, :]` |
+| Compute variable | Transform > Compute Variable | `df["new_col"] = df["a"] + df["b"]` |
+| Frequency distribution | Analyze > Descriptive > Frequencies | `df["var"].value_counts()` |
+| Descriptive statistics | Analyze > Descriptive > Descriptives | `df["var"].describe()`, `df["var"].mean()` |
+| Export data | File > Save As | `df.to_csv(..., index=False)`, `df.to_excel(...)` |
 
-: SPSS and Excel tasks and their R equivalents {#tbl-spss}
+: Conceptual mapping between point-and-click software and Python {#tbl-spss}
 
-The biggest change is not a particular command. In SPSS or Excel, you change the data and the change is saved; the steps you took are forgotten. In R, the data file stays as it was, and the steps are saved in your script. Run the script again, and you get the same result again.
+The paramount advantage of Python is transparency. In Excel or SPSS Data View, manual edits and filter clicks are transient and undocumented. In Python, the input dataset remains untouched while your script provides an indelible, auditable record of every transformation.
 
-## Error messages
+## Reading error messages and tracebacks
 
-Everyone who writes R sees error messages every day. They are not a sign of failure; they are R reporting precisely what it could not do. The message usually says what went wrong, and often where, so it should always be read. Four messages account for most of the errors a beginner meets.
+Python tracebacks are diagnostic reports explaining precisely where and why execution halted. When an error occurs, scroll to the final line of the traceback to read the specific exception type and description. Four exceptions account for the vast majority of beginner stumbling blocks:
 
-**Object not found.** A name is misspelled, or the object was never created (perhaps the line that creates it was not run):
+**1. `NameError: name 'slep' is not defined`**
+A variable name is misspelled, or the code defining it was not executed prior to this line:
 
-```{r}
+```{python}
 #| error: true
-mean(slep)
+print(slep)
 ```
 
-**Could not find function.** A function name is misspelled, or its package has not been loaded with `library()`:
+**2. `AttributeError` or `KeyError`**
+Referencing a non-existent column name inside brackets raises a `KeyError` (often caused by capitalisation mismatches):
 
-```{r}
+```{python}
 #| error: true
-reed_csv("students.csv")
+students["Faculty"]
 ```
 
-**Non-numeric argument.** A calculation was attempted on text, often because a column arrived as text:
+**3. `TypeError: unsupported operand type(s)`**
+Attempting mathematical operations on incompatible data types (for example, multiplying text strings):
 
-```{r}
+```{python}
 #| error: true
-mixed * 2
+"6.5" * "2"
 ```
 
-**Undefined columns selected.** A column name in brackets does not exist, often because of a typo or wrong capitals:
+**4. `FileNotFoundError: No such file or directory`**
+Python searched the current working directory but could not locate the target filename. Verify your relative path against the folder opened in VS Code.
 
-```{r}
-#| error: true
-students[, "Faculty"]
+## Descriptive summary of cohort measurements
+
+With the data structures in place, Pandas provides `.describe()` for a rapid multi-variable statistical overview of central tendency, dispersion, and range:
+
+```{python}
+first_semester[
+    ["gpa", "sleep_hours", "study_hours", "wellbeing"]
+].describe().round(2)
 ```
 
-When the problem is not obvious, check spelling and capitals first, then check that every line above was run, then read the help page of the function. Copying the error message into a search engine works surprisingly often, because someone has almost always met it before.
-
-## A first summary
-
-With the data open, `summary()` gives a quick overview of every column: averages and ranges for numbers, counts for factors, and the number of missing values. Here it is for the first semester, one row per student:
-
-```{r}
-summary(first_semester[, c("gpa", "sleep_hours", "study_hours", "wellbeing")])
-```
-
-Already, the summary shows that the average student sleeps less than 7 hours, and that a few values are missing (`NA's`). Chapter 6 turns this quick look into a full description of the data.
+This single command confirms that in semester 1, students slept an average of 6.48 hours (standard deviation = 0.94), well below recommended benchmarks. In @sec-ch06, we expand these basic summaries into publication-ready descriptive tables.
 
 ::: {.callout-note icon="false"}
 ## In your field: health research
+The `penguins` dataset bundled with `seaborn` provides a classic biological sample across 344 observations and 7 variables:
 
-`ToothGrowth` is a real dataset that comes with R, from an experiment on the effect of vitamin C on tooth growth in 60 guinea pigs. Its structure is typical of experiments in health research: an outcome, a treatment group, and a dose.
+```{python}
+import seaborn as sns
 
-```{r}
-str(ToothGrowth)
-table(ToothGrowth$supp, ToothGrowth$dose)
+penguins = sns.load_dataset("penguins")
+penguins.info()
+penguins[["bill_length_mm", "bill_depth_mm", "body_mass_g"]].describe().round(1)
 ```
 
-The variable `supp` is already a factor with two levels, the two ways the vitamin was given (orange juice, `OJ`, or ascorbic acid, `VC`), and the table shows 10 animals for every combination of method and dose. The unit of analysis is the animal: each row is one guinea pig.
+Notice the structural equivalence to human health studies: each row is a measured organism, categorical variables represent species and islands, and numeric metrics capture physiological dimensions.
 :::
 
 ## Chapter review
 
 ### Summary
 
-- Data is the record of measurements: a table of cases (rows) and variables (columns). The unit of analysis is what one row represents, and the same study can have more than one.
-- A **vector** holds the values of one variable, all of one type. Mixing types turns everything into text.
-- Most operations work on every value of a vector at once. `[ ]` picks values by position or by a condition (logical indexing).
-- A **factor** holds categories with a fixed set of **levels**, whose order you can set. The kind of measurement decides whether a variable should be a factor or a number.
-- A **data frame** is a table: one row per case, one column (a vector) per variable. Select with `$` or `[rows, columns]`, and use `str()` to see its structure.
-- A **matrix** is a grid of one type, often a result such as a correlation matrix. A **list** can hold anything; statistical results are lists.
-- `read.csv()`, `read_excel()` (readxl), and `read_sav()` (haven) import data. haven keeps SPSS labels, and `as_factor()` turns them into factors. `write.csv()`, `write_xlsx()`, and `write_sav()` export data.
-- A **codebook** records what every variable means and how it was measured; SPSS labels provide much of it.
-- Error messages say what R could not do. Read them, and check spelling and capitals first.
+- Quantitative data is organized as a rectangular matrix where rows represent **cases** and columns represent **variables**. The **unit of analysis** defines what a single row represents (`students` vs repeated `semesters`).
+- A **Pandas Series** holds values of a single variable. Operations are vectorized, executing across all elements simultaneously without explicit loops.
+- Python uses **0-based indexing**. Positional extraction relies on `.iloc[]`, while conditional filtering relies on boolean masks `series[condition]`.
+- Categories are managed via the Pandas `category` dtype, which supports explicit hierarchical ordering for ordinal scales.
+- A **DataFrame** is a two-dimensional tabular grid composed of individual Series. Subsetting rows and columns simultaneously is performed with `.loc[rows, cols]`.
+- Data is imported using `pd.read_csv()`, `pd.read_excel()`, and `pyreadstat.read_sav()`. SPSS survey question labels and value encodings are preserved in metadata.
+- An automated **codebook** extracts column names, survey prompts, and data types to document study variables systematically.
 
 ### Key terms
 
-Case, variable, data matrix, unit of analysis, data structure, vector, type conversion, logical indexing, factor, level, data frame, tibble, matrix, list, CSV file, variable label, value label, codebook, error message.
+Data matrix, unit of analysis, Pandas Series, vectorization, boolean indexing, 0-based indexing, `.iloc[]`, `.loc[]`, categorical dtype, ordinal scale, DataFrame, correlation matrix, dictionary, CSV, SPSS metadata, codebook, traceback.
 
 ## Exercises
 
-The [playground](../playground/chapter02.html) has these and more, with hints and solutions, in your browser or as an RStudio project to download.
+Work through these exercises in your browser using the [Chapter 2 Playground](../playground/chapter02.html) or download the starter project for VS Code.
 
-1. Create a vector with the ages 24, 31, 28, 45, and 26. Use logical indexing to show only the ages over 30, and count how many there are.
-2. Create a factor from `c("Agree", "Disagree", "Neutral", "Agree")` whose levels run from `"Disagree"` through `"Neutral"` to `"Agree"`. Check the order with `table()`.
-3. Using `students`, count the students who are part-time and have children. (Use `&`.)
-4. Add a column to `students` called `over_30` that is `TRUE` for students older than 30. Count those students, and explain why the count might need `na.rm = TRUE`.
-5. Read the SPSS file with `read_sav()` and find the question behind `support_3`.
-6. State the unit of analysis of each table in the package: `students`, `semesters`, `questionnaire`, and `supervisors`. For each, name one research question it could answer on its own.
+1. Create a Series with participant ages: `24, 31, 28, 45, 26`. Use boolean indexing to filter ages over 30, and compute how many participants exceed 30.
+2. Construct an ordered Categorical Series from `["Agree", "Disagree", "Neutral", "Agree"]` with categories ordered logically from `"Disagree"` to `"Neutral"` to `"Agree"`. Verify the ordering using `.value_counts(sort=False)`.
+3. In `students`, use boolean indexing with `&` to count how many participants study part-time (`study_mode == "Part-time"`) AND have dependent children (`children == "Yes"`).
+4. Add a boolean column `over_30` to `students` that evaluates to `True` for students older than 30. Check how many missing values exist using `.isna().sum()`.
+5. Import `wellbeing.sav` with `pyreadstat` and extract the full survey question text mapped to the variable `support_3`.
+6. Contrast the unit of analysis in `students` versus `counselling_visits`. Formulate one distinct research question appropriate for each dataset.
 
 ## Further reading
 
-- *R for Data Science* [@wickham2023]: chapters "Data import", "Spreadsheets", and "Factors" go further with importing and with categories, and "A field guide to base R" covers the square-bracket style used in this chapter.
-- The documentation of the [readxl](https://readxl.tidyverse.org) and [haven](https://haven.tidyverse.org) packages.
+- *Python for Data Analysis* (3rd ed.) by Wes McKinney [@mckinney2022]: the authoritative guide to Pandas indexing, Series arithmetic, and data wrangling by the creator of Pandas.
+- Official documentation for [pandas.pydata.org](https://pandas.pydata.org/docs/) and [pyreadstat](https://github.com/Roche/pyreadstat).

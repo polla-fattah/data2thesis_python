@@ -2,28 +2,37 @@
 number-offset: 3
 ---
 
-# Data Visualization {#sec-ch04}
+# Data Visualization with Seaborn and Matplotlib {#sec-ch04}
 
-```{r}
+```{python}
 #| label: setup
 #| include: false
-library(data2thesis)
+import data2thesis as dt
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Set publication style default
+sns.set_theme(style="whitegrid", font_scale=1.0)
+students = dt.students
+semesters = dt.semesters
 ```
 
-A table of 600 numbers says almost nothing at a glance; a well-made graph of the same numbers can show in seconds where most values lie, which values are unusual, how groups differ, and how one variable moves with another. Graphs are therefore not decoration added to an analysis at the end. They are one of its main instruments: the first thing a careful researcher does with new data is look at it, and many errors in data, and in reasoning about data, are found only by looking.
+A spreadsheet containing 600 rows of numbers conveys virtually nothing at a glance. A well-designed statistical visualization of that same data reveals in seconds where observations cluster, which values are anomalous, how experimental groups diverge, and how constructs covary. Graphics are not cosmetic embellishments appended to an empirical report at the conclusion; they are primary instruments of scientific discovery. The first task of an investigator encountering new data is to inspect it visually, and many data-entry anomalies and invalid assumptions are detected solely through graphical exploration.
 
-A graph is also an argument. The choices behind it, which graph, which scale, which colours, what to leave out, decide what a reader sees first and what they conclude. Those choices can make a pattern clear or hide it, and they can make a small difference look dramatic or a large one look trivial. This chapter therefore begins with the ideas behind good graphs: what graphs are for, how people read them, how to choose a graph for a question, and what makes a graph honest. It then teaches **ggplot2**, the most widely used package for graphics in R, as a direct expression of those ideas, and uses it to answer the study's first research question, what graduate student life looks like (RQ1).
+A figure is also a scientific argument. Visual design choices—the selected geometry, axis scaling, aspect ratio, color palette, and data aggregation—determine what a reader notices first and what conclusions they infer. Thoughtful choices clarify subtle empirical patterns; careless choices distort differences, exaggerating trivial variations or masking substantial heterogeneity. This chapter begins with graphical perception theory: what scientific figures are for, how human vision decodes visual encodings, and what constitutes an honest, truthful display. It then introduces **Seaborn** and **Matplotlib**, Python's standard libraries for statistical visualization, applying them to explore graduate student life (RQ1).
 
 ::: {.callout-tip appearance="simple"}
 ## By the end of this chapter you will be able to
 
-- Explain why graphs are needed alongside numerical summaries, and the difference between graphs for exploring and graphs for explaining.
-- Explain how people read graphs, and why position and length are read more accurately than angle, area, or colour.
-- Choose a graph from the research question and the types of the variables involved.
-- Build graphs with ggplot2 from data, aesthetic mappings, and geometric layers.
-- Draw histograms, bar charts, box plots, scatter plots, line charts, facets, density plots, and heat maps.
-- Judge whether a graph is honest, and improve a misleading one.
-- Prepare and export figures at the size and resolution a journal or thesis requires.
+- Explain why visualization is indispensable alongside summary statistics, and contrast exploratory vs. explanatory graphics.
+- Apply graphical perception theory, recognizing why position and length are decoded more accurately than angles, areas, or color saturation.
+- Select the appropriate visualization based on the research question and variable measurement levels.
+- Construct statistical graphics using Seaborn and Matplotlib (histograms, KDE density curves, bar charts, box plots, scatter plots, and line charts).
+- Build small multiples (facets) and correlation heatmaps to investigate multi-variable interactions.
+- Detect and rectify misleading visual representations (such as truncated bar-chart baselines and visual clutter).
+- Export publication-ready, high-resolution figures (300+ DPI PNG, PDF, SVG) formatted to journal dimensions.
 :::
 ::: {.callout-note appearance="simple" icon="false"}
 **Teaching & Practice:** [Interactive Lecture Slides](../slides/04-data-visualization.html) · [Browser Playground Exercises](../playground/chapter04.html)
@@ -32,543 +41,484 @@ A graph is also an argument. The choices behind it, which graph, which scale, wh
 
 ## What a graph is for
 
-Numerical summaries compress data into a few numbers, and that compression can hide almost anything. The statistician Francis Anscombe made the point with four small datasets that he constructed in 1973 [@anscombe1973]. R includes them as `anscombe`. Each has 11 pairs of values, and the usual summaries are identical for all four:
+Summary statistics compress empirical distributions into a handful of numerical parameters (means, standard deviations, correlations). That compression can conceal radically different data distributions. The statistician Francis Anscombe demonstrated this vulnerability with four synthetic datasets constructed in 1973 [@anscombe1973], bundled in Seaborn as `anscombe`:
 
-```{r}
-library(ggplot2)
-library(dplyr)
+```{python}
+anscombe = sns.load_dataset("anscombe")
 
-anscombe_long <- tibble(
-  set = rep(paste("Set", 1:4), each = 11),
-  x   = c(anscombe$x1, anscombe$x2, anscombe$x3, anscombe$x4),
-  y   = c(anscombe$y1, anscombe$y2, anscombe$y3, anscombe$y4)
+summary = (
+    anscombe
+    .groupby("dataset")
+    .agg(
+        mean_x=("x", "mean"),
+        sd_x=("x", "std"),
+        mean_y=("y", "mean"),
+        sd_y=("y", "std")
+    )
+    .round(2)
 )
-
-anscombe_long |>
-  summarise(mean_x = mean(x), mean_y = mean(y), sd_y = sd(y), correlation = cor(x, y),
-            .by = set) |>
-  mutate(across(where(is.numeric), \(v) round(v, 2)))
+summary
 ```
 
-The same means, the same spread, the same correlation of 0.82: judged by the numbers, the four datasets are the same. @fig-anscombe shows that they are not.
+Across all four datasets, the summary statistics are practically identical: $\bar{x} = 9.0$, $s_x = 3.32$, $\bar{y} = 7.50$, and $s_y = 2.03$. Bivariate regression yields identical linear fits ($y = 3.0 + 0.5x$) with identical correlation coefficients ($r = 0.82$). Judged solely by numerical summaries, the four datasets appear indistinguishable.
 
-```{r}
+Yet @fig-anscombe demonstrates that their underlying relationships are entirely dissimilar.
+
+```{python}
 #| label: fig-anscombe
-#| fig-cap: "Anscombe's four datasets: identical means, standard deviations, and correlations, but four entirely different relationships."
-#| fig-alt: "Four scatter plots with the same straight trend line. Set 1 is a noisy linear relationship; set 2 is a smooth curve; set 3 is a perfect line with one outlier; set 4 has all points at one x value except a single far point."
-#| fig-width: 7
-#| fig-height: 5
-ggplot(anscombe_long, aes(x = x, y = y)) +
-  geom_point(size = 2) +
-  geom_smooth(method = "lm", se = FALSE, colour = "grey50") +
-  facet_wrap(~ set) +
-  theme_minimal(base_size = 12)
+#| fig-cap: "Anscombe's quartet: identical means, standard deviations, and regression lines, but four completely different empirical patterns."
+#| fig-alt: "Four scatter plots with identical linear regression slopes. Dataset I is a noisy linear relationship; Dataset II is a smooth parabolic curve; Dataset III is a perfect line with a single outlier; Dataset IV shows points stacked vertically with one extreme leverage point."
+g = sns.lmplot(
+    data=anscombe, x="x", y="y", col="dataset", col_wrap=2,
+    ci=None, height=2.5, aspect=1.3,
+    scatter_kws={"s": 35, "color": "#1f77b4"},
+    line_kws={"color": "grey", "linewidth": 1.5}
+)
+g.set_axis_labels("X", "Y")
+plt.tight_layout()
+plt.show()
 ```
 
-Only the first set is the kind of data the correlation describes well: a straight-line relationship with random scatter. The second is a smooth curve, the third a perfect line spoiled by one outlier, and in the fourth a single unusual point creates the entire relationship. Anyone who analysed these data without looking would draw the same, wrong, conclusion from all four. Looking first is not optional.
+Only Dataset I represents the bivariate linear association assumed by Pearson's $r$. Dataset II is a non-linear quadratic curve, Dataset III is a perfect linear relationship corrupted by one outlier, and Dataset IV is an unassociated vertical cluster whose correlation is produced entirely by a single high-leverage point. An analyst relying strictly on summary statistics would draw identical—and incorrect—conclusions across all four. Visual inspection prior to modeling is not optional; it is a prerequisite for valid inference.
 
-Graphs serve two different purposes, and it helps to know which one a graph is for. **Exploratory graphs** are made for the researcher, quickly and in large numbers, to understand the data: to check distributions, find unusual values, and notice patterns worth testing. They need no polish. **Explanatory graphs** are made for readers, to show a finding that the researcher already understands, and they need care: a clear message, accurate labels, and nothing that distracts. A thesis contains a few explanatory graphs, chosen from the many exploratory ones made along the way.
+### Exploratory versus explanatory graphs
 
-## How people read graphs
+Scientific graphics serve two distinct functions:
 
-A graph works by turning numbers into visual properties: positions, lengths, angles, areas, colours. People do not judge all of these equally well. In a series of experiments, the statisticians William Cleveland and Robert McGill asked people to compare values shown in different ways, and found a clear ranking [@cleveland1984]. Positions along a common scale are judged most accurately, followed by lengths, then angles and slopes, then areas, and finally shades of colour. A good graph therefore puts its most important comparison into position or length.
+- **Exploratory graphs:** Created rapidly by the researcher to interrogate the data—checking skewness, detecting outliers, and screening for interaction effects. They require minimal aesthetic polish.
+- **Explanatory graphs:** Curated for external readers and thesis examiners to communicate a validated empirical finding. They require meticulous care: informative axis labels, accessible color palettes, annotations, and the elimination of extraneous chartjunk.
 
-The difference is easy to experience. The code below shows the same five percentages, which differ only slightly, as a pie chart and as a bar chart:
+## Graphical perception: How vision decodes data
 
-```{r}
+Graphs function by translating numbers into visual encodings: position, length, angle, area, slope, and color. Human perception does not decode these attributes with equal precision. In pioneering experiments, William Cleveland and Robert McGill [@cleveland1984] evaluated how accurately observers judge quantitative differences across visual channels, establishing an empirical hierarchy:
+
+1. **Position along a common aligned scale** (most accurate)
+2. **Length**
+3. **Slope and Angle**
+4. **Area**
+5. **Color saturation and hue** (least accurate)
+
+Effective scientific graphics map primary research comparisons to position or length, reserving color and area for secondary grouping.
+
+The perceptual difference is readily apparent when comparing identical proportions displayed as a pie chart versus a bar chart (@fig-pie-bar).
+
+```{python}
 #| label: fig-pie-bar
-#| fig-cap: "The same five percentages as a pie chart (angles and areas) and as a bar chart (lengths on a common scale). The order of the groups is much easier to see in the bars."
-#| fig-alt: "Left, a pie chart with five slices of nearly equal size, labelled A to E. Right, a bar chart of the same values, where the bars clearly decrease from A to E."
-#| fig-width: 7
-#| fig-height: 3.2
-library(patchwork)
+#| fig-cap: "The same five percentages displayed as a pie chart (angle and area) versus a bar chart (length along an aligned scale). Identifying the ranking is immediate in the bar chart."
+#| fig-alt: "Side-by-side comparison. Left: a pie chart with five nearly identical slices labelled A through E. Right: an aligned bar chart where the steady decline from A to E is obvious."
+shares = pd.DataFrame({
+    "group": ["A", "B", "C", "D", "E"],
+    "percent": [23, 21, 20, 19, 17]
+})
 
-shares <- tibble(group = LETTERS[1:5], percent = c(23, 21, 20, 19, 17))
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(7.5, 3.2))
 
-pie_chart <- ggplot(shares, aes(x = "", y = percent, fill = group)) +
-  geom_col(width = 1, colour = "white") +
-  coord_polar(theta = "y") +
-  scale_fill_viridis_d(end = 0.9) +
-  theme_void()
+# Pie chart (angle / area)
+ax1.pie(shares["percent"], labels=shares["group"], startangle=90, colors=sns.color_palette("mako", 5))
+ax1.set_title("Pie chart (Angle / Area)", fontsize=11)
 
-bar_chart <- ggplot(shares, aes(x = group, y = percent)) +
-  geom_col(fill = "grey50") +
-  labs(x = NULL, y = "Percent") +
-  theme_minimal(base_size = 12)
+# Bar chart (aligned length)
+sns.barplot(data=shares, x="group", y="percent", color="#4c72b0", ax=ax2)
+ax2.set(title="Bar chart (Aligned Length)", xlabel="Category", ylabel="Percentage (%)")
+ax2.set_ylim(0, 26)
 
-pie_chart + bar_chart
+plt.tight_layout()
+plt.show()
 ```
 
-In the pie chart, the slices look almost identical, and ranking them requires reading a legend. In the bar chart, the steady decline from A to E is obvious at once, because the comparison is made by length along a shared axis. For this reason, researchers generally prefer bar charts and dot plots to pie charts, and scatter plots to bubble charts. The `patchwork` package, loaded above, places ggplot2 graphs side by side with a simple `+`.
+In the pie chart, the five slices appear virtually identical; determining the rank order requires scrutinizing legends and mentally comparing angles. In the bar chart, the monotonic decline from category A (23%) to E (17%) is evident immediately because comparisons occur along a common baseline. Consequently, scientific reporting favors bar charts and dot plots over pie charts.
 
-The same research gives two further rules of thumb. Comparisons are easiest when the values to be compared sit next to each other on the same scale, so the most important comparison should be placed within one panel, not across panels. And colour is best used to distinguish a few categories, or to show one quantity that does not need to be read precisely, rather than to carry the main message.
+## Selecting the right visualization
 
-## Choosing a graph
+The choice of graph is governed by the research question and the levels of measurement of the variables under study (@tbl-which-graph).
 
-The right graph follows from the research question and from the kinds of variables involved (Chapter 2). A question about the distribution of one numeric variable needs a different graph from a question about the relationship between two. @tbl-which-graph is a starting point for the graphs in this chapter.
-
-| Question | Variables | Graph | geom |
+| Analytical Question | Variable Types | Recommended Graph | Python Seaborn / Matplotlib Function |
 |---|---|---|---|
-| How are the values distributed? | One numeric | Histogram, density plot | `geom_histogram()`, `geom_density()` |
-| How many cases fall in each category? | One categorical | Bar chart | `geom_bar()` |
-| Do groups differ? | Numeric by categorical | Box plot, points with averages | `geom_boxplot()`, `geom_jitter()` |
-| How are two variables related? | Two numeric | Scatter plot | `geom_point()` |
-| How does something change over time? | Numeric over time | Line chart | `geom_line()` |
-| How do many variables relate? | Several numeric | Heat map of correlations | `geom_tile()` |
+| Distribution of a single continuous metric | One numeric | Histogram / KDE plot | `sns.histplot()`, `sns.kdeplot()` |
+| Frequency counts of categorical groups | One categorical | Bar chart | `sns.countplot()`, `sns.barplot()` |
+| Comparison of continuous metric across groups | One numeric by categorical | Box plot / Strip plot | `sns.boxplot()`, `sns.stripplot()` |
+| Association between two continuous variables | Two numeric | Scatter plot with trend line | `sns.scatterplot()`, `sns.regplot()` |
+| Trajectory of a metric over time | Numeric over time | Longitudinal line plot | `sns.lineplot()` |
+| Multilateral correlation structure | Several numeric | Correlation heatmap | `sns.heatmap()` |
 
-: Choosing a graph from the question and the variables {#tbl-which-graph}
+: Selecting the appropriate visualization based on analytical questions and variable types {#tbl-which-graph}
 
-## The grammar of graphics
+## Core statistical visualizations with Seaborn
 
-The ggplot2 package is built on an idea called the **grammar of graphics** [@wickham2016ggplot2]. It follows directly from the previous sections: a graph maps variables to visual properties. Every ggplot2 graph therefore combines three parts. The **data** is a data frame. The **aesthetic mappings**, written inside `aes()`, state which variable goes to which visual property: the x axis, the y axis, the colour, and so on. The **geometric layers**, called *geoms*, state which shape represents the data, such as points, bars, or lines. The parts are added together with `+`. Five students from a pilot study show how:
+To explore Elaf's wellbeing cohort, we merge Semester 1 measurements with baseline student background demographics:
 
-```{r}
-pilot <- tibble(
-  student = c("S1", "S2", "S3", "S4", "S5"),
-  sleep   = c(6.5, 7.5, 5.5, 8, 6),
-  stress  = c(3.2, 2.1, 4.5, 1.8, 3.9),
-  invited = c("Yes", "No", "Yes", "No", "Yes")
+```{python}
+first_sem = (
+    semesters
+    .query("semester == 1")
+    .merge(students, on="student_id", how="left")
 )
 ```
 
-The function `ggplot()`, given the data and the mappings, sets up an empty canvas with the axes:
+### Histograms and density curves
 
-```{r}
-#| label: fig-canvas
-#| fig-cap: "Data and mappings alone give an empty canvas with the axes."
-#| fig-alt: "An empty plot with sleep on the x axis and stress on the y axis, and no data points."
-#| fig-width: 5
-#| fig-height: 3.2
-ggplot(pilot, aes(x = sleep, y = stress))
-```
+The initial question concerning any continuous variable addresses its empirical distribution: central tendency, spread, skewness, and the presence of extreme outliers. A **histogram** partitions the continuous range into discrete bins, displaying the count of observations falling within each interval:
 
-Adding a geom draws the data. The geom `geom_point()` draws one point per row:
-
-```{r}
-#| label: fig-points
-#| fig-cap: "Adding a layer of points: students who sleep less report more stress."
-#| fig-alt: "Scatter plot of five points showing that stress falls as sleep rises."
-#| fig-width: 5
-#| fig-height: 3.2
-ggplot(pilot, aes(x = sleep, y = stress)) +
-  geom_point(size = 3)
-```
-
-Every further detail is another `+`: another layer, a label, a colour scale, a theme. That is the whole idea, and every graph in this chapter, however complex it looks, is more of the same.
-
-For the wellbeing data, one row per student makes most graphs simplest. The code below combines each student's first-semester record with their background information:
-
-```{r}
-first_sem <- semesters |>
-  filter(semester == 1) |>
-  left_join(students, join_by(student_id))
-```
-
-## The basic graphs
-
-### Histograms
-
-The first question about any numeric variable concerns its distribution: where most values lie, how widely they spread, and whether some are unusual. A **histogram** answers it by dividing the values into ranges, called *bins*, and showing how many cases fall into each. Here is the distribution of sleep:
-
-```{r}
+```{python}
 #| label: fig-sleep-hist
-#| fig-cap: "Hours of sleep per night in the first semester."
-#| fig-alt: "Histogram of sleep hours, roughly bell-shaped, centred just above 6 hours, ranging from about 3.5 to 10."
-#| fig-width: 6
-#| fig-height: 3.5
-ggplot(first_sem, aes(x = sleep_hours)) +
-  geom_histogram(binwidth = 0.5)
+#| fig-cap: "Distribution of sleep hours per night in Semester 1."
+#| fig-alt: "Histogram of sleep hours, roughly bell-shaped and centered near 6.5 hours, ranging between 3.5 and 10 hours."
+fig, ax = plt.subplots(figsize=(6, 3.5))
+
+sns.histplot(
+    data=first_sem, x="sleep_hours", binwidth=0.5,
+    color="#4c72b0", edgecolor="white", ax=ax
+)
+ax.set(xlabel="Hours of sleep per night", ylabel="Number of students")
+plt.tight_layout()
+plt.show()
 ```
 
-```{r}
+```{python}
 #| include: false
-share_short <- mean(first_sem$sleep_hours < 7, na.rm = TRUE)
+share_short = (first_sem["sleep_hours"] < 7.0).mean()
 ```
 
-@fig-sleep-hist shows a roughly symmetrical, bell-shaped distribution, centred a little above 6 hours. Most students sleep less than the recommended 7 hours: `r round(100 * share_short)`% of them in the first semester. A few sleep very little, under 4.5 hours; Chapter 6 looks at such unusual values.
+@fig-sleep-hist displays a roughly symmetrical, unimodal distribution centered near 6.5 hours. Exactly `r round(100 * share_short, 1)`% of graduate students sleep less than the clinically recommended 7 hours during their first semester.
 
-The argument `binwidth` sets the width of each bin, here half an hour. The choice matters: bins that are too wide hide the shape, and bins that are too narrow make it noisy, so it is worth trying a few widths.
+### Bar charts for categorical counts
 
-### Bar charts
+A **bar chart** plots frequency distributions across categorical factor levels:
 
-A **bar chart** shows how many cases fall into each category. The geom `geom_bar()` does the counting:
-
-```{r}
+```{python}
 #| label: fig-faculty-bar
-#| fig-cap: "Number of students in each faculty."
-#| fig-alt: "Bar chart of students per faculty: Health Sciences and Education have the most, Natural Sciences and Humanities the fewest."
-#| fig-width: 6
-#| fig-height: 3.5
-ggplot(students, aes(x = faculty)) +
-  geom_bar()
+#| fig-cap: "Enrollment frequency across academic faculties."
+#| fig-alt: "Bar chart displaying the number of students per faculty: Health Sciences and Education have the highest counts."
+fig, ax = plt.subplots(figsize=(6, 3.5))
+
+sns.countplot(
+    data=students, x="faculty", color="#4c72b0",
+    order=students["faculty"].value_counts().index, ax=ax
+)
+ax.set(xlabel="Faculty", ylabel="Student Count")
+plt.xticks(rotation=20, ha="right")
+plt.tight_layout()
+plt.show()
 ```
 
-When the heights have already been calculated, for example averages, `geom_col()` is used instead, with the calculated value mapped to `y`. Because a bar represents its value by its length, the axis of a bar chart must start at zero; the section on honest graphs returns to this.
+Because bar lengths represent quantities proportionally, the numerical baseline must always start at zero.
 
-### Box plots
+### Box plots for group comparisons
 
-A **box plot** summarises a numeric variable for each group, which makes it the standard graph for comparing groups. The box covers the middle half of the values, the line inside is the median, the whiskers reach out to the typical range, and points beyond the whiskers mark unusual values. The comparison below concerns wellbeing in full-time and part-time students:
+A **box plot** summarizes five key distribution parameters: the median (center line), interquartile range (IQR, box edges covering the 25th to 75th percentiles), whiskers (extending to $1.5 \times \text{IQR}$), and individual points for potential outliers. It is the gold standard for comparing continuous metrics across qualitative groups:
 
-```{r}
+```{python}
 #| label: fig-wellbeing-box
-#| fig-cap: "Wellbeing in the first semester, by study mode."
-#| fig-alt: "Two box plots: part-time students' wellbeing is a few points lower than full-time students', with much overlap."
-#| fig-width: 5
-#| fig-height: 3.5
-ggplot(first_sem, aes(x = study_mode, y = wellbeing)) +
-  geom_boxplot()
+#| fig-cap: "Wellbeing in Semester 1 by study mode (Full-time vs. Part-time)."
+#| fig-alt: "Two box plots showing that part-time students report slightly lower median wellbeing than full-time students, with substantial overlap."
+fig, ax = plt.subplots(figsize=(5, 3.5))
+
+sns.boxplot(
+    data=first_sem, x="study_mode", y="wellbeing",
+    palette=["#4c72b0", "#55a868"], ax=ax, width=0.5
+)
+ax.set(xlabel="Study Mode", ylabel="Wellbeing Index (0 to 100)")
+plt.tight_layout()
+plt.show()
 ```
 
-Part-time students' wellbeing is a little lower, but the boxes overlap considerably: many part-time students are doing better than many full-time students. Whether the difference is larger than chance is a question for Chapter 8.
+Part-time students report a slightly lower median wellbeing score than full-time students, but the distributions overlap substantially. In @sec-ch08, we use inferential ANOVA to test whether this group discrepancy is statistically significant.
 
-### Scatter plots
+### Scatter plots with regression trend lines
 
-The relationship between two numeric variables, such as sleep and grades, is shown with a **scatter plot**, which puts one variable on each axis. With 600 students, points pile on top of each other, a problem called **overplotting**, so `alpha` makes them partly transparent, and darker areas show where many students are:
+The relationship between two continuous variables—such as sleep hours and academic performance—is evaluated via a **scatter plot**. When plotting 600 participants, individual markers often overlap (**overplotting**). We mitigate this by setting transparency (`alpha=0.4`) and overlaying a linear regression trend line with `sns.regplot()`:
 
-```{r}
+```{python}
 #| label: fig-sleep-gpa
-#| fig-cap: "Sleep and GPA in the first semester, with a straight trend line."
-#| fig-alt: "Scatter plot of GPA against sleep hours with a rising straight line: students who sleep more tend to have slightly higher GPAs, with much scatter."
-#| fig-width: 6
-#| fig-height: 4
-ggplot(first_sem, aes(x = sleep_hours, y = gpa)) +
-  geom_point(alpha = 0.4) +
-  geom_smooth(method = "lm")
+#| fig-cap: "Association between sleep hours and GPA in Semester 1, with ordinary least squares trend line."
+#| fig-alt: "Scatter plot of GPA against sleep hours showing a positive linear slope: students who sleep longer tend to achieve slightly higher GPAs, with substantial scatter."
+fig, ax = plt.subplots(figsize=(6, 3.8))
+
+sns.regplot(
+    data=first_sem, x="sleep_hours", y="gpa",
+    scatter_kws={"alpha": 0.35, "color": "#4c72b0"},
+    line_kws={"color": "#c44e52", "linewidth": 2},
+    ax=ax
+)
+ax.set(xlabel="Hours of sleep per night", ylabel="Grade Point Average (GPA)")
+plt.tight_layout()
+plt.show()
 ```
 
-The layer `geom_smooth(method = "lm")` adds a straight trend line, with a grey band showing its uncertainty. The line rises: students who sleep more tend to have slightly higher GPAs. The points, however, scatter widely around it. Sleep is related to GPA, but it is far from the whole story, and Chapter 8 measures the relationship.
+The regression line slopes upward: students sleeping more hours tend to achieve modestly higher GPAs. However, observations scatter broadly around the line ($r \approx 0.30$), indicating that sleep explains only a fraction of total academic variance.
 
-### Line charts
+### Longitudinal trajectory line plots
 
-The study followed its students for four semesters, and a **line chart** shows how the average changed. The averages are calculated first (Chapter 3) and then plotted, with one line per workshop group:
+Elaf's research design tracked cohorts across four consecutive semesters. A **line plot** illustrates how group means evolve over time:
 
-```{r}
+```{python}
 #| label: fig-wellbeing-lines
-#| fig-cap: "Average wellbeing over four semesters, by workshop group."
-#| fig-alt: "Two lines over semesters 1 to 4. They start level; from semester 2 the invited group is about 5 points higher, and the gap narrows by semester 4."
-#| fig-width: 6
-#| fig-height: 3.8
-wellbeing_by_sem <- semesters |>
-  left_join(students, join_by(student_id)) |>
-  summarise(mean_wellbeing = mean(wellbeing), .by = c(semester, workshop))
+#| fig-cap: "Longitudinal wellbeing trajectories across four semesters by workshop participation."
+#| fig-alt: "Two trajectory lines spanning Semesters 1 to 4. Baseline scores in Semester 1 are identical; from Semester 2 onward, invited workshop participants achieve approximately 5 points higher wellbeing."
+wellbeing_trajectory = (
+    semesters
+    .merge(students[["student_id", "workshop"]], on="student_id", how="left")
+    .groupby(["semester", "workshop"])["wellbeing"]
+    .mean()
+    .reset_index()
+)
 
-ggplot(wellbeing_by_sem, aes(x = semester, y = mean_wellbeing, colour = workshop)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2.5)
+fig, ax = plt.subplots(figsize=(6.5, 3.8))
+
+sns.lineplot(
+    data=wellbeing_trajectory, x="semester", y="wellbeing",
+    hue="workshop", marker="o", markersize=7, linewidth=2,
+    palette={"Invited": "#2ca02c", "Not invited": "#7f7f7f"},
+    ax=ax
+)
+ax.set(
+    title="Cohort Wellbeing Trajectory Over Two Years",
+    xlabel="Academic Semester",
+    ylabel="Mean Wellbeing (0 to 100)",
+    xticks=[1, 2, 3, 4]
+)
+ax.legend(title="Workshop Group", frameon=True)
+plt.tight_layout()
+plt.show()
 ```
 
-@fig-wellbeing-lines tells the story of the workshop at a glance: the groups start level, the invited students pull ahead in semester 2, and the gap narrows afterwards. Chapters 7 and 10 test whether this pattern is real.
+@fig-wellbeing-lines captures the core narrative of Elaf's intervention study: groups start at identical baselines in Semester 1, invited students pull ahead following the intervention in Semester 2, and the gap stabilizes over subsequent terms.
 
-## Mapping and setting
+## Preparing publication-quality figures
 
-In @fig-wellbeing-lines, `colour = workshop` sat inside `aes()`. That **maps** colour to a variable: each workshop group gets its own colour, and ggplot2 adds a legend to explain them. To make everything one fixed colour, the colour is **set** *outside* `aes()` instead:
+Exploratory graphics suffice during initial data exploration, but explanatory figures destined for a thesis or journal article require publication-standard polish.
 
-```{r}
-#| label: fig-setting
-#| fig-cap: "Setting a fixed colour outside aes(): all bars are the same colour, and there is no legend."
-#| fig-alt: "Histogram of sleep hours with all bars filled in a single dark blue colour."
-#| fig-width: 6
-#| fig-height: 3.2
-ggplot(first_sem, aes(x = sleep_hours)) +
-  geom_histogram(binwidth = 0.5, fill = "steelblue", colour = "white")
-```
+### Annotations and reference lines
 
-A very common mistake is to put a fixed colour inside `aes()`. ggplot2 then treats `"steelblue"` as a variable with one value, colours it with its first default colour (a salmon pink), and adds a pointless legend:
+Adding explicit reference lines and annotations directs reader attention to clinically meaningful thresholds:
 
-```{r}
-#| label: fig-mapping-mistake
-#| fig-cap: "The mistake: a fixed colour inside aes() is treated as data."
-#| fig-alt: "Histogram with salmon-pink bars and a legend containing the single entry 'steelblue'."
-#| fig-width: 6
-#| fig-height: 3.2
-ggplot(first_sem, aes(x = sleep_hours, fill = "steelblue")) +
-  geom_histogram(binwidth = 0.5)
-```
-
-The rule follows from the grammar: *inside* `aes()` for anything that should depend on the data, *outside* for anything that should be the same everywhere. Note also the difference between `fill` and `colour`: `fill` is the inside of a shape such as a bar or box, and `colour` is its outline, or the colour of points and lines.
-
-## Preparing graphs for publication
-
-The graphs so far are exploratory: good enough for the researcher. An explanatory graph for a thesis or paper needs more care, and every addition below is a design decision with a reason behind it.
-
-### Labels
-
-A reader cannot interpret a graph whose axes say `mean_wellbeing` and `semester`. Axis labels should state what was measured, with units, and the title or caption should state the message. The function `labs()` sets the title, subtitle, axis labels, legend title, and caption:
-
-```{r}
-#| label: fig-labelled
-#| fig-cap: "The line chart with clear labels."
-#| fig-alt: "The wellbeing line chart with a title, axis labels 'Semester' and 'Average wellbeing (0 to 100)', and legend titled 'Workshop'."
-#| fig-width: 6.5
-#| fig-height: 4
-p <- ggplot(wellbeing_by_sem, aes(x = semester, y = mean_wellbeing, colour = workshop)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2.5) +
-  labs(
-    title    = "Wellbeing over the two years",
-    subtitle = "Average score per semester, by workshop group",
-    x        = "Semester",
-    y        = "Average wellbeing (0 to 100)",
-    colour   = "Workshop"
-  )
-p
-```
-
-Storing the graph in an object, here `p`, makes it possible to add to it step by step without repeating the code.
-
-### Scales and colours
-
-**Scales** control how data values become positions, colours, and sizes, and each has a `scale_` function. Two decisions are needed here. The x axis should show only whole semesters, since there is no semester 2.5. And the colours should come from a palette that people with colour vision deficiency, about one man in twelve, can tell apart. The **viridis** palettes, built into ggplot2, are designed for exactly that, and they also print well in greyscale:
-
-```{r}
-#| label: fig-scales
-#| fig-cap: "Whole-number semesters on the x axis and a colour-blind-friendly palette."
-#| fig-alt: "The wellbeing line chart with semesters 1 to 4 on the x axis and the two lines in dark purple and yellow-green."
-#| fig-width: 6.5
-#| fig-height: 4
-p <- p +
-  scale_x_continuous(breaks = 1:4) +
-  scale_colour_viridis_d(end = 0.8)
-p
-```
-
-Colours can also be chosen by hand, with `scale_colour_manual(values = c("Invited" = "#1b9e77", "Not invited" = "#7570b3"))`. Whatever the choice, colour should never be the *only* way to tell groups apart in a printed figure: different shapes or line types, or labels placed directly on the lines, keep the graph readable in black and white.
-
-### Themes
-
-A **theme** controls everything that is not data: the background, grid lines, fonts, and the position of the legend. The default grey background of ggplot2 is useful on screen, but most journals prefer a plain look. The complete themes `theme_minimal()` and `theme_bw()` provide it, `base_size` sets the font size, and `theme()` adjusts individual details:
-
-```{r}
-#| label: fig-theme
-#| fig-cap: "A clean theme, larger text, and the legend below the graph."
-#| fig-alt: "The finished wellbeing line chart on a white background with light grid lines, larger text, and the legend at the bottom."
-#| fig-width: 6.5
-#| fig-height: 4.2
-p <- p +
-  theme_minimal(base_size = 13) +
-  theme(legend.position = "bottom")
-p
-```
-
-Compared with @fig-wellbeing-lines, @fig-theme shows the same data, but it is now ready for a thesis.
-
-### Annotations
-
-A reference value often helps a reader interpret a graph: a recommended amount, a threshold, a mean. The functions `geom_vline()` and `geom_hline()` draw reference lines, and `annotate()` places text:
-
-```{r}
+```{python}
 #| label: fig-annotated
-#| fig-cap: "Sleep in the first semester, with the recommended 7 hours marked."
-#| fig-alt: "Histogram of sleep hours with a dashed vertical line at 7 hours, labelled 'Recommended: 7 hours'; most of the distribution lies to the left of the line."
-#| fig-width: 6.5
-#| fig-height: 3.8
-ggplot(first_sem, aes(x = sleep_hours)) +
-  geom_histogram(binwidth = 0.5, fill = "steelblue", colour = "white") +
-  geom_vline(xintercept = 7, linetype = "dashed") +
-  annotate("text", x = 7.1, y = Inf, label = "Recommended: 7 hours", hjust = 0, vjust = 1.5) +
-  labs(x = "Hours of sleep per night", y = "Number of students") +
-  theme_minimal(base_size = 13)
+#| fig-cap: "Distribution of sleep hours with clinical 7-hour reference benchmark."
+#| fig-alt: "Histogram of sleep hours with a vertical dashed line positioned at 7 hours, annotated with 'Recommended benchmark: 7 hours'."
+fig, ax = plt.subplots(figsize=(6.5, 3.8))
+
+sns.histplot(
+    data=first_sem, x="sleep_hours", binwidth=0.5,
+    color="#4c72b0", edgecolor="white", ax=ax
+)
+ax.axvline(7.0, color="#c44e52", linestyle="--", linewidth=1.8)
+ax.text(
+    7.1, ax.get_ylim()[1] * 0.9,
+    "Recommended: 7.0 hrs",
+    color="#c44e52", fontweight="semibold", verticalalignment="top"
+)
+ax.set(
+    title="Baseline Sleep Duration",
+    xlabel="Hours of sleep per night",
+    ylabel="Number of students"
+)
+plt.tight_layout()
+plt.show()
 ```
 
-In the annotation, `y = Inf` places the text at the top of the plot, whatever the height of the bars; `hjust = 0` makes it start just right of the line, and `vjust = 1.5` moves it slightly down from the edge. The line makes the graph's message, that most students sleep less than recommended, visible without any further explanation.
+### Color accessibility
 
-## Honest graphs
+Approximately 8% of men and 0.5% of women experience congenital color vision deficiency (red-green color blindness). A scientific graphic must remain interpretable to all readers and reproduce legibly when printed in black and white:
 
-A graph can be accurate in every detail and still mislead. Most misleading graphs are not deliberate; they come from defaults that nobody questioned. Four choices deserve particular attention.
+- Avoid rainbow (`jet`) palettes, which introduce artificial visual boundaries.
+- Utilize perceptually uniform, colorblind-safe palettes such as `viridis`, `plasma`, `cividis`, or `colorblind`.
+- Combine color with redundant visual encodings (distinct marker shapes, line styles, or direct text labels).
 
-The first is the **axis range**. A bar represents its value by its length, so a bar chart whose axis does not start at zero misrepresents every value: a bar twice as long no longer means twice as much. Points and lines represent values by position, so their axes may be zoomed in to show change clearly, as long as the reader is told. The y axis of @fig-theme, for example, runs only from about `r floor(min(wellbeing_by_sem$mean_wellbeing))` to `r ceiling(max(wellbeing_by_sem$mean_wellbeing))`, because ggplot2 zooms in on the data, which makes a 5-point gap look large. Either the caption should say so, or the full range of the scale can be shown with `coord_cartesian(ylim = c(0, 100))`, letting readers judge the size of the difference themselves.
+## Honest graphs and visual ethics
 
-The second is the **aspect ratio**, the shape of the graph. The same line looks steep in a tall, narrow graph and flat in a wide, short one. A good default is a graph somewhat wider than it is tall, and the same shape for graphs that will be compared.
+A visualization can be mathematically accurate while remaining visually misleading. Distortion frequently stems from unexamined software defaults:
 
-The third is **clutter**. Everything in a graph that does not carry information, such as heavy grid lines, a legend that repeats the axis labels, or three-dimensional effects, competes with the data for the reader's attention. Three-dimensional bars and pies are worst of all, since the perspective distorts exactly the lengths and angles that carry the values.
+1. **Truncated vertical baselines on bar charts:** Because a bar encodes magnitude through length, truncating the baseline exaggerates differences.
+2. **Extreme aspect ratios:** Altering aspect ratios artificially steepens or flattens longitudinal trends.
+3. **Chartjunk and 3D effects:** Pseudo-3D perspectives distort angular perception and distance.
+4. **Hiding underlying distribution variance:** Reporting only summary bar heights masks critical within-group heterogeneity.
 
-The fourth is **colour**. Colours for categories should be clearly different from each other but none should stand out, since no category is more important than another; a qualitative palette such as viridis does this. Colours for quantities should run in one direction, from light to dark (a sequential palette), or away from a meaningful midpoint such as zero in two directions (a diverging palette, as in the heat map later in this chapter). A rainbow palette is poor for both, because its bright bands suggest boundaries that are not in the data.
+### Redesigning a misleading figure
 
-### A graph improved
+Suppose an investigator evaluates whether mean wellbeing differs across faculties. A careless chart with an artificially truncated axis appears in @fig-before:
 
-The principles are clearest when applied to one graph. Suppose the question is whether wellbeing differs between faculties. A first attempt, using defaults and a zoomed axis, might look like @fig-before:
-
-```{r}
+```{python}
 #| label: fig-before
-#| fig-cap: "A misleading graph of average wellbeing by faculty: the axis starts at 58, the colours repeat the axis labels, and the spread of the data is invisible."
-#| fig-alt: "Bar chart of average wellbeing for five faculties with bright default colours and a legend. The y axis starts at 58, so the bars for Education and Humanities look several times taller than those for Social Sciences and Health Sciences."
-#| fig-width: 7
-#| fig-height: 3.8
-faculty_means <- first_sem |>
-  summarise(wellbeing = mean(wellbeing), .by = faculty)
+#| fig-cap: "A misleading graphic: the vertical axis is truncated at 58, exaggerating modest differences and concealing student-level variance."
+#| fig-alt: "Bar chart of average wellbeing across five faculties with the vertical axis starting at 58. Education appears several times higher than Social Sciences."
+faculty_means = (
+    first_sem
+    .groupby("faculty")["wellbeing"]
+    .mean()
+    .reset_index()
+)
 
-ggplot(faculty_means, aes(x = faculty, y = wellbeing, fill = faculty)) +
-  geom_col() +
-  coord_cartesian(ylim = c(58, 62.5))
+fig, ax = plt.subplots(figsize=(6.5, 3.5))
+sns.barplot(data=faculty_means, x="faculty", y="wellbeing", palette="Blues_d", ax=ax)
+ax.set_ylim(58, 62.5)  # Truncated baseline!
+ax.set(title="Misleading: Truncated Baseline (58 to 62.5)", xlabel="Faculty", ylabel="Mean Wellbeing")
+plt.xticks(rotation=20, ha="right")
+plt.tight_layout()
+plt.show()
 ```
 
-The graph suggests large differences: the Education bar looks several times taller than the Social Sciences bar. But the axis starts at 58, so the lengths of the bars mean nothing; the averages actually differ by about `r round(diff(range(faculty_means$wellbeing)), 1)` points on a 100-point scale. The colours add nothing that the axis labels do not already say, the legend repeats them a second time, the faculties appear in alphabetical rather than meaningful order, and the axis titles are variable names. Most seriously, the graph shows only averages, and hides how much students within each faculty differ.
+In @fig-before, the Education faculty bar appears triple the height of Social Sciences. Yet the actual group means differ by barely 2.5 points on a 100-point scale. Furthermore, the bar chart completely conceals individual variation.
 
-@fig-after shows the same data, redesigned. Every student appears as a faint point, so the spread within each faculty is visible, and the average of each faculty is marked in red. The faculties are ordered by their average, the labels say what was measured, and the legend is gone:
+In @fig-after, the display is redesigned into an honest, informative jittered strip plot with overlaid group means:
 
-```{r}
+```{python}
 #| label: fig-after
-#| fig-cap: "The same data, redesigned: every student as a grey point, each faculty's average in red, faculties ordered by their average. The differences between faculties are small compared with the differences within them."
-#| fig-alt: "Horizontal strip plot of individual wellbeing scores for five faculties, each a wide band of grey points from about 25 to 95. A red point marks each faculty's average, all between 59 and 62."
-#| fig-width: 7
-#| fig-height: 3.8
-ggplot(first_sem, aes(x = wellbeing, y = reorder(faculty, wellbeing))) +
-  geom_jitter(height = 0.15, alpha = 0.25, colour = "grey45") +
-  stat_summary(fun = mean, geom = "point", size = 3.5, colour = "#b2182b") +
-  labs(x = "Wellbeing in semester 1 (0 to 100)", y = NULL) +
-  theme_minimal(base_size = 12)
+#| fig-cap: "The redesigned truthful display: individual observations shown as faint points, with faculty means marked in red. Within-faculty spread vastly exceeds between-faculty differences."
+#| fig-alt: "Horizontal strip plot of individual wellbeing scores for five faculties, spanning 25 to 95, with red diamond markers denoting faculty means (all clustered near 60)."
+order = faculty_means.sort_values("wellbeing")["faculty"]
+
+fig, ax = plt.subplots(figsize=(7, 3.8))
+
+# Jittered individual student scores
+sns.stripplot(
+    data=first_sem, y="faculty", x="wellbeing",
+    order=order, color="grey", alpha=0.3, jitter=0.2, size=5, ax=ax
+)
+
+# Overlay group means as prominent diamonds
+sns.pointplot(
+    data=first_sem, y="faculty", x="wellbeing",
+    order=order, color="#c44e52", markers="D", scale=0.8,
+    errorbar=None, join=False, ax=ax
+)
+
+ax.set(
+    title="Truthful: Student Wellbeing Distribution by Faculty",
+    xlabel="Wellbeing Index (0 to 100)",
+    ylabel=None,
+    xlim=(0, 100)  # Full theoretical scale!
+)
+plt.tight_layout()
+plt.show()
 ```
 
-The function `reorder()` orders the faculties by their average wellbeing, `geom_jitter()` spreads the points a little vertically so that they do not hide each other, and `stat_summary()` calculates and draws each faculty's mean. The redesigned graph tells the truth that the first one hid: the differences between faculties are small compared with the differences between students within each faculty. Chapter 8 tests whether they are larger than chance.
+@fig-after communicates the true scientific story: individual student scores vary widely between 25 and 95 across all departments, and average differences between faculties are trivial by comparison.
 
-## Further kinds of graph
+## Advanced scientific visualizations
 
-### Small multiples
+### Small multiples (Faceting)
 
-**Facets**, also called small multiples, split one graph into a panel for each group, all with the same axes, so the groups are easy to compare. The function `facet_wrap()` takes the variable to split by:
+Small multiples partition a complex visualization into separate subpanels sharing identical axes, enabling direct visual comparisons:
 
-```{r}
+```{python}
 #| label: fig-facets
-#| fig-cap: "Sleep and GPA in the first semester, one panel per programme."
-#| fig-alt: "Two scatter plots side by side, for Master's and PhD students, each with a rising trend line of GPA against sleep."
-#| fig-width: 7
-#| fig-height: 3.6
-ggplot(first_sem, aes(x = sleep_hours, y = gpa)) +
-  geom_point(alpha = 0.4) +
-  geom_smooth(method = "lm") +
-  facet_wrap(~ programme) +
-  labs(x = "Hours of sleep per night", y = "GPA") +
-  theme_minimal(base_size = 12)
+#| fig-cap: "Association between sleep hours and GPA, faceted by degree programme."
+#| fig-alt: "Two scatter plots side by side for Master's and PhD students, each displaying an identical positive slope between sleep and GPA."
+g = sns.lmplot(
+    data=first_sem, x="sleep_hours", y="gpa", col="programme",
+    scatter_kws={"alpha": 0.35, "color": "#4c72b0"},
+    line_kws={"color": "#c44e52"},
+    height=3.5, aspect=1.1
+)
+g.set_axis_labels("Hours of Sleep per Night", "GPA")
+g.set_titles(col_template="{col_name} Candidates")
+plt.tight_layout()
+plt.show()
 ```
 
-The relationship looks similar in both programmes. For two grouping variables, `facet_grid(rows ~ columns)` makes a grid of panels. Because the panels share their axes, facets respect the rule from the section on reading graphs: comparisons are made by position on a common scale.
+The regression slope between sleep and academic performance is virtually identical across both Master's and PhD cohorts.
 
-### Density plots
+### Kernel density estimation (KDE) plots
 
-A **density plot** is a smoothed histogram. Its advantage is that several distributions can be drawn on top of each other and compared. Here, `fill` is mapped to the workshop group and `alpha` lets the two curves show through each other:
+A **density plot** provides a smoothed continuous estimate of the probability density function, facilitating clean comparisons of overlapping distributions:
 
-```{r}
+```{python}
 #| label: fig-density
-#| fig-cap: "Distribution of wellbeing in the second semester, by workshop group."
-#| fig-alt: "Two overlapping bell-shaped density curves; the curve for invited students sits a few points to the right of the curve for students not invited."
-#| fig-width: 6.5
-#| fig-height: 3.8
-semesters |>
-  filter(semester == 2) |>
-  left_join(students, join_by(student_id)) |>
-  ggplot(aes(x = wellbeing, fill = workshop)) +
-  geom_density(alpha = 0.5) +
-  scale_fill_viridis_d(end = 0.8) +
-  labs(x = "Wellbeing (0 to 100)", y = "Density", fill = "Workshop") +
-  theme_minimal(base_size = 13)
+#| fig-cap: "Comparative probability density of Semester 2 wellbeing by workshop group."
+#| fig-alt: "Two overlapping smooth density curves. The curve for invited workshop participants is visibly shifted to the right of the uninvited group."
+sem2_data = (
+    semesters
+    .query("semester == 2")
+    .merge(students[["student_id", "workshop"]], on="student_id")
+)
+
+fig, ax = plt.subplots(figsize=(6.5, 3.5))
+
+sns.kdeplot(
+    data=sem2_data, x="wellbeing", hue="workshop",
+    fill=True, common_norm=False, alpha=0.35,
+    palette={"Invited": "#2ca02c", "Not invited": "#7f7f7f"},
+    linewidth=2, ax=ax
+)
+ax.set(
+    title="Semester 2 Post-Intervention Wellbeing Distribution",
+    xlabel="Wellbeing Index (0 to 100)",
+    ylabel="Probability Density"
+)
+plt.tight_layout()
+plt.show()
 ```
 
-In this code, the data flows straight into `ggplot()` through the pipe. The two curves have the same shape, but the invited group's is shifted to the right: the whole distribution moved, not just a few students.
+Notice that the entire distribution for invited students is shifted rightward, demonstrating a cohort-wide positive effect rather than an isolated outlier reaction.
 
-### Heat maps
+### Correlation heatmaps
 
-A **heat map** shows a table of numbers as coloured tiles, and it suits correlation matrices well. Chapter 2 calculated the correlations between four first-semester measurements. To plot them, the matrix is turned into a long table with one row per pair (Chapter 3), and then `geom_tile()` draws a tile for each pair and `geom_text()` writes the value on it:
+When examining relationships among numerous continuous constructs, a **correlation heatmap** visualizes the bivariate correlation matrix via a diverging color gradient:
 
-```{r}
+```{python}
 #| label: fig-heatmap
-#| fig-cap: "Correlations between four first-semester measurements."
-#| fig-alt: "A 4 by 4 grid of coloured tiles showing correlations between GPA, sleep, study hours, and wellbeing, each tile labelled with its value; negative correlations are coloured in one direction and positive ones in the other."
-#| fig-width: 5.5
-#| fig-height: 4.5
-library(tidyr)
+#| fig-cap: "Bivariate correlation matrix across Semester 1 quantitative metrics."
+#| fig-alt: "A 4-by-4 correlation matrix of colored cells displaying correlation coefficients between GPA, sleep hours, study hours, and wellbeing."
+corr_vars = first_sem[["gpa", "sleep_hours", "study_hours", "wellbeing"]].corr()
 
-correlations <- first_sem |>
-  select(gpa, sleep_hours, study_hours, wellbeing) |>
-  cor(use = "complete.obs")
+fig, ax = plt.subplots(figsize=(5.5, 4.2))
 
-correlations |>
-  as.data.frame() |>
-  mutate(var1 = rownames(correlations)) |>
-  pivot_longer(-var1, names_to = "var2", values_to = "r") |>
-  ggplot(aes(x = var1, y = var2, fill = r)) +
-  geom_tile() +
-  geom_text(aes(label = round(r, 2))) +
-  scale_fill_gradient2(limits = c(-1, 1)) +
-  labs(x = NULL, y = NULL, fill = "Correlation") +
-  theme_minimal(base_size = 12)
+sns.heatmap(
+    corr_vars, annot=True, fmt=".2f", cmap="vlag",
+    vmin=-1.0, vmax=1.0, center=0.0,
+    square=True, linewidths=0.5, cbar_kws={"shrink": 0.8},
+    ax=ax
+)
+ax.set_title("Correlation Heatmap (Semester 1)", fontsize=11, pad=10)
+plt.tight_layout()
+plt.show()
 ```
 
-The scale `scale_fill_gradient2()` is a diverging palette: two colours for negative and positive values, with white at zero, so the direction and strength of each correlation are visible at once. Students who study more hours sleep less (a negative correlation), and students who sleep more report higher wellbeing (positive). The numbers written on the tiles matter, because colour alone is read imprecisely. Chapter 6 explains how to read correlations.
+The diverging `vlag` palette centers white at zero correlation, mapping negative associations to blue and positive associations to red. Values printed within each cell ensure readers are not forced to decode coefficients solely through color saturation.
 
-## Exporting figures
+## Exporting publication-ready figures
 
-The function `ggsave()` saves the most recent graph, or one that is named, to a file. The file type follows from the file name:
+Scientific figures must be exported at explicit target physical dimensions and print resolutions:
 
-```r
-ggsave("figures/wellbeing-lines.png", plot = p, width = 16, height = 10, units = "cm", dpi = 300)
-ggsave("figures/wellbeing-lines.pdf", plot = p, width = 16, height = 10, units = "cm")
+```python
+# Save as 300 DPI PNG raster image (suitable for Word documents and presentations):
+fig.savefig("figures/wellbeing_trajectory.png", dpi=300, bbox_inches="tight")
+
+# Save as vector graphic (ideal for LaTeX and journal publication):
+fig.savefig("figures/wellbeing_trajectory.pdf", bbox_inches="tight")
 ```
 
-A figure should be saved at the size at which it will be printed, in the units of the page: a figure for a single column of a journal is often about 8 cm wide, and a full page about 16 cm. Setting the size when saving, rather than stretching the image later, keeps the text readable and the proportions right. Images such as PNG files need a resolution of at least 300 dpi (dots per inch), which is what most journals require, while vector formats such as PDF and SVG stay sharp at any size and are preferable whenever the journal accepts them. Finally, the text should be checked at the final size, since fonts that look fine on screen are often too small in print; `base_size` in the theme fixes that.
-
-The code that makes each figure belongs in the analysis script. When a supervisor asks for a larger font or a different colour, one line changes and the figure is saved again.
-
-::: {.callout-note icon="false"}
-## In your field: economics and business
-
-ggplot2 includes `economics`, real monthly data on the US economy from 1967 to 2015. The same line chart shows the rise and fall of unemployment, with each recession visible as a peak:
-
-```{r}
-#| label: fig-economics
-#| fig-cap: "US unemployment, 1967 to 2015 (ggplot2's economics data)."
-#| fig-alt: "Line chart of the number of unemployed people in the United States, in thousands, from 1967 to 2015, with several peaks, the highest around 2010."
-#| fig-width: 6.5
-#| fig-height: 3.5
-ggplot(economics, aes(x = date, y = unemploy)) +
-  geom_line() +
-  labs(x = NULL, y = "Unemployed (thousands)") +
-  theme_minimal(base_size = 12)
-```
-
-The graph shows the number of unemployed people, not the unemployment rate, and the population grew greatly over these 48 years. A reader comparing 1970 with 2010 should know that, which is why the axis label names exactly what is shown.
-:::
-
-## Common misconceptions
-
-Several beliefs about graphs are widespread, and each leads to graphs that mislead or fail to inform.
-
-- **"The summary statistics tell the whole story."** Anscombe's datasets share every summary and differ completely. Always look.
-- **"A graph with more elements is more informative."** Decoration, three-dimensional effects, and repeated labels compete with the data.
-- **"Pie charts are good for proportions."** Angles and areas are judged poorly; a bar chart or dot plot of the same proportions is almost always clearer.
-- **"Zooming in on the axis is always wrong."** It is wrong for bar charts, whose lengths encode values, but acceptable for points and lines, if the reader is told.
-- **"Colour makes a graph clearer."** Colour helps to separate a few categories; used for everything, it becomes noise, and it disappears in black-and-white printing.
+Setting `bbox_inches="tight"` prevents axis labels from being clipped. Standard journal column widths typically measure 8.5 cm (single column) or 17.5 cm (full width). Defining figure sizes in code preserves font proportions when rendered on the printed page.
 
 ## Chapter review
 
 ### Summary
 
-- Numerical summaries can hide very different patterns, as Anscombe's datasets show, so data should always be graphed. Exploratory graphs help the researcher understand the data; explanatory graphs show readers a finding.
-- People judge positions and lengths most accurately, then angles, areas, and colours. The most important comparison belongs in position or length, within one panel.
-- The graph follows from the question and the kinds of variables: histograms for distributions, bar charts for counts, box plots or points for group comparisons, scatter plots for relationships, line charts for change over time.
-- Every ggplot2 graph combines data, aesthetic mappings in `aes()`, and geometric layers, joined with `+`. *Map* a colour inside `aes()` when it should depend on the data; *set* it outside `aes()` when it should be fixed.
-- `labs()` adds labels, `scale_` functions control axes and colours (viridis palettes are colour-blind-friendly), and themes control the look.
-- Honest graphs start bar axes at zero, state when an axis is zoomed, avoid clutter, and use colour appropriately: qualitative palettes for categories, sequential or diverging palettes for quantities.
-- Facets split a graph into comparable panels; density plots compare distributions; heat maps show tables of numbers.
-- `ggsave()` exports figures. Set the size in page units, use at least 300 dpi for images, and prefer PDF or SVG when accepted.
+- Summary statistics can mask fundamentally divergent distributions (Anscombe's quartet); visualizing data prior to modeling is essential.
+- Graphical perception theory demonstrates that position and length are decoded with greatest precision; key scientific comparisons must be mapped to aligned coordinates.
+- Continuous distributions are inspected using histograms and KDE density plots; group comparisons rely on box plots and strip plots; bivariate relationships are evaluated via scatter plots and regression trend lines.
+- Tidy longitudinal trajectories are plotted using `sns.lineplot()`, small multiples using `sns.lmplot(col=...)`, and correlation matrices using `sns.heatmap()`.
+- Ethical visual design requires zero-aligned baselines for bar charts, colorblind-accessible palettes (`viridis`, `vlag`), and transparent representation of within-group variance.
+- Publication-quality figures are saved using `fig.savefig()` at 300+ DPI or vector formats (`.pdf`, `.svg`).
 
 ### Key terms
 
-Exploratory graph, explanatory graph, graphical perception, grammar of graphics, aesthetic mapping, geom, layer, histogram, bin, bar chart, box plot, median, scatter plot, overplotting, trend line, line chart, mapping, setting, scale, theme, annotation, aspect ratio, qualitative palette, sequential palette, diverging palette, facet, density plot, heat map, dpi, vector format.
+Anscombe's quartet, exploratory vs. explanatory graphics, graphical perception, aligned scale, histogram, KDE density plot, box plot, strip plot, overplotting, regression trend line, longitudinal line plot, small multiples, facet, correlation heatmap, color accessibility, chartjunk, DPI, vector graphics.
 
 ## Exercises
 
-The [playground](../playground/chapter04.html) has these and more, with hints and solutions.
+Work through these exercises in your browser using the [Chapter 4 Playground](../playground/chapter04.html) or download the starter project for VS Code.
 
-1. Draw a histogram of `study_hours` in the first semester. Try binwidths of 1, 5, and 10, and explain which shows the shape best.
-2. Draw a bar chart of how many students have each level of `employment`. Make the bars a single colour of your choice, and order the levels from no job to a full-time job.
-3. Draw box plots of first-semester GPA for each faculty, with clear axis labels.
-4. Draw a scatter plot of caffeine against sleep in the first semester, with a trend line, and describe what it suggests. (Chapter 8 returns to this relationship.)
-5. Take any graph from this chapter and save it as a PNG file, 16 cm wide and 10 cm high, at 300 dpi.
-6. Redraw @fig-before as a bar chart whose axis starts at zero. Compare it with @fig-before and @fig-after, and explain which of the three you would put in a thesis, and why.
+1. Using `first_sem`, generate a histogram of `study_hours`. Experiment with binwidths of 2, 5, and 10 hours, and evaluate which binning best reveals distribution shape.
+2. Construct a bar chart showing student counts across `employment` categories, ordered from `"None"` to `"Full-time job"`, using a colorblind-safe single color.
+3. Generate box plots comparing Semester 1 GPA across academic faculties, formatting axis labels clearly.
+4. Draw a scatter plot of caffeine consumption (`caffeine_mg`) against sleep hours (`sleep_hours`) in Semester 1 with an overlaid linear regression line, and describe the observed association.
+5. Save any figure created in this chapter to `figures/exercise_plot.png` at 300 DPI with tight bounding boxes.
+6. Redesign the faculty wellbeing bar chart into a horizontal strip plot showing both individual scores and group medians. Explain why this display is scientifically superior.
 
 ## Further reading
 
-- *R for Data Science* [@wickham2023]: chapters "Data visualization", "Layers", and "Communication".
-- *Data Visualization: A Practical Introduction* [@healy2018], free online, explains the principles of good graphs and builds them with ggplot2.
-- *ggplot2: Elegant Graphics for Data Analysis* [@wickham2016ggplot2], by the author of ggplot2, explains the grammar of graphics in depth.
-- "Graphical perception" [@cleveland1984], the experiments behind the ranking of visual properties.
+- *Fundamentals of Data Visualization* by Claus O. Wilke [@wilke2019]: an exceptional, language-agnostic text on the principles of honest, effective visual communication.
+- Official documentation for [Seaborn](https://seaborn.pydata.org/) and [Matplotlib](https://matplotlib.org/).
+- "Graphical Perception" by William S. Cleveland and Robert McGill [@cleveland1984].

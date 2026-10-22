@@ -7,48 +7,67 @@ format:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
   - questionnaire.csv
+  - toothgrowth.csv
   - chapter05.zip
-webr:
+pyodide:
   packages:
-    - dplyr
+    - pandas
+    - numpy
+    - scipy
+    - statsmodels
   resources:
     - students.csv
     - semesters.csv
     - questionnaire.csv
+    - toothgrowth.csv
 ---
 
 {{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
-This page practises the ideas of Chapter 5 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and simulations. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with no answers: you plan the research yourself, as you will for your own thesis.
+This page practises the ideas of Chapter 5 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and statistical simulations. **Check your understanding** asks short conceptual questions whose answers open with a click. **Do it yourself** gives open tasks with no answers: you plan the research design yourself, as you will for your own thesis.
 
 Much of this chapter is about thinking before coding, so several exercises ask for a written answer. Write it first, on paper or as a comment (a line starting with `#`) in a code space, then open the model answer. In the code exercises, replace each `______` with your own code and press **Run Code**.
 
-```{webr}
+```{pyodide}
 #| setup: true
 #| exercise: [ex2, ex3, ex4, ex5, ex6, gf3, gf4, gf5]
-library(dplyr)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-first_sem <- semesters |>
-  filter(semester == 1) |>
-  left_join(students, join_by(student_id))
+import pandas as pd
+import numpy as np
+from scipy import stats
+from scipy.special import expit
+from statsmodels.stats.power import TTestIndPower
+
+students = pd.read_csv("students.csv")
+semesters = pd.read_csv("semesters.csv")
+questionnaire = pd.read_csv("questionnaire.csv")
+
+first_sem = (
+    semesters[semesters["semester"] == 1]
+    .merge(students, on="student_id")
+)
 ```
 
-```{webr}
+```{pyodide}
 #| include: false
-library(dplyr)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-first_sem <- semesters |>
-  filter(semester == 1) |>
-  left_join(students, join_by(student_id))
+import pandas as pd
+import numpy as np
+from scipy import stats
+from scipy.special import expit
+from statsmodels.stats.power import TTestIndPower
+
+students = pd.read_csv("students.csv")
+semesters = pd.read_csv("semesters.csv")
+questionnaire = pd.read_csv("questionnaire.csv")
+
+first_sem = (
+    semesters[semesters["semester"] == 1]
+    .merge(students, on="student_id")
+)
 ```
 
 ## Practise the chapter
@@ -62,28 +81,30 @@ Improve these research questions so that data could answer them: (a) "Is exercis
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Model answer
 
-(a) *"Do graduate students who exercise on more days per week report higher wellbeing?"* is relational. *"Does a programme of three weekly exercise sessions raise graduate students' wellbeing after one semester?"* is causal, and needs random assignment to answer. (b) *"Is the number of supervisor meetings per semester associated with students' satisfaction with their progress?"* is relational. Each version names who is studied and what is measured; the vague words "good" and "effective" are replaced by things that can be measured, and the kind of question now tells you which claim the answer can support.
+(a) *"Do graduate students who report regular weekly aerobic exercise achieve higher semester wellbeing scores than sedentary students?"* is relational. *"Does random assignment to a structured 8-week physical activity programme improve graduate student psychological wellbeing?"* is causal, and needs random assignment to answer. (b) *"Is the frequency of monthly supervisor advisory meetings associated with graduate students' self-reported research progress satisfaction?"* is relational. Each version names who is studied and what is measured; the vague words "good" and "effective" are replaced by measurable operational constructs.
 :::
 
 ### Exercise 2: A falsifiable hypothesis
 
 Write a falsifiable hypothesis, its null hypothesis, and the result that would count against it, for the question: "Do students with children study fewer hours per week?" Then run the comparison of first-semester study hours below.
 
-```{webr}
+```{pyodide}
 #| exercise: ex2
-# H1:
-# H0:
+# H1 (Alternative):
+# H0 (Null):
 # Against H1:
-first_sem |>
-  group_by(has_children) |>
-  summarise(students = ______(), study_hours = mean(study_hours, na.rm = TRUE))
+study_by_children = (
+    first_sem.groupby("has_children")["study_hours"]
+    .agg(students="______", mean_study_hours="mean")
+)
+print(study_by_children.round(2))
 ```
 
 ::: { .hint exercise="ex2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-A falsifiable hypothesis names the result that would contradict it. Inside `summarise()`, the function that counts the rows of each group takes no argument.
+Use `"count"` inside `.agg()` to count the number of students per category. A falsifiable hypothesis states in advance the direction of difference and the exact empirical result that would refute it.
 :::
 :::
 
@@ -91,38 +112,41 @@ A falsifiable hypothesis names the result that would contradict it. Inside `summ
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-# H1: students with children study fewer hours per week than students without
-# H0: the two groups study the same number of hours on average
-# Against H1: an equal or higher average for students with children
-first_sem |>
-  group_by(has_children) |>
-  summarise(students = n(), study_hours = mean(study_hours, na.rm = TRUE))
+```python
+# H1: Students with children study fewer hours per week than students without children.
+# H0: The two groups study the same number of hours on average.
+# Against H1: Students with children reporting equal or higher mean study hours.
+study_by_children = (
+    first_sem.groupby("has_children")["study_hours"]
+    .agg(students="count", mean_study_hours="mean")
+)
+print(study_by_children.round(2))
 ```
 
-Both groups study about 27.6 hours a week (153 students with children, 447 without), so this data gives no support to the hypothesis. Because the hypothesis and the result that would count against it were stated first, this is a finding, not a failure: the study looked, and found no difference where one was expected.
+Both groups study approximately 27.6 hours a week (153 students with children, 447 without), so this empirical data provides zero support for the hypothesis. Because the hypothesis and the refutation criteria were pre-specified, this is a genuine scientific finding, not an analytical failure: the study asked an empirical question and observed no difference where common intuition anticipated one.
 :::
 :::
 
 ### Exercise 3: Levels of measurement
 
-For each variable in `students`, give its level of measurement. Then convert `financial_worry` into an ordered factor with the labels "Not at all", "A little", "Moderately", "Very", and "Extremely", and make a table of it.
+For each variable in `students`, give its level of measurement. Then convert `financial_worry` into an ordered categorical with descriptive labels, and make a frequency table of it.
 
-```{webr}
+```{pyodide}
 #| exercise: ex3
-students <- students |>
-  mutate(financial_worry = factor(financial_worry,
-                                  levels = 1:5,
-                                  labels = c(______),
-                                  ordered = ______))
-table(students$financial_worry, useNA = "ifany")
+labels = ["Not at all", "A little", "Moderately", "Very", "Extremely"]
+students["financial_worry_cat"] = pd.Categorical.from_codes(
+    codes=students["financial_worry"].fillna(0).astype(int) - 1,
+    categories=______,
+    ordered=______
+)
+print(students["financial_worry_cat"].value_counts(dropna=False).sort_index())
 ```
 
 ::: { .hint exercise="ex3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The five labels go in quotation marks, separated by commas, in the order of the codes 1 to 5. The last argument tells R that the categories have an order.
+Pass `labels` as `categories` and set `ordered=True`.
 :::
 :::
 
@@ -130,40 +154,52 @@ The five labels go in quotation marks, separated by commas, in the order of the 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-students <- students |>
-  mutate(financial_worry = factor(financial_worry,
-                                  levels = 1:5,
-                                  labels = c("Not at all", "A little", "Moderately",
-                                             "Very", "Extremely"),
-                                  ordered = TRUE))
-table(students$financial_worry, useNA = "ifany")
+```python
+labels = ["Not at all", "A little", "Moderately", "Very", "Extremely"]
+students["financial_worry_cat"] = pd.Categorical.from_codes(
+    codes=students["financial_worry"].fillna(0).astype(int) - 1,
+    categories=labels,
+    ordered=True
+)
+print(students["financial_worry_cat"].value_counts(dropna=False).sort_index())
 ```
 
-The table lists the answers in their natural order, with words instead of codes; the 38 missing answers (`NA`) are students who skipped this sensitive question. The levels of measurement: `student_id` and `supervisor_id` are nominal identifiers; `gender`, `faculty`, `programme`, `study_mode`, `has_children`, `lives_away`, `workshop`, and `considering_dropout` are nominal; `employment` and `financial_worry` are ordinal; `age` and `workshop_sessions` are ratio (a true zero, and "twice as many" makes sense).
+Levels of measurement in `students`:
+- **Nominal**: `student_id`, `supervisor_id`, `gender`, `faculty`, `programme`, `study_mode`, `has_children`, `lives_away`, `workshop`, `considering_dropout`.
+- **Ordinal**: `employment`, `financial_worry`.
+- **Ratio**: `age`, `workshop_sessions`.
 :::
 :::
 
 ### Exercise 4: The null world with small groups
 
-Change the chapter's null-world simulation to groups of 30 students instead of 150. Between which values do 95% of the chance differences now lie? What does this mean for a small study of the workshop?
+Change the chapter's null-world simulation to small groups of 30 students each (total 60) instead of 150. Between which values do 95% of the chance differences now lie? What does this mean for a small study of the workshop?
 
-```{webr}
+```{pyodide}
 #| exercise: ex4
-set.seed(2026)
-chance_differences <- replicate(5000, {
-  wellbeing <- rnorm(______, mean = 60, sd = 11)
-  group     <- sample(rep(c("Invited", "Not invited"), ______))
-  mean(wellbeing[group == "Invited"]) - mean(wellbeing[group == "Not invited"])
-})
-quantile(chance_differences, c(0.025, 0.975))
+np.random.seed(2026)
+n_sims = 5000
+chance_diffs_small = np.empty(n_sims)
+small_groups = np.repeat(["Invited", "Not invited"], ______)
+
+for i in range(n_sims):
+    wellbeing = np.random.normal(loc=60, scale=11, size=______)
+    shuffled = np.random.permutation(small_groups)
+    diff = (
+        wellbeing[shuffled == "Invited"].mean()
+        - wellbeing[shuffled == "Not invited"].mean()
+    )
+    chance_diffs_small[i] = diff
+
+q_lower, q_upper = np.percentile(chance_diffs_small, [2.5, 97.5])
+print(f"95% bounds for n=30 per group: [{q_lower:.2f}, {q_upper:.2f}]")
 ```
 
 ::: { .hint exercise="ex4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Two groups of 30 make 60 students in all. `rep()` repeats each label the given number of times.
+Two groups of 30 students require `np.repeat(..., 30)` and `size=60`.
 :::
 :::
 
@@ -171,38 +207,48 @@ Two groups of 30 make 60 students in all. `rep()` repeats each label the given n
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-set.seed(2026)
-chance_differences <- replicate(5000, {
-  wellbeing <- rnorm(60, mean = 60, sd = 11)
-  group     <- sample(rep(c("Invited", "Not invited"), 30))
-  mean(wellbeing[group == "Invited"]) - mean(wellbeing[group == "Not invited"])
-})
-quantile(chance_differences, c(0.025, 0.975))
+```python
+np.random.seed(2026)
+n_sims = 5000
+chance_diffs_small = np.empty(n_sims)
+small_groups = np.repeat(["Invited", "Not invited"], 30)
+
+for i in range(n_sims):
+    wellbeing = np.random.normal(loc=60, scale=11, size=60)
+    shuffled = np.random.permutation(small_groups)
+    diff = (
+        wellbeing[shuffled == "Invited"].mean()
+        - wellbeing[shuffled == "Not invited"].mean()
+    )
+    chance_diffs_small[i] = diff
+
+q_lower, q_upper = np.percentile(chance_diffs_small, [2.5, 97.5])
+print(f"95% bounds for n=30 per group: [{q_lower:.2f}, {q_upper:.2f}]")
 ```
 
-95% of the chance differences lie between about −5.5 and +5.5 points, more than twice as wide as with 150 students per group. A real 5-point effect of the workshop would sit inside the range that chance alone produces, so a study this small could not tell it apart from luck.
+With $n=30$ per group, 95% of the chance differences span roughly −5.5 to +5.5 points—more than double the interval observed with $n=150$ per group. A real 5-point intervention effect would fall squarely within the band expected by chance alone, meaning an underpowered study could not distinguish a genuine effect from random luck.
 :::
 :::
 
 ### Exercise 5: Did the randomisation work?
 
-Check the balance of the random workshop invitation on three other baseline variables: `study_mode`, `has_children`, and `lives_away`.
+Check the baseline equivalence of the random workshop invitation across three other baseline variables: `study_mode`, `has_children`, and `lives_away`.
 
-```{webr}
+```{pyodide}
 #| exercise: ex5
-students |>
-  group_by(workshop) |>
-  summarise(part_time = 100 * ______(study_mode == "Part-time"),
-            children  = 100 * ______(has_children == "Yes"),
-            away      = 100 * ______(lives_away == "Yes"))
+balance_check = students.groupby("workshop").agg(
+    part_time=("study_mode", lambda x: 100 * (x == "Part-time").mean()),
+    children=("has_children", lambda x: 100 * (x == "______").mean()),
+    lives_away=("lives_away", lambda x: 100 * (x == "______").mean())
+).round(1)
+print(balance_check)
 ```
 
 ::: { .hint exercise="ex5" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-A condition gives `TRUE` (1) or `FALSE` (0) for each student, so the *average* of the condition is the share of students for whom it is true.
+Compute percentage for `"Yes"` responses: `(x == "Yes").mean() * 100`.
 :::
 :::
 
@@ -210,33 +256,39 @@ A condition gives `TRUE` (1) or `FALSE` (0) for each student, so the *average* o
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-students |>
-  group_by(workshop) |>
-  summarise(part_time = 100 * mean(study_mode == "Part-time"),
-            children  = 100 * mean(has_children == "Yes"),
-            away      = 100 * mean(lives_away == "Yes"))
+```python
+balance_check = students.groupby("workshop").agg(
+    part_time=("study_mode", lambda x: 100 * (x == "Part-time").mean()),
+    children=("has_children", lambda x: 100 * (x == "Yes").mean()),
+    lives_away=("lives_away", lambda x: 100 * (x == "Yes").mean())
+).round(1)
+print(balance_check)
 ```
 
-The groups are similar: 28% and 31% part-time, 23% and 28% with children. The largest gap, living away from family (39% against 46%), is the kind of difference chance produces now and then: randomisation balances groups on average, not exactly. Report such differences in the balance table; there is no need to test them, since any difference is known to be due to chance.
+The groups are well balanced at baseline: 28% vs 31% part-time, 23% vs 28% with children. The minor difference in living away from family (39% vs 46%) represents expected random fluctuation; random assignment balances groups on average, not identically.
 :::
 :::
 
 ### Exercise 6: How many students?
 
-Use `power.t.test()` to find how many students per group a study needs to detect a difference of 0.3 standard deviations with 80% power, and with 90% power.
+Use Python's `statsmodels.stats.power.TTestIndPower` to find how many students per group a study needs to detect a difference of 0.3 standard deviations with 80% power, and with 90% power ($\alpha = 0.05$, two-sided).
 
-```{webr}
+```{pyodide}
 #| exercise: ex6
-power.t.test(delta = ______, sd = 1, power = 0.80)
-power.t.test(delta = ______, sd = 1, power = ______)
+power_analyzer = TTestIndPower()
+
+n_80 = power_analyzer.solve_power(effect_size=______, power=0.80, alpha=0.05, alternative="two-sided")
+n_90 = power_analyzer.solve_power(effect_size=______, power=______, alpha=0.05, alternative="two-sided")
+
+print(f"Required per group for 80% power: {int(np.ceil(n_80))}")
+print(f"Required per group for 90% power: {int(np.ceil(n_90))}")
 ```
 
 ::: { .hint exercise="ex6" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-With `sd = 1`, the difference is written in standard deviations. Power is a proportion, so 90% is written as 0.90.
+Pass `effect_size=0.30`. Power values are `0.80` and `0.90`.
 :::
 :::
 
@@ -244,12 +296,16 @@ With `sd = 1`, the difference is written in standard deviations. Power is a prop
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-power.t.test(delta = 0.3, sd = 1, power = 0.80)
-power.t.test(delta = 0.3, sd = 1, power = 0.90)
+```python
+power_analyzer = TTestIndPower()
+n_80 = power_analyzer.solve_power(effect_size=0.30, power=0.80, alpha=0.05, alternative="two-sided")
+n_90 = power_analyzer.solve_power(effect_size=0.30, power=0.90, alpha=0.05, alternative="two-sided")
+
+print(f"Required per group for 80% power: {int(np.ceil(n_80))}")
+print(f"Required per group for 90% power: {int(np.ceil(n_90))}")
 ```
 
-R gives n = 175.4 and 234.5, so the study needs 176 students per group for 80% power and 235 for 90% (always round up). Going from 80% to 90% power costs a third more participants.
+The calculation yields $n \approx 176$ per group for 80% power and $n \approx 235$ for 90% power (always round up). Elevating power from 80% to 90% requires one-third more participants.
 :::
 :::
 
@@ -270,12 +326,16 @@ Classify each question as descriptive, relational, or causal, then open the mode
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Model answer
 
-1 is descriptive: it asks for one number about one variable. 2 and 5 are relational: each asks whether two variables go together. 3 is causal, and the random invitation is what allows a causal answer. 4 is descriptive, although it involves time: it describes how one variable changes, without asking why. Question 5 is often answered in causal words ("meetings improve grades"), but the data can only show an association: students who are doing well may simply seek more meetings.
+1. **Descriptive**: estimates a single univariate population proportion.
+2. **Relational**: tests an association between two observed variables.
+3. **Causal**: tests an intervention effect made possible by random assignment.
+4. **Descriptive / Longitudinal**: tracks temporal trajectory over time without attributing causality.
+5. **Relational**: observational association. Meeting frequency was self-selected, not experimentally randomised.
 :::
 
 ### Exercise 8: Hypotheses that could be wrong
 
-Each hypothesis below cannot be contradicted by any result. Rewrite each so that it could be wrong, and name the result that would count against your version.
+Rewrite each vague statement below into a falsifiable directional hypothesis that risks empirical refutation:
 
 1. "Stress affects students in various ways."
 2. "The workshop works for students who engage with it properly."
@@ -284,39 +344,43 @@ Each hypothesis below cannot be contradicted by any result. Rewrite each so that
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Model answer
 
-1. *"Students with higher stress scores report lower wellbeing"*; against it: a correlation of zero or above. 2. *"Students who attended at least four of the six sessions have higher wellbeing in semester 2 than students who were not invited"*, with "engage" defined as a number of sessions before the data is seen; against it: an equal or lower average. (This comparison is not randomised, since students chose how many sessions to attend, so it needs careful interpretation.) 3. *"Students who spend more hours a day on social media report lower wellbeing"*; against it: no association, or a positive one. "May be related" can never be wrong, because it allows any result.
+1. *"Students with higher baseline academic stress report lower semester GPAs"*; refuted by a zero or positive correlation.
+2. *"Students who attend at least four of the six sessions have higher semester 2 wellbeing than uninvited students"*; refuted by equal or lower wellbeing.
+3. *"Daily hours spent on social media correlate negatively with student sleep duration"*; refuted by zero or positive correlation.
 :::
 
-### Exercise 9: Stratified and simple random samples
+### Exercise 9: Stratified vs simple random samples
 
-Treat the 600 students as a population, and draw 2,000 samples of 50 in two ways: simple random samples, and samples stratified by study mode, with the same share of part-time students as the population. Compare how many part-time students each kind of sample contains, and how much the samples' average wellbeing varies.
+Treat the 600 students as a population, and draw 2,000 samples of size 50 using simple random sampling vs stratified sampling (35 full-time, 15 part-time). Compare stability:
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-full_time <- first_sem |> filter(study_mode == "Full-time")
-part_time <- first_sem |> filter(study_mode == "Part-time")
+np.random.seed(5)
+full_time = first_sem[first_sem["study_mode"] == "Full-time"]
+part_time = first_sem[first_sem["study_mode"] == "Part-time"]
 
-set.seed(5)
-simple <- replicate(2000, {
-  s <- slice_sample(first_sem, n = 50)
-  c(n_part = sum(s$study_mode == "Part-time"), mean_wb = mean(s$wellbeing))
-})
-stratified <- replicate(2000, {
-  s <- bind_rows(slice_sample(full_time, n = 35), slice_sample(part_time, n = ______))
-  c(n_part = sum(s$study_mode == "Part-time"), mean_wb = mean(s$wellbeing))
-})
+simple_means = []
+stratified_means = []
 
-range(simple["n_part", ])
-range(stratified["n_part", ])
-sd(simple["mean_wb", ])
-sd(stratified["mean_wb", ])
+for _ in range(2000):
+    s_simple = first_sem.sample(n=50, replace=False)
+    simple_means.append(s_simple["wellbeing"].mean())
+
+    s_strat = pd.concat([
+        full_time.sample(n=35, replace=False),
+        part_time.sample(n=______, replace=False)
+    ])
+    stratified_means.append(s_strat["wellbeing"].mean())
+
+print(f"Simple sample SD of estimates:     {np.std(simple_means):.3f}")
+print(f"Stratified sample SD of estimates: {np.std(stratified_means):.3f}")
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-177 of the 600 students (29.5%) are part-time, so a proportional sample of 50 has about 50 × 0.295 part-time students; with 35 full-time students already chosen, the rest make up the 50.
+Select `15` part-time students to complete the sample of 50.
 :::
 :::
 
@@ -324,39 +388,51 @@ sd(stratified["mean_wb", ])
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-stratified <- replicate(2000, {
-  s <- bind_rows(slice_sample(full_time, n = 35), slice_sample(part_time, n = 15))
-  c(n_part = sum(s$study_mode == "Part-time"), mean_wb = mean(s$wellbeing))
-})
+```python
+for _ in range(2000):
+    s_simple = first_sem.sample(n=50, replace=False)
+    simple_means.append(s_simple["wellbeing"].mean())
+
+    s_strat = pd.concat([
+        full_time.sample(n=35, replace=False),
+        part_time.sample(n=15, replace=False)
+    ])
+    stratified_means.append(s_strat["wellbeing"].mean())
+
+print(f"Simple sample SD of estimates:     {np.std(simple_means):.3f}")
+print(f"Stratified sample SD of estimates: {np.std(stratified_means):.3f}")
 ```
 
-The simple random samples contain anywhere from 5 to 25 part-time students (95% of them between 9 and 21); every stratified sample contains exactly 15. Stratification guarantees that each group is represented as it is in the population, which matters most for small groups. The average wellbeing, however, varies almost equally in both (standard deviations of 1.63 and 1.62). Stratification makes estimates more precise only when the strata differ a lot on the outcome, and part-time and full-time students differ by less than 4 points on a scale where students within each group differ by about 12. Its main benefit here is representation, not precision.
+Simple random sampling yields variable part-time representation (5 to 25 students), whereas stratified sampling guarantees exactly 15. Because study mode explains little of the total variance in wellbeing, the standard deviations of the estimates are nearly identical (~1.62 vs ~1.63). Stratification primarily safeguards subgroup representation.
 :::
 :::
 
-### Exercise 10: Power for a correlation
+### Exercise 10: Power for a correlation via Monte Carlo simulation
 
-How many students does a study need to detect a correlation of 0.2 with 80% power? `power.t.test()` covers only differences between means, but simulation works for any analysis: generate data in which the true correlation is 0.2, test it, repeat 1,000 times, and count how often the test finds it.
+Estimate the power to detect a true population correlation $r = 0.20$ at $\alpha = 0.05$ across sample sizes $n \in [100, 150, 200, 250]$:
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-set.seed(6)
-power_r <- function(n, r = 0.2) {
-  mean(replicate(1000, {
-    x <- rnorm(n)
-    y <- r * x + sqrt(1 - r^2) * rnorm(n)
-    ______(x, y)$p.value < 0.05
-  }))
-}
-sapply(c(100, 150, 200, 250), power_r)
+def simulate_correlation_power(n, r=0.20, n_sims=1000):
+    significant_count = 0
+    for _ in range(n_sims):
+        x = np.random.normal(size=n)
+        y = r * x + np.sqrt(1 - r**2) * np.random.normal(size=n)
+        r_val, p_val = stats.pearsonr(x, y)
+        if p_val < ______:
+            significant_count += 1
+    return significant_count / n_sims
+
+for sample_n in [100, 150, 200, 250]:
+    power_est = simulate_correlation_power(sample_n, r=0.20)
+    print(f"Sample size {sample_n}: Estimated power = {power_est:.2f}")
 ```
 
 ::: { .hint exercise="gf4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The test for a correlation adds `.test` to the name of the correlation function. The line before it builds `y` so that its true correlation with `x` is exactly `r`.
+The two-sided significance threshold is `0.05`.
 :::
 :::
 
@@ -364,45 +440,53 @@ The test for a correlation adds `.test` to the name of the correlation function.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-set.seed(6)
-power_r <- function(n, r = 0.2) {
-  mean(replicate(1000, {
-    x <- rnorm(n)
-    y <- r * x + sqrt(1 - r^2) * rnorm(n)
-    cor.test(x, y)$p.value < 0.05
-  }))
-}
-sapply(c(100, 150, 200, 250), power_r)
+```python
+def simulate_correlation_power(n, r=0.20, n_sims=1000):
+    significant_count = 0
+    for _ in range(n_sims):
+        x = np.random.normal(size=n)
+        y = r * x + np.sqrt(1 - r**2) * np.random.normal(size=n)
+        r_val, p_val = stats.pearsonr(x, y)
+        if p_val < 0.05:
+            significant_count += 1
+    return significant_count / n_sims
+
+for sample_n in [100, 150, 200, 250]:
+    power_est = simulate_correlation_power(sample_n, r=0.20)
+    print(f"Sample size {sample_n}: Estimated power = {power_est:.2f}")
 ```
 
-The power is about 0.51 with 100 students, 0.71 with 150, 0.83 with 200, and 0.87 with 250: a study needs roughly 190 to 200 students to detect a correlation of 0.2 with 80% power. (The exact formula gives 194.) A correlation of 0.2 is modest but common in social research, and many thesis studies with 50 or 80 participants have little chance of detecting it. The same simulation recipe gives the power of any analysis in this book.
+Estimated power is ~0.51 at $n=100$, ~0.71 at $n=150$, ~0.83 at $n=200$, and ~0.87 at $n=250$. Detecting a typical correlation of 0.20 with 80% power requires roughly 190 to 200 participants.
 :::
 :::
 
-### Exercise 11: A bigger biased sample
+### Exercise 11: A larger biased sample remains biased
 
-The chapter simulated a voluntary survey, in which students with higher wellbeing are more likely to answer, with samples of 50 and 200. Repeat it with samples of 400 of the 600 students. Is the average estimate now close to the true value?
+Repeat the voluntary survey simulation where higher-wellbeing students are more likely to respond, using a sample of 400 out of 600 students. Does a huge sample eliminate bias?
 
-```{webr}
+```{pyodide}
 #| exercise: gf5
-population <- first_sem$wellbeing
-true_mean  <- mean(population)
-chance_to_answer <- plogis((population - true_mean) / 10)
+pop_wellbeing = first_sem["wellbeing"].dropna().to_numpy()
+true_mean = pop_wellbeing.mean()
+p_answer = expit((pop_wellbeing - true_mean) / 10)
+p_answer /= p_answer.sum()
 
-set.seed(5)
-voluntary_400 <- replicate(2000, {
-  chosen <- sample(length(population), ______, prob = chance_to_answer)
-  mean(population[chosen])
-})
-c(true = true_mean, voluntary = mean(voluntary_400), spread = sd(voluntary_400))
+np.random.seed(5)
+voluntary_estimates_400 = [
+    np.random.choice(pop_wellbeing, size=______, replace=True, p=p_answer).mean()
+    for _ in range(2000)
+]
+
+print(f"True population mean:             {true_mean:.2f}")
+print(f"Biased sample (n=400) mean:       {np.mean(voluntary_estimates_400):.2f}")
+print(f"Standard error of estimate:       {np.std(voluntary_estimates_400):.3f}")
 ```
 
 ::: { .hint exercise="gf5" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The second argument of `sample()` is the number of students to choose; `prob` gives each student their chance of answering.
+Set `size=400`.
 :::
 :::
 
@@ -410,16 +494,18 @@ The second argument of `sample()` is the number of students to choose; `prob` gi
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-set.seed(5)
-voluntary_400 <- replicate(2000, {
-  chosen <- sample(length(population), 400, prob = chance_to_answer)
-  mean(population[chosen])
-})
-c(true = true_mean, voluntary = mean(voluntary_400), spread = sd(voluntary_400))
+```python
+voluntary_estimates_400 = [
+    np.random.choice(pop_wellbeing, size=400, replace=True, p=p_answer).mean()
+    for _ in range(2000)
+]
+
+print(f"True population mean:             {true_mean:.2f}")
+print(f"Biased sample (n=400) mean:       {np.mean(voluntary_estimates_400):.2f}")
+print(f"Standard error of estimate:       {np.std(voluntary_estimates_400):.3f}")
 ```
 
-The true average is 60.5, and the voluntary samples of 400 estimate it at 63.9, still more than 3 points too high, with a spread of only 0.3. (Samples of 50 miss by 5.5 points, with a spread of 1.4.) The bias shrinks a little only because 400 of 600 students is two-thirds of the population, so the sample cannot avoid including many students with low wellbeing. The estimates are now very consistent and consistently wrong: a larger biased sample gives the wrong answer with more confidence.
+The true population mean is 60.5. Even with two-thirds of the population sampled ($n=400$), the voluntary estimates converge around 63.9 (over 3 points too high) with an extremely tight standard error (~0.30). A large biased sample merely delivers an erroneous estimate with elevated confidence!
 :::
 :::
 
@@ -432,15 +518,15 @@ Answer each question in your own words first, then click to see a model answer.
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because a hypothesis written after seeing the data is a description of that data, not a test of it. With enough data, some pattern can always be found, and a hypothesis fitted to it will always "succeed". Stating the hypothesis, and the result that would count against it, in advance is what gives the test a real chance to fail.
+A hypothesis formed after observing the data merely redescribes empirical patterns (HARKing) and cannot fail. An a priori hypothesis ensures the empirical test genuinely risks refutation.
 :::
 
-**2.** A test rejects the null hypothesis. What has it *not* shown?
+**2.** A statistical test rejects the null hypothesis. What has it NOT shown?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-It has not shown that the research hypothesis is true, that the effect is large or important, or, in an observational study, that one variable causes the other. It has shown only that the data would be unusual if the null hypothesis were true. Other explanations, such as confounding or a biased sample, remain to be ruled out.
+It has not shown that the research hypothesis is uniquely true, that the effect size is practically important, or that the association is causal (in an observational study where confounding remains). It demonstrates only that the observed data would be improbable under the assumption that nothing is occurring.
 :::
 
 **3.** What is the difference between reliability and validity?
@@ -448,7 +534,7 @@ It has not shown that the research hypothesis is true, that the effect is large 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-A reliable measure gives consistent results; a valid measure measures the right thing. A bathroom scale that always shows two kilograms too much is reliable but not valid. Reliability is necessary for validity, because random errors hide whatever a measure measures, but it is not enough.
+Reliability is measurement consistency/precision. Validity is whether the instrument measures the intended theoretical construct. A bathroom scale that consistently reads 2 kg too high is perfectly reliable, yet invalid.
 :::
 
 **4.** Why is a larger biased sample still biased?
@@ -456,7 +542,7 @@ A reliable measure gives consistent results; a valid measure measures the right 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because a larger sample reduces random error, not systematic error. If an online survey reaches mainly students who are interested in wellbeing, 5,000 of them describe that kind of student more precisely, not all students. The estimate becomes narrower around the wrong value, which can make a biased result look more convincing than a small one.
+Sample size reduces random sampling variance (standard error), not systematic selection bias. If an online questionnaire primarily attracts motivated individuals, 10,000 responses describe motivated respondents more precisely, not the target population.
 :::
 
 **5.** What does random assignment balance that measuring and adjusting for variables cannot?
@@ -464,30 +550,30 @@ Because a larger sample reduces random error, not systematic error. If an online
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-The variables that were never measured: motivation, family support, health, personality, and everything else. Adjustment can only allow for the confounders a researcher thought of and recorded. Random assignment makes the groups alike on average in every respect, measured or not, which is why a randomised experiment can support a causal claim.
+Random assignment balances both measured AND unmeasured/unknown confounders across treatment arms on average. Statistical control can only adjust for variables that were explicitly anticipated, measured, and specified in the model.
 :::
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. The code spaces are empty and ready to run; the data (`students`, `semesters`, `questionnaire`, and `first_sem`) and the dplyr package are already loaded, and R's built-in datasets are always available.
+These tasks have no starter code and no answers. Write your own Python code, as you would for a thesis. The datasets (`students`, `semesters`, `questionnaire`, `first_sem`) and libraries (`pandas`, `numpy`, `scipy`, `statsmodels`) are preloaded.
 
-**1.** Choose a topic from your own field. Write, in order: the topic, a research problem, a research question (and whether it is descriptive, relational, or causal), a falsifiable hypothesis, its null hypothesis, and the result that would count against it. Write it on paper or in a document; no code is needed.
+**1.** For a topic from your own field, state: topic, problem, research question (descriptive, relational, or causal), falsifiable hypothesis (H1), null hypothesis (H0), and the empirical finding that would refute H1.
 
-**2.** Write an analysis plan for two hypotheses of your own, like the chapter's analysis plan, as a data frame in R with the columns hypothesis, outcome, predictor, method, and what would support it. Print it as a table.
+**2.** Create an analysis plan DataFrame for two hypotheses with columns: `hypothesis`, `outcome`, `predictor`, `test`, and `decision_rule`.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**3.** Check the balance of the workshop invitation on every baseline variable in `students` (age, gender, faculty, programme, study mode, employment, children, living away, financial worry), in one table, and write the sentence about it for the methods section of a thesis.
+**3.** Check the baseline balance of the workshop invitation across all variables in `students` in a single unified table.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**4.** R's built-in `ToothGrowth` data comes from an experiment with 10 guinea pigs per combination of vitamin C method and dose. Use `power.t.test()` to find the smallest difference, in standard deviations, that a comparison of two groups of 10 could detect with 80% power, and write the limitation this implies for a report of the study.
+**4.** Load the `toothgrowth.csv` dataset (`pd.read_csv("toothgrowth.csv")`). Find the smallest standardized difference ($d$) that two groups of 10 animals can detect with 80% power at $\alpha = 0.05$ using `TTestIndPower`. Write the resulting limitation.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
@@ -496,12 +582,11 @@ These tasks have no starter code and no answers. The code spaces are empty and r
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 5 project
 
-The project contains the data and all four parts of this page as an R script: the exercises with blanks, the questions to check your understanding (answers in `solutions.R`), and the open tasks, each with space to write your code.
+The project contains the data and all four parts of this page as a standalone Python project: exercises with blanks (`exercises.py`), questions with model solutions (`solutions.py`), and open tasks.
 
-- [Download chapter05.zip](chapter05.zip), unzip it, and double-click `chapter05.Rproj`.
-- Or type this one line in RStudio's Console:
-
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter05.zip")
-```
+- [Download chapter05.zip](chapter05.zip), unzip it, and open the folder in VS Code or your preferred Python IDE.
+- Make sure you have pandas, numpy, scipy, and statsmodels installed:
+  ```bash
+  pip install pandas numpy scipy statsmodels
+  ```
 :::

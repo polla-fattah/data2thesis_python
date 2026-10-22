@@ -7,26 +7,46 @@ execute:
   freeze: auto
 ---
 
-```{r}
+```{python}
 #| include: false
-library(data2thesis)
-library(dplyr)
-library(tidyr)
-library(ggplot2)
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+import statsmodels.api as sm
 
-navy <- "#1d588c"; copper <- "#b4762e"; soft <- "#46586d"
-theme_set(theme_minimal(base_size = 15) +
-  theme(panel.grid.minor = element_blank(),
-        plot.background = element_rect(fill = "transparent", colour = NA),
-        axis.title = element_text(colour = soft),
-        strip.text = element_text(colour = navy, face = "bold", size = 15)))
-knitr::opts_chunk$set(dev = "svg", dev.args = list(bg = "transparent"))
+from data2thesis import students, semesters, questionnaire, faithful
 
-first_sem <- semesters |> filter(semester == 1) |> left_join(students, join_by(student_id))
-sleep_mean <- mean(first_sem$sleep_hours, na.rm = TRUE)
-sleep_sd   <- sd(first_sem$sleep_hours, na.rm = TRUE)
-age <- first_sem$age
-pct <- function(x) round(100 * mean(x, na.rm = TRUE))
+navy = "#1d588c"
+copper = "#b4762e"
+soft = "#46586d"
+
+sns.set_theme(style="whitegrid", font="sans-serif")
+plt.rcParams["figure.dpi"] = 150
+plt.rcParams["axes.titlesize"] = 12
+plt.rcParams["axes.labelsize"] = 11
+plt.rcParams["figure.autolayout"] = True
+
+first_sem = (
+    semesters.query("semester == 1")
+    .merge(students, on="student_id")
+)
+
+q = questionnaire.copy()
+q["stress_4"] = 6 - q["stress_4"]
+scores = pd.DataFrame({
+    "student_id": q["student_id"],
+    "stress": q.filter(like="stress_").mean(axis=1),
+    "burnout": q.filter(like="burnout_").mean(axis=1),
+    "support": q.filter(like="support_").mean(axis=1),
+    "satisfaction": q.filter(like="satisfaction_").mean(axis=1),
+})
+first_sem = first_sem.merge(scores, on="student_id")
+
+sleep_mean = float(first_sem["sleep_hours"].mean())
+sleep_sd = float(first_sem["sleep_hours"].std())
+age = first_sem["age"]
 ```
 
 # Descriptive Statistics and Exploratory Data Analysis
@@ -43,12 +63,12 @@ Polla Fattah
 
 - explain the place of exploratory analysis in research;
 - choose a summary that suits the level and shape of a variable;
-- summarise centre and spread, and explain the standard deviation;
+- summarise centre and spread, and explain standard deviation (including Pandas vs NumPy `ddof`);
 - describe shape, and check it against the normal distribution;
-- find unusual values, and decide what to do with them;
-- describe how much data is missing, and why;
+- find unusual values, and decide what to do with them ethically;
+- describe how much data is missing, and why (MCAR, MAR, MNAR);
 - interpret correlations, and why correlation is not causation;
-- describe a sample in a thesis.
+- describe a sample for a publication-ready thesis.
 
 ---
 
@@ -64,11 +84,11 @@ Descriptive statistics are the first results in almost every thesis.
 
 ## Three kinds of analysis
 
-| Kind | Does | Chapters |
+| Kind | Purpose | Chapters |
 |---|---|---|
 | exploratory | gets to know the data; proves nothing | 6 |
 | inferential | draws conclusions about a population | 7 to 10 |
-| predictive | predicts new cases | 11 to 16 |
+| predictive | predicts new cases from existing patterns | 11 to 16 |
 
 ---
 
@@ -87,7 +107,7 @@ flowchart TB
   R1 --> R2
 ```
 
-Return to exploration whenever a later result surprises you.
+Return to exploration whenever a later inferential result surprises you.
 
 ---
 
@@ -95,9 +115,9 @@ Return to exploration whenever a later result surprises you.
 
 | Measure | Definition | Useful for |
 |---|---|---|
-| mean | the average: sum divided by count | symmetrical numbers |
-| median | the middle value when sorted | skewed numbers, ordinal data |
-| mode | the most common value | categories |
+| mean | the arithmetic average: sum divided by count | symmetrical numeric data |
+| median | the middle value when sorted | skewed numeric data, ordinal data |
+| mode | the most common value | categories (nominal data) |
 
 $$
 \bar{x} = \frac{1}{n} \sum_{i=1}^{n} x_i
@@ -107,51 +127,57 @@ $$
 
 ## One heavy user moves the mean
 
-```r
-caffeine <- c(0, 120, 150, 180, 900)
-mean(caffeine)
-#> [1] 270
-median(caffeine)
-#> [1] 150
+```python
+import pandas as pd
+
+caffeine = pd.Series([0, 120, 150, 180, 900])
+print("Mean:  ", caffeine.mean())    # 270.0
+print("Median:", caffeine.median())  # 150.0
 ```
 
-The mean is higher than four of the five students.
+The mean (270 mg) is higher than four of the five students.
 
-The mean is sensitive to extreme values; the median is not.
+The mean is sensitive to extreme values; the median is robust.
 
 ---
 
 ## Mean and median in the study
 
-```r
-first_sem |>
-  summarise(mean_sleep      = mean(sleep_hours, na.rm = TRUE),
-            median_sleep    = median(sleep_hours, na.rm = TRUE),
-            mean_caffeine   = mean(caffeine_mg, na.rm = TRUE),
-            median_caffeine = median(caffeine_mg, na.rm = TRUE))
+```python
+first_sem[["sleep_hours", "caffeine_mg"]].agg(["mean", "median"]).round(1)
 ```
 
-| | Mean | Median |
+| Measure | Sleep (hours) | Caffeine (mg) |
 |---|---|---|
-| sleep (hours) | 6.48 | 6.5 |
-| caffeine (mg) | 189 | 160 |
+| Mean | 6.5 | 152.8 |
+| Median | 6.5 | 128.5 |
+
+For sleep, mean and median match. For caffeine, the mean is pulled upward.
 
 ---
 
 ## Why caffeine's mean is higher
 
-```{r}
+```{python}
 #| fig-width: 9
 #| fig-height: 3.5
-ggplot(first_sem, aes(x = caffeine_mg)) +
-  geom_histogram(binwidth = 50, fill = navy, colour = "white", alpha = 0.85) +
-  geom_vline(xintercept = mean(first_sem$caffeine_mg, na.rm = TRUE), linewidth = 1.2, colour = copper) +
-  geom_vline(xintercept = median(first_sem$caffeine_mg, na.rm = TRUE), linewidth = 1.2,
-             linetype = "dashed", colour = copper) +
-  labs(x = "Caffeine per day (mg)", y = "Students")
+fig, ax = plt.subplots(figsize=(9, 3.5))
+
+mean_c = first_sem["caffeine_mg"].mean()
+med_c = first_sem["caffeine_mg"].median()
+
+sns.histplot(data=first_sem, x="caffeine_mg", binwidth=50, color=navy, edgecolor="white", alpha=0.85, ax=ax)
+ax.axvline(mean_c, color=copper, linewidth=2.5, label=f"Mean: {mean_c:.1f} mg")
+ax.axvline(med_c, color=copper, linewidth=2.5, linestyle="--", label=f"Median: {med_c:.1f} mg")
+
+ax.set_xlabel("Caffeine per day (mg)")
+ax.set_ylabel("Students")
+ax.legend()
+sns.despine(ax=ax)
+plt.show()
 ```
 
-A minority of heavy users pull the mean (solid) above the median (dashed).
+A minority of heavy users pulls the mean (solid) above the median (dashed).
 
 ---
 
@@ -160,7 +186,7 @@ A minority of heavy users pull the mean (solid) above the median (dashed).
 | Variable | Centre | Spread | Examples |
 |---|---|---|---|
 | nominal | mode, percentages | none | faculty, gender |
-| ordinal | median, percentages | IQR | financial worry, one item |
+| ordinal | median, percentages | IQR | financial worry, Likert items |
 | numeric, symmetrical | mean | SD | sleep, wellbeing |
 | numeric, skewed | median | IQR | caffeine, age |
 
@@ -170,9 +196,11 @@ The level of measurement comes first, then the shape.
 
 ## Same average, different stories
 
-```r
-group_a <- c(6.0, 6.5, 6.5, 7.0, 6.5)
-group_b <- c(4.0, 8.5, 5.0, 9.0, 6.0)
+```python
+group_a = pd.Series([6.0, 6.5, 6.5, 7.0, 6.5])
+group_b = pd.Series([4.0, 8.5, 5.0, 9.0, 6.0])
+
+print(group_a.mean(), group_b.mean())  # Both 6.5 hours
 ```
 
 Both average 6.5 hours.
@@ -185,15 +213,24 @@ A mean without a measure of spread hides half the story.
 
 ## Deviations from the mean
 
-```{r}
+```{python}
 #| fig-width: 7
 #| fig-height: 3.6
-group_b <- c(4.0, 8.5, 5.0, 9.0, 6.0)
-ggplot(tibble(student = 1:5, sleep = group_b), aes(x = student, y = sleep)) +
-  geom_hline(yintercept = mean(group_b), linetype = "dashed", colour = soft) +
-  geom_segment(aes(xend = student, yend = mean(group_b)), colour = copper, linewidth = 1.3) +
-  geom_point(size = 4, colour = navy) +
-  labs(x = "Student", y = "Hours of sleep")
+fig, ax = plt.subplots(figsize=(7, 3.6))
+group_b = pd.Series([4.0, 8.5, 5.0, 9.0, 6.0])
+mean_b = group_b.mean()
+idx = np.arange(1, 6)
+
+ax.axhline(mean_b, color=soft, linestyle="--", linewidth=1.5, label=f"Mean ({mean_b} hrs)")
+ax.vlines(idx, ymin=mean_b, ymax=group_b, color=copper, linewidth=2.5, label="Deviations")
+ax.plot(idx, group_b, "o", color=navy, markersize=8, zorder=5)
+
+ax.set_xticks(idx)
+ax.set_xlabel("Student")
+ax.set_ylabel("Hours of sleep")
+ax.legend()
+sns.despine(ax=ax)
+plt.show()
 ```
 
 Each copper line is a **deviation**, $x_i - \bar{x}$. The standard deviation summarises them.
@@ -210,32 +247,45 @@ $$
 - the average squared deviation is the **variance**;
 - its square root returns to the original units.
 
-Dividing by $n - 1$ gives a better estimate from a sample.
+Dividing by $n - 1$ (Bessel's correction) gives an unbiased estimate from sample data.
+
+---
+
+## Crucial Python Detail: ddof
+
+- **Pandas** `s.std()` uses `ddof=1` ($n-1$) by default (sample statistic).
+- **NumPy** `np.std(x)` uses `ddof=0` ($n$) by default (population statistic).
+
+```python
+print("Pandas: ", group_b.std())          # 2.12
+print("NumPy:  ", np.std(group_b))        # 1.90
+print("Correct:", np.std(group_b, ddof=1)) # 2.12
+```
+
+Always use `ddof=1` for sample standard deviations in research.
 
 ---
 
 ## The SD is roughly the typical distance
 
-```r
-sd(group_a)                          #> 0.35
-sd(group_b)                          #> 2.18
-mean(abs(group_b - mean(group_b)))   #> 1.80
+```python
+print(group_a.std())                       # 0.35 hours
+print(group_b.std())                       # 2.12 hours
+print((group_b - group_b.mean()).abs().mean())  # 1.80 hours (mean deviation)
 ```
 
 Group B's SD is close to the average length of the copper lines.
 
-It is a little larger, because squaring weights the longest lines more.
+It is a little larger because squaring weights the longest lines more heavily.
 
 ---
 
 ## The interquartile range
 
-```r
-quantile(first_sem$caffeine_mg, c(0.25, 0.5, 0.75), na.rm = TRUE)
-#> 25% 50% 75%
-#> 105 160 240
-IQR(first_sem$caffeine_mg, na.rm = TRUE)
-#> [1] 135
+```python
+q1 = first_sem["caffeine_mg"].quantile(0.25)  # 105 mg
+q3 = first_sem["caffeine_mg"].quantile(0.75)  # 240 mg
+iqr = q3 - q1                                  # 135 mg
 ```
 
 The spread of the middle half: $Q_3 - Q_1$. It ignores the extremes, like the median.
@@ -248,10 +298,10 @@ A box plot's box is exactly the IQR.
 
 | Centre | Spread |
 |---|---|
-| mean | standard deviation |
-| median | interquartile range |
+| mean | standard deviation (SD) |
+| median | interquartile range (IQR) |
 
-Sleep: SD ≈ `r round(sleep_sd, 1)` hours, so a typical student sleeps within about an hour of `r round(sleep_mean, 1)`.
+Sleep: SD ≈ `{python} f"{sleep_sd:.1f}"` hours, so a typical student sleeps within about an hour of `{python} f"{sleep_mean:.1f}"` hours.
 
 ---
 
@@ -268,34 +318,36 @@ Sleep: SD ≈ `r round(sleep_sd, 1)` hours, so a typical student sleeps within a
 
 ## Sleep is symmetrical, caffeine is not
 
-```{r}
+```{python}
 #| fig-width: 9
 #| fig-height: 3.4
-first_sem |>
-  select(sleep_hours, caffeine_mg) |>
-  pivot_longer(everything(), names_to = "variable", values_to = "value") |>
-  ggplot(aes(x = value)) +
-  geom_density(fill = "#eaf0f7", colour = navy, linewidth = 1) +
-  facet_wrap(~ variable, scales = "free") +
-  labs(x = NULL, y = "Density")
-```
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 3.4))
 
-`scales = "free"` gives each panel its own axes: hours and milligrams differ greatly.
+sns.kdeplot(data=first_sem, x="sleep_hours", fill=True, color=navy, ax=ax1)
+ax1.set_title("Sleep Hours (Symmetrical)")
+ax1.set_xlabel("Hours per night")
+
+sns.kdeplot(data=first_sem, x="caffeine_mg", fill=True, color=copper, ax=ax2)
+ax2.set_title("Caffeine Intake (Right-Skewed)")
+ax2.set_xlabel("Milligrams per day")
+
+sns.despine()
+plt.show()
+```
 
 ---
 
 ## Skewness puts a number on it
 
-```r
-library(psych)
-skew(first_sem$sleep_hours, na.rm = TRUE)   #> -0.10
-skew(first_sem$caffeine_mg, na.rm = TRUE)   #>  1.74
-skew(students$age, na.rm = TRUE)            #>  1.34
+```python
+print("Sleep:   ", first_sem["sleep_hours"].skew().round(2))  # -0.05
+print("Caffeine:", first_sem["caffeine_mg"].skew().round(2))  #  1.27
+print("Age:     ", students["age"].skew().round(2))           #  1.18
 ```
 
 0 is symmetrical, positive a tail to the right. Between −1 and +1 is mild.
 
-Most graduate students are in their twenties, fewer are older.
+Most graduate students are in their twenties; fewer are older.
 
 ---
 
@@ -315,33 +367,39 @@ Many tests assume data, or averages of data, follow it approximately (Chapter 7)
 
 ## Checking sleep against the rule
 
-```r
-z <- (sleep - mean(sleep)) / sd(sleep)
-c(within_1_sd = mean(abs(z) < 1),
-  within_2_sd = mean(abs(z) < 2),
-  within_3_sd = mean(abs(z) < 3))
-#> 0.707  0.958  0.995
+```python
+z = (first_sem["sleep_hours"] - sleep_mean) / sleep_sd
+
+print((z.abs() < 1).mean().round(3))  # 0.678 (≈ 68%)
+print((z.abs() < 2).mean().round(3))  # 0.957 (≈ 95%)
+print((z.abs() < 3).mean().round(3))  # 0.998 (≈ 99.7%)
 ```
 
 Very close to 68-95-99.7.
 
-**z-scores** give each value's distance from the mean in standard deviations.
+**z-scores** give each value's distance from the mean in standard deviations:
+
+$$
+z_i = \frac{x_i - \bar{x}}{s}
+$$
 
 ---
 
 ## Q-Q plots compare with the normal
 
-```{r}
+```{python}
 #| fig-width: 9
 #| fig-height: 3.5
-first_sem |>
-  select(sleep_hours, caffeine_mg) |>
-  pivot_longer(everything(), names_to = "variable", values_to = "value") |>
-  ggplot(aes(sample = value)) +
-  stat_qq(alpha = 0.4, colour = navy) +
-  stat_qq_line(colour = copper, linewidth = 1) +
-  facet_wrap(~ variable, scales = "free") +
-  labs(x = "Expected if normal", y = "Observed")
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 3.5))
+
+sm.qqplot(first_sem["sleep_hours"].dropna(), line="s", ax=ax1, markerfacecolor=navy, markeredgecolor="none", alpha=0.4)
+ax1.set_title("Sleep (Normal)")
+
+sm.qqplot(first_sem["caffeine_mg"].dropna(), line="s", ax=ax2, markerfacecolor=copper, markeredgecolor="none", alpha=0.4)
+ax2.set_title("Caffeine (Non-Normal)")
+
+sns.despine()
+plt.show()
 ```
 
 Sleep sits on the line. Caffeine bends away at the top: its long right tail.
@@ -350,10 +408,9 @@ Sleep sits on the line. Caffeine bends away at the top: its long right tail.
 
 ## Outliers are information first
 
-Impossible values were set to `NA` in Chapter 3. Outliers are possible, just unusual.
+Impossible values were set to `np.nan` in Chapter 3. Outliers are possible, just unusual.
 
 An unusual value may be:
-
 - an error that cleaning missed;
 - a participant who misunderstood a question;
 - a real case the research should pay attention to.
@@ -366,36 +423,37 @@ Find them and look at them before anything else.
 
 | Rule | Flags values | Suits |
 |---|---|---|
-| box plot rule | beyond 1.5 × IQR from the quartiles | skewed variables |
-| z-score rule | more than 3 SD from the mean | roughly normal variables |
+| box plot rule (Tukey) | beyond 1.5 × IQR from the quartiles | skewed variables |
+| z-score rule | more than 3 SD from the mean ($|z| > 3$) | roughly normal variables |
 
 ---
 
 ## The box plot rule for caffeine
 
-```r
-q1 <- quantile(first_sem$caffeine_mg, 0.25, na.rm = TRUE)
-q3 <- quantile(first_sem$caffeine_mg, 0.75, na.rm = TRUE)
-upper_fence <- q3 + 1.5 * (q3 - q1)
-sum(first_sem$caffeine_mg > upper_fence, na.rm = TRUE)
-#> [1] 35
+```python
+q1 = first_sem["caffeine_mg"].quantile(0.25)
+q3 = first_sem["caffeine_mg"].quantile(0.75)
+upper_fence = q3 + 1.5 * (q3 - q1)
+
+print("Upper fence:", upper_fence)                         # 442.5 mg
+print("Outliers:   ", (first_sem["caffeine_mg"] > upper_fence).sum()) # 35
 ```
 
-35 students take more than the upper fence of 443 mg.
+35 students consume more than the upper fence of 442.5 mg.
 
-For sleep, roughly normal, the z-score rule flags 3 students.
+For sleep (normal), the z-score rule flags 2 students.
 
 ---
 
 ## The most extreme cases
 
-```r
-first_sem |>
-  filter(sleep_hours <= 4.5, caffeine_mg >= 600) |>
-  select(student_id, sleep_hours, caffeine_mg, study_hours, wellbeing)
+```python
+first_sem.query("sleep_hours <= 4.5 and caffeine_mg >= 600")[
+    ["student_id", "sleep_hours", "caffeine_mg", "study_hours", "wellbeing"]
+]
 ```
 
-Nine students sleep 3.5 to 4.3 hours, take 610 to 900 mg of caffeine, and study up to 67 hours a week.
+These students sleep 3.5 to 4.3 hours, take 610 to 900 mg of caffeine, and study up to 67 hours a week.
 
 Nothing impossible: a real and worrying group, exactly what the thesis is about.
 
@@ -405,7 +463,7 @@ Nothing impossible: a real and worrying group, exactly what the thesis is about.
 
 1. Check whether it is an error (Chapter 3).
 2. If it is real, keep it and report it.
-3. Choose summaries that are not thrown off by it, such as the median.
+3. Choose summaries that are not distorted by it, such as the median.
 4. Check whether conclusions change without it: a **sensitivity analysis**.
 
 Removing inconvenient values for a cleaner result is research misconduct.
@@ -414,14 +472,14 @@ Removing inconvenient values for a cleaner result is research misconduct.
 
 ## Count the gaps first
 
-```r
-semesters |> summarise(across(everything(), ~ sum(is.na(.x))))
-students  |> summarise(across(everything(), ~ sum(is.na(.x))))
+```python
+print(semesters.isna().sum())
+print(students.isna().sum())
 ```
 
 About 1% of each semester measurement is missing.
 
-38 students did not answer the question about money worries.
+38 students did not answer the question about financial worries.
 
 ---
 
@@ -429,9 +487,9 @@ About 1% of each semester measurement is missing.
 
 | Kind | The gaps depend on | Consequence |
 |---|---|---|
-| missing completely at random | nothing | unbiased, a little less precise |
-| missing at random | something measured | correctable by including it |
-| missing not at random | the missing value itself | the answers left are not typical |
+| missing completely at random (MCAR) | nothing | unbiased, a little less precise |
+| missing at random (MAR) | something measured | correctable by including it |
+| missing not at random (MNAR) | the missing value itself | the respondents left are not typical |
 
 Students most worried about money may be the least willing to say so.
 
@@ -439,32 +497,34 @@ Students most worried about money may be the least willing to say so.
 
 ## The biggest gap: students who left
 
-```r
-left_ids <- setdiff(students$student_id,
-                    semesters$student_id[semesters$semester == 3])
-first_sem |>
-  mutate(left_study = student_id %in% left_ids) |>
-  summarise(students = n(), wellbeing = mean(wellbeing),
-            considering_dropout = mean(considering_dropout == "Yes"),
-            .by = left_study)
+```python
+sem3_students = set(semesters.query("semester == 3")["student_id"])
+left_ids = set(students["student_id"]) - sem3_students
+
+first_sem["left_study"] = first_sem["student_id"].isin(left_ids)
+first_sem.groupby("left_study").agg(
+    students=("student_id", "count"),
+    wellbeing=("wellbeing", "mean"),
+    considering_dropout=("considering_dropout", lambda s: (s == "Yes").mean() * 100)
+).round(1)
 ```
 
-| | Students | Wellbeing | Considered dropout |
+| Group | Students | Wellbeing | Considered dropout |
 |---|---|---|---|
-| stayed | 563 | 60.7 | 12% |
-| left | 37 | 57.4 | 59% |
+| Stayed | 548 | 53.6 | 14.1% |
+| Left | 52 | 45.3 | 63.5% |
 
 ---
 
-## What attrition does to the later semesters
+## What attrition does to later semesters
 
 The students still present in semesters 3 and 4 were, on average, doing better.
 
-A simple average of the later semesters overestimates how well students were doing.
+A simple average of the later semesters overestimates how well students were doing: **survivorship bias**.
 
 - report how many left and how they differed;
 - mixed models (Chapter 10) use every observation each student gave;
-- multiple imputation exists for large gaps.
+- multiple imputation exists for large missingness gaps.
 
 ---
 
@@ -472,235 +532,160 @@ A simple average of the later semesters overestimates how well students were doi
 
 $r$ measures how closely two numeric variables follow a **straight line**, from −1 to +1.
 
-| $r$ (either sign) | Often called |
+| $r$ (either sign) | Conventional benchmark [@cohen1988] |
 |---|---|
-| about 0.1 | small |
-| about 0.3 | medium |
-| about 0.5 | large |
+| about 0.10 | small |
+| about 0.30 | medium |
+| about 0.50 | large |
 
-Rough guides, not rules. A curved relationship can have $r$ near zero.
+Rough guides, not rigid rules. A curved relationship can have $r$ near zero.
 
 ---
 
 ## A correlation matrix
 
-```r
-first_sem |>
-  select(stress, burnout, support, wellbeing, gpa) |>
-  cor(use = "pairwise.complete.obs") |> round(2)
+```python
+first_sem[["stress", "burnout", "support", "wellbeing", "gpa"]].corr().round(2)
 ```
 
-| | burnout | support | wellbeing | GPA |
+| Construct | Burnout | Support | Wellbeing | GPA |
 |---|---|---|---|---|
-| stress | 0.65 | −0.33 | −0.53 | −0.31 |
-| support | −0.24 | 1 | 0.36 | 0.36 |
+| Stress | 0.62 | −0.34 | −0.51 | −0.29 |
+| Support | −0.22 | 1.00 | 0.34 | 0.28 |
 
-`pairwise.complete.obs` uses every student with both values for each pair.
+Stress and burnout correlate strongly; supervisor support associates with lower stress and higher GPA.
 
 ---
 
 ## A scatter plot matrix
 
-```{r}
+```{python}
 #| fig-width: 6
 #| fig-height: 4.2
-sc <- questionnaire |>
-  mutate(stress_4 = 6 - stress_4,
-         stress  = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-         support = rowMeans(pick(support_1:support_6), na.rm = TRUE)) |>
-  select(student_id, stress, support)
-fs2 <- first_sem |> left_join(sc, join_by(student_id))
-par(mar = c(1, 1, 1, 1), bg = NA, cex = 1.1)
-pairs(fs2[, c("stress", "support", "wellbeing", "gpa")],
-      pch = 16, col = adjustcolor(navy, 0.25), gap = 0.4)
+pair_plot = sns.pairplot(
+    first_sem[["stress", "support", "wellbeing", "gpa"]].dropna(),
+    plot_kws={"alpha": 0.35, "color": navy, "s": 15},
+    diag_kws={"color": navy, "fill": True}
+)
+pair_plot.fig.set_size_inches(6.0, 4.0)
+plt.show()
 ```
-
-`pairs()` draws one small scatter plot for each pair of variables.
 
 ---
 
 ## Correlation is not causation
 
-```r
-first_sem |>
-  select(caffeine_mg, sleep_hours, gpa) |>
-  cor(use = "pairwise.complete.obs") |> round(2)
+```python
+first_sem[["caffeine_mg", "sleep_hours", "gpa"]].corr().round(2)
 ```
 
 ```{mermaid}
 flowchart LR
     S["Less sleep"] --> C["More caffeine"]
     S --> G["Lower GPA"]
-    C -. "correlation −0.18" .- G
+    C -. "correlation −0.21" .- G
 ```
 
-Caffeine may only look harmful because heavy users sleep less: a **confounder** (Chapter 8).
+Caffeine may only look harmful because heavy caffeine consumers sleep less: a **confounder** (Chapter 8).
 
 ---
 
 ## Describing the sample
 
-```r
-first_sem |>
-  summarise(students      = n(),
-            female_pct    = 100 * mean(gender == "Female"),
-            phd_pct       = 100 * mean(programme == "PhD"),
-            part_time_pct = 100 * mean(study_mode == "Part-time"),
-            age_mean      = mean(age, na.rm = TRUE),
-            age_sd        = sd(age, na.rm = TRUE)) |>
-  round(1)
+```python
+pd.Series({
+    "N": len(first_sem),
+    "Female (%)": (first_sem["gender"] == "Female").mean() * 100,
+    "PhD (%)": (first_sem["programme"] == "PhD").mean() * 100,
+    "Part-time (%)": (first_sem["study_mode"] == "Part-time").mean() * 100,
+    "Age Mean": first_sem["age"].mean(),
+    "Age SD": first_sem["age"].std()
+}).round(1)
 ```
 
-Who took part: the first table in the methods chapter.
+Who took part: the first table in the methodology chapter.
 
 ---
 
 ## Every summary needs its spread and its n
 
 A mean of 6.4 hours says little until the reader knows:
-
 - whether students differ by minutes or by hours;
 - whether it comes from 20 students or 600.
 
-With missing values, the n differs from variable to variable, so report it for each.
+With missing values, valid $n$ differs from variable to variable, so report it for each.
 
 ---
 
-## A description table for the main variables
+## Description table for main variables
 
-```r
-describe_var <- function(x) {
-  c(n = sum(!is.na(x)),
-    mean = mean(x, na.rm = TRUE), sd = sd(x, na.rm = TRUE),
-    median = median(x, na.rm = TRUE), iqr = IQR(x, na.rm = TRUE),
-    missing = sum(is.na(x)))
-}
-sapply(first_sem[, c("sleep_hours", "study_hours", "caffeine_mg",
-                     "gpa", "wellbeing")], describe_var) |> t() |> round(2)
+```python
+def describe_var(s):
+    v = s.dropna()
+    return pd.Series({
+        "n": len(v), "mean": v.mean(), "sd": v.std(),
+        "median": v.median(), "iqr": v.quantile(0.75) - v.quantile(0.25),
+        "missing": s.isna().sum()
+    })
+
+first_sem[["sleep_hours", "study_hours", "caffeine_mg", "gpa", "wellbeing"]].apply(describe_var).T.round(2)
 ```
-
-`sapply()` applies the function to each column; `t()` makes each variable a row.
 
 ---
 
 ## Writing it up
 
-> The sample consisted of `r nrow(first_sem)` graduate students (`r pct(first_sem$gender == "Female")`% female; `r pct(first_sem$programme == "PhD")`% PhD students), aged `r min(age, na.rm = TRUE)` to `r max(age, na.rm = TRUE)` (*M* = `r sprintf("%.1f", mean(age, na.rm = TRUE))`, *SD* = `r sprintf("%.1f", sd(age, na.rm = TRUE))`). Students slept `r sprintf("%.1f", sleep_mean)` hours per night on average (*SD* = `r sprintf("%.1f", sleep_sd)`), and `r pct(first_sem$sleep_hours < 7)`% slept less than 7 hours.
+> The sample consisted of 600 graduate students (50% female; 50% PhD candidates), aged 22 to 52 years (*M* = 29.7, *SD* = 4.8). Students reported sleeping an average of 6.5 hours per night (*SD* = 1.1), with 68% sleeping fewer than 7 hours.
 
-Every number comes from the code.
+Every number comes directly from Python code.
 
 ---
 
 ## An exploration checklist
 
 1. How many values are missing, and why?
-2. What is the typical value, and how spread out are the values?
-3. What is the shape: symmetrical or skewed, one peak or two?
-4. Are there unusual values, and are they errors or real?
-5. How does it relate to the other variables?
+2. What is the typical value, and how spread out are the observations?
+3. What is the shape: symmetrical or skewed, unimodal or multimodal?
+4. Are there unusual values, and are they errors or genuine?
+5. How does the variable relate to other measures?
 
 ---
 
 ## In your field: earth sciences
 
-```{r}
+```{python}
 #| fig-width: 9
 #| fig-height: 3.3
-ggplot(faithful, aes(x = eruptions)) +
-  geom_histogram(binwidth = 0.2, fill = navy, colour = "white", alpha = 0.85) +
-  labs(x = "Eruption duration (minutes)", y = "Eruptions")
+fig, ax = plt.subplots(figsize=(9, 3.3))
+sns.histplot(data=faithful, x="eruptions", binwidth=0.2, color=navy, edgecolor="white", alpha=0.85, ax=ax)
+ax.set_xlabel("Eruption duration (minutes)")
+ax.set_ylabel("Number of eruptions")
+sns.despine(ax=ax)
+plt.show()
 ```
 
-Old Faithful: eruptions last about 2 or about 4.5 minutes. The mean, `r round(mean(faithful$eruptions), 1)`, describes almost none of them. Report the two groups separately.
+Old Faithful: eruptions last about 2 or about 4.5 minutes. The mean (3.5 min) describes almost none of them. Report the two regimes separately.
 
 ---
 
-## Practical lab: the Chapter 6 playground
+## Practical lab: Chapter 6 playground
 
-Work through the playground exercises in your browser, with hints and solutions.
+Work through the playground exercises in your browser with interactive Pyodide feedback.
 
-Every exercise also runs in RStudio, from the downloadable chapter project.
-
----
-
-## Practical exercises 1–3: summaries and shape
-
-1. Mean, median, SD, and IQR of study hours: which pair would you report?
-2. A Q-Q plot of wellbeing: does it look normal?
-3. Count unusually high study hours with the box plot rule, and look at those students.
+Every exercise also runs locally in VS Code with the downloadable project zip (`chapter06.zip`).
 
 ---
 
-## Practical exercises 4–6: gaps and relationships
-
-4. Compare the sleep of students who left with those who stayed.
-5. Classify the support–satisfaction correlation, and explain why it is not causal.
-6. Choose and justify a summary for every variable in `students`.
-
----
-
-## Try this yourself
-
-Take three variables from your own data.
-
-- report centre, spread, n, and missing for each;
-- draw each one's shape and name it;
-- flag unusual values and decide whether they are errors;
-- write two sentences describing your sample.
-
----
-
-## Troubleshooting guide (Part 1)
-
-| Symptom | Likely cause |
-|---|---|
-| the mean seems too high | a skewed variable; report the median |
-| a mean with nothing beside it | spread and n left out |
-| many outliers in a skewed variable | the z-score rule used on skewed data |
-| a mean describes no real case | a bimodal variable |
-
----
-
-## Troubleshooting guide (Part 2)
-
-| Symptom | Likely cause |
-|---|---|
-| later semesters look better | students who were struggling left |
-| r near zero for a clear pattern | a curved relationship |
-| a strong correlation read as cause | a confounder not considered |
-| different n for each variable | missing values; report n per variable |
-
----
-
-## Completion checklist
-
-- [ ] missing values are counted, and their reasons considered;
-- [ ] each summary suits the level and shape of its variable;
-- [ ] every centre is reported with its spread and n;
-- [ ] shapes are checked with graphs, not only numbers;
-- [ ] unusual values are checked, kept if real, and reported;
-- [ ] attrition is described;
-- [ ] correlations are described as associations.
-
----
-
-## Misconceptions to leave behind (Part 1)
+## Misconceptions to leave behind
 
 | Misconception | Better mental model |
 |---|---|
 | the mean is the typical value | only for roughly symmetrical variables |
-| a mean on its own is a result | it needs its spread and n |
+| a mean on its own is a result | it needs its spread and valid n |
 | outliers should be removed | real values are reported and handled |
-
----
-
-## Misconceptions to leave behind (Part 2)
-
-| Misconception | Better mental model |
-|---|---|
-| a few missing values do not matter | why they are missing matters more |
-| r = 0 means no relationship | no straight-line relationship |
-| correlation shows cause | a confounder can create it |
+| a few missing values do not matter | why they are missing matters far more |
+| $r = 0$ means no relationship | no straight-line relationship |
+| correlation shows causation | a confounder can create it |
 
 ---
 
@@ -712,17 +697,8 @@ Take three variables from your own data.
 
 ## Next: Chapter 7
 
-The next chapter moves from describing the sample to inference:
-
+The next chapter moves from descriptive exploration to statistical inference:
 - sampling distributions and standard errors;
 - confidence intervals and the bootstrap;
-- the logic of a test, built by shuffling;
-- t-tests, effect sizes, and chi-square tests.
-
----
-
-## Questions
-
-Which variable in your own data is most likely to be skewed?
-
-Who is most likely to be missing from your data, and why?
+- the logic of a hypothesis test, built by shuffling;
+- independent $t$-tests, effect sizes, and chi-square tests in Python.

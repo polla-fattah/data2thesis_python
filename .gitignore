@@ -28,3 +28,13 @@ Rplots.pdf
 
 # Temporary Office files
 ~$*
+
+# Python & Packaging
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+build/
+dist/
+
