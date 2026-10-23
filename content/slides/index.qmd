@@ -1,6 +1,6 @@
 ---
 title: "Lecture Slides"
-subtitle: "Presentation Decks for FROM DATA TO THESIS: Using R for Non-Technical"
+subtitle: "Presentation Decks for FROM DATA TO THESIS: Using Python for Non-Technical"
 toc: false
 ---
 
@@ -11,10 +11,10 @@ One deck for each chapter of the book, for teaching in class and for revision.
 
 ## Chapters
 
-### Foundations of R Programming and Data Handling
+### Foundations of Python Programming and Data Handling
 
-1. [Getting Started with R](01-getting-started.qmd)
-2. [Data Structures in R](02-data-structures.qmd)
+1. [Getting Started with Python](01-getting-started.qmd)
+2. [Data Structures in Python](02-data-structures.qmd)
 3. [Data Manipulation](03-data-manipulation.qmd)
 4. [Data Visualization](04-data-visualization.qmd)
 
@@ -27,9 +27,9 @@ One deck for each chapter of the book, for teaching in class and for revision.
 9. [Multivariate Statistical Methods](09-multivariate.qmd)
 10. [Mixed-Effects Models](10-mixed-models.qmd)
 
-### Machine Learning with R
+### Machine Learning with Python
 
-11. [Introduction to Machine Learning in R](11-machine-learning.qmd)
+11. [Introduction to Machine Learning in Python](11-machine-learning.qmd)
 12. [Classification Models](12-classification.qmd)
 13. [Predictive Regression](13-predictive-regression.qmd)
 14. [Advanced Clustering](14-advanced-clustering.qmd)
@@ -39,7 +39,7 @@ One deck for each chapter of the book, for teaching in class and for revision.
 ### Reproducible Research and Applications
 
 17. [Reproducible Research](17-reproducible-research.qmd)
-18. [Using AI with R](18-ai.qmd)
+18. [Using AI with Python](18-ai.qmd)
 19. [Putting It All Together](19-putting-it-together.qmd)
 
 ### Using the slide decks

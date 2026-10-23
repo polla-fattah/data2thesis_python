@@ -1,7 +1,7 @@
 # Builds the website and the book with Quarto and publishes them to GitHub Pages.
 #
-# The rendered chapters contain executable R examples, so the workflow installs
-# R and the packages used by the book before rendering. The pages are rendered
+# The rendered chapters contain executable Python examples, so the workflow installs
+# Python and the packages used by the book before rendering. The pages are rendered
 # under _site/content and copied to the site root, so that /book/, /playground/,
 # and /slides/ work as before.
 #
@@ -31,29 +31,22 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: Set up Quarto
-        uses: quarto-dev/quarto-actions/setup@v2
-        with:
-          version: 1.10.18
-
-      - name: Set up R
-        uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: release
-          use-public-rspm: true
-
-      - name: Install R dependencies
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          packages: local::data2thesis
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
 
       - name: Install Python dependencies
-        run: pip install beautifulsoup4 pypdf
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e data2thesis
+          pip install jupyter ipykernel pandas numpy scipy statsmodels scikit-learn matplotlib seaborn tabulate beautifulsoup4 pypdf openpyxl pyreadstat
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.10.18
 
       - name: Render website and book
         run: |

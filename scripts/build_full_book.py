@@ -34,13 +34,15 @@ def clean_chapter_content(soup, soup_main, is_subpath=True):
             continue
             
         # Determine language
-        lang = 'R'
+        lang = 'PYTHON'
         classes = pre.get('class', []) + (pre.find('code').get('class', []) if pre.find('code') else [])
         for c in classes:
             if 'bash' in c or 'sh' in c:
                 lang = 'BASH'
             elif 'python' in c:
                 lang = 'PYTHON'
+            elif 'r' in c:
+                lang = 'R'
             elif 'json' in c:
                 lang = 'JSON'
             elif 'yaml' in c:
@@ -359,8 +361,8 @@ def generate_template(chapters_data, foreword_html, total_chapters, total_append
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FROM DATA TO THESIS: Using R for Non-Technical (Full Book)</title>
-  <meta name="description" content="Complete textbook 'FROM DATA TO THESIS: Using R for Non-Technical' by Dr. Polla Abdulhamid Fattah and Collection of LLMs. Read all 19 chapters, references, and appendices online." />
+  <title>FROM DATA TO THESIS: Using Python for Non-Technical (Full Book)</title>
+  <meta name="description" content="Complete textbook 'FROM DATA TO THESIS: Using Python for Non-Technical' by Dr. Polla Abdulhamid Fattah and Collection of LLMs. Read all 19 chapters, references, and appendices online." />
   
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="../images/cover-front.png" />
@@ -1727,12 +1729,12 @@ tr:hover td {{
       <!-- Hero Card -->
       <section class="book-hero-card" id="book-hero">
         <div class="book-hero-cover">
-          <img src="../images/cover-front.png" alt="FROM DATA TO THESIS: Using R for Non-Technical Cover" class="book-cover-img" />
+          <img src="../images/cover-front.png" alt="FROM DATA TO THESIS: Using Python for Non-Technical Cover" class="book-cover-img" />
         </div>
         <div class="book-hero-meta">
           <div class="hero-kicker">Complete Textbook Online Edition</div>
           <h1 class="hero-main-title">From Data to Thesis</h1>
-          <p class="hero-subtitle">Using R for Non-technical</p>
+          <p class="hero-subtitle">Using Python for Non-Technical</p>
           
           <div class="hero-author-box">
             <div class="hero-author-name">Dr. Polla Abdulhamid Fattah &amp; Collection of LLMs</div>
@@ -1743,8 +1745,8 @@ tr:hover td {{
           <div class="hero-details-row">
             <span class="hero-badge-pill"><i class="fa-solid fa-book-open"></i> {total_chapters} Chapters</span>
             <span class="hero-badge-pill"><i class="fa-solid fa-paperclip"></i> {total_appendices} Appendices</span>
-            <span class="hero-badge-pill"><i class="fa-solid fa-file-pdf"></i> 482-Page Companion PDF</span>
-            <span class="hero-badge-pill"><i class="fa-solid fa-code"></i> Quarto &amp; R 4.4</span>
+            <span class="hero-badge-pill"><i class="fa-solid fa-file-pdf"></i> Companion PDF</span>
+            <span class="hero-badge-pill"><i class="fa-solid fa-code"></i> Quarto &amp; Python 3.12</span>
             <span class="hero-badge-pill"><i class="fa-solid fa-database"></i> 600-Student Case Study</span>
           </div>
 
@@ -1777,13 +1779,13 @@ tr:hover td {{
       <!-- Back Cover Section -->
       <section class="book-back-cover-card" id="back-cover">
         <div class="book-hero-cover">
-          <img src="../images/cover-back.jpg" alt="FROM DATA TO THESIS: Using R for Non-Technical Back Cover" class="book-cover-img" />
+          <img src="../images/cover-back.jpg" alt="FROM DATA TO THESIS: Using Python for Non-Technical Back Cover" class="book-cover-img" />
         </div>
         <div class="book-hero-meta">
           <div class="hero-kicker">About this Publication</div>
           <h2 class="hero-main-title" style="font-size: 1.8rem;">End of Book Edition</h2>
           <p class="hero-subtitle">
-            You have reached the end of <em>FROM DATA TO THESIS: Using R for Non-Technical</em>.
+            You have reached the end of <em>FROM DATA TO THESIS: Using Python for Non-Technical</em>.
             May this research journey empower your thesis defense and future scientific publications.
           </p>
           <div class="hero-author-box">

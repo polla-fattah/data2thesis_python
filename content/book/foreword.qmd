@@ -6,11 +6,11 @@ For decades, higher education has pushed researchers toward point-and-click stat
 
 This book was written to offer a different path.
 
-**R** has evolved into the lingua franca of modern statistical science and reproducible research. Paired with the tidyverse and modern reporting frameworks like Quarto, R gives researchers complete command over their analytical journey—from the first row of survey data to polished, APA-style tables and high-resolution figures.
+**Python** has evolved into the lingua franca of modern data science, statistical computing, and reproducible research. Paired with pandas, statsmodels, scikit-learn, and modern reporting frameworks like Quarto, Python gives researchers complete command over their analytical journey—from the first row of survey data to polished, APA-style tables and high-resolution figures.
 
 ### Modern Research in the Age of AI
 
-We now live and research in the age of artificial intelligence. Large language models and AI coding assistants have permanently transformed how we write code, brainstorm models, and explore data. Throughout this book, and particularly in Chapter 18, we treat AI not as a replacement for critical thought, but as a tireless research collaborator. You will learn to use AI assistants to draft and debug R scripts, translate complex errors, and assist with qualitative coding, while maintaining the rigorous verification standards required for academic defense.
+We now live and research in the age of artificial intelligence. Large language models and AI coding assistants have permanently transformed how we write code, brainstorm models, and explore data. Throughout this book, and particularly in Chapter 18, we treat AI not as a replacement for critical thought, but as a tireless research collaborator. You will learn to use AI assistants to draft and debug Python code, translate complex errors, and assist with qualitative coding, while maintaining the rigorous verification standards required for academic defense.
 
 ### How to Journey Through This Book
 
@@ -27,7 +27,7 @@ For each concept, you will follow a disciplined, five-step roadmap:
 
 To ensure that no software installation stands between you and your first analysis, all companion exercises are hosted in an interactive browser environment. You can test code, experiment with parameters, and verify your answers directly on the book's companion website:
 
-> **Web Playground:** [https://polla-fattah.github.io/data2thesis_r/playground/](https://polla-fattah.github.io/data2thesis_r/playground/)
+> **Web Playground:** [https://polla-fattah.github.io/data2thesis_python/playground/](https://polla-fattah.github.io/data2thesis_python/playground/)
 
 Whether you are embarking on your Master's dissertation, finishing your doctoral dissertation, or publishing your first peer-reviewed paper, may this book serve as your steady desk companion from your first command to your final defense.
 

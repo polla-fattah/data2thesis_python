@@ -496,7 +496,7 @@
 
 #show: book.with(
   title: [FROM DATA TO THESIS],
-  subtitle: [Using R for Non-technical],
+  subtitle: [Using Python for Non-Technical],
   author: "Polla Fattah and Collection of LLMs",
   date: "2026-10-23",
   main-color: brand-color.at("primary", default: blue),
@@ -535,7 +535,7 @@
 #callout(
 body: 
 [
-All 19 chapters of #emph[FROM DATA TO THESIS: Using R for Non-Technical] are available, accompanied by interactive #link("../playground/index.html")[Playground] exercises and #link("../slides/index.html")[Lecture Slide Decks] for teaching and review.
+All 19 chapters of #emph[FROM DATA TO THESIS: Using Python for Non-Technical] are available, accompanied by interactive #link("../playground/index.html")[Playground] exercises and #link("../slides/index.html")[Lecture Slide Decks] for teaching and review.
 
 ]
 , 

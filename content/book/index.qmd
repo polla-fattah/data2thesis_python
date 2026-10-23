@@ -3,7 +3,7 @@
 ::: {.callout-note appearance="simple"}
 ## Complete Course & Companion Slides
 
-All 19 chapters of *FROM DATA TO THESIS: Using R for Non-Technical* are available, accompanied by interactive [Playground](../playground/index.html) exercises and [Lecture Slide Decks](../slides/index.html) for teaching and review.
+All 19 chapters of *FROM DATA TO THESIS: Using Python for Non-Technical* are available, accompanied by interactive [Playground](../playground/index.html) exercises and [Lecture Slide Decks](../slides/index.html) for teaching and review.
 :::
 
 ::: {.callout-tip appearance="simple"}
@@ -17,12 +17,11 @@ Every chapter answers one of her research questions. You learn each method the w
 
 ## How to use this book
 
-- Read the chapters in order if you are new to R. Each one builds on the last.
+- Read the chapters in order if you are new to Python. Each one builds on the last.
 - Run the code yourself. Everything you need is in the `data2thesis` package:
 
-```r
-install.packages("https://polla-fattah.github.io/data2thesis_r/downloads/data2thesis_1.1.0.tar.gz",
-                 repos = NULL, type = "source")
+```bash
+pip install data2thesis
 ```
 
 - Practise in the [playground](../playground/index.html) after each chapter.
