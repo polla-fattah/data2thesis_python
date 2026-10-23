@@ -1,2 +1,4 @@
 students.csv
 semesters.csv
+sleepstudy.csv
+chickweight.csv

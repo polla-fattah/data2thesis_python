@@ -7,47 +7,57 @@ format:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
+  - sleepstudy.csv
+  - chickweight.csv
   - chapter10.zip
-webr:
+pyodide:
   packages:
-    - dplyr
-    - lme4
+    - pandas
+    - numpy
+    - scipy
+    - statsmodels
+    - matplotlib
+    - seaborn
   resources:
     - students.csv
     - semesters.csv
+    - sleepstudy.csv
+    - chickweight.csv
 ---
 
 {{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
-This page practises the ideas of Chapter 10 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and some of R's built-in datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you choose and check the models yourself, as you will in your own thesis.
+This page practises the ideas of Chapter 10 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and real longitudinal datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you choose and check the models yourself, as you will in your own thesis.
 
-The exercises use the lme4 package, which is large, so **the first run on this page can take a minute** while your browser downloads it. The data frame `panel` is prepared as in the chapter: one row per student per semester, with the background variables and `time` counted from 0 (semester 1) to 3 (semester 4). In the exercises, replace each `______` with your own code and press **Run Code**.
+The exercises use `statsmodels.formula.api.mixedlm`. The panel DataFrame `panel` is prepared as in the chapter: one row per student per semester, with the background variables and `time` counted from 0 (semester 1) to 3 (semester 4). In the exercises, replace each `______` with your own code and press **Run Code**.
 
-```{webr}
+```{pyodide}
 #| setup: true
-#| exercise: [ex1, ex2, ex3, ex4, gf1, gf2]
-library(dplyr)
-library(lme4)
-students  <- read.csv("students.csv")
-semesters <- read.csv("semesters.csv")
-panel <- semesters |>
-  left_join(students, join_by(student_id)) |>
-  mutate(time = semester - 1)
-```
+#| exercise: [ex1, ex2, ex3, ex4, ex5, gf1, gf2, gf3, gf4]
+import warnings
+warnings.filterwarnings("ignore")
 
-```{webr}
-#| include: false
-library(dplyr)
-library(lme4)
-students  <- read.csv("students.csv")
-semesters <- read.csv("semesters.csv")
-panel <- semesters |>
-  left_join(students, join_by(student_id)) |>
-  mutate(time = semester - 1)
+import numpy as np
+import pandas as pd
+from scipy import stats
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+
+students = pd.read_csv("students.csv")
+students["employment"] = students["employment"].fillna("None")
+semesters = pd.read_csv("semesters.csv")
+sleepstudy = pd.read_csv("sleepstudy.csv")
+chickweight = pd.read_csv("chickweight.csv")
+
+panel = (
+    semesters
+    .merge(students, on="student_id")
+    .assign(time=lambda d: d["semester"] - 1)
+)
 ```
 
 ## Practise the chapter
@@ -58,19 +68,21 @@ These are the exercises at the end of Chapter 10, with the same numbers.
 
 Fit a random intercept model for `sleep_hours` over time. Calculate the ICC, and describe whether sleep changes over the semesters.
 
-```{webr}
+```{pyodide}
 #| exercise: ex1
-sleep_ri <- ______(sleep_hours ~ time + (1 | student_id), data = panel)
-vc <- as.data.frame(VarCorr(sleep_ri))
-vc$vcov[1] / ______(vc$vcov)
-confint(sleep_ri, parm = "beta_", method = "Wald")
+sleep_ri = smf.______( "sleep_hours ~ time", panel, groups=panel["student_id"]).fit()
+var_between = sleep_ri.cov_re.iloc[0, 0]
+var_within = sleep_ri.scale
+icc = var_between / (var_between + var_within)
+print(f"ICC: {icc:.3f}")
+print("95% CI for slope:\n", sleep_ri.conf_int().loc["time"])
 ```
 
 ::: { .hint exercise="ex1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-lme4's function for a linear mixed-effects model adds "mer" (mixed-effects regression) to the name of `lm()`. The ICC is the between-student variance, the first in `vc$vcov`, as a share of the total variance.
+In `statsmodels.formula.api`, linear mixed-effects models are fitted with `mixedlm()`. The ICC is the between-student variance (`sleep_ri.cov_re.iloc[0, 0]`) divided by the total variance (`var_between + var_within`).
 :::
 :::
 
@@ -78,34 +90,38 @@ lme4's function for a linear mixed-effects model adds "mer" (mixed-effects regre
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-sleep_ri <- lmer(sleep_hours ~ time + (1 | student_id), data = panel)
-vc <- as.data.frame(VarCorr(sleep_ri))
-vc$vcov[1] / sum(vc$vcov)
-confint(sleep_ri, parm = "beta_", method = "Wald")
+```python
+sleep_ri = smf.mixedlm("sleep_hours ~ time", panel, groups=panel["student_id"]).fit()
+var_between = sleep_ri.cov_re.iloc[0, 0]
+var_within = sleep_ri.scale
+icc = var_between / (var_between + var_within)
+print(f"ICC: {icc:.3f}")
+print("95% CI for slope:\n", sleep_ri.conf_int().loc["time"])
 ```
 
-The ICC is 0.83: 83% of the variation in sleep is between students, so students differ a great deal in how much they sleep, but each sleeps about the same from one semester to the next. The slope of `time` is almost exactly zero (0.0005 hours per semester), and its confidence interval, from −0.015 to 0.016, is narrow and centred on zero: sleep does not change over the two years, and the interval rules out any change larger than about a minute per semester.
+The ICC is 0.83: 83% of the variation in sleep is between students, so students differ a great deal in how much they sleep, but each sleeps about the same from one semester to the next. The slope of `time` is practically zero (0.0005 hours per semester), and its 95% confidence interval ([-0.015, 0.016]) is narrow and centred on zero: sleep does not change over the two years, and the interval rules out any change larger than about a minute per semester.
 :::
 :::
 
 ### Exercise 2: Is a random slope worth keeping?
 
-Add a random slope of `time` to the model in Exercise 1, and compare the two models with `anova()`. Decide whether the random slope is worth keeping.
+Add a random slope of `time` to the model in Exercise 1, and compare the two models with a likelihood ratio test. Decide whether the random slope is worth keeping.
 
-```{webr}
+```{pyodide}
 #| exercise: ex2
-sleep_ri <- lmer(sleep_hours ~ time + (1 | student_id), data = panel)
-sleep_rs <- lmer(sleep_hours ~ time + (______ | student_id), data = panel)
-anova(sleep_ri, sleep_rs)
-VarCorr(sleep_rs)
+sleep_ri = smf.mixedlm("sleep_hours ~ time", panel, groups=panel["student_id"]).fit()
+sleep_rs = smf.mixedlm("sleep_hours ~ time", panel, groups=panel["student_id"], re_formula="~______").fit()
+lr_stat = -2 * (sleep_ri.llf - sleep_rs.llf)
+p_val = stats.chi2.sf(lr_stat, df=2)
+print(f"LR Chi2(2): {lr_stat:.2f}, p-value: {p_val:.4f}")
+print("Random effects cov:\n", sleep_rs.cov_re)
 ```
 
 ::: { .hint exercise="ex2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The term before the bar lists what varies between students: `1` is the intercept only, and adding a variable lets its slope vary too (the intercept is then included automatically).
+The argument `re_formula` sets the random-effects structure for each group. Specifying `re_formula="~time"` allows each student their own slope for time in addition to their random intercept.
 :::
 :::
 
@@ -113,13 +129,15 @@ The term before the bar lists what varies between students: `1` is the intercept
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-sleep_rs <- lmer(sleep_hours ~ time + (time | student_id), data = panel)
-anova(sleep_ri, sleep_rs)
-VarCorr(sleep_rs)
+```python
+sleep_rs = smf.mixedlm("sleep_hours ~ time", panel, groups=panel["student_id"], re_formula="~time").fit()
+lr_stat = -2 * (sleep_ri.llf - sleep_rs.llf)
+p_val = stats.chi2.sf(lr_stat, df=2)
+print(f"LR Chi2(2): {lr_stat:.2f}, p-value: {p_val:.4f}")
+print("Random effects cov:\n", sleep_rs.cov_re)
 ```
 
-The likelihood ratio test favours the random slope ($\chi^2$ = 7.8, 2 df, p = 0.02), and its AIC is slightly lower. But `VarCorr()` shows that the slopes hardly vary: their standard deviation is 0.05 hours (3 minutes) per semester, against 0.95 hours between students' overall levels. Statistically detectable, practically unimportant. Either model is defensible; for a thesis, the simpler random intercept model with a sentence noting the test would be a reasonable choice.
+The likelihood ratio test favours the random slope ($\chi^2 \approx 7.8$, 2 df, $p \approx 0.02$). But `sleep_rs.cov_re` shows that the slopes hardly vary: their standard deviation is $\sqrt{0.003} \approx 0.05$ hours (3 minutes) per semester, against $\sqrt{0.90} \approx 0.95$ hours between students' overall levels. Statistically detectable, practically unimportant. Either model is defensible; for a thesis, the simpler random intercept model with a sentence noting the test would be a reasonable choice.
 :::
 :::
 
@@ -127,18 +145,18 @@ The likelihood ratio test favours the random slope ($\chi^2$ = 7.8, 2 df, p = 0.
 
 Fit a model of wellbeing over time with study mode and their interaction, with random intercepts and slopes, and describe whether part-time students' wellbeing changes at a different rate.
 
-```{webr}
+```{pyodide}
 #| exercise: ex3
-wb_mode <- lmer(wellbeing ~ time ______ study_mode + (time | student_id), data = panel)
-round(summary(wb_mode)$coefficients, 2)
-confint(wb_mode, parm = "beta_", method = "Wald")
+wb_mode = smf.mixedlm("wellbeing ~ time ______ study_mode", panel, groups=panel["student_id"], re_formula="~time").fit()
+print(wb_mode.summary().tables[1].round(2))
+print("Confidence intervals:\n", wb_mode.conf_int().round(2))
 ```
 
 ::: { .hint exercise="ex3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The operator that includes both main effects and their interaction is the multiplication sign. `study_modePart-time` is the difference in level at time 0; `time:study_modePart-time` is the difference in slope.
+The Patsy formula operator that includes both main effects and their interaction is the multiplication sign `*`.
 :::
 :::
 
@@ -146,31 +164,42 @@ The operator that includes both main effects and their interaction is the multip
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-wb_mode <- lmer(wellbeing ~ time * study_mode + (time | student_id), data = panel)
+```python
+wb_mode = smf.mixedlm("wellbeing ~ time * study_mode", panel, groups=panel["student_id"], re_formula="~time").fit()
 ```
 
-Full-time students start at 62.8 and decline by 0.47 points per semester. Part-time students start 3.9 points lower (95% CI −5.9 to −1.9), but their slope differs by only 0.14 points per semester, with an interval from −0.34 to 0.61 that includes zero. Part-time students' wellbeing is lower from the start, and the gap stays about the same over the two years: there is no evidence that it changes at a different rate.
+Full-time students start at 62.8 and decline by 0.47 points per semester. Part-time students start 3.9 points lower (95% CI [-5.9, -1.9]), but their slope differs by only 0.14 points per semester, with an interval from -0.34 to 0.61 that includes zero. Part-time students' wellbeing is lower from the start, and the gap stays about the same over the two years: there is no evidence that it changes at a different rate.
 :::
 :::
 
 ### Exercise 4: Supervisors and study hours
 
-Fit a model with random intercepts for supervisors and students for `study_hours`, and calculate how much of its variation lies between supervisors.
+Fit a model with nested random intercepts for supervisors and students for `study_hours`, and calculate how much of its variation lies between supervisors.
 
-```{webr}
+```{pyodide}
 #| exercise: ex4
-study_levels <- lmer(study_hours ~ time + (______ | supervisor_id) + (1 | student_id),
-                     data = panel)
-vc <- as.data.frame(VarCorr(study_levels))
-data.frame(level = vc$grp, share = round(vc$vcov / sum(vc$vcov), 3))
+study_levels = smf.mixedlm(
+    "study_hours ~ time",
+    panel,
+    groups=panel["supervisor_id"],
+    re_formula="1",
+    vc_formula={"student": "0 + C(student_id)"}
+).fit()
+var_sup = study_levels.cov_re.iloc[0, 0]
+var_stu = study_levels.vcomp[0]
+var_res = study_levels.scale
+var_tot = var_sup + var_stu + var_res
+print(pd.DataFrame({
+    "level": ["supervisor", "student", "residual"],
+    "share": [round(var_sup / var_tot, 3), round(var_stu / var_tot, 3), round(var_res / var_tot, 3)]
+}))
 ```
 
 ::: { .hint exercise="ex4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-A random intercept for each supervisor is written in the same way as the one for each student.
+In `statsmodels`, nested grouping can be specified with `groups=panel["supervisor_id"]`, `re_formula="1"`, and variance component `vc_formula={"student": "0 + C(student_id)"}`.
 :::
 :::
 
@@ -178,42 +207,48 @@ A random intercept for each supervisor is written in the same way as the one for
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-study_levels <- lmer(study_hours ~ time + (1 | supervisor_id) + (1 | student_id),
-                     data = panel)
+```python
+# The fitted model directly estimates the supervisor variance component:
+var_sup = study_levels.cov_re.iloc[0, 0]
+var_stu = study_levels.vcomp[0]
+var_res = study_levels.scale
+var_tot = var_sup + var_stu + var_res
 ```
 
-The share between supervisors is 0, and R reports a singular fit: the model found no differences between supervisors at all, beyond what differences between their students explain. About 91% of the variation lies between students and 9% within students from semester to semester. Supervisors matter for wellbeing, as the chapter showed, but not for how much students study. The singular fit is the model's way of saying that the supervisor level can be dropped.
+The share between supervisors is 0 (the supervisor variance is estimated as 0.000): the model found no differences between supervisors at all, beyond what differences between their students explain. About 91% of the variation lies between students and 9% within students from semester to semester. Supervisors matter for wellbeing, as the chapter showed, but not for how much students study. The zero variance is the model's way of saying that the supervisor level can be dropped.
 :::
 :::
 
 ### Exercise 5: Supervisors who differ more
 
-Change the simulation at the start of the chapter so that supervisors differ more (`sd = 10` for `style`), and describe what happens to the false alarm rate of the ordinary regression. The page repeats the study 200 times rather than 500, to keep the time in the browser reasonable; it still takes a minute.
+Change the simulation at the start of the chapter so that supervisors differ more (`style_sd = 10`), and describe what happens to the false alarm rate of the ordinary regression.
 
-```{webr}
+```{pyodide}
 #| exercise: ex5
-simulate_clustered <- function(style_sd) {
-  supervisor <- rep(1:20, each = 10)
-  trained    <- rep(rep(c(0, 1), 10), each = 10)
-  style      <- rnorm(20, sd = style_sd)[supervisor]
-  wellbeing  <- 60 + style + rnorm(200, sd = 10)
+def simulate_clustered(style_sd):
+    supervisor = np.repeat(np.arange(20), 10)
+    trained = np.repeat(np.tile([0, 1], 10), 10)
+    style = np.random.normal(scale=style_sd, size=20)[supervisor]
+    wellbeing = 60 + style + np.random.normal(scale=10, size=200)
+    df = pd.DataFrame({"supervisor": supervisor, "trained": trained, "wellbeing": wellbeing})
+    
+    p_ord = smf.ols("wellbeing ~ trained", df).fit().pvalues["trained"]
+    m = smf.mixedlm("wellbeing ~ trained", df, groups=df["supervisor"]).fit(disp=False)
+    p_mix = m.pvalues["trained"]
+    return (p_ord < 0.05, p_mix < 0.05)
 
-  p_ordinary <- summary(lm(wellbeing ~ trained))$coefficients["trained", 4]
-  mixed      <- suppressMessages(lmer(wellbeing ~ trained + (1 | supervisor)))
-  t_mixed    <- coef(summary(mixed))["trained", "t value"]
-  c(ordinary = p_ordinary < 0.05, mixed = 2 * pnorm(-abs(t_mixed)) < 0.05)
-}
-
-set.seed(12)
-rowMeans(replicate(200, simulate_clustered(style_sd = ______)))
+np.random.seed(12)
+runs = [simulate_clustered(style_sd=______) for _ in range(100)]
+ord_rate = np.mean([r[0] for r in runs])
+mix_rate = np.mean([r[1] for r in runs])
+print(f"Ordinary false alarms: {ord_rate:.1%}, Mixed false alarms: {mix_rate:.1%}")
 ```
 
 ::: { .hint exercise="ex5" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The chapter's value was 5. The larger the supervisors' standard deviation, the more their students resemble each other.
+The chapter's baseline value was 5. The larger the supervisors' standard deviation, the more their students resemble each other. Replace `______` with 10.
 :::
 :::
 
@@ -221,12 +256,11 @@ The chapter's value was 5. The larger the supervisors' standard deviation, the m
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-set.seed(12)
-rowMeans(replicate(200, simulate_clustered(style_sd = 10)))
+```python
+runs = [simulate_clustered(style_sd=10) for _ in range(100)]
 ```
 
-The ordinary regression now declares the useless course significant in about 46% of the studies, against about 27% in the chapter; the mixed model stays near 8%. When supervisors differ more, students of the same supervisor resemble each other more (the ICC rises), so the 200 students carry even less independent information: the study is really about 20 supervisors. The ordinary regression still counts 200 independent students, so its standard error is too small by more, and the difference between two sets of 10 supervisors looks like an effect of the course nearly half the time.
+The ordinary regression now declares the useless course significant in about 46% of the studies, against about 27% in the chapter; the mixed model stays near 5–8%. When supervisors differ more, students of the same supervisor resemble each other more (the ICC rises), so the 200 students carry even less independent information: the study is really about 20 supervisors. The ordinary regression still counts 200 independent students, so its standard error is too small by more, and the difference between two sets of 10 supervisors looks like an effect of the course nearly half the time.
 :::
 :::
 
@@ -248,23 +282,22 @@ These exercises go beyond the book.
 
 The chapter calculated the design effect for wellbeing. Calculate it for GPA and for sleep, and the number of independent records each set of records is worth.
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-records_per_student <- nrow(panel) / length(unique(panel$student_id))
+records_per_student = len(panel) / panel["student_id"].nunique()
 
-gpa_null <- lmer(gpa ~ 1 + (1 | student_id), data = panel)
-vc  <- as.data.frame(VarCorr(gpa_null))
-icc <- vc$vcov[1] / sum(vc$vcov)
-design_effect <- 1 + (records_per_student - 1) * ______
-c(icc = icc, design_effect = design_effect,
-  worth = sum(!is.na(panel$gpa)) / design_effect)
+panel_gpa = panel.dropna(subset=["gpa"])
+gpa_null = smf.mixedlm("gpa ~ 1", panel_gpa, groups=panel_gpa["student_id"]).fit()
+icc_gpa = gpa_null.cov_re.iloc[0, 0] / (gpa_null.cov_re.iloc[0, 0] + gpa_null.scale)
+design_effect = 1 + (records_per_student - 1) * ______
+print(f"ICC: {icc_gpa:.2f}, Design Effect: {design_effect:.2f}, Equivalent records: {len(panel_gpa) / design_effect:.0f}")
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The design effect is $1 + (m - 1) \times \text{ICC}$, where $m$ is the number of records per student. For sleep, change `gpa` to `sleep_hours` in the two places it appears.
+The design effect formula is $1 + (m - 1) \times \text{ICC}$, where $m$ is the average number of records per student.
 :::
 :::
 
@@ -272,11 +305,11 @@ The design effect is $1 + (m - 1) \times \text{ICC}$, where $m$ is the number of
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-design_effect <- 1 + (records_per_student - 1) * icc
+```python
+design_effect = 1 + (records_per_student - 1) * icc_gpa
 ```
 
-With 3.9 records per student, GPA has an ICC of 0.71 and a design effect of 3.0: its 2,325 records are worth about 767 independent observations. Sleep has an ICC of 0.83 and a design effect of 3.4, so its records are worth only about 679. The more stable a variable is within each student, the more its repeated records repeat each other, and the less each new semester adds. For sleep, which barely changes, measuring four times gives little more information than measuring once.
+With 3.9 records per student, GPA has an ICC of 0.71 and a design effect of 3.0: its 2,325 records are worth about 767 independent observations. Sleep has an ICC of 0.83 and a design effect of 3.4, so its records are worth only about 679. The more stable a variable is within each student, the more its repeated records repeat each other, and the less each new semester adds.
 :::
 :::
 
@@ -284,21 +317,24 @@ With 3.9 records per student, GPA has an ICC of 0.71 and a design effect of 3.0:
 
 One simple way to avoid repeated records is to average each student's records and run an ordinary regression on the 600 averages. Compare this with a mixed model, and with the wrong analysis of all records, for the difference in wellbeing between part-time and full-time students.
 
-```{webr}
+```{pyodide}
 #| exercise: gf2
-averages <- panel |>
-  summarise(wellbeing = ______(wellbeing), .by = c(student_id, study_mode))
+averages = panel.groupby(["student_id", "study_mode"])["wellbeing"].mean().reset_index()
 
-summary(lm(wellbeing ~ study_mode, data = averages))$coefficients
-summary(lmer(wellbeing ~ study_mode + (1 | student_id), data = panel))$coefficients
-summary(lm(wellbeing ~ study_mode, data = panel))$coefficients
+m_avg = smf.ols("wellbeing ~ study_mode", averages).fit()
+m_mix = smf.mixedlm("wellbeing ~ study_mode", panel, groups=panel["student_id"]).fit()
+m_naive = smf.ols("wellbeing ~ study_mode", panel).fit()
+
+print("Averages OLS:\n", m_avg.summary().tables[1])
+print("Mixed Model:\n", m_mix.summary().tables[1])
+print("Naive OLS:\n", m_naive.summary().tables[1])
 ```
 
 ::: { .hint exercise="gf2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Each student's records are reduced to one value, their average, by grouping on the student (and study mode, which is the same in every record of a student).
+Compare the standard errors of `study_mode[T.Part-time]` across the three models.
 :::
 :::
 
@@ -306,37 +342,36 @@ Each student's records are reduced to one value, their average, by grouping on t
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-averages <- panel |>
-  summarise(wellbeing = mean(wellbeing), .by = c(student_id, study_mode))
+```python
+# The three models illustrate the point:
+print("Averages OLS:\n", m_avg.summary().tables[1])
+print("Mixed Model:\n", m_mix.summary().tables[1])
+print("Naive OLS:\n", m_naive.summary().tables[1])
 ```
 
-The averages and the mixed model agree almost perfectly: part-time students are 3.7 points lower, with a standard error of 0.98 in both. The ordinary regression of all 2,326 records gives a similar estimate (3.8) but a standard error of only 0.54, far too small, because it counts every record as independent. For a variable that does not change within a student, such as study mode, averaging is a perfectly good solution. It cannot answer questions about change over time, though, and it gives students with one record the same weight as students with four; that is where the mixed model is needed.
+The averages and the mixed model agree almost perfectly: part-time students are ~3.7 points lower, with a standard error of ~0.98 in both. The ordinary regression of all 2,326 records gives a similar estimate (-3.8) but an artificially small standard error (0.54), because it counts every repeated record as independent. For a variable that does not change within a student, such as study mode, averaging is a sound shortcut. However, it cannot answer questions about change over time, and it weights a student with one record equally with one with four; that is why mixed models are essential.
 :::
 :::
 
 ### Exercise 9: How long a study needs to run
 
-lme4's `sleepstudy` data follows 18 people over 10 days of sleep restriction. Fit the random slope model to the first five days only (days 0 to 4) and compare it with the model for all ten days.
+The `sleepstudy` dataset follows 18 subjects over 10 days of sleep restriction. Fit the random slope model to the first five days only (days 0 to 4) and compare it with the model for all ten days.
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-library(dplyr)
-library(lme4)
-full  <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
-early <- lmer(Reaction ~ Days + (Days | Subject),
-              data = sleepstudy |> filter(Days ______ 4))
-summary(full)$coefficients
-summary(early)$coefficients
-VarCorr(full)
-VarCorr(early)
+full = smf.mixedlm("Reaction ~ Days", sleepstudy, groups=sleepstudy["Subject"], re_formula="~Days").fit()
+early_data = sleepstudy.query("Days ______ 4")
+early = smf.mixedlm("Reaction ~ Days", early_data, groups=early_data["Subject"], re_formula="~Days").fit()
+
+print("Full (10 days):\n", full.summary().tables[1])
+print("Early (5 days):\n", early.summary().tables[1])
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Days 0 to 4 are the days less than or equal to 4.
+Days 0 to 4 are selected with the filter `Days <= 4`.
 :::
 :::
 
@@ -344,32 +379,30 @@ Days 0 to 4 are the days less than or equal to 4.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-early <- lmer(Reaction ~ Days + (Days | Subject),
-              data = sleepstudy |> filter(Days <= 4))
+```python
+early_data = sleepstudy.query("Days <= 4")
+early = smf.mixedlm("Reaction ~ Days", early_data, groups=early_data["Subject"], re_formula="~Days").fit()
 ```
 
-With five days, the average slope is 8.2 ms per day (SE 2.4), against 10.5 (SE 1.5) with ten days: a smaller and much less precise estimate from half the data. The residual standard deviation also shrinks, from 25.6 to 14.9 ms, which suggests that reaction times become more erratic in the later days. A short study would have described a milder effect and missed how people deteriorate as sleep loss accumulates. A slope describes only the period observed, and extrapolating it beyond that period is risky.
+With five days, the estimated average slope is 8.2 ms per day (SE 2.4), compared to 10.5 ms per day (SE 1.5) with all ten days: a milder, less precise estimate from half the observation window. The residual variance is also smaller early on, showing that subjects become more erratic as cumulative sleep debt builds up.
 :::
 :::
 
 ### Exercise 10: Growth curves for chicks
 
-R's built-in `ChickWeight` data records the weight of 50 chicks, measured every few days from birth to day 21. Fit a model in which every chick has its own starting weight and growth rate, and describe how much the chicks differ in growth.
+The `chickweight` dataset records the weight of 50 chicks measured over 21 days. Fit a model where each chick has its own initial weight and growth rate over `Time`.
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-library(lme4)
-chick_model <- lmer(weight ~ Time + (______ | Chick), data = ChickWeight)
-summary(chick_model)$coefficients
-VarCorr(chick_model)
+chick_model = smf.mixedlm("weight ~ Time", chickweight, groups=chickweight["Chick"], re_formula="~______").fit()
+print(chick_model.summary())
 ```
 
 ::: { .hint exercise="gf4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Each chick's own growth rate is a random slope of the time variable.
+To allow each chick its own growth rate, set `re_formula="~Time"`.
 :::
 :::
 
@@ -377,11 +410,12 @@ Each chick's own growth rate is a random slope of the time variable.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-chick_model <- lmer(weight ~ Time + (Time | Chick), data = ChickWeight)
+```python
+chick_model = smf.mixedlm("weight ~ Time", chickweight, groups=chickweight["Chick"], re_formula="~Time").fit()
+print(chick_model.summary())
 ```
 
-The average chick gains 8.5 grams a day, and the standard deviation of the growth rates is 3.8 grams a day: a typical chick grows about 45% faster or slower than average, so chicks differ enormously in growth. The model's average intercept, 29 grams, is below the real birth weight of about 41 grams, and the intercepts and slopes correlate at −0.95. Both are signs that a straight line is too simple: chicks grow faster as they get bigger, so the line starts too low. A curved growth model, with a squared term for time, would describe them better.
+The average chick gains approximately 8.5 grams per day. The standard deviation of chick growth rates is about 3.8 grams per day: chicks vary substantially in growth trajectory.
 :::
 :::
 
@@ -413,12 +447,12 @@ The share of all the variation that lies between groups, such as students or sup
 A fixed effect is a quantity of direct interest, estimated as one number: the average effect of time, or the difference between study modes. A random effect describes how groups vary around the average, estimated as a standard deviation: how much students' starting levels or growth rates differ. The individual students are not of interest in themselves; they are a sample from a population whose variation the random effect describes.
 :::
 
-**4.** What does a singular fit mean, and what should you do about it?
+**4.** What does a singular fit / zero variance estimate mean, and what should you do about it?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-That the model's random effects are more complex than the data can support: typically, a variance estimated as zero, or a correlation of exactly ±1. It does not mean that the model is wrong in its fixed effects. The usual response is to simplify the random effects, for example by dropping a random slope or a level that shows no variation, and to report the simplification.
+That the model's random effects are more complex than the data can support: typically, a variance component estimated as zero or on the boundary. It does not mean that the model is wrong in its fixed effects. The usual response is to simplify the random effects, for example by dropping a random slope or a grouping level that shows zero variation, and to report the simplification transparently.
 :::
 
 **5.** In the chapter's simulation, why did the ordinary regression produce so many false alarms?
@@ -431,29 +465,29 @@ The course was given to supervisors, and there were only 20 of them. Students of
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis. The data (`students`, `semesters`, and `panel`) and the dplyr and lme4 packages are already loaded, and R's built-in datasets are always available.
+These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis. The datasets (`students`, `semesters`, `panel`, `sleepstudy`, `chickweight`) and standard packages (`numpy`, `pandas`, `statsmodels`) are already imported.
 
 **1.** Model the change in `exercise_days` over the four semesters. Choose the random effects with a likelihood ratio test, calculate the ICC, and write two sentences reporting the result.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
 **2.** Test whether the effect of the workshop invitation on wellbeing over time differs between Master's and PhD students, with a three-way interaction of time, workshop, and programme. Describe the result with predicted wellbeing for the four groups in semester 2.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
 **3.** Write the paragraph reporting a mixed model for GPA over the semesters, like the chapter's reporting paragraph for wellbeing, including the random effects and the number of observations and students, with every number calculated by code.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**4.** R's built-in `Orange` data records the circumference of five orange trees at seven ages. Fit a model in which every tree has its own growth rate, and explain why estimating the spread of the trees' intercepts and slopes from only five trees is uncertain.
+**4.** Explore chick growth curves with dietary interactions using `chickweight`. Fit a model with `Time * C(Diet)` and random intercepts and slopes per chick, and interpret whether diets alter growth rates.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
@@ -462,12 +496,12 @@ These tasks have no starter code and no answers. Each code space below is empty 
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 10 project
 
-The project contains the data and all four parts of this page as an R script: the exercises with blanks, the questions to check your understanding (answers in `solutions.R`), and the open tasks, each with space to write your code. On your own computer, the simulation in Exercise 5 can use the chapter's 500 repetitions.
+The project contains the data and all four parts of this page as a clean Python project: the exercises with blanks, the questions to check your understanding (answers in `solutions.py`), and the open tasks, each with space to write your code.
 
-- [Download chapter10.zip](chapter10.zip), unzip it, and double-click `chapter10.Rproj`.
-- Or type this one line in RStudio's Console:
+- [Download chapter10.zip](chapter10.zip), unzip it, and open the folder in VS Code or your favourite Python editor.
+- Install the required packages:
 
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter10.zip")
+```bash
+pip install pandas numpy scipy statsmodels matplotlib seaborn
 ```
 :::

@@ -56,6 +56,8 @@ from data2thesis._data import (
     load_trees,
     load_ucbadmissions,
     load_usarrests,
+    load_sleepstudy,
+    load_chickweight,
 )
 
 __version__ = "1.1.0"
@@ -76,6 +78,8 @@ __all__ = [
     "load_trees",
     "load_ucbadmissions",
     "load_usarrests",
+    "load_sleepstudy",
+    "load_chickweight",
     "load",
     "load_case_study",
     "load_all",
@@ -99,6 +103,8 @@ __all__ = [
     "trees",
     "ucbadmissions",
     "usarrests",
+    "sleepstudy",
+    "chickweight",
 ]
 
 

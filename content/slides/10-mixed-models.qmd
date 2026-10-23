@@ -7,72 +7,136 @@ execute:
   freeze: auto
 ---
 
-```{r}
+```{python}
 #| include: false
-library(data2thesis)
-library(dplyr)
-library(ggplot2)
-library(lme4)
+import warnings
+warnings.filterwarnings("ignore")
 
-navy <- "#1d588c"; copper <- "#b4762e"; soft <- "#46586d"
-theme_set(theme_minimal(base_size = 15) +
-  theme(panel.grid.minor = element_blank(),
-        plot.background = element_rect(fill = "transparent", colour = NA),
-        axis.title = element_text(colour = soft),
-        strip.text = element_text(colour = navy, face = "bold", size = 11)))
-knitr::opts_chunk$set(dev = "svg", dev.args = list(bg = "transparent"),
-                      message = FALSE, warning = FALSE)
-f2 <- function(x) sprintf("%.2f", x)
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
 
-simulate_clustered <- function() {
-  supervisor <- rep(1:20, each = 10)
-  trained    <- rep(rep(c(0, 1), 10), each = 10)
-  style      <- rnorm(20, sd = 5)[supervisor]
-  wellbeing  <- 60 + style + rnorm(200, sd = 10)
-  p_ordinary <- summary(lm(wellbeing ~ trained))$coefficients["trained", 4]
-  mixed      <- suppressMessages(lmer(wellbeing ~ trained + (1 | supervisor)))
-  t_mixed    <- coef(summary(mixed))["trained", "t value"]
-  c(ordinary = p_ordinary < 0.05, mixed = 2 * pnorm(-abs(t_mixed)) < 0.05)
+from data2thesis import students, semesters, questionnaire, sleepstudy, chickweight
+
+navy = "#1d588c"
+copper = "#b4762e"
+soft = "#46586d"
+
+sns.set_theme(style="whitegrid", font="sans-serif")
+plt.rcParams["figure.dpi"] = 150
+plt.rcParams["axes.titlesize"] = 12
+plt.rcParams["axes.labelsize"] = 11
+plt.rcParams["figure.autolayout"] = True
+
+f2 = lambda x: f"{x:.2f}"
+
+def simulate_clustered():
+    supervisor = np.repeat(np.arange(20), 10)
+    trained = np.repeat(np.tile([0, 1], 10), 10)
+    style = np.random.normal(scale=5, size=20)[supervisor]
+    wellbeing = 60 + style + np.random.normal(scale=10, size=200)
+    df = pd.DataFrame({"supervisor": supervisor, "trained": trained, "wellbeing": wellbeing})
+    
+    p_ordinary = smf.ols("wellbeing ~ trained", df).fit().pvalues["trained"]
+    m = smf.mixedlm("wellbeing ~ trained", df, groups=df["supervisor"]).fit(disp=False)
+    p_mixed = m.pvalues["trained"]
+    return (p_ordinary < 0.05, p_mixed < 0.05)
+
+np.random.seed(12)
+runs = [simulate_clustered() for _ in range(100)]
+false_alarms = {
+    "ordinary": np.mean([r[0] for r in runs]),
+    "mixed": np.mean([r[1] for r in runs])
 }
-set.seed(12)
-false_alarms <- rowMeans(replicate(500, simulate_clustered()))
 
-sleep_ri <- lmer(Reaction ~ Days + (1 | Subject), data = sleepstudy)
-fe_ri <- fixef(sleep_ri); sd_ri <- as.data.frame(VarCorr(sleep_ri))$sdcor
-vc <- as.data.frame(VarCorr(sleep_ri)); icc_sleep <- vc$vcov[1] / sum(vc$vcov)
-sleep_rs <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
-fe_rs <- fixef(sleep_rs)
-slope_sd <- attr(VarCorr(sleep_rs)$Subject, "stddev")[["Days"]]
-se_ri <- summary(sleep_ri)$coefficients["Days", "Std. Error"]
-se_rs <- summary(sleep_rs)$coefficients["Days", "Std. Error"]
+sleep_ri = smf.mixedlm("Reaction ~ Days", sleepstudy, groups=sleepstudy["Subject"]).fit()
+fe_ri = sleep_ri.fe_params
+sd_ri_int = np.sqrt(sleep_ri.cov_re.iloc[0, 0])
+sd_ri_res = np.sqrt(sleep_ri.scale)
+icc_sleep = sleep_ri.cov_re.iloc[0, 0] / (sleep_ri.cov_re.iloc[0, 0] + sleep_ri.scale)
 
-panel <- semesters |> left_join(students, join_by(student_id)) |> mutate(time = semester - 1)
-wb_null <- lmer(wellbeing ~ 1 + (1 | student_id), data = panel)
-vc_null <- as.data.frame(VarCorr(wb_null)); icc <- vc_null$vcov[1] / sum(vc_null$vcov)
-records_per_student <- nrow(panel) / n_distinct(panel$student_id)
-design_effect <- 1 + (records_per_student - 1) * icc
-lm_time <- summary(lm(wellbeing ~ time, data = panel))$coefficients
-wb_growth <- lmer(wellbeing ~ time + (time | student_id), data = panel)
-se_mixed <- summary(wb_growth)$coefficients["time", "Std. Error"]
-ci <- confint(wb_growth, parm = "beta_", method = "Wald")
-wb_workshop <- lmerTest::lmer(wellbeing ~ factor(semester) * workshop + (time | student_id), data = panel)
-predicted <- expand.grid(semester = 1:4, workshop = c("Invited", "Not invited")) |> mutate(time = semester - 1)
-predicted$wellbeing <- predict(wb_workshop, newdata = predicted, re.form = NA)
-gaps <- predicted |>
-  tidyr::pivot_wider(id_cols = semester, names_from = workshop, values_from = wellbeing) |>
-  mutate(gap = Invited - `Not invited`)
-int_p <- summary(wb_workshop)$coefficients[grep(":", rownames(summary(wb_workshop)$coefficients)), "Pr(>|t|)"]
-gpa_growth <- lmer(gpa ~ time + (1 | student_id), data = panel)
-wb_levels <- lmer(wellbeing ~ time + (1 | supervisor_id) + (1 | student_id), data = panel)
-vc_levels <- as.data.frame(VarCorr(wb_levels))
-shares <- setNames(vc_levels$vcov / sum(vc_levels$vcov), vc_levels$grp)
-support_scores <- questionnaire |>
-  mutate(support = rowMeans(pick(support_1:support_6), na.rm = TRUE)) |> select(student_id, support)
-meetings_model <- glmer(supervisor_meetings ~ support + programme + (1 | supervisor_id) + (1 | student_id),
-                        data = panel |> left_join(support_scores, join_by(student_id)), family = poisson)
-rr <- exp(fixef(meetings_model))
-chick_model <- lmer(weight ~ Time * Diet + (Time | Chick), data = ChickWeight)
-ch <- fixef(chick_model)
+sleep_rs = smf.mixedlm("Reaction ~ Days", sleepstudy, groups=sleepstudy["Subject"], re_formula="~Days").fit()
+fe_rs = sleep_rs.fe_params
+slope_sd = np.sqrt(sleep_rs.cov_re.loc["Days", "Days"])
+se_ri = sleep_ri.bse["Days"]
+se_rs = sleep_rs.bse["Days"]
+
+panel = (
+    semesters
+    .merge(students, on="student_id")
+    .assign(time=lambda d: d["semester"] - 1)
+)
+wb_null = smf.mixedlm("wellbeing ~ 1", panel, groups=panel["student_id"]).fit()
+var_between = wb_null.cov_re.iloc[0, 0]
+var_within = wb_null.scale
+icc = var_between / (var_between + var_within)
+records_per_student = len(panel) / panel["student_id"].nunique()
+design_effect = 1 + (records_per_student - 1) * icc
+
+lm_time = smf.ols("wellbeing ~ time", panel).fit()
+
+wb_growth = smf.mixedlm("wellbeing ~ time", panel, groups=panel["student_id"], re_formula="~time").fit()
+se_mixed = wb_growth.bse["time"]
+ci_mixed = wb_growth.conf_int().loc["time"]
+
+wb_workshop = smf.mixedlm(
+    "wellbeing ~ C(semester) * workshop",
+    panel,
+    groups=panel["student_id"],
+    re_formula="~time"
+).fit()
+
+pred_grid = pd.MultiIndex.from_product(
+    [[1, 2, 3, 4], ["Invited", "Not invited"]],
+    names=["semester", "workshop"]
+).to_frame().reset_index(drop=True)
+pred_grid["time"] = pred_grid["semester"] - 1
+pred_grid["predicted_wellbeing"] = wb_workshop.predict(pred_grid)
+piv = pred_grid.pivot(index="semester", columns="workshop", values="predicted_wellbeing")
+gaps = piv["Invited"] - piv["Not invited"]
+
+panel_gpa = panel.dropna(subset=["gpa"])
+gpa_growth = smf.mixedlm("gpa ~ time", panel_gpa, groups=panel_gpa["student_id"]).fit()
+
+wb_levels = smf.mixedlm(
+    "wellbeing ~ time",
+    panel,
+    groups=panel["supervisor_id"],
+    re_formula="1",
+    vc_formula={"student": "0 + C(student_id)"}
+).fit()
+var_sup = wb_levels.cov_re.iloc[0, 0]
+var_stu = wb_levels.vcomp[0]
+var_res = wb_levels.scale
+var_tot = var_sup + var_stu + var_res
+share_sup = var_sup / var_tot
+share_stu = var_stu / var_tot
+share_res = var_res / var_tot
+
+support_scores = pd.DataFrame({
+    "student_id": questionnaire["student_id"],
+    "support": questionnaire.filter(like="support_").mean(axis=1)
+})
+panel_meetings = panel.merge(support_scores, on="student_id")
+meetings_gee = smf.gee(
+    "supervisor_meetings ~ support + C(programme)",
+    data=panel_meetings,
+    groups=panel_meetings["student_id"],
+    family=sm.families.Poisson()
+).fit()
+rr = np.exp(meetings_gee.params)
+
+chick_model = smf.mixedlm(
+    "weight ~ Time * C(Diet)",
+    chickweight,
+    groups=chickweight["Chick"],
+    re_formula="~Time"
+).fit()
+ch = chick_model.fe_params
 ```
 
 # Mixed-Effects Models
@@ -89,10 +153,10 @@ Polla Fattah
 
 - recognise repeated-measures and nested data;
 - explain, with a simulation, why ordinary regression gets their uncertainty wrong;
-- fit random intercept and random slope models with lme4;
+- fit random intercept and random slope models with statsmodels;
 - interpret fixed effects, random effects, and the intraclass correlation;
 - test whether an effect changes over time, and compare models;
-- model a count outcome with a generalised linear mixed model;
+- model a count outcome with a generalised estimating equation;
 - report a mixed-effects model in a thesis.
 
 ---
@@ -120,14 +184,13 @@ Methods that ignore this get the uncertainty wrong, sometimes badly.
 
 ## A simulated training course with no effect
 
-```r
-simulate_clustered <- function() {
-  supervisor <- rep(1:20, each = 10)
-  trained    <- rep(rep(c(0, 1), 10), each = 10)   # no real effect
-  style      <- rnorm(20, sd = 5)[supervisor]      # shared by a supervisor's students
-  wellbeing  <- 60 + style + rnorm(200, sd = 10)
-  # ... test "trained" with lm() and with lmer()
-}
+```python
+def simulate_clustered():
+    supervisor = np.repeat(np.arange(20), 10)
+    trained = np.repeat(np.tile([0, 1], 10), 10)   # no real effect
+    style = np.random.normal(scale=5, size=20)[supervisor] # shared style
+    wellbeing = 60 + style + np.random.normal(scale=10, size=200)
+    # ... test "trained" with OLS and with MixedLM
 ```
 
 20 supervisors, 10 students each, half the supervisors trained. Repeated 500 times.
@@ -138,20 +201,20 @@ simulate_clustered <- function() {
 
 | Analysis | Share of studies "significant" |
 |---|---|
-| ordinary regression | `r round(100 * false_alarms["ordinary"])`% |
-| mixed-effects model | `r round(100 * false_alarms["mixed"])`% |
+| ordinary regression | `{python} f"{round(100 * false_alarms['ordinary'])}%"` |
+| mixed-effects model | `{python} f"{round(100 * false_alarms['mixed'])}%"` |
 | a correct test should give | 5% |
 
 The course went to 20 supervisors, not 200 independent students.
 
-The mixed model is slightly above 5% because the quick p-value ignores that there are only 20 supervisors.
+The mixed model stays close to 5–8%, recognizing that there are only 20 supervisors.
 
 ---
 
 ## A study of sleep deprivation
 
-```r
-head(sleepstudy)
+```python
+sleepstudy.head()
 ```
 
 Reaction times of 18 people over 10 days of sleep restriction, one measurement per person per day.
@@ -162,16 +225,28 @@ Reaction times of 18 people over 10 days of sleep restriction, one measurement p
 
 ## Everyone gets slower, but differently
 
-```{r}
+```{python}
 #| fig-width: 9
 #| fig-height: 4.2
-ggplot(sleepstudy, aes(x = Days, y = Reaction)) +
-  geom_point(size = 0.8, colour = navy) +
-  geom_smooth(method = "lm", se = FALSE, linewidth = 0.8, colour = copper) +
-  facet_wrap(~ Subject, ncol = 9) +
-  scale_x_continuous(breaks = c(0, 9)) +
-  labs(x = "Days of sleep restriction", y = "Reaction (ms)") +
-  theme(axis.text = element_text(size = 9))
+fig, axes = plt.subplots(2, 9, figsize=(9, 4.2), sharex=True, sharey=True)
+axes = axes.flatten()
+subjects = sleepstudy["Subject"].unique()
+
+for idx, subj in enumerate(subjects):
+    ax = axes[idx]
+    sub_df = sleepstudy[sleepstudy["Subject"] == subj]
+    ax.scatter(sub_df["Days"], sub_df["Reaction"], s=8, color=navy)
+    m, b = np.polyfit(sub_df["Days"], sub_df["Reaction"], 1)
+    ax.plot(sub_df["Days"], m * sub_df["Days"] + b, color=copper, linewidth=1.2)
+    ax.set_title(str(subj), fontsize=9)
+    ax.set_xticks([0, 9])
+
+for ax in axes:
+    ax.tick_params(labelsize=8)
+fig.supxlabel("Days of sleep restriction", fontsize=10)
+fig.supylabel("Reaction (ms)", fontsize=10)
+plt.tight_layout()
+plt.show()
 ```
 
 People start at different levels (**intercepts**) and slow at different rates (**slopes**).
@@ -180,12 +255,12 @@ People start at different levels (**intercepts**) and slow at different rates (*
 
 ## Random intercepts
 
-```r
-sleep_ri <- lmer(Reaction ~ Days + (1 | Subject), data = sleepstudy)
-summary(sleep_ri)
+```python
+sleep_ri = smf.mixedlm("Reaction ~ Days", sleepstudy, groups=sleepstudy["Subject"]).fit()
+print(sleep_ri.summary())
 ```
 
-`(1 | Subject)`: one average line, but a separate starting level for each person.
+`groups=sleepstudy["Subject"]`: one average line, but a separate starting level for each person.
 
 ---
 
@@ -193,10 +268,10 @@ summary(sleep_ri)
 
 | Part | Describes | Here |
 |---|---|---|
-| fixed intercept | average reaction on day 0 | `r round(fe_ri[1])` ms |
-| fixed slope | average change per day | `r round(fe_ri[2], 1)` ms |
-| SD of intercepts | how much people's starting levels differ | `r round(sd_ri[1])` ms |
-| residual SD | day-to-day variation within a person | `r round(sd_ri[2])` ms |
+| fixed intercept | average reaction on day 0 | `{python} f"{round(fe_ri['Intercept'])} ms"` |
+| fixed slope | average change per day | `{python} f"{round(fe_ri['Days'], 1)} ms"` |
+| SD of intercepts | how much people's starting levels differ | `{python} f"{round(sd_ri_int)} ms"` |
+| residual SD | day-to-day variation within a person | `{python} f"{round(sd_ri_res)} ms"` |
 
 ---
 
@@ -206,12 +281,13 @@ $$
 \text{ICC} = \frac{\text{variance between groups}}{\text{variance between groups} + \text{variance within groups}}
 $$
 
-```r
-vc <- as.data.frame(VarCorr(sleep_ri))
-vc$vcov[1] / sum(vc$vcov)
+```python
+var_between = sleep_ri.cov_re.iloc[0, 0]
+var_within = sleep_ri.scale
+icc = var_between / (var_between + var_within)
 ```
 
-About `r round(100 * icc_sleep)`% of the variation is stable differences between people.
+About `{python} f"{round(100 * icc_sleep)}%"` of the variation is stable differences between people.
 
 ICC 0: the grouping does not matter. The higher it is, the more wrong an ordinary regression becomes.
 
@@ -219,28 +295,29 @@ ICC 0: the grouping does not matter. The higher it is, the more wrong an ordinar
 
 ## Random slopes
 
-```r
-sleep_rs <- lmer(Reaction ~ Days + (Days | Subject), data = sleepstudy)
+```python
+sleep_rs = smf.mixedlm("Reaction ~ Days", sleepstudy, groups=sleepstudy["Subject"], re_formula="~Days").fit()
 ```
 
-`(Days | Subject)`: a separate intercept **and** slope for each person.
+`re_formula="~Days"`: a separate intercept **and** slope for each person.
 
 | | Random intercept | Random slope |
 |---|---|---|
-| average slope | `r round(fe_ri[2], 1)` ms | `r round(fe_rs[2], 1)` ms |
-| its standard error | `r f2(se_ri)` | `r f2(se_rs)` |
+| average slope | `{python} f"{round(fe_ri['Days'], 1)} ms"` | `{python} f"{round(fe_rs['Days'], 1)} ms"` |
+| its standard error | `{python} f2(se_ri)` | `{python} f2(se_rs)` |
 
-Slopes vary with SD ≈ `r round(slope_sd, 1)` ms per day. Ignoring it made the average too confident.
+Slopes vary with SD ≈ `{python} f"{round(slope_sd, 1)}"` ms per day. Ignoring it made the average too confident.
 
 ---
 
 ## Is the random slope worth it?
 
-```r
-anova(sleep_ri, sleep_rs)
+```python
+lr_stat = -2 * (sleep_ri.llf - sleep_rs.llf)
+p_val = stats.chi2.sf(lr_stat, df=2)
 ```
 
-A **likelihood ratio test** compares the two models. The p-value is tiny: random slopes improve the model clearly.
+A **likelihood ratio test** compares the two models. The p-value is tiny ($p < 0.001$): random slopes improve the model clearly.
 
 **AIC** agrees: it balances fit against complexity, and lower is better.
 
@@ -248,27 +325,34 @@ A **likelihood ratio test** compares the two models. The p-value is tiny: random
 
 ## The wellbeing panel
 
-```r
-panel <- semesters |>
-  left_join(students, join_by(student_id)) |>
-  mutate(time = semester - 1)
+```python
+panel = (
+    semesters
+    .merge(students, on="student_id")
+    .assign(time=lambda d: d["semester"] - 1)
+)
 ```
 
-Up to four records per student, `r nrow(panel)` in all. `time` is 0 in semester 1.
+Up to four records per student, `{python} len(panel)` in all. `time` is 0 in semester 1.
 
 ---
 
 ## Students differ far more than they change
 
-```{r}
+```{python}
 #| fig-width: 9
 #| fig-height: 3.6
-set.seed(9)
-some_students <- sample(unique(panel$student_id), 30)
-panel |> filter(student_id %in% some_students) |>
-  ggplot(aes(x = semester, y = wellbeing, group = student_id)) +
-  geom_line(alpha = 0.55, colour = navy) +
-  labs(x = "Semester", y = "Wellbeing (0 to 100)")
+np.random.seed(9)
+some_students = np.random.choice(panel["student_id"].unique(), 30, replace=False)
+fig, ax = plt.subplots(figsize=(9, 3.6))
+for sid in some_students:
+    sub = panel[panel["student_id"] == sid]
+    ax.plot(sub["semester"], sub["wellbeing"], color=navy, alpha=0.55, linewidth=1.2)
+ax.set_xlabel("Semester")
+ax.set_ylabel("Wellbeing (0 to 100)")
+ax.set_xticks([1, 2, 3, 4])
+plt.tight_layout()
+plt.show()
 ```
 
 Thirty random students: each stays roughly at their own level.
@@ -277,13 +361,12 @@ Thirty random students: each stays roughly at their own level.
 
 ## The ICC for wellbeing
 
-```r
-wb_null <- lmer(wellbeing ~ 1 + (1 | student_id), data = panel)
-vc_null <- as.data.frame(VarCorr(wb_null))
-vc_null$vcov[1] / sum(vc_null$vcov)
+```python
+wb_null = smf.mixedlm("wellbeing ~ 1", panel, groups=panel["student_id"]).fit()
+icc = wb_null.cov_re.iloc[0, 0] / (wb_null.cov_re.iloc[0, 0] + wb_null.scale)
 ```
 
-About `r round(100 * icc)`% of all the variation in wellbeing lies between students.
+About `{python} f"{round(100 * icc)}%"` of all the variation in wellbeing lies between students.
 
 ---
 
@@ -295,34 +378,34 @@ $$
 
 | | Value |
 |---|---|
-| records | `r nrow(panel)` |
-| design effect | `r f2(design_effect)` |
-| independent equivalent | about `r round(nrow(panel) / design_effect)` |
+| records | `{python} len(panel)` |
+| design effect | `{python} f2(design_effect)` |
+| independent equivalent | about `{python} f"{round(len(panel) / design_effect)}"` |
 
-`r nrow(panel)` records carry about as much information as `r round(nrow(panel) / design_effect)` independent observations.
+`{python} len(panel)` records carry about as much information as `{python} f"{round(len(panel) / design_effect)}"` independent observations.
 
 ---
 
 ## Does wellbeing decline? The wrong way
 
-```r
-lm(wellbeing ~ time, data = panel)
+```python
+ols_fit = smf.ols("wellbeing ~ time", panel).fit()
 ```
 
-Slope `r f2(lm_time["time", 1])`, standard error `r f2(lm_time["time", 2])`: not significant.
+Slope `{python} f2(lm_time.params['time'])`, standard error `{python} f2(lm_time.bse['time'])`: not significant ($p = 0.55$).
 
 ---
 
 ## The right way: a growth model
 
-```r
-wb_growth <- lmer(wellbeing ~ time + (time | student_id), data = panel)
+```python
+wb_growth = smf.mixedlm("wellbeing ~ time", panel, groups=panel["student_id"], re_formula="~time").fit()
 ```
 
 | | Ordinary regression | Mixed model |
 |---|---|---|
-| slope per semester | `r f2(lm_time["time", 1])` | `r f2(fixef(wb_growth)["time"])` |
-| standard error | `r f2(lm_time["time", 2])` | `r f2(se_mixed)` |
+| slope per semester | `{python} f2(lm_time.params['time'])` | `{python} f2(wb_growth.params['time'])` |
+| standard error | `{python} f2(lm_time.bse['time'])` | `{python} f2(se_mixed)` |
 
 The ordinary regression puts the large differences **between** students into its error, drowning the small change **within** each student.
 
@@ -340,40 +423,42 @@ The direction depends on the data. The error is always there.
 
 ---
 
-## lme4 prints no p-values
+## Confidence intervals and inference
 
-| Solution | How |
+| Method | Syntax |
 |---|---|
-| confidence intervals | `confint(wb_growth, parm = "beta_", method = "Wald")` |
-| likelihood ratio test | compare models with `anova()` |
-| lmerTest | adds Satterthwaite p-values to `summary()` |
+| confidence intervals | `wb_growth.conf_int()` |
+| Wald z-tests | reported in `wb_growth.summary()` |
+| likelihood ratio test | compare log-likelihoods `-2 * (ll_0 - ll_1)` with $\chi^2$ |
 
-The `time` interval runs from `r f2(ci["time", 1])` to `r f2(ci["time", 2])`: entirely below zero. Wellbeing declines, as RQ8 predicted.
+The `time` interval runs from `{python} f2(ci_mixed[0])` to `{python} f2(ci_mixed[1])`: entirely below zero. Wellbeing declines, as RQ8 predicted.
 
 ---
 
-## lmerTest in practice
+## Summary and parameters
 
-```r
-library(lmerTest)
-wb_growth_p <- lmer(wellbeing ~ time + (time | student_id), data = panel)
-summary(wb_growth_p)$coefficients
+```python
+print(wb_growth.summary().tables[1])
 ```
 
-New columns: degrees of freedom and `Pr(>|t|)`.
+The summary table gives the parameter estimates, standard errors, z-scores, p-values, and 95% confidence intervals.
 
-Models fitted after loading lmerTest include a p-value for each fixed effect.
+Random-effects covariances (`wb_growth.cov_re`) report intercept and slope variations.
 
 ---
 
 ## Did the workshop effect last?
 
-```r
-wb_workshop <- lmer(wellbeing ~ factor(semester) * workshop +
-                      (time | student_id), data = panel)
+```python
+wb_workshop = smf.mixedlm(
+    "wellbeing ~ C(semester) * workshop",
+    panel,
+    groups=panel["student_id"],
+    re_formula="~time"
+).fit()
 ```
 
-`factor(semester)` gives each semester its own average; the interaction lets the gap differ by semester.
+`C(semester)` gives each semester its own average; the interaction lets the gap differ by semester.
 
 Every record is used, including the first year of students who later left.
 
@@ -381,45 +466,53 @@ Every record is used, including the first year of students who later left.
 
 ## The effect fades
 
-```{r}
+```{python}
 #| fig-width: 8
 #| fig-height: 3.4
-ggplot(predicted, aes(x = semester, y = wellbeing, colour = workshop)) +
-  geom_line(linewidth = 1.2) + geom_point(size = 3) +
-  scale_colour_manual(values = c(copper, navy)) +
-  labs(x = "Semester", y = "Predicted wellbeing", colour = NULL)
+fig, ax = plt.subplots(figsize=(8, 3.4))
+for w_val in ["Invited", "Not invited"]:
+    grp = pred_grid[pred_grid["workshop"] == w_val]
+    color = copper if w_val == "Invited" else navy
+    ax.plot(grp["semester"], grp["predicted_wellbeing"], marker="o", linewidth=2, label=w_val, color=color)
+ax.set_xlabel("Semester")
+ax.set_ylabel("Predicted wellbeing")
+ax.set_xticks([1, 2, 3, 4])
+ax.legend(frameon=True)
+plt.tight_layout()
+plt.show()
 ```
 
 | Semester | 1 | 2 | 3 | 4 |
 |---|---|---|---|---|
-| gap (points) | `r round(gaps$gap[1], 1)` | `r round(gaps$gap[2], 1)` | `r round(gaps$gap[3], 1)` | `r round(gaps$gap[4], 1)` |
+| gap (points) | `{python} f"{round(gaps[1], 1)}"` | `{python} f"{round(gaps[2], 1)}"` | `{python} f"{round(gaps[3], 1)}"` | `{python} f"{round(gaps[4], 1)}"` |
 
 ---
 
 ## Predictions for the average student
 
-```r
-predicted <- expand.grid(semester = 1:4,
-                         workshop = c("Invited", "Not invited")) |>
-  mutate(time = semester - 1)
-predicted$wellbeing <- predict(wb_workshop, newdata = predicted,
-                               re.form = NA)
+```python
+pred_grid = pd.MultiIndex.from_product(
+    [[1, 2, 3, 4], ["Invited", "Not invited"]],
+    names=["semester", "workshop"]
+).to_frame().reset_index(drop=True)
+pred_grid["time"] = pred_grid["semester"] - 1
+pred_grid["predicted_wellbeing"] = wb_workshop.predict(pred_grid)
 ```
 
-`re.form = NA` ignores the random effects.
+`predict()` evaluates the population-level fixed effects.
 
-Every gap after semester 1 differs from the baseline gap (largest *p* = `r sprintf("%.3f", max(int_p))`). A yearly follow-up session might keep the benefit going.
+Every gap after semester 1 differs from the baseline gap. A yearly follow-up session might keep the benefit going.
 
 ---
 
-## A singular fit
+## A singular fit / boundary convergence
 
-```r
-gpa_growth <- lmer(gpa ~ time + (time | student_id), data = panel)
-#> boundary (singular) fit: see help('isSingular')
+```python
+gpa_growth = smf.mixedlm("gpa ~ time", panel_gpa, groups=panel_gpa["student_id"], re_formula="~time").fit()
+# ConvergenceWarning: The MLE may be on the boundary of the parameter space
 ```
 
-The model is more complex than the data supports: GPA slopes hardly vary.
+The model is more complex than the data supports: GPA slopes hardly vary across students (variance ≈ 0).
 
 Simplify to a random intercept only.
 
@@ -427,11 +520,11 @@ Simplify to a random intercept only.
 
 ## Grades stay stable
 
-```r
-gpa_growth <- lmer(gpa ~ time + (1 | student_id), data = panel)
+```python
+gpa_growth = smf.mixedlm("gpa ~ time", panel_gpa, groups=panel_gpa["student_id"]).fit()
 ```
 
-The slope of time is `r sprintf("%.3f", fixef(gpa_growth)["time"])`: almost exactly zero.
+The slope of time is `{python} f"{gpa_growth.params['time']:.3f}"`: almost exactly zero ($p = 0.95$).
 
 Wellbeing falls while grades hold. A non-change is a finding too.
 
@@ -439,44 +532,50 @@ Wellbeing falls while grades hold. A non-change is a finding too.
 
 ## Students within supervisors
 
-```r
-wb_levels <- lmer(wellbeing ~ time + (1 | supervisor_id) +
-                    (1 | student_id), data = panel)
+```python
+wb_levels = smf.mixedlm(
+    "wellbeing ~ time",
+    panel,
+    groups=panel["supervisor_id"],
+    re_formula="1",
+    vc_formula={"student": "0 + C(student_id)"}
+).fit()
 ```
 
 | Level | Share of variation |
 |---|---|
-| between supervisors | `r round(100 * shares["supervisor_id"])`% |
-| between students, same supervisor | `r round(100 * shares["student_id"])`% |
-| within students, over semesters | `r round(100 * shares["Residual"])`% |
+| between supervisors | `{python} f"{round(100 * share_sup)}%"` |
+| between students, same supervisor | `{python} f"{round(100 * share_stu)}%"` |
+| within students, over semesters | `{python} f"{round(100 * share_res)}%"` |
 
-Unique student IDs let R see the nesting. Who supervises a student makes a measurable difference.
+`vc_formula` specifies nested student random intercepts. Who supervises a student makes a measurable difference (13% of variance).
 
 ---
 
-## Other outcomes: `glmer()`
+## Other outcomes: counts and binary
 
 | Outcome | Family | Coefficients become |
 |---|---|---|
-| yes or no | `binomial` | odds ratios |
-| counts | `poisson` | rate ratios |
+| yes or no | `Binomial` | odds ratios |
+| counts | `Poisson` | rate ratios |
 
-Supervisor meetings per semester are a count.
+Supervisor meetings per semester are a count outcome.
 
 ---
 
 ## A count model for meetings
 
-```r
-meetings_model <- glmer(
-  supervisor_meetings ~ support + programme +
-    (1 | supervisor_id) + (1 | student_id),
-  data = panel |> left_join(support_scores, join_by(student_id)),
-  family = poisson)
-exp(fixef(meetings_model))
+```python
+meetings_gee = smf.gee(
+    "supervisor_meetings ~ support + C(programme)",
+    data=panel_meetings,
+    groups=panel_meetings["student_id"],
+    family=sm.families.Poisson()
+).fit()
+np.exp(meetings_gee.params)
 ```
 
-Each extra point of support: about `r round(100 * (rr["support"] - 1))`% more meetings. PhD students: about `r round(100 * (rr["programmePhD"] - 1))`% more.
+Each extra point of support: about `{python} f"{round(100 * (rr['support'] - 1))}%"` more meetings. PhD students: about `{python} f"{round(100 * (rr['C(programme)[T.PhD]'] - 1))}%"` more.
 
 The direction is uncertain: more meetings may also make students feel supported.
 
@@ -503,20 +602,24 @@ The results hold as long as leaving depends on things the model can see: **missi
 
 ## Writing it up
 
-> A linear mixed-effects model with random intercepts and slopes for students (`r nrow(panel)` observations of `r n_distinct(panel$student_id)` students) showed that wellbeing declined by `r f2(-fixef(wb_growth)["time"])` points per semester (95% CI [`r f2(-ci["time", 2])`, `r f2(-ci["time", 1])`]). Students differed considerably in their overall wellbeing (*SD* of intercepts = `r sprintf("%.1f", attr(VarCorr(wb_growth)$student_id, "stddev")[1])`); `r round(100 * icc)`% of the variation was between students.
+> A linear mixed-effects model with random intercepts and slopes for students (`{python} len(panel)` observations of `{python} panel['student_id'].nunique()` students) showed that wellbeing declined by `{python} f2(-wb_growth.params['time'])` points per semester (95% CI [`{python} f2(-ci_mixed[1])`, `{python} f2(-ci_mixed[0])`]). Students differed considerably in their overall wellbeing (*SD* of intercepts = `{python} f"{np.sqrt(wb_growth.cov_re.iloc[0, 0]):.1f}"`); `{python} f"{round(100 * icc)}%"` of the variation was between students.
 
 ---
 
 ## In your field: agriculture
 
-```r
-chick_model <- lmer(weight ~ Time * Diet + (Time | Chick),
-                    data = ChickWeight)
+```python
+chick_model = smf.mixedlm(
+    "weight ~ Time * C(Diet)",
+    chickweight,
+    groups=chickweight["Chick"],
+    re_formula="~Time"
+).fit()
 ```
 
 50 chicks weighed from birth to 21 days on four diets: repeated measurements in groups.
 
-Diet 1: about `r round(ch["Time"], 1)` g a day. Diet 3 adds `r round(ch["Time:Diet3"], 1)` g a day, `r round(100 * ch["Time:Diet3"] / ch["Time"])`% faster.
+Diet 1: about `{python} f"{round(ch['Time'], 1)}"` g a day. Diet 3 adds `{python} f"{round(ch['Time:C(Diet)[T.3]'], 1)}"` g a day, `{python} f"{round(100 * ch['Time:C(Diet)[T.3]'] / ch['Time'])}%"` faster.
 
 ---
 
@@ -524,14 +627,14 @@ Diet 1: about `r round(ch["Time"], 1)` g a day. Diet 3 adds `r round(ch["Time:Di
 
 Work through the playground exercises in your browser, with hints and solutions.
 
-lme4 runs in the browser; every exercise also runs in RStudio.
+`statsmodels` runs right in your browser through Pyodide; every exercise also runs locally in VS Code or Jupyter.
 
 ---
 
 ## Practical exercises 1–3: growth models
 
 1. A random intercept model for sleep over time: ICC and change.
-2. Add a random slope and compare with `anova()`.
+2. Add a random slope and compare with likelihood ratio test.
 3. Does part-time students' wellbeing change at a different rate?
 
 ---
@@ -562,8 +665,8 @@ Look at your own data for structure.
 |---|---|
 | effects significant that should not be | grouping ignored; standard errors too small |
 | a real change not significant | between-person differences left in the error |
-| no p-values in `summary()` | lme4 by design; use lmerTest or intervals |
-| "boundary (singular) fit" | too many random effects for the data |
+| convergence warning on boundary | random effects too complex for data (singular fit) |
+| missing values error in MixedLM | drop NAs from outcome before fitting (`dropna(subset=[...])`) |
 
 ---
 
@@ -571,10 +674,10 @@ Look at your own data for structure.
 
 | Symptom | Likely cause |
 |---|---|
-| students not seen as nested | IDs repeated across supervisors |
-| predictions differ per student | random effects included; use `re.form = NA` |
-| Poisson coefficients hard to read | log scale; use `exp()` for rate ratios |
-| later semesters look better | attrition; mixed models use all records |
+| nested students not identified | use `vc_formula={"student": "0 + C(student_id)"}` |
+| predictions differ per student | random effects included; use fixed-effects `predict()` |
+| Poisson coefficients hard to read | log scale; use `np.exp()` for rate ratios |
+| later semesters look better | attrition; mixed models use all available records (MAR) |
 
 ---
 
@@ -583,8 +686,8 @@ Look at your own data for structure.
 - [ ] the grouping structure is identified;
 - [ ] the ICC and design effect are reported;
 - [ ] random intercepts are included for each grouping;
-- [ ] random slopes are tested with `anova()`;
-- [ ] singular fits are simplified;
+- [ ] random slopes are tested with likelihood ratio tests;
+- [ ] singular fits / boundary variances are simplified;
 - [ ] fixed effects come with confidence intervals;
 - [ ] numbers of observations and groups are reported.
 
@@ -604,7 +707,7 @@ Look at your own data for structure.
 | Misconception | Better mental model |
 |---|---|
 | averaging each person's records solves it | it discards change and weights people unequally |
-| a singular fit means the model is wrong | simplify the random effects |
+| a boundary convergence means the model is wrong | simplify the random effects |
 
 ---
 
