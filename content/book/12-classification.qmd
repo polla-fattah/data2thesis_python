@@ -170,7 +170,7 @@ The first question is about `support`, the strongest single predictor. The tree 
 
 ## Random forests
 
-A **random forest** grows hundreds of trees, each on a slightly different version of the data, and lets them vote. Two sources of randomness make the trees different. Each tree is grown on a **bootstrap sample** of the training data (Chapter 7), students drawn at random with replacement. And at each split, the tree may only choose from a random subset of the predictors; the size of this subset, `max_features` (analogous to `mtry` in R), is a hyperparameter.
+A **random forest** grows hundreds of trees, each on a slightly different version of the data, and lets them vote. Two sources of randomness make the trees different. Each tree is grown on a **bootstrap sample** of the training data (Chapter 7), students drawn at random with replacement. And at each split, the tree may only choose from a random subset of the predictors; the size of this subset, `max_features` in scikit-learn, is a hyperparameter.
 
 Each individual tree overfits in its own way, but because the trees differ, many of their errors cancel out when the trees vote. The predicted probability of "Yes" is the share of trees that vote "Yes". Averaging many models in this way is called an **ensemble**; a random forest is an ensemble of trees [@breiman2001].
 

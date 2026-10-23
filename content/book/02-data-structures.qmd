@@ -119,7 +119,7 @@ sleep
 
 ## Categories (Categorical Data)
 
-Research datasets frequently contain qualitative categories: faculty division, experimental arm, gender identity, or Likert response levels. Pandas represents categorical variables using the specialized `category` dtype (similar to factors in R or value labels in SPSS). A categorical Series displays text labels but stores them internally as compact integers mapped to a defined list of **categories**:
+Research datasets frequently contain qualitative categories: faculty division, experimental arm, gender identity, or Likert response levels. Pandas represents categorical variables using the specialized `category` dtype (similar to categorical variables in statistics or value labels in SPSS). A categorical Series displays text labels but stores them internally as compact integers mapped to a defined list of **categories**:
 
 ```{python}
 faculty = pd.Series(

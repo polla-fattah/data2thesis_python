@@ -174,7 +174,7 @@ linear regression :: A model of a numeric outcome as a straight-line function of
 list :: A standard Python data structure that holds an ordered sequence of items of any type, written with square brackets `[...]`.
 loading :: The correlation between an item and a factor or component.
 local model :: A language model that runs on your own computer, so data does not leave it.
-lockfile :: A file, such as renv's `renv.lock`, that records the exact package versions of a project.
+lockfile :: A file, such as `requirements.txt` or a lockfile (`poetry.lock`, `Pipfile.lock`), that records the exact package versions of a project, so that another researcher can install the identical environment.
 log-odds :: The logarithm of the odds; the scale on which logistic regression coefficients are estimated.
 logical indexing :: Selecting elements with a TRUE/FALSE condition, as in `x[x > 5]`.
 logistic regression :: A regression model for a yes/no outcome, which predicts the probability of "yes".
@@ -290,7 +290,7 @@ reliability :: How consistently a scale measures what it measures.
 ReLU :: Rectified linear unit: an activation function that sets negative values to zero.
 remainder :: In a time series decomposition, what is left after removing trend and season.
 render :: Running the code in a Quarto document and producing the finished output.
-renv :: A package that records and restores the package versions used by a project.
+venv | virtual environment :: A self-contained directory tree that isolates package installations and versions for a specific research project from system packages.
 repeated measures :: Several measurements of the same cases, such as each student in four semesters.
 replicability :: Whether a new study, with new data, reaches the same conclusions.
 reporting sentence :: A sentence in a results section that states a finding with its numbers, such as an estimate, interval, and p-value.
@@ -351,7 +351,7 @@ synthetic data :: Artificial data with the structure of real data, used when the
 system prompt :: Instructions given to a language model before the conversation, such as a task and a codebook.
 temperature :: A setting of a language model that controls how random its answers are; 0 gives the most likely answer.
 test set :: Data set aside to evaluate a final model once, at the end.
-theme :: In ggplot2, the non-data appearance of a plot, such as fonts and background. In qualitative coding, a category of meaning.
+theme :: In seaborn and matplotlib, the visual styling of a plot (such as fonts, grid, and background), configured via `sns.set_theme()`. In qualitative coding, a category of meaning.
 threshold :: The probability above which a classifier predicts the positive class.
 Series :: A one-dimensional labeled pandas array representing a single column of data in a DataFrame.
 tidy data :: Data with one variable per column, one observation per row, and one value per cell.
@@ -368,7 +368,7 @@ trend :: The long-term direction of a time series.
 trend line :: A line added to a scatter plot to show the overall relationship.
 true negative :: A negative case correctly predicted negative.
 true positive :: A positive case correctly predicted positive.
-tsibble :: A data frame for time series, which knows which column is time.
+DatetimeIndex :: A specialized pandas index of datetime timestamps that enables time-based slicing, date math, and resampling.
 Tukey's test :: A post-hoc test comparing every pair of groups, with a correction for multiple comparisons.
 tuning :: Choosing hyperparameters by comparing their performance, usually with cross-validation.
 two-sample t-test :: A test comparing the means of two independent groups.
@@ -422,7 +422,7 @@ nominal :: A level of measurement for categories with no order, such as faculty.
 ordinal :: A level of measurement for ordered categories whose distances are unknown, such as none, part-time, and full-time employment.
 interval :: A level of measurement with equal distances between values but no true zero, such as a wellbeing index.
 ratio :: A level of measurement with equal distances and a true zero, so that "twice as much" is meaningful, such as hours of sleep.
-ordered factor :: A factor whose levels have an order, created with `factor(..., ordered = TRUE)`.
+ordered category :: A categorical series whose categories have a specified order, created with `pd.Categorical(..., ordered=True)`.
 moderator :: A variable that changes the strength or direction of the relationship between a predictor and an outcome.
 mediator :: A variable on the path between a predictor and an outcome, through which the predictor has its effect.
 validity :: Whether a measure measures what it claims to, or whether a study's conclusions are justified.

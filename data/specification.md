@@ -16,7 +16,7 @@ The author's decisions are listed in section 9. Everything else is a proposal to
 4. **Honest null results.** Some hypotheses are *not* supported, so readers learn that "no effect" is a finding too.
 5. **Teaching traps on purpose.** A few classic pitfalls are built in deliberately (confounding, attrition, imbalanced classes, a reverse-coded item), each one discussed in the chapter where it appears.
 6. **Not about computers.** All content concerns students' lives, studies, and wellbeing.
-7. **Reproducible.** One documented R script generates every file from a fixed seed, and a check script confirms the designed effects are present.
+7. **Reproducible.** Documented scripts generate every file from a fixed seed, and a check script confirms the designed effects are present.
 
 ---
 
@@ -72,7 +72,7 @@ A two-year **longitudinal study** at one university. The university and country 
 | `wellbeing.sav` | 600 | SPSS version of `students` and `questionnaire`, with variable and value labels | Ch 2 |
 
 - The clean CSV files are what most chapters use; the raw Excel file is cleaned into them in Chapter 3.
-- **Distributed both ways:** as files in the `data/` folder on the book's website, and as the installable R package `data2thesis` (source in `data2thesis/`, installation instructions in `data2thesis/README.md`). The book teaches both: loading files teaches file paths and importing; installing the package teaches how packages work.
+- **Distributed both ways:** as files in the `data/` folder on the book's website, and as the installable Python package `data2thesis` (source in `data2thesis/`, installation instructions in `data2thesis/README.md`). The book teaches both: loading files teaches file paths and importing; installing the package teaches how packages work.
 
 ---
 
@@ -242,8 +242,8 @@ Other data supports the case rather than replacing it:
 
 | Data | Purpose |
 |---|---|
-| Real datasets in the "in your field" boxes | So readers regularly meet real data: e.g. a health example (patients measured at visits), an agriculture example (crop trials), a business example (employee turnover); from R's built-in datasets or packages where possible |
-| `lme4::sleepstudy` | A small real example before the case study in Chapter 10 |
+| Real datasets in the "in your field" boxes | So readers regularly meet real data: e.g. a health example (patients measured at visits), an agriculture example (crop trials), a business example (employee turnover); from standard open datasets or packages where possible |
+| `sleepstudy` | A small real example before the case study in Chapter 10 |
 
 ---
 
@@ -293,7 +293,7 @@ Other data supports the case rather than replacing it:
 | Workshop | **Random invitation** |
 | Time series | **Counselling visits** inside the case study |
 | Chapters 1-4 | **Elaf's data from Chapter 1**, with each tool shown first on a tiny example (section 6) |
-| Distribution | **Both:** files in `data/` and an installable R package |
+| Distribution | **Both:** files in `data/` and an installable Python package |
 | Size | **600 students** |
 | Faculties | The **five proposed faculties** |
 

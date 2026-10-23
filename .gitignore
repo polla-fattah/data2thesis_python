@@ -11,6 +11,7 @@ _site/
 !_extensions/**/*.html
 !_freeze/**/*.html
 content/book/*.html
+content/book/index.typ
 content/playground/*.html
 content/slides/*.html
 

@@ -161,8 +161,8 @@ Chapters whose code has not changed are not re-executed: their results are store
 ### **Chapter 10: Mixed-Effects Models**
 
 - Repeated measures and nested data, and why ordinary regression gets the uncertainty wrong (in either direction).
-- Random intercepts and random slopes with `lme4`, starting from the real `sleepstudy` data; the intraclass correlation (ICC).
-- Confidence intervals, likelihood ratio tests, and p-values with `lmerTest`.
+- Random intercepts and random slopes with `statsmodels` (`smf.mixedlm`), starting from the real `sleepstudy` data; the intraclass correlation (ICC).
+- Confidence intervals, likelihood ratio tests, and p-values.
 - Change over time in Elaf's study: the decline in wellbeing, the fading workshop effect, and stable GPA (and what a singular fit means).
 - Students within supervisors: variance at each level.
 - Generalised linear mixed models for counts (supervisor meetings) and binary outcomes.

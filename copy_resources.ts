@@ -10,20 +10,12 @@ function copy(from: string, to: string) {
 }
 
 // Playground pages read the data from their own folder, exactly as the
-// downloadable chapter projects do: read.csv("students.csv")
+// downloadable chapter projects do: pd.read_csv("students.csv")
 Deno.mkdirSync("content/playground", { recursive: true });
 for (const file of ["students.csv", "semesters.csv", "questionnaire.csv", "supervisors.csv",
                      "counselling_visits.csv", "open_responses.csv", "open_responses_coded.csv"]) {
   copy(`${repo}/data/${file}`, `content/playground/${file}`);
 }
-// The language model's saved coding (Chapter 18) is made by data-raw/run_ai_coding.R
+// The language model's saved coding (Chapter 18)
 copy(`${repo}/data-raw/ai_coding_results.csv`, "content/playground/ai_coding_results.csv");
 
-// Downloads: the data package and every data file
-Deno.mkdirSync("downloads", { recursive: true });
-for (const entry of Deno.readDirSync(`${repo}/data`)) {
-  if (!entry.isFile) continue;
-  if (/\.(csv|xlsx|sav|tar\.gz)$/.test(entry.name)) {
-    copy(`${repo}/data/${entry.name}`, `downloads/${entry.name}`);
-  }
-}

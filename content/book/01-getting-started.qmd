@@ -365,7 +365,7 @@ In pandas, we call the `.mean()` method directly on the column:
 students['age'].mean()
 ```
 
-Notice something important: in R, the default `mean()` function returns `NA` if even a single value is missing, forcing you to specify `na.rm = TRUE`. In pandas, `.mean()` is designed from the ground up for real-world empirical research: it calculates the average across all known observations while safely ignoring missing values by default (`skipna=True`).
+Notice something important: in pandas, `.mean()` is designed from the ground up for real-world empirical research: it calculates the average across all known observations while safely ignoring missing values by default (`skipna=True`).
 
 The average age of the students in the study is **29.7 years**.
 
