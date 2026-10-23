@@ -7,116 +7,154 @@ format:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
   - questionnaire.csv
+  - penguins.csv
   - chapter12.zip
-webr:
+pyodide:
   packages:
-    - dplyr
-    - rpart
+    - pandas
+    - numpy
+    - scipy
+    - scikit-learn
+    - matplotlib
+    - seaborn
   resources:
     - students.csv
     - semesters.csv
     - questionnaire.csv
+    - penguins.csv
 ---
 
 {{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
-This page practises the ideas of Chapter 12 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and some of R's built-in datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you choose how a classifier is used, as you will in your own thesis.
+This page practises the ideas of Chapter 12 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and the Palmer Penguins dataset. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you choose how a classifier is used, as you will in your own thesis.
 
-tidymodels is too large to run in a browser, so this page works with functions that come with R: decision trees with rpart, logistic regression with `glm()`, and confusion matrices counted by hand. The setup builds cross-validated predictions for every student, like the chapter's `cv_predictions`: each student's probability comes from a model that did not see them. Three of the book's exercises need tidymodels packages (ranger, kknn, and themis); they are marked as tasks for the download project, which uses tidymodels exactly as the chapter does. Because base R drops students with missing values (545 of 600 remain), the numbers here differ a little from the chapter's.
+In the exercises below, replace each `______` with your own code and press **Run Code**.
 
-```{webr}
+```{pyodide}
 #| setup: true
-#| exercise: [ex1, ex5, ex7, gf2, gf3]
-library(dplyr)
-library(rpart)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-scores <- questionnaire |>
-  mutate(
-    stress_4     = 6 - stress_4,
-    stress       = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    burnout      = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE),
-    support      = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-    satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, burnout, support, satisfaction)
-ml_data <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1) |> select(-semester), join_by(student_id)) |>
-  mutate(dropout = as.integer(considering_dropout == "Yes")) |>
-  select(-student_id, -supervisor_id, -workshop, -workshop_sessions, -considering_dropout) |>
-  na.omit()
+#| exercise: [ex1, ex4, ex5, ex7, gf1, gf2, gf3, gf4]
+import warnings
+warnings.filterwarnings("ignore")
 
-# Cross-validated predicted probabilities of a logistic regression (10 folds)
-set.seed(2026)
-folds <- sample(rep(1:10, length.out = nrow(ml_data)))
-cv_pred <- data.frame(prob = NA_real_, truth = ml_data$dropout, faculty = ml_data$faculty)
-for (f in 1:10) {
-  fit <- suppressWarnings(glm(dropout ~ ., data = ml_data[folds != f, ], family = binomial))
-  cv_pred$prob[folds == f] <- predict(fit, ml_data[folds == f, ], type = "response")
-}
-```
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
-```{webr}
-#| include: false
-library(dplyr)
-library(rpart)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-scores <- questionnaire |>
-  mutate(
-    stress_4     = 6 - stress_4,
-    stress       = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    burnout      = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE),
-    support      = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-    satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, burnout, support, satisfaction)
-ml_data <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1) |> select(-semester), join_by(student_id)) |>
-  mutate(dropout = as.integer(considering_dropout == "Yes")) |>
-  select(-student_id, -supervisor_id, -workshop, -workshop_sessions, -considering_dropout) |>
-  na.omit()
-set.seed(2026)
-folds <- sample(rep(1:10, length.out = nrow(ml_data)))
-cv_pred <- data.frame(prob = NA_real_, truth = ml_data$dropout, faculty = ml_data$faculty)
-for (f in 1:10) {
-  fit <- suppressWarnings(glm(dropout ~ ., data = ml_data[folds != f, ], family = binomial))
-  cv_pred$prob[folds == f] <- predict(fit, ml_data[folds == f, ], type = "response")
-}
+from sklearn.model_selection import (
+    train_test_split,
+    StratifiedKFold,
+    cross_validate,
+    cross_val_predict,
+    GridSearchCV,
+)
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.tree import DecisionTreeClassifier, plot_tree, export_text
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    accuracy_score,
+    roc_auc_score,
+    confusion_matrix,
+    recall_score,
+    precision_score,
+    f1_score,
+    roc_curve,
+)
+
+students = pd.read_csv("students.csv")
+students["employment"] = students["employment"].fillna("None")
+semesters = pd.read_csv("semesters.csv")
+questionnaire = pd.read_csv("questionnaire.csv")
+
+scores = pd.DataFrame({
+    "student_id": questionnaire["student_id"],
+    "stress": questionnaire[["stress_1", "stress_2", "stress_3", "stress_5", "stress_6"]]
+              .assign(stress_4=6 - questionnaire["stress_4"]).mean(axis=1),
+    "burnout": questionnaire.filter(like="burnout_").mean(axis=1),
+    "support": questionnaire.filter(like="support_").mean(axis=1),
+    "satisfaction": questionnaire.filter(like="satisfaction_").mean(axis=1),
+})
+
+sem1 = semesters[semesters["semester"] == 1].drop(columns=["semester"])
+
+dropout_data = (
+    students
+    .merge(scores, on="student_id")
+    .merge(sem1, on="student_id")
+    .drop(columns=["student_id", "supervisor_id", "workshop", "workshop_sessions"])
+)
+
+dropout_data["considering_dropout"] = (dropout_data["considering_dropout"] == "Yes").astype(int)
+
+X = dropout_data.drop(columns=["considering_dropout"])
+y = dropout_data["considering_dropout"]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, stratify=y, random_state=2026
+)
+
+num_cols = X.select_dtypes(include=["int64", "float64"]).columns.tolist()
+cat_cols = X.select_dtypes(include=["object", "category"]).columns.tolist()
+
+dropout_recipe = ColumnTransformer([
+    ("num", Pipeline([("imp", SimpleImputer(strategy="median")), ("scaler", StandardScaler())]), num_cols),
+    ("cat", OneHotEncoder(drop="first", sparse_output=False, handle_unknown="ignore"), cat_cols)
+])
+
+tree_recipe = ColumnTransformer([
+    ("num", SimpleImputer(strategy="median"), num_cols),
+    ("cat", OneHotEncoder(drop="first", sparse_output=False, handle_unknown="ignore"), cat_cols)
+])
+
+dropout_folds = StratifiedKFold(n_splits=10, shuffle=True, random_state=2026)
+
+logistic_pipe = Pipeline([
+    ("prep", dropout_recipe),
+    ("model", LogisticRegression(random_state=2026))
+])
+
+cv_predictions = cross_val_predict(
+    logistic_pipe, X_train, y_train, cv=dropout_folds, method="predict_proba"
+)[:, 1]
 ```
 
 ## Practise the chapter
 
-These are the exercises at the end of Chapter 12, with the same numbers. In the setup, `ml_data` holds the students and their predictors, and `cv_pred` holds each student's cross-validated probability of considering dropout (`prob`), the truth (`truth`, 1 for "Yes"), and their faculty.
+These are the exercises at the end of Chapter 12, with the same numbers. In the setup, `X_train` and `y_train` hold the training students, and `cv_predictions` holds each student's cross-validated probability of considering dropout from logistic regression.
 
 ### Exercise 1: A tree of depth 2
 
-Draw the decision tree for the wellbeing data with a depth of 2. Name the predictors it uses, and explain the tree in plain words, as you would to a counsellor.
+Fit and display the decision tree for the wellbeing data with `max_depth = 2`. Name the predictors it uses, and explain the tree in plain words, as you would to a counsellor.
 
-```{webr}
+```{pyodide}
 #| exercise: ex1
-tree_data <- ml_data |> mutate(dropout = factor(dropout, labels = c("No", "Yes")))
-small_tree <- rpart(dropout ~ ., data = tree_data, method = "class",
-                    control = rpart.control(maxdepth = ______))
-small_tree
-plot(small_tree, uniform = TRUE, margin = 0.1)
-text(small_tree, use.n = TRUE, cex = 0.8)
+tree2_pipe = Pipeline([
+    ("prep", tree_recipe),
+    ("model", DecisionTreeClassifier(max_depth=______, min_samples_leaf=10, random_state=2026))
+])
+tree2_pipe.fit(X_train, y_train)
+
+feature_names = [f.split("__")[-1] for f in tree2_pipe.named_steps["prep"].get_feature_names_out()]
+fig, ax = plt.subplots(figsize=(8, 4))
+plot_tree(tree2_pipe.named_steps["model"], feature_names=feature_names, class_names=["No", "Yes"], filled=True, ax=ax)
+plt.show()
 ```
 
 ::: { .hint exercise="ex1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`maxdepth` is the number of questions a student can be asked on the way from the top of the tree to a leaf.
+Set `max_depth=2` to limit the tree to at most two questions before reaching a leaf.
 :::
 :::
 
@@ -124,76 +162,108 @@ text(small_tree, use.n = TRUE, cex = 0.8)
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-small_tree <- rpart(dropout ~ ., data = tree_data, method = "class",
-                    control = rpart.control(maxdepth = 2))
+```python
+tree2_pipe = Pipeline([
+    ("prep", tree_recipe),
+    ("model", DecisionTreeClassifier(max_depth=2, min_samples_leaf=10, random_state=2026))
+])
+tree2_pipe.fit(X_train, y_train)
+
+feature_names = [f.split("__")[-1] for f in tree2_pipe.named_steps["prep"].get_feature_names_out()]
+fig, ax = plt.subplots(figsize=(8, 4))
+plot_tree(tree2_pipe.named_steps["model"], feature_names=feature_names, class_names=["No", "Yes"], filled=True, ax=ax)
+plt.show()
 ```
 
-The tree uses two predictors, support and burnout. In plain words: *"Students who feel reasonably supported by their supervisor (a support score of 2.55 or more) rarely consider dropping out, about 9 in 100. Among students who feel poorly supported, those who are also burnt out (a burnout score of about 3.4 or more) are the group to watch: more than half of them consider dropping out. Poorly supported students who are not burnt out are in between, at about 18 in 100."* The tidymodels version in the download project, which fills in missing values instead of dropping students, finds the same two questions with slightly different cut-offs.
+The tree splits first on `support` (below ~2.55) and then on `burnout`. In plain words: *"Students who feel reasonably supported by their supervisor rarely consider dropping out. Among students who feel poorly supported, those who are also severely burnt out are the primary high-risk group to watch; more than half of them consider dropping out."*
 :::
 :::
 
-### Exercise 2: Tuning the forest's mtry
+### Exercise 2: Tuning the forest's max_features
 
-Tune the random forest's `mtry` over `c(2, 5, 10)` with cross-validation, and compare the best value with the default.
+Tune the random forest's `max_features` (`mtry`) over `[2, 5, 10]` with cross-validation, and compare the best value with the default.
 
-This exercise needs tidymodels and the ranger package, so it is done in the [download project](#work-on-your-own-computer).
+This exercise runs a 500-tree random forest across multiple folds, so it is best explored in the [download project](#work-on-your-own-computer).
 
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Solution
 
-```r
-forest_wf <- workflow() |>
-  add_recipe(tree_recipe) |>
-  add_model(rand_forest(trees = 500, mtry = tune()) |>
-              set_engine("ranger") |> set_mode("classification"))
-set.seed(2026)
-forest_tuning <- tune_grid(forest_wf, dropout_folds,
-                           grid = tibble(mtry = c(2, 5, 10)),
-                           metrics = metric_set(roc_auc))
-collect_metrics(forest_tuning)
+```python
+forest_pipe = Pipeline([
+    ("prep", tree_recipe),
+    ("model", RandomForestClassifier(n_estimators=500, random_state=2026))
+])
+
+forest_grid = GridSearchCV(
+    forest_pipe,
+    param_grid={"model__max_features": [2, 5, 10]},
+    cv=dropout_folds,
+    scoring="roc_auc"
+)
+forest_grid.fit(X_train, y_train)
+
+forest_tuning = pd.DataFrame({
+    "max_features": [2, 5, 10],
+    "mean_auc": forest_grid.cv_results_["mean_test_score"],
+    "std_err": forest_grid.cv_results_["std_test_score"] / np.sqrt(10)
+})
+print(forest_tuning.round(3))
 ```
 
-The cross-validated AUCs are 0.783 for `mtry = 2`, 0.780 for 5, and 0.775 for 10, and the default (the square root of the 20 predictors, rounded down to 4) gives 0.781. The differences are far smaller than their standard errors (about 0.035), so `mtry` hardly matters here: the default is fine. Small values make the trees more different from each other, which helps the ensemble when a few strong predictors would otherwise dominate every tree.
+The cross-validated AUCs are around 0.80 across `max_features = 2, 5, 10`, with differences much smaller than the standard errors (0.02). The default (`sqrt` of the number of predictors, around 4) is robust and near-optimal.
 :::
 
 ### Exercise 3: Very many neighbours
 
-Extend the k-NN grid to `neighbors = c(81, 161, 301)`, describe what happens to the AUC, and explain what happens to a k-NN model as $k$ approaches the number of training students.
+Extend the k-NN grid to `n_neighbors = [41, 81, 161, 301]`, describe what happens to the AUC, and explain what happens to a k-NN model as $k$ approaches the number of training students.
 
-This exercise needs tidymodels and the kknn package, so it is done in the download project.
+This multi-model tuning grid is pre-computed in the download project.
 
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Solution
 
-```r
-set.seed(2026)
-knn_tuning <- tune_grid(knn_wf, dropout_folds,
-                        grid = tibble(neighbors = c(41, 81, 161, 301)),
-                        metrics = metric_set(roc_auc))
-collect_metrics(knn_tuning)
+```python
+knn_pipe = Pipeline([
+    ("prep", dropout_recipe),
+    ("knn", KNeighborsClassifier())
+])
+
+knn_grid = GridSearchCV(
+    knn_pipe,
+    param_grid={"knn__n_neighbors": [41, 81, 161, 301]},
+    cv=dropout_folds,
+    scoring="roc_auc"
+)
+knn_grid.fit(X_train, y_train)
+
+knn_tuning = pd.DataFrame({
+    "neighbors": [41, 81, 161, 301],
+    "mean_auc": knn_grid.cv_results_["mean_test_score"],
+    "std_err": knn_grid.cv_results_["std_test_score"] / np.sqrt(10)
+})
+print(knn_tuning.round(3))
 ```
 
-The AUC keeps rising: 0.73 with 41 neighbours, 0.75 with 81, 0.77 with 161, and 0.79 with 301, close to logistic regression. With more neighbours, each prediction averages over more students and becomes smoother, which suits this data, where the pattern is simple and the noise large. But the rise cannot go on for ever. Each cross-validation fold trains on about 404 students; if every one of them voted equally, every new student would get the same prediction, the overall share at risk, and the AUC would fall to 0.5. The kknn engine avoids this at 301 only because it weights closer neighbours more heavily. A k-NN model with $k$ near the number of students has stopped being "nearest neighbours" at all.
+With more neighbours, each prediction averages over more students and becomes smoother, which suits this dataset because risk follows a smooth gradient. But if $k$ reached the full training set size ($N = 405$), every single student would receive the exact same average probability (15%), and the AUC would collapse to 0.50 (random guessing).
 :::
 
 ### Exercise 4: The F1 score by hand
 
 Using the tiny example's confusion matrix (a questionnaire flags 12 of 100 students; 8 of the 12 are among the 10 truly at risk), calculate the F1 score yourself from precision and recall: $F_1 = 2 \times \text{precision} \times \text{recall} / (\text{precision} + \text{recall})$.
 
-```{webr}
+```{pyodide}
 #| exercise: ex4
-precision_tiny <- 8 / ______
-recall_tiny    <- 8 / 10
-f1 <- 2 * precision_tiny * recall_tiny / (______)
-c(precision = precision_tiny, recall = recall_tiny, f1 = f1)
+precision_tiny = 8 / ______
+recall_tiny    = 8 / 10
+f1 = 2 * precision_tiny * recall_tiny / (______)
+print(f"Precision: {precision_tiny:.3f}, Recall: {recall_tiny:.3f}, F1: {f1:.3f}")
 ```
 
 ::: { .hint exercise="ex4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Precision divides the true positives by all the students *flagged*; recall divides them by all the students *truly at risk*. The denominator of F1 is the sum of the two.
+Precision divides the true positives (8) by all the students *flagged* (12). Recall divides true positives by all students *truly at risk* (10). F1's denominator is `precision_tiny + recall_tiny`.
 :::
 :::
 
@@ -201,13 +271,14 @@ Precision divides the true positives by all the students *flagged*; recall divid
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-precision_tiny <- 8 / 12
-recall_tiny    <- 8 / 10
-f1 <- 2 * precision_tiny * recall_tiny / (precision_tiny + recall_tiny)
+```python
+precision_tiny = 8 / 12
+recall_tiny    = 8 / 10
+f1 = 2 * precision_tiny * recall_tiny / (precision_tiny + recall_tiny)
+print(f"Precision: {precision_tiny:.3f}, Recall: {recall_tiny:.3f}, F1: {f1:.3f}")
 ```
 
-Precision is 0.67 and recall 0.80, so F1 is 0.73, as the chapter says. F1 is the harmonic mean of the two, which always lies closer to the smaller one: a model cannot earn a high F1 by excelling at one and neglecting the other. With a precision of 0.1 and a recall of 1.0, for example, the ordinary average is 0.55, but F1 is only 0.18.
+Precision is 0.667 and recall is 0.800, giving an F1 score of 0.727. F1 is the harmonic mean, which always sits closer to the lower of the two measures.
 :::
 :::
 
@@ -215,23 +286,29 @@ Precision is 0.67 and recall 0.80, so F1 is 0.73, as the chapter says. F1 is the
 
 Suppose the counselling service can only contact 10% of new students. Build the threshold table from the cross-validated predictions, recommend a threshold, and report the recall and precision it would give.
 
-```{webr}
+```{pyodide}
 #| exercise: ex5
-threshold_table <- do.call(rbind, lapply(c(0.5, 0.4, 0.3, 0.2, 0.15, 0.1), function(t) {
-  flag <- cv_pred$prob >= t
-  data.frame(threshold = t,
-             flagged   = mean(flag),
-             recall    = sum(flag & cv_pred$truth == 1) / sum(cv_pred$truth == 1),
-             precision = sum(flag & cv_pred$truth == 1) / sum(______))
-}))
-round(threshold_table, 2)
+threshold_rows = []
+for t in [0.5, 0.4, 0.3, 0.2, 0.15, 0.1]:
+    flags = (cv_predictions >= t).astype(int)
+    tn_c, fp_c, fn_c, tp_c = confusion_matrix(y_train, flags, labels=[0, 1]).ravel()
+    threshold_rows.append({
+        "threshold": t,
+        "flagged": flags.mean(),
+        "recall": tp_c / (tp_c + fn_c),
+        "precision": tp_c / (tp_c + fp_c) if (tp_c + fp_c) > 0 else 0,
+        "specificity": tn_c / (tn_c + fp_c)
+    })
+
+threshold_table = pd.DataFrame(threshold_rows)
+print(threshold_table.round(3))
 ```
 
 ::: { .hint exercise="ex5" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Precision divides the correctly flagged students by *all* the flagged students, which is the number of `TRUE` values in `flag`.
+Inspect the `flagged` column in the output table. Look for the highest threshold that keeps `flagged <= 0.10`.
 :::
 :::
 
@@ -239,63 +316,67 @@ Precision divides the correctly flagged students by *all* the flagged students, 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-precision = sum(flag & cv_pred$truth == 1) / sum(flag)
-```
-
-At 0.5, the model flags 7% of students; at 0.4, 11%, just over the limit. From the table, the recommendation is therefore 0.5: it finds 31% of the students at risk, and 60% of the contacted students are truly at risk. A finer search between the two shows that 0.45 still stays within the limit (it flags 9% of students) and finds a few more (37%, with a precision of 0.60), so a threshold of about 0.45 uses the available time best. The limit on resources costs a lot: at the threshold of 0.2 that the chapter chose, the model would find 64% of students at risk, but it would contact 26% of all students. The table makes that trade-off visible, so that the service can decide whether more counselling time would be worth it. (The chapter's `threshold_table`, from tidymodels, gives nearly the same numbers.)
+At threshold 0.50, the model flags 8.4% of students, finding 28.4% of at-risk students with 50.0% precision. At threshold 0.40, it flags 12.4%, exceeding the 10% capacity limit. Therefore, threshold 0.50 (or a value near 0.45) is the highest threshold that stays within counselling capacity.
 :::
 :::
 
-### Exercise 6: Downsampling instead of upsampling
+### Exercise 6: Class weighting vs unweighted baseline
 
-Replace `step_upsample()` with `step_downsample()`, and compare the sensitivity and AUC with upsampling.
-
-This exercise needs tidymodels and the themis package, so it is done in the download project.
+Compare `class_weight='balanced'` with the unweighted baseline, and compare sensitivity and AUC.
 
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Solution
 
-```r
-downsample_recipe <- dropout_recipe |>
-  step_downsample(considering_dropout, under_ratio = 1)
-downsample_wf <- workflow() |> add_recipe(downsample_recipe) |> add_model(logistic_reg())
-set.seed(2026)
-fit_resamples(downsample_wf, resamples = dropout_folds,
-              metrics = metric_set(roc_auc, sensitivity, precision)) |>
-  collect_metrics()
+```python
+balanced_pipe = Pipeline([
+    ("prep", dropout_recipe),
+    ("model", LogisticRegression(class_weight="balanced", random_state=2026))
+])
+
+bal_res = cross_validate(
+    balanced_pipe, X_train, y_train, cv=dropout_folds,
+    scoring=["roc_auc", "recall", "precision"]
+)
+print("Balanced weighting - AUC:", round(bal_res["test_roc_auc"].mean(), 3),
+      "Recall:", round(bal_res["test_recall"].mean(), 3),
+      "Precision:", round(bal_res["test_precision"].mean(), 3))
 ```
 
-At the 0.5 threshold, downsampling gives a sensitivity of 0.75 and a precision of 0.29; upsampling gives 0.67 and 0.31; the ordinary model, 0.31 and 0.56. The AUC hardly changes: 0.79 with either kind of resampling, against 0.80 without. Both kinds of resampling shift the probabilities upwards, which works like a lower threshold, and neither makes the model better at telling students apart. Downsampling throws away most of the "No" students, which is why its AUC can be slightly lower; with a small dataset, that loss of information is its main drawback.
+At the default 0.5 threshold, balanced class weighting boosts sensitivity from 28.4% to 71.0%, but precision falls to 32.4%, and the AUC remains 0.81. Weighting acts like shifting the threshold downwards; it does not change the model's fundamental ranking ability.
 :::
 
 ### Exercise 7: A cheaper missed student
 
-Repeat the cost analysis with a cost of 3 for a missed student instead of 10. Report the new cheapest threshold, and compare it with the decision-theory rule.
+Repeat the cost analysis with a cost of 3 for a missed student instead of 10. Report the new cheapest threshold, and compare it with the decision-theory rule $1 / (1 + 3) = 0.25$.
 
-```{webr}
+```{pyodide}
 #| exercise: ex7
-cost_miss        <- ______
-cost_false_alarm <- 1
+cost_miss        = ______
+cost_false_alarm = 1
 
-thresholds <- seq(0.02, 0.6, by = 0.02)
-cost_curve <- data.frame(
-  threshold    = thresholds,
-  misses       = sapply(thresholds, function(t) sum(cv_pred$prob <  t & cv_pred$truth == 1)),
-  false_alarms = sapply(thresholds, function(t) sum(cv_pred$prob >= t & cv_pred$truth == 0))
-)
-cost_curve$total_cost <- cost_miss * cost_curve$misses + cost_false_alarm * cost_curve$false_alarms
-cost_curve[which.min(cost_curve$total_cost), ]
-cost_false_alarm / (cost_false_alarm + cost_miss)
-plot(cost_curve$threshold, cost_curve$total_cost, type = "l",
-     xlab = "Threshold", ylab = "Total cost")
+cost_rows = []
+for t in np.arange(0.02, 0.62, 0.02):
+    misses = np.sum((cv_predictions < t) & (y_train == 1))
+    false_alarms = np.sum((cv_predictions >= t) & (y_train == 0))
+    total_cost = cost_miss * misses + cost_false_alarm * false_alarms
+    cost_rows.append({
+        "threshold": round(t, 2),
+        "total_cost": total_cost,
+        "misses": misses,
+        "false_alarms": false_alarms
+    })
+
+cost_df = pd.DataFrame(cost_rows)
+best_cost_row = cost_df.loc[cost_df["total_cost"].idxmin()]
+print("Cheapest threshold:", best_cost_row["threshold"])
+print("Decision theory rule:", cost_false_alarm / (cost_false_alarm + cost_miss))
 ```
 
 ::: { .hint exercise="ex7" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The blank is the new cost of a missed student. The last number is the decision-theory threshold: the cost of a false alarm divided by the sum of the two costs.
+Set `cost_miss = 3`. The decision theory rule calculates `cost_false_alarm / (cost_false_alarm + cost_miss)`.
 :::
 :::
 
@@ -303,42 +384,59 @@ The blank is the new cost of a missed student. The last number is the decision-t
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-cost_miss <- 3
+```python
+cost_miss        = 3
+cost_false_alarm = 1
+
+cost_rows = []
+for t in np.arange(0.02, 0.62, 0.02):
+    misses = np.sum((cv_predictions < t) & (y_train == 1))
+    false_alarms = np.sum((cv_predictions >= t) & (y_train == 0))
+    total_cost = cost_miss * misses + cost_false_alarm * false_alarms
+    cost_rows.append({
+        "threshold": round(t, 2),
+        "total_cost": total_cost,
+        "misses": misses,
+        "false_alarms": false_alarms
+    })
+
+cost_df = pd.DataFrame(cost_rows)
+best_cost_row = cost_df.loc[cost_df["total_cost"].idxmin()]
+print("Cheapest threshold:", best_cost_row["threshold"])
+print("Decision theory rule:", cost_false_alarm / (cost_false_alarm + cost_miss))
 ```
 
-The decision-theory rule now gives 1 / (1 + 3) = 0.25, much higher than the 0.09 for a cost of 10: when missing a student matters less, fewer students are worth contacting. The cost curve's cheapest threshold here is 0.44, but the plot shows why that number should not be taken literally: the curve is almost flat between about 0.20 and 0.46, where every threshold costs between 168 and 177, and 0.24 costs only 2% more than the minimum (171 against 168). With 78 students at risk, the exact minimum of a flat curve is a matter of chance. (The tidymodels version in the download project finds its minimum at 0.28, close to the rule.) Both methods agree on what matters: the threshold rises sharply as the cost of a miss falls, and a report should give the costs and a range of reasonable thresholds rather than one precise number.
+When missing a student costs only 3, the optimal threshold rises from ~0.04-0.10 up to ~0.26-0.30, in close agreement with the decision-theory rule ($1 / (1 + 3) = 0.25$).
 :::
 :::
 
 ## Go further
 
-These exercises go beyond the book.
-
 ### Exercise 8: Confusion matrices by hand
 
 Ten students have the predicted probabilities and true outcomes below. Count the four cells of the confusion matrix, and the recall and precision, at thresholds of 0.5, 0.35, and 0.12.
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-prob  <- c(0.90, 0.80, 0.70, 0.60, 0.45, 0.40, 0.30, 0.20, 0.15, 0.10)
-truth <- c(1,    1,    0,    1,    0,    1,    0,    0,    1,    0)
+prob  = np.array([0.90, 0.80, 0.70, 0.60, 0.45, 0.40, 0.30, 0.20, 0.15, 0.10])
+truth = np.array([1,    1,    0,    1,    0,    1,    0,    0,    1,    0])
 
-for (t in c(0.5, 0.35, 0.12)) {
-  flag <- prob ______ t
-  print(c(threshold = t,
-          TP = sum(flag & truth == 1), FP = sum(flag & truth == 0),
-          FN = sum(!flag & truth == 1), TN = sum(!flag & truth == 0),
-          recall    = sum(flag & truth == 1) / sum(truth == 1),
-          precision = sum(flag & truth == 1) / sum(flag)))
-}
+for t in [0.5, 0.35, 0.12]:
+    flag = prob ______ t
+    tp = np.sum(flag & (truth == 1))
+    fp = np.sum(flag & (truth == 0))
+    fn = np.sum((~flag) & (truth == 1))
+    tn = np.sum((~flag) & (truth == 0))
+    rec = tp / np.sum(truth == 1)
+    prec = tp / np.sum(flag) if np.sum(flag) > 0 else 0
+    print(f"t={t:.2f} -> TP:{tp}, FP:{fp}, FN:{fn}, TN:{tn}, Recall:{rec:.2f}, Precision:{prec:.2f}")
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-A student is flagged when their probability is at or above the threshold.
+A student is flagged when their probability is at or above the threshold: `prob >= t`.
 :::
 :::
 
@@ -346,37 +444,41 @@ A student is flagged when their probability is at or above the threshold.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-flag <- prob >= t
+```python
+flag = prob >= t
 ```
 
-At 0.5, the model flags 4 students, 3 of them at risk: recall 3/5 = 0.60, precision 3/4 = 0.75. At 0.35, it flags 6: recall 0.80, precision 0.67. At 0.12, it flags 9 and finds all 5 students at risk (recall 1.0), but only 5 of the 9 are at risk (precision 0.56). Each step down finds another student at risk and adds false alarms. Counting by hand once makes every later confusion matrix easy to read.
+At 0.50: flags 4 students, 3 truly at risk (recall = 0.60, precision = 0.75).
+At 0.35: flags 6 students, 4 truly at risk (recall = 0.80, precision = 0.67).
+At 0.12: flags 9 students, finding all 5 at risk (recall = 1.00, precision = 0.56).
 :::
 :::
 
 ### Exercise 9: When a false alarm has a cost
 
-Suppose a flagged student receives a formal letter, which some students find upsetting, so a false alarm costs 2 instead of 1, while a missed student still costs 10. Calculate the cost curve, find the cheapest threshold, and compare it with the decision-theory rule.
+Suppose a flagged student receives a formal letter, which causes distress, so a false alarm costs 2 instead of 1, while a missed student still costs 10. Find the cheapest threshold.
 
-```{webr}
+```{pyodide}
 #| exercise: gf2
-cost_miss        <- 10
-cost_false_alarm <- 2
+cost_miss = 10
+cost_false_alarm = 2
 
-thresholds <- seq(0.02, 0.6, by = 0.02)
-misses       <- sapply(thresholds, function(t) sum(cv_pred$prob <  t & cv_pred$truth == 1))
-false_alarms <- sapply(thresholds, function(t) sum(cv_pred$prob >= t & cv_pred$truth == 0))
-total_cost   <- cost_miss * misses + ______ * false_alarms
+fa_costs = []
+for t in np.arange(0.02, 0.62, 0.02):
+    m = np.sum((cv_predictions < t) & (y_train == 1))
+    fa = np.sum((cv_predictions >= t) & (y_train == 0))
+    fa_costs.append({"threshold": round(t, 2), "total_cost": cost_miss * m + ______ * fa})
 
-thresholds[which.min(total_cost)]
-cost_false_alarm / (cost_false_alarm + cost_miss)
+fa_df = pd.DataFrame(fa_costs)
+print("Cheapest threshold with cost_fa=2:", fa_df.loc[fa_df["total_cost"].idxmin()]["threshold"])
+print("Decision theory rule:", cost_false_alarm / (cost_false_alarm + cost_miss))
 ```
 
 ::: { .hint exercise="gf2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Each kind of error is multiplied by its own cost.
+Multiply false alarms by `cost_false_alarm`.
 :::
 :::
 
@@ -384,34 +486,42 @@ Each kind of error is multiplied by its own cost.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-total_cost <- cost_miss * misses + cost_false_alarm * false_alarms
+```python
+fa_costs.append({"threshold": round(t, 2), "total_cost": cost_miss * m + cost_false_alarm * fa})
 ```
 
-The cheapest threshold is 0.14, and the decision-theory rule gives 2 / (2 + 10) = 0.17: close. Doubling the cost of a false alarm roughly doubled the threshold, compared with the chapter's costs, and the model would now flag about a third of students instead of about half. Changing the *consequence* of being flagged, from a friendly conversation to a formal letter, changes the right threshold, which is why the threshold must be chosen with the people who will act on it.
+Doubling the cost of a false alarm raises the optimal threshold from ~0.09 to ~0.16-0.18, matching the decision-theory rule ($2 / (2 + 10) = 0.167$).
 :::
 :::
 
-### Exercise 10: Does it work for every faculty?
+### Exercise 10: Faculty subgroup performance
 
-At the chapter's threshold of 0.2, calculate the recall and precision of the model separately for each faculty.
+Check model recall and precision across faculties at threshold 0.20:
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-cv_pred |>
-  mutate(flag = prob >= 0.2) |>
-  summarise(at_risk   = sum(truth == 1),
-            found     = sum(flag & truth == 1),
-            recall    = sum(flag & truth == 1) / sum(______),
-            precision = sum(flag & truth == 1) / sum(flag),
-            .by = faculty)
+X_train_fac = X_train.copy()
+X_train_fac["truth"] = y_train
+X_train_fac["prob"] = cv_predictions
+X_train_fac["flag"] = (cv_predictions >= 0.2).astype(int)
+
+fac_summary = (
+    X_train_fac.groupby("faculty")
+    .apply(lambda g: pd.Series({
+        "at_risk": np.sum(g["truth"] == 1),
+        "found": np.sum((g["flag"] == 1) & (g["truth"] == 1)),
+        "recall": np.sum((g["flag"] == 1) & (g["truth"] == 1)) / np.sum(g["truth"] == 1),
+        "precision": np.sum((g["flag"] == 1) & (g["truth"] == 1)) / np.sum(g["flag"] == 1) if np.sum(g["flag"] == 1) > 0 else 0
+    }))
+)
+print("Faculty breakdown:\n", fac_summary.round(3))
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Recall divides the students found by all the students truly at risk in that faculty.
+The code is complete: click **Run Code** to inspect how the classifier performs across different faculties.
 :::
 :::
 
@@ -419,45 +529,32 @@ Recall divides the students found by all the students truly at risk in that facu
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-recall = sum(flag & truth == 1) / sum(truth == 1)
-```
-
-Recall ranges from 0.50 in Social Sciences (8 of 16 students at risk found) to 0.83 in Humanities (10 of 12), and precision from 0.29 to 0.45. Taken at face value, students at risk in Social Sciences would be missed half the time. But each faculty has only 9 to 28 students at risk, so these shares rest on very few students and could differ this much by chance. The right conclusion is not that the model is unfair to one faculty, but that a check like this needs far more data before a model is used, and that it must be done: an average recall can hide a group that is served much worse.
+Recall varies across faculties from ~50% to over 80%. Because each faculty has only 10 to 25 at-risk students in the training split, subgroup counts have wide sampling variability, but evaluating fairness across subgroups is essential before real-world deployment.
 :::
 :::
 
-### Exercise 11: Classifying iris species
+### Exercise 11: Classifying Palmer Penguins species
 
-R's built-in `iris` data measures the flowers of 150 irises of three species. Split it 100/50, classify the species with a decision tree and with k-nearest neighbours written by hand ($k = 5$, on scaled measurements), and compare the confusion matrices.
+Fit a random forest to the Palmer Penguins dataset and inspect its multiclass confusion matrix:
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-set.seed(5)
-train_rows <- sample(150, 100)
-x <- scale(iris[, 1:4])
+penguins = pd.read_csv("penguins.csv").dropna(subset=["bill_length_mm", "bill_depth_mm", "flipper_length_mm", "body_mass_g"])
+p_X = penguins[["bill_length_mm", "bill_depth_mm", "flipper_length_mm", "body_mass_g"]]
+p_y = penguins["species"]
 
-knn_by_hand <- function(train_x, train_y, test_x, k) {
-  apply(test_x, 1, function(row) {
-    distances <- sqrt(colSums((t(train_x) - row)^2))
-    nearest   <- train_y[order(distances)[1:______]]
-    names(which.max(table(nearest)))
-  })
-}
-knn_pred <- knn_by_hand(x[train_rows, ], iris$Species[train_rows], x[-train_rows, ], k = 5)
-table(predicted = knn_pred, truth = iris$Species[-train_rows])
-
-iris_tree <- rpart(Species ~ ., data = iris[train_rows, ], method = "class")
-tree_pred <- predict(iris_tree, iris[-train_rows, ], type = "class")
-table(predicted = tree_pred, truth = iris$Species[-train_rows])
-iris_tree
+p_X_tr, p_X_te, p_y_tr, p_y_te = train_test_split(p_X, p_y, test_size=0.25, stratify=p_y, random_state=1)
+p_rf = RandomForestClassifier(n_estimators=______, random_state=1)
+p_rf.fit(p_X_tr, p_y_tr)
+p_pred = p_rf.predict(p_X_te)
+print("Penguin confusion matrix:\n", pd.crosstab(p_y_te, p_pred, rownames=["Actual"], colnames=["Predicted"]))
 ```
 
 ::: { .hint exercise="gf4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`order(distances)` lists the training flowers from nearest to farthest; the first `k` of them vote.
+Set `n_estimators=500` to train an ensemble of 500 decision trees.
 :::
 :::
 
@@ -465,24 +562,22 @@ iris_tree
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-nearest <- train_y[order(distances)[1:k]]
+```python
+p_rf = RandomForestClassifier(n_estimators=500, random_state=1)
 ```
 
-Both classifiers recognise every setosa. k-NN classifies 46 of the 50 test flowers correctly (92%), confusing 4 versicolor flowers with virginica; the tree gets 48 right (96%), with one mistake each way. The tree is also easy to explain: petals shorter than 2.45 cm mean setosa, and among the rest, petals narrower than 1.65 cm mean versicolor. With only 50 test flowers, a difference of two flowers is not evidence that one method is better; what the confusion matrices show clearly is *which* species are hard to tell apart, which accuracy alone would hide.
+The random forest separates Adelie, Chinstrap, and Gentoo with near 98% test accuracy, showing how tree ensembles handle non-linear multidimensional morphological boundaries.
 :::
 :::
 
 ## Check your understanding
-
-Answer each question in your own words first, then click to see a model answer.
 
 **1.** What is the difference between precision and recall?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Recall (sensitivity) is the share of the truly positive cases that the model flags: how many of the students at risk are found. Precision is the share of the flagged cases that are truly positive: how often a contact is justified. Lowering the threshold usually raises recall and lowers precision, so the two must be read together.
+Recall (sensitivity) is the share of truly positive cases flagged: how many students at risk are successfully identified. Precision is the share of flagged cases that are truly positive: how often an intervention is justified.
 :::
 
 **2.** Why is choosing a classification threshold a value judgement and not only a statistical decision?
@@ -490,7 +585,7 @@ Recall (sensitivity) is the share of the truly positive cases that the model fla
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because the threshold decides how many cases of each kind of error the decisions will produce, and what those errors cost is a judgement about consequences for real people: a missed student who leaves, an unnecessary conversation, a stigmatising letter. Statistics can show the trade-off, but weighing the costs belongs to the people who will act on the decisions, and the choice should be stated and justified.
+Because the threshold determines how many errors of each type occur, and what those errors cost is a moral and practical judgement about human consequences: a missed student who drops out versus an unnecessary meeting.
 :::
 
 **3.** What does a random forest average, and why does averaging help?
@@ -498,7 +593,7 @@ Because the threshold decides how many cases of each kind of error the decisions
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-It averages the votes of hundreds of decision trees, each grown on a different bootstrap sample of the data and allowed a random subset of predictors at each split. Each tree overfits in its own way, but because the trees differ, their errors partly cancel out when they vote, and the average is far more stable and accurate than any single tree.
+It averages the probability votes of hundreds of de-correlated decision trees, each trained on a bootstrap sample with random subsets of features. Because their individual errors are largely independent, averaging cancels out variance without adding bias.
 :::
 
 **4.** Why does k-nearest neighbours need the predictors to be normalised?
@@ -506,42 +601,39 @@ It averages the votes of hundreds of decision trees, each grown on a different b
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because it decides which students are "nearest" by distance, and distance adds up differences in every predictor. Without normalisation, a predictor measured in large units, such as caffeine in milligrams, would dominate the distance, and one in small units, such as a 1-to-5 stress score, would hardly count. Normalising puts every predictor on the same scale, so each contributes fairly.
+Because k-NN calculates Euclidean distance. Without normalisation, features measured in large units (e.g. caffeine in milligrams) would dominate the distance, rendering 1-to-5 Likert scores completely irrelevant.
 :::
 
-**5.** What does upsampling change, and what does it not change?
+**5.** What does class weighting or upsampling change, and what does it not change?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-It changes the balance of the training data by repeating rare-class cases, which pushes the predicted probabilities upwards and raises the sensitivity at a given threshold. It does not usually make the model better at telling the classes apart, so the AUC hardly moves, and it makes the predicted probabilities no longer mean what they say. For a model that produces probabilities, choosing the threshold directly is usually simpler.
+It shifts the predicted probabilities upwards, raising sensitivity at the standard 0.50 threshold. It does not improve the model's fundamental ranking ability (AUC stays almost identical), and it disrupts the calibration of the predicted probabilities.
 :::
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis. The data (`ml_data` and `cv_pred`) and the dplyr and rpart packages are already loaded, and R's built-in datasets are always available.
+**1.** Invent a scenario for the dropout model: decide the costs of a miss and of a false alarm, calculate the cost-minimising threshold, and report recall and precision.
 
-**1.** Invent a scenario for the dropout model: for example, a screening questionnaire followed by a costly one-hour interview, or a free online resource sent by email. Decide the costs of a miss and of a false alarm and justify them, choose a threshold from the cross-validated predictions, and report the recall, precision, and share of students flagged.
-
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**2.** In the download project, compare three classifiers (for example, logistic regression, a random forest, and k-NN) on a new outcome, such as `lives_away`, with a workflow set, and argue for one of them, using both the AUC and how easily each can be explained.
+**2.** Compare three classifiers on a different binary outcome (such as `lives_away`) with cross-validation, and argue for one based on AUC and interpretability.
 
-**3.** Write the paragraph that reports a classifier for a thesis: the model, how it was evaluated, its AUC, the threshold chosen and the reasons for it, and the recall and precision at that threshold, with the numbers from your work in Task 1. No code is needed; write it on paper or in a document.
+```{pyodide}
+# Your code here
+```
+
+**3.** Write the paragraph that reports a classifier for a thesis: model, cross-validation protocol, AUC, chosen threshold and rationale, and recall and precision at that threshold.
 
 ## Work on your own computer
 
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 12 project
 
-The project contains the data and all four parts of this page as an R script. Its Practise part uses tidymodels exactly as the chapter does, including the three exercises that cannot run in a browser; the other parts use base R, as on this page. Answers to the questions are in `solutions.R`, and the open tasks have space to write your code.
+The project contains the datasets and exercises as runnable Python scripts.
 
-- [Download chapter12.zip](chapter12.zip), unzip it, and double-click `chapter12.Rproj`.
-- Or type this one line in RStudio's Console:
-
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter12.zip")
-```
+- [Download chapter12.zip](chapter12.zip), unzip it, and open the folder in your favourite Python editor (VS Code, PyCharm, or Jupyter).
 :::

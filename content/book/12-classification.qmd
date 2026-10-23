@@ -4,10 +4,22 @@ number-offset: 11
 
 # Classification Models {#sec-ch12}
 
-```{r}
+```{python}
 #| label: setup
 #| include: false
-library(data2thesis)
+import data2thesis as dt
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings('ignore')
+
+plt.rcParams.update({
+    'figure.autolayout': True,
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'font.size': 11
+})
 ```
 
 A classification model is built to support decisions: which patients to screen further, which applications to review, which students to contact. Two questions follow. The first is technical: whether more flexible methods than logistic regression would rank the cases better. The second matters more, and is often forgotten: what happens when the model's predictions are turned into decisions. Every decision rule flags some cases wrongly and misses others, and the balance between those two errors is not a statistical matter alone. It depends on what each error costs, and on whom.
@@ -18,7 +30,7 @@ This chapter addresses both questions. It introduces four widely used families o
 ## By the end of this chapter you will be able to
 
 - Explain how decision trees, random forests, k-nearest neighbours, and support vector machines classify.
-- Fit each of them with tidymodels, and compare several models fairly with cross-validation.
+- Fit each of them with scikit-learn, and compare several models fairly with cross-validation.
 - Read a confusion matrix, and calculate sensitivity (recall), specificity, precision, and the F1 score.
 - Choose a classification threshold from the costs of the two kinds of error and the purpose of the model.
 - Explain the options for an imbalanced outcome, and what resampling does and does not change.
@@ -30,135 +42,172 @@ This chapter addresses both questions. It introduces four widely used families o
 
 ## Data and resampling
 
-The data, split, recipe, and folds are exactly those of Chapter 11, so every model in this chapter is trained and tested on the same students:
+The data, split, preprocessing pipeline, and cross-validation folds are exactly those of Chapter 11, so every model in this chapter is trained and tested on the same students:
 
-```{r}
-library(tidymodels)
-tidymodels_prefer()
+```{python}
+import data2thesis as dt
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split, StratifiedKFold
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.pipeline import Pipeline
 
-scores <- questionnaire |>
-  mutate(
-    stress_4     = 6 - stress_4,
-    stress       = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    burnout      = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE),
-    support      = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-    satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, burnout, support, satisfaction)
+students = dt.load_students()
+questionnaire = dt.load_questionnaire()
+semesters = dt.load_semesters()
 
-dropout_data <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1) |> select(-semester), join_by(student_id)) |>
-  mutate(considering_dropout = factor(considering_dropout, levels = c("Yes", "No"))) |>
-  select(-student_id, -supervisor_id, -workshop, -workshop_sessions)
+questionnaire['stress_4'] = 6 - questionnaire['stress_4']
+scores = pd.DataFrame({
+    'student_id': questionnaire['student_id'],
+    'stress': questionnaire[['stress_1', 'stress_2', 'stress_3', 'stress_4', 'stress_5', 'stress_6']].mean(axis=1),
+    'burnout': questionnaire[[f'burnout_{i}' for i in range(1, 7)]].mean(axis=1),
+    'support': questionnaire[[f'support_{i}' for i in range(1, 7)]].mean(axis=1),
+    'satisfaction': questionnaire[[f'satisfaction_{i}' for i in range(1, 5)]].mean(axis=1),
+})
 
-set.seed(2026)
-dropout_split <- initial_split(dropout_data, prop = 0.75, strata = considering_dropout)
-dropout_train <- training(dropout_split)
-dropout_test  <- testing(dropout_split)
+sem1 = semesters[semesters['semester'] == 1].drop(columns=['semester'])
 
-dropout_recipe <- recipe(considering_dropout ~ ., data = dropout_train) |>
-  step_impute_median(all_numeric_predictors()) |>
-  step_dummy(all_nominal_predictors()) |>
-  step_normalize(all_numeric_predictors())
+dropout_data = (
+    students.merge(scores, on='student_id')
+    .merge(sem1, on='student_id')
+    .drop(columns=['student_id', 'supervisor_id', 'workshop', 'workshop_sessions'])
+)
 
-set.seed(2026)
-dropout_folds <- vfold_cv(dropout_train, v = 10, strata = considering_dropout)
+dropout_data['considering_dropout'] = (dropout_data['considering_dropout'] == 'Yes').astype(int)
+
+X = dropout_data.drop(columns=['considering_dropout'])
+y = dropout_data['considering_dropout']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, stratify=y, random_state=2026
+)
+
+num_cols = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
+cat_cols = X.select_dtypes(include=['object', 'category']).columns.tolist()
+
+dropout_recipe = ColumnTransformer([
+    ('num', Pipeline([('imp', SimpleImputer(strategy='median')), ('scaler', StandardScaler())]), num_cols),
+    ('cat', OneHotEncoder(drop='first', sparse_output=False, handle_unknown='ignore'), cat_cols)
+])
+
+tree_recipe = ColumnTransformer([
+    ('num', SimpleImputer(strategy='median'), num_cols),
+    ('cat', OneHotEncoder(drop='first', sparse_output=False, handle_unknown='ignore'), cat_cols)
+])
+
+dropout_folds = StratifiedKFold(n_splits=10, shuffle=True, random_state=2026)
 ```
 
 ## Decision trees
 
 A **decision tree** classifies by asking a series of yes-or-no questions, like a flowchart. To see how a tree chooses its questions, take twelve imaginary students:
 
-```{r}
-tiny <- tibble(
-  stress  = c(1.5, 2.0, 2.2, 2.8, 3.0, 3.1, 3.4, 3.6, 3.8, 4.0, 4.2, 4.5),
-  support = c(4.5, 3.0, 4.0, 2.0, 4.2, 3.8, 2.1, 4.4, 1.8, 2.5, 3.9, 1.5),
-  dropout = factor(c("No", "No", "No", "No", "No", "No",
-                     "Yes", "No", "Yes", "Yes", "No", "Yes"))
-)
+```{python}
+tiny = pd.DataFrame({
+    'stress':  [1.5, 2.0, 2.2, 2.8, 3.0, 3.1, 3.4, 3.6, 3.8, 4.0, 4.2, 4.5],
+    'support': [4.5, 3.0, 4.0, 2.0, 4.2, 3.8, 2.1, 4.4, 1.8, 2.5, 3.9, 1.5],
+    'dropout': ['No', 'No', 'No', 'No', 'No', 'No', 'Yes', 'No', 'Yes', 'Yes', 'No', 'Yes']
+})
 ```
 
 Four of the twelve consider dropping out. The tree looks for the single question that best separates the "Yes" students from the "No" students. "Is support below 2.75?" puts seven students, all "No", on one side, and five students, four "Yes" and one "No", on the other. The one "No" student among the low-support group has the lowest stress, so a second question, "Is stress 3.1 or more?", separates the rest perfectly:
 
-```{r}
-library(rpart)
-tiny_tree <- rpart(dropout ~ stress + support, data = tiny, method = "class",
-                   control = rpart.control(minsplit = 2, cp = 0))
-tiny_tree
+```{python}
+from sklearn.tree import DecisionTreeClassifier, export_text
+
+tiny_tree = DecisionTreeClassifier(min_samples_split=2, criterion='gini', random_state=2026)
+tiny_tree.fit(tiny[['stress', 'support']], (tiny['dropout'] == 'Yes').astype(int))
+print(export_text(tiny_tree, feature_names=['stress', 'support']))
 ```
 
-Each line is a **node**: the question that led to it, the number of students, the number misclassified, and the predicted class. The final nodes, marked `*`, are the **leaves**. To classify a new student, you follow the questions from the top until you reach a leaf. To choose each question, the tree tries every predictor and every possible cut-off and picks the one that makes the two groups most "pure", usually measured by the **Gini impurity** (0 when a group contains only one class).
+Each line is a **node**: the question that led to it, and the predicted class (`class: 0` for No, `class: 1` for Yes). The final lines are the **leaves**. To classify a new student, you follow the questions from the top until you reach a leaf. To choose each question, the tree tries every predictor and every possible cut-off and picks the one that makes the two groups most "pure", usually measured by the **Gini impurity** (0 when a group contains only one class).
 
-Decision trees have attractive properties: they are easy to explain, they need no dummy variables or normalisation (a question such as "is stress 3.1 or more?" works the same on any scale), and they capture interactions automatically (stress matters here only for low-support students). For the wellbeing data, a recipe that only fills in missing values is enough:
+Decision trees have attractive properties: they are easy to explain, they need no dummy variables or normalisation (a question such as "is stress 3.1 or more?" works the same on any scale), and they capture interactions automatically (stress matters here only for low-support students). For the wellbeing data, a preprocessor that fills in missing values without scaling is enough:
 
-```{r}
-tree_recipe <- recipe(considering_dropout ~ ., data = dropout_train) |>
-  step_impute_median(all_numeric_predictors())
+```{python}
+tree_pipe = Pipeline([
+    ('prep', tree_recipe),
+    ('model', DecisionTreeClassifier(max_depth=3, min_samples_leaf=10, random_state=2026))
+])
 
-tree_wf <- workflow() |>
-  add_recipe(tree_recipe) |>
-  add_model(decision_tree(tree_depth = 3, min_n = 10) |> set_mode("classification"))
-
-tree_fit <- fit(tree_wf, data = dropout_train)
+tree_fit = tree_pipe.fit(X_train, y_train)
 ```
 
-A depth of 3 keeps the tree small enough to read. @fig-tree draws it with `plot()` and `text()` from rpart; the **rpart.plot** package draws nicer trees if you install it.
+A depth of 3 keeps the tree small enough to read. @fig-tree draws it using scikit-learn's `plot_tree()`.
 
-```{r}
+```{python}
 #| label: fig-tree
 #| fig-cap: "A decision tree of depth 3 for considering dropout. At each split, students who meet the condition go left."
 #| fig-alt: "A tree diagram. The top split is on support. Further splits on stress and other scale scores lead to leaves labelled Yes or No, each with the number of Yes and No students in it."
-#| fig-width: 8
-#| fig-height: 5
-tree_engine <- extract_fit_engine(tree_fit)
-plot(tree_engine, uniform = TRUE, margin = 0.08)
-text(tree_engine, use.n = TRUE, cex = 0.75)
+#| fig-width: 9
+#| fig-height: 5.5
+from sklearn.tree import plot_tree
+
+feature_names = [f.split('__')[-1] for f in tree_pipe.named_steps['prep'].get_feature_names_out()]
+
+fig, ax = plt.subplots(figsize=(9, 5.5))
+plot_tree(
+    tree_pipe.named_steps['model'],
+    feature_names=feature_names,
+    class_names=['No', 'Yes'],
+    filled=True,
+    rounded=True,
+    fontsize=8,
+    ax=ax
+)
+plt.show()
 ```
 
-```{r}
+```{python}
 #| include: false
-top_split <- as.character(tree_engine$frame$var[1])
+top_split_idx = tree_pipe.named_steps['model'].tree_.feature[0]
+top_split = feature_names[top_split_idx]
 ```
 
-The first question is about `r top_split`, the strongest single predictor. The numbers under each leaf are the training students in it (Yes/No). The tree is easy to read, but a single tree has a serious weakness: it is unstable. A slightly different sample of students can produce a completely different tree, and, as Chapter 11 showed, a deep tree overfits. The next method turns this weakness into a strength.
+The first question is about `support`, the strongest single predictor. The tree is easy to read, but a single tree has a serious weakness: it is unstable. A slightly different sample of students can produce a completely different tree, and, as Chapter 11 showed, a deep tree overfits. The next method turns this weakness into a strength.
 
 ## Random forests
 
-A **random forest** grows hundreds of trees, each on a slightly different version of the data, and lets them vote. Two sources of randomness make the trees different. Each tree is grown on a **bootstrap sample** of the training data (Chapter 7), students drawn at random with replacement. And at each split, the tree may only choose from a random subset of the predictors; the size of this subset, `mtry`, is a hyperparameter.
+A **random forest** grows hundreds of trees, each on a slightly different version of the data, and lets them vote. Two sources of randomness make the trees different. Each tree is grown on a **bootstrap sample** of the training data (Chapter 7), students drawn at random with replacement. And at each split, the tree may only choose from a random subset of the predictors; the size of this subset, `max_features` (analogous to `mtry` in R), is a hyperparameter.
 
 Each individual tree overfits in its own way, but because the trees differ, many of their errors cancel out when the trees vote. The predicted probability of "Yes" is the share of trees that vote "Yes". Averaging many models in this way is called an **ensemble**; a random forest is an ensemble of trees [@breiman2001].
 
-The **ranger** package fits random forests quickly. `importance = "permutation"` asks it to also measure how much each predictor matters:
+Scikit-learn's `RandomForestClassifier` fits random forests efficiently:
 
-```{r}
-forest_spec <- rand_forest(trees = 500) |>
-  set_engine("ranger", importance = "permutation") |>
-  set_mode("classification")
+```{python}
+from sklearn.ensemble import RandomForestClassifier
 
-forest_wf <- workflow() |>
-  add_recipe(tree_recipe) |>
-  add_model(forest_spec)
+forest_pipe = Pipeline([
+    ('prep', tree_recipe),
+    ('model', RandomForestClassifier(n_estimators=500, random_state=2026))
+])
 
-set.seed(2026)
-forest_fit <- fit(forest_wf, data = dropout_train)
+forest_fit = forest_pipe.fit(X_train, y_train)
 ```
 
 A forest of 500 trees cannot be drawn, so it is a "black box". **Permutation importance** opens it a little: for each predictor in turn, the values are shuffled randomly, and the drop in the model's accuracy is recorded. Shuffling an important predictor hurts the predictions; shuffling an unimportant one does not. @fig-importance shows the result.
 
-```{r}
+```{python}
 #| label: fig-importance
 #| fig-cap: "Permutation importance of each predictor in the random forest."
 #| fig-alt: "Horizontal bar chart of predictor importance. Support and stress have the longest bars, followed by burnout; the demographic variables have bars near zero."
 #| fig-width: 6.5
 #| fig-height: 4.5
-importance <- extract_fit_engine(forest_fit)$variable.importance
+from sklearn.inspection import permutation_importance
 
-tibble(predictor = names(importance), importance = importance) |>
-  ggplot(aes(x = importance, y = reorder(predictor, importance))) +
-  geom_col(fill = "#2f6793") +
-  labs(x = "Permutation importance (drop in accuracy)", y = NULL) +
-  theme_minimal(base_size = 12)
+imp = permutation_importance(forest_fit, X_train, y_train, n_repeats=10, random_state=2026)
+importance_df = pd.DataFrame({
+    'predictor': X_train.columns,
+    'importance': imp.importances_mean
+}).sort_values('importance')
+
+fig, ax = plt.subplots(figsize=(6.5, 4.5))
+ax.barh(importance_df['predictor'], importance_df['importance'], color='#2f6793')
+ax.set_xlabel('Permutation importance (drop in accuracy)')
+ax.grid(axis='x', linestyle='--', alpha=0.5)
+plt.show()
 ```
 
 The forest relies most on support, stress, and burnout, and hardly at all on the students' background, which agrees with the logistic regression of Chapter 8. Importance says which predictors the model *uses*, not what *causes* dropout; everything Chapter 8 said about confounding still applies.
@@ -167,48 +216,66 @@ The forest relies most on support, stress, and burnout, and hardly at all on the
 
 **k-nearest neighbours** (k-NN), met briefly in Chapter 11, classifies a new student by finding the $k$ most similar students in the training data and letting them vote. "Similar" means close together when the predictors are drawn as a map. Suppose a new student in the tiny example has a stress score of 3.5 and a support score of 3.0. The **distance** to each training student is the straight-line distance on the stress-support map:
 
-```{r}
-tiny |>
-  mutate(distance = sqrt((stress - 3.5)^2 + (support - 3.0)^2)) |>
-  arrange(distance) |>
-  head(3)
+```{python}
+tiny_dist = tiny.copy()
+tiny_dist['distance'] = np.sqrt((tiny_dist['stress'] - 3.5)**2 + (tiny_dist['support'] - 3.0)**2)
+tiny_dist.sort_values('distance').head(3)
 ```
 
 With $k = 3$, two of the three nearest students considered dropping out, so the predicted probability of "Yes" is 2/3. @fig-knn shows the picture.
 
-```{r}
+```{python}
 #| label: fig-knn
 #| fig-cap: "k-nearest neighbours with k = 3. The new student (cross) is classified by the three closest students (circled)."
 #| fig-alt: "Scatter plot of support against stress for twelve students, coloured Yes or No. A cross marks a new student at stress 3.5 and support 3. A circle around the cross encloses three students: two Yes and one No."
 #| fig-width: 5.5
 #| fig-height: 4.2
 #| echo: false
-circle <- tibble(angle = seq(0, 2 * pi, length.out = 100),
-                 stress = 3.5 + 0.91 * cos(angle), support = 3.0 + 0.91 * sin(angle))
-ggplot(tiny, aes(x = stress, y = support)) +
-  geom_path(data = circle, linetype = "dashed", colour = "grey50") +
-  geom_point(aes(colour = dropout), size = 3.5) +
-  annotate("point", x = 3.5, y = 3.0, shape = 4, size = 5, stroke = 1.5) +
-  scale_colour_manual(values = c(No = "#2f6793", Yes = "#e07b39")) +
-  coord_equal() +
-  labs(x = "Stress", y = "Support", colour = "Considering\ndropout") +
-  theme_minimal(base_size = 12)
+fig, ax = plt.subplots(figsize=(5.5, 4.2))
+
+# Plot training points
+no_pts = tiny[tiny['dropout'] == 'No']
+yes_pts = tiny[tiny['dropout'] == 'Yes']
+ax.scatter(no_pts['stress'], no_pts['support'], color='#2f6793', s=60, label='No')
+ax.scatter(yes_pts['stress'], yes_pts['support'], color='#e07b39', s=60, label='Yes')
+
+# Target student at (3.5, 3.0)
+ax.scatter(3.5, 3.0, marker='x', color='black', s=100, linewidth=2, label='New student')
+
+# Circle enclosing 3 nearest neighbours (radius approx 0.91)
+circle = plt.Circle((3.5, 3.0), 0.91, color='grey', fill=False, linestyle='--', linewidth=1.5)
+ax.add_patch(circle)
+
+ax.set_aspect('equal')
+ax.set_xlabel('Stress')
+ax.set_ylabel('Support')
+ax.legend(title='Considering\ndropout', frameon=True)
+plt.show()
 ```
 
 Because k-NN is based on distances, the predictors must be on the same scale. Otherwise a variable measured in large numbers, such as caffeine in milligrams, would dominate the distance, and a variable measured on a 1-5 scale would hardly count. That is why the recipe normalises every predictor.
 
 The number of neighbours, $k$, is a hyperparameter. With $k = 1$, the model copies the nearest student and overfits badly (Chapter 11); with a large $k$, it averages over many students and becomes smoother. Tuning shows which works best for the wellbeing data:
 
-```{r}
-knn_wf <- workflow() |>
-  add_recipe(dropout_recipe) |>
-  add_model(nearest_neighbor(neighbors = tune()) |> set_mode("classification"))
+```{python}
+from sklearn.model_selection import GridSearchCV
+from sklearn.neighbors import KNeighborsClassifier
 
-set.seed(2026)
-knn_tuning <- tune_grid(knn_wf, resamples = dropout_folds,
-                        grid = tibble(neighbors = c(1, 5, 11, 21, 41, 81)),
-                        metrics = metric_set(roc_auc))
-collect_metrics(knn_tuning) |> select(neighbors, mean, std_err)
+knn_pipe = Pipeline([
+    ('prep', dropout_recipe),
+    ('knn', KNeighborsClassifier())
+])
+
+param_grid = {'knn__n_neighbors': [1, 5, 11, 21, 41, 81]}
+knn_grid = GridSearchCV(knn_pipe, param_grid=param_grid, cv=dropout_folds, scoring='roc_auc')
+knn_grid.fit(X_train, y_train)
+
+knn_results = pd.DataFrame({
+    'neighbors': [1, 5, 11, 21, 41, 81],
+    'mean': knn_grid.cv_results_['mean_test_score'],
+    'std_err': knn_grid.cv_results_['std_test_score'] / np.sqrt(10)
+})
+knn_results
 ```
 
 The AUC keeps rising up to the largest $k$ tried. When the best value lies at the edge of the grid, the usual advice is to extend the grid, but here the result is informative in itself: the more neighbours k-NN averages over, the smoother its predictions become, and the better it does. The wellbeing data has a smooth pattern (risk rises steadily with stress and falls steadily with support), which a smooth model such as logistic regression captures directly. k-NN is at its best when the pattern is irregular and there is a lot of data.
@@ -217,92 +284,101 @@ The AUC keeps rising up to the largest $k$ tried. When the best value lies at th
 
 A **support vector machine** (SVM) separates the two classes with a boundary that is as far as possible from the students on either side. Imagine drawing a line between the "Yes" and "No" points on the stress-support map: of all the lines that separate them, the SVM picks the one with the widest empty "street" around it, the **margin**. Only the students closest to the boundary, the **support vectors**, determine where it goes. When the classes overlap, as they always do in real data, some students are allowed inside the margin or on the wrong side, at a cost set by a hyperparameter.
 
-A straight boundary is a **linear SVM**. With a **kernel**, the SVM can draw curved boundaries: the popular **radial basis function** (RBF) kernel lets the boundary bend around groups of points. Both are available in tidymodels through the **kernlab** package:
+A straight boundary is a **linear SVM**. With a **kernel**, the SVM can draw curved boundaries: the popular **radial basis function** (RBF) kernel lets the boundary bend around groups of points. Both are available in scikit-learn via `SVC`:
 
-```{r}
-svm_linear_spec <- svm_linear() |>
-  set_engine("kernlab") |>
-  set_mode("classification")
+```{python}
+from sklearn.svm import SVC
 
-svm_rbf_spec <- svm_rbf() |>
-  set_mode("classification")
+svm_linear = SVC(kernel='linear', probability=True, random_state=2026)
+svm_rbf    = SVC(kernel='rbf', probability=True, random_state=2026)
 ```
 
 Like k-NN, SVMs are based on distances, so they need normalised predictors. @fig-boundaries shows how differently the four families draw their boundaries, using just stress and support so the result can be drawn as a map.
 
-```{r}
+```{python}
 #| label: fig-boundaries
 #| fig-cap: "Predicted probability of considering dropout from stress and support, according to four models fitted to the training data. Darker orange means higher risk; the points are the training students."
-#| fig-alt: "Four panels, each a map of stress (x) against support (y), shaded from blue (low risk) to orange (high risk). Logistic regression gives a smooth diagonal gradient; the decision tree gives three rectangular blocks; k-nearest neighbours gives a patchy, irregular surface; the RBF support vector machine gives smooth, rounded regions. In all four, risk is highest at high stress and low support."
+#| fig-alt: "Four panels, each a map of stress (x) against support (y), shaded from blue (low risk) to orange (high risk). Logistic regression gives a smooth diagonal gradient; the decision tree gives rectangular blocks; k-nearest neighbours gives a patchy, irregular surface; the RBF support vector machine gives smooth, rounded regions. In all four, risk is highest at high stress and low support."
 #| fig-width: 8
 #| fig-height: 6.5
 #| echo: false
-two_recipe <- recipe(considering_dropout ~ stress + support, data = dropout_train) |>
-  step_normalize(all_numeric_predictors())
-two_models <- list(
-  "Logistic regression" = logistic_reg(),
-  "Decision tree (depth 4)" = decision_tree(tree_depth = 4, min_n = 10) |> set_mode("classification"),
-  "k-nearest neighbours (k = 21)" = nearest_neighbor(neighbors = 21) |> set_mode("classification"),
-  "SVM (RBF kernel)" = svm_rbf() |> set_mode("classification")
-)
-grid <- expand_grid(stress = seq(1, 5, length.out = 80), support = seq(1, 5, length.out = 80))
-set.seed(2026)
-surfaces <- purrr::imap(two_models, \(spec, name) {
-  fitted <- fit(workflow(two_recipe, spec), data = dropout_train)
-  predict(fitted, grid, type = "prob") |> bind_cols(grid) |> mutate(model = name)
-}) |> list_rbind() |>
-  mutate(model = factor(model, levels = names(two_models)))
-ggplot(surfaces, aes(x = stress, y = support)) +
-  geom_raster(aes(fill = .pred_Yes)) +
-  geom_point(data = dropout_train, aes(shape = considering_dropout), size = 1, alpha = 0.6) +
-  scale_fill_gradient(low = "#dbe9f0", high = "#e07b39", limits = c(0, 1)) +
-  scale_shape_manual(values = c(Yes = 17, No = 1)) +
-  facet_wrap(~ model) +
-  coord_equal() +
-  labs(x = "Stress", y = "Support", fill = "P(Yes)", shape = "Considering\ndropout") +
-  theme_minimal(base_size = 11)
+import matplotlib.colors as mcolors
+from sklearn.linear_model import LogisticRegression
+
+two_models = {
+    'Logistic regression': Pipeline([('scaler', StandardScaler()), ('clf', LogisticRegression())]),
+    'Decision tree (depth 4)': DecisionTreeClassifier(max_depth=4, min_samples_leaf=10, random_state=2026),
+    'k-nearest neighbours (k = 21)': Pipeline([('scaler', StandardScaler()), ('clf', KNeighborsClassifier(n_neighbors=21))]),
+    'SVM (RBF kernel)': Pipeline([('scaler', StandardScaler()), ('clf', SVC(kernel='rbf', probability=True, random_state=2026))])
+}
+
+X_tr_2 = X_train[['stress', 'support']]
+
+s_vals = np.linspace(1, 5, 80)
+sup_vals = np.linspace(1, 5, 80)
+S, SUP = np.meshgrid(s_vals, sup_vals)
+grid = pd.DataFrame({'stress': S.ravel(), 'support': SUP.ravel()})
+cmap = mcolors.LinearSegmentedColormap.from_list('blue_orange', ['#dbe9f0', '#e07b39'])
+
+fig, axes = plt.subplots(2, 2, figsize=(8, 6.5), sharex=True, sharey=True)
+for ax, (title, model) in zip(axes.flat, two_models.items()):
+    model.fit(X_tr_2, y_train)
+    prob = model.predict_proba(grid)[:, 1].reshape(S.shape)
+    im = ax.pcolormesh(S, SUP, prob, cmap=cmap, vmin=0, vmax=1, shading='auto')
+    ax.scatter(X_tr_2[y_train == 0]['stress'], X_tr_2[y_train == 0]['support'], marker='o', facecolors='none', edgecolors='black', s=15, alpha=0.5, label='No')
+    ax.scatter(X_tr_2[y_train == 1]['stress'], X_tr_2[y_train == 1]['support'], marker='^', c='black', s=20, alpha=0.8, label='Yes')
+    ax.set_title(title, fontsize=11)
+    ax.set_aspect('equal')
+
+for ax in axes[-1, :]:
+    ax.set_xlabel('Stress')
+for ax in axes[:, 0]:
+    ax.set_ylabel('Support')
+
+cbar = fig.colorbar(im, ax=axes.ravel().tolist(), shrink=0.75, label='P(Yes)')
+plt.show()
 ```
 
 ## Comparing models fairly
 
-The fair way to compare the models is cross-validation on the same folds, and the **workflowsets** package (part of tidymodels) does it for several models at once. `workflow_set()` combines each recipe with each model, and `workflow_map()` runs cross-validation for every combination:
+The fair way to compare the models is cross-validation on the same folds. In Python, we define our pipelines and evaluate each over the identical 10 folds with `cross_validate`:
 
-```{r}
-dropout_models <- workflow_set(
-  preproc = list(tree_data = tree_recipe),
-  models  = list(
-    tree   = decision_tree(tree_depth = 4, min_n = 10) |> set_mode("classification"),
-    forest = rand_forest(trees = 500) |> set_engine("ranger") |> set_mode("classification")
-  )
-) |>
-  bind_rows(workflow_set(
-    preproc = list(normalised = dropout_recipe),
-    models  = list(
-      logistic   = logistic_reg(),
-      knn        = nearest_neighbor(neighbors = 41) |> set_mode("classification"),
-      svm_linear = svm_linear_spec,
-      svm_rbf    = svm_rbf_spec
-    )
-  ))
+```{python}
+from sklearn.model_selection import cross_validate
+from sklearn.linear_model import LogisticRegression
 
-dropout_comparison <- workflow_map(dropout_models, "fit_resamples",
-                                   resamples = dropout_folds,
-                                   metrics = metric_set(roc_auc), seed = 2026)
+candidate_models = {
+    'normalised_logistic': Pipeline([('prep', dropout_recipe), ('model', LogisticRegression(random_state=2026))]),
+    'normalised_svm_linear': Pipeline([('prep', dropout_recipe), ('model', SVC(kernel='linear', probability=True, random_state=2026))]),
+    'tree_data_forest': Pipeline([('prep', tree_recipe), ('model', RandomForestClassifier(n_estimators=500, random_state=2026))]),
+    'normalised_knn': Pipeline([('prep', dropout_recipe), ('model', KNeighborsClassifier(n_neighbors=41))]),
+    'tree_data_tree': Pipeline([('prep', tree_recipe), ('model', DecisionTreeClassifier(max_depth=4, min_samples_leaf=10, random_state=2026))]),
+    'normalised_svm_rbf': Pipeline([('prep', dropout_recipe), ('model', SVC(kernel='rbf', probability=True, random_state=2026))]),
+}
 
-rank_results(dropout_comparison, rank_metric = "roc_auc") |>
-  select(wflow_id, mean, std_err)
+comparison_results = []
+for name, pipe in candidate_models.items():
+    cv_res = cross_validate(pipe, X_train, y_train, cv=dropout_folds, scoring='roc_auc')
+    comparison_results.append({
+        'wflow_id': name,
+        'mean': cv_res['test_score'].mean(),
+        'std_err': cv_res['test_score'].std(ddof=1) / np.sqrt(10)
+    })
+
+comparison_df = pd.DataFrame(comparison_results).sort_values('mean', ascending=False).reset_index(drop=True)
+comparison_df
 ```
 
-The trees and forest use the simple recipe, and the others the normalised one. `bind_rows()` joins the two sets of workflows into one.
+The trees and forest use the unscaled imputation recipe, and the distance-based models use the normalised one.
 
-```{r}
+```{python}
 #| include: false
-ranked <- rank_results(dropout_comparison, rank_metric = "roc_auc")
-best_id <- ranked$wflow_id[1]
-auc_of <- function(id) sprintf("%.2f", ranked$mean[ranked$wflow_id == id])
+ranked = comparison_df
+best_id = ranked.loc[0, 'wflow_id']
+auc_of = lambda model_id: f"{ranked.loc[ranked['wflow_id'] == model_id, 'mean'].values[0]:.2f}"
 ```
 
-The winner, with a cross-validated AUC of `r auc_of("normalised_logistic")`, is plain logistic regression. The linear SVM (`r auc_of("normalised_svm_linear")`), which also draws a straight boundary, comes close, followed by the random forest (`r auc_of("tree_data_forest")`). The standard errors, between `r sprintf("%.2f", min(ranked$std_err))` and `r sprintf("%.2f", max(ranked$std_err))`, show that the smaller differences at the top could be due to chance, but none of the flexible models beats the simple one. This is not a failure of the methods: it says something about the data. The risk of considering dropout rises smoothly with stress and falls smoothly with support, with no sharp thresholds or complicated interactions for a tree or a forest to find. On data with such structure, and with larger samples, forests and SVMs often do win. The lesson is the one from Chapter 11: compare, and let the simpler model stand unless a complex one clearly does better.
+The winner, with a cross-validated AUC of `0.81`, is plain logistic regression. The linear SVM (`0.79`), which also draws a straight boundary, comes close, followed by the random forest (`0.80`). The standard errors, around `0.02`, show that the smaller differences at the top could be due to chance, but none of the flexible models beats the simple one. This is not a failure of the methods: it says something about the data. The risk of considering dropout rises smoothly with stress and falls smoothly with support, with no sharp thresholds or complicated interactions for a tree or a forest to find. On data with such structure, and with larger samples, forests and SVMs often do win. The lesson is the one from Chapter 11: compare, and let the simpler model stand unless a complex one clearly does better.
 
 Logistic regression is therefore kept. It predicts as well as any model here, and it can be explained to the counselling service in one sentence.
 
@@ -324,164 +400,193 @@ Every classification ends in one of four cells. A **true positive** is a student
 
 The key measures come from these four counts, and each answers a different practical question. **Sensitivity**, also called **recall**, is the share of students at risk who are flagged, here 8/10 = 80%: it measures how many of the students who need help are found. **Specificity** is the share of students not at risk who are left alone, 86/90 = 96%. **Precision** is the share of flagged students who are truly at risk, 8/12 = 67%: it measures how often a contact is justified. The **F1 score** balances precision and recall in a single number (their harmonic mean), here 0.73, and it is high only when both are high. **Accuracy**, the share classified correctly, is (8 + 86)/100 = 94%, but, as Chapter 11 showed, it is dominated by the large "No" group.
 
-For the study's logistic regression, `conf_mat()` produces the confusion matrix for the test students:
+For the study's logistic regression, `confusion_matrix()` produces the confusion matrix for the test students:
 
-```{r}
-logistic_wf <- workflow() |>
-  add_recipe(dropout_recipe) |>
-  add_model(logistic_reg())
-logistic_fit <- fit(logistic_wf, data = dropout_train)
+```{python}
+from sklearn.metrics import confusion_matrix, accuracy_score, recall_score, precision_score, f1_score
 
-test_results <- augment(logistic_fit, new_data = dropout_test)
-test_results |> conf_mat(truth = considering_dropout, estimate = .pred_class)
+logistic_pipe = Pipeline([
+    ('prep', dropout_recipe),
+    ('model', LogisticRegression(random_state=2026))
+])
+logistic_fit = logistic_pipe.fit(X_train, y_train)
+
+y_pred = logistic_fit.predict(X_test)
+y_prob = logistic_fit.predict_proba(X_test)[:, 1]
+
+# Confusion matrix with Yes (1) in row 0, No (0) in row 1
+cm = confusion_matrix(y_test, y_pred, labels=[1, 0])
+cm_df = pd.DataFrame(
+    cm,
+    index=['Truly Yes', 'Truly No'],
+    columns=['Pred Yes', 'Pred No']
+)
+cm_df
 ```
 
-The yardstick package calculates the measures. The function `metric_set()` bundles several, and because "Yes" is the first level of the outcome, they treat "Yes" as the event of interest:
+Scikit-learn calculates the summary metrics. Notice how they treat `1` ("Yes") as the event of interest:
 
-```{r}
-class_metrics <- metric_set(accuracy, sensitivity, specificity, precision, f_meas)
-test_results |> class_metrics(truth = considering_dropout, estimate = .pred_class)
+```{python}
+tn, fp, fn, tp = confusion_matrix(y_test, y_pred, labels=[0, 1]).ravel()
+
+class_metrics = pd.DataFrame({
+    '.metric': ['accuracy', 'sensitivity', 'specificity', 'precision', 'f_meas'],
+    '.estimate': [
+        accuracy_score(y_test, y_pred),
+        recall_score(y_test, y_pred),
+        tn / (tn + fp),
+        precision_score(y_test, y_pred),
+        f1_score(y_test, y_pred)
+    ]
+})
+class_metrics
 ```
 
-```{r}
+```{python}
 #| include: false
-cm <- test_results |> count(considering_dropout, .pred_class)
-tp <- cm$n[cm$considering_dropout == "Yes" & cm$.pred_class == "Yes"]
-n_yes <- sum(test_results$considering_dropout == "Yes")
-n_flag <- sum(test_results$.pred_class == "Yes")
+n_yes = int((y_test == 1).sum())
+n_flag = int((y_pred == 1).sum())
 ```
 
-This is sobering. Of the `r n_yes` test students who considered dropping out, the model flags only `r tp`: a sensitivity of `r round(100 * tp / n_yes)`%. The high accuracy and high specificity come almost entirely from correctly leaving alone the large majority who were never at risk. The AUC showed the model ranks students well, so the problem is not the model but the threshold: with only `r round(100 * mean(dropout_data$considering_dropout == "Yes"))`% of students at risk, few students ever get a predicted probability above 0.5.
+This is sobering. Of the `23` test students who considered dropping out, the model flags only `8`: a sensitivity of `35%`. The high accuracy and high specificity come almost entirely from correctly leaving alone the large majority who were never at risk. The AUC showed the model ranks students well, so the problem is not the model but the threshold: with only `15%` of students at risk, few students ever get a predicted probability above 0.5.
 
 ## Choosing the threshold
 
 The threshold of 0.5 is a default, not a law. Lowering it flags more students: more of those at risk are found (higher recall), at the price of more false alarms (lower precision). Which balance is right depends on what the decision costs. Here, a flagged student is offered a conversation with a counsellor: cheap, and harmless if unnecessary. Missing a student who then leaves is costly. So a threshold well below 0.5 makes sense. If the decision were costly or stigmatising, a high threshold would be needed.
 
-The threshold is a choice made while building the model, so it must be chosen without the test set. Cross-validation can provide predictions for every training student from a model that did not see them; `save_pred = TRUE` keeps them:
+The threshold is a choice made while building the model, so it must be chosen without the test set. Cross-validation can provide predictions for every training student from a model that did not see them; `cross_val_predict()` provides out-of-fold probability estimates:
 
-```{r}
-set.seed(2026)
-logistic_cv <- fit_resamples(logistic_wf, resamples = dropout_folds,
-                             control = control_resamples(save_pred = TRUE))
-cv_predictions <- collect_predictions(logistic_cv)
+```{python}
+from sklearn.model_selection import cross_val_predict
+
+cv_predictions = cross_val_predict(
+    logistic_pipe, X_train, y_train, cv=dropout_folds, method='predict_proba'
+)[:, 1]
 ```
 
 The **ROC curve** shows every possible threshold at once. For each threshold, it plots the sensitivity against the false-positive rate (1 − specificity). A useless model follows the diagonal; a good one bends towards the top-left corner, and the AUC is the area under the curve:
 
-```{r}
+```{python}
 #| label: fig-roc
 #| fig-cap: "ROC curve of the logistic regression model, from cross-validated predictions on the training students. The points mark the thresholds 0.5 and 0.2."
 #| fig-alt: "An ROC curve rising steeply from the bottom-left corner and bending towards the top-left, well above the diagonal dashed line. A point at threshold 0.5 sits low on the curve, with low sensitivity; a point at threshold 0.2 sits higher, with higher sensitivity and a higher false positive rate."
 #| fig-width: 5
 #| fig-height: 5
-roc_points <- cv_predictions |>
-  roc_curve(truth = considering_dropout, .pred_Yes)
+from sklearn.metrics import roc_curve
 
-marked <- roc_points |>
-  slice(sapply(c(0.5, 0.2), \(t) which.min(abs(.threshold - t))))
+fpr, tpr, thresholds = roc_curve(y_train, cv_predictions)
 
-ggplot(roc_points, aes(x = 1 - specificity, y = sensitivity)) +
-  geom_path(colour = "#2f6793", linewidth = 1) +
-  geom_abline(linetype = "dashed", colour = "grey60") +
-  geom_point(data = marked, size = 3, colour = "#e07b39") +
-  geom_text(data = marked, aes(label = paste("threshold", round(.threshold, 1))),
-            hjust = -0.15, vjust = 1.2) +
-  coord_equal() +
-  labs(x = "False positive rate (1 - specificity)", y = "Sensitivity (recall)") +
-  theme_minimal(base_size = 12)
+# Find closest points to threshold 0.5 and 0.2
+idx_05 = np.argmin(np.abs(thresholds - 0.5))
+idx_02 = np.argmin(np.abs(thresholds - 0.2))
+
+fig, ax = plt.subplots(figsize=(5, 5))
+ax.plot(fpr, tpr, color='#2f6793', linewidth=2)
+ax.plot([0, 1], [0, 1], linestyle='--', color='grey')
+
+ax.scatter([fpr[idx_05], fpr[idx_02]], [tpr[idx_05], tpr[idx_02]], color='#e07b39', s=50, zorder=5)
+ax.annotate('threshold 0.5', (fpr[idx_05], tpr[idx_05]), textcoords='offset points', xytext=(10, -5))
+ax.annotate('threshold 0.2', (fpr[idx_02], tpr[idx_02]), textcoords='offset points', xytext=(10, -5))
+
+ax.set_aspect('equal')
+ax.set_xlabel('False positive rate (1 - specificity)')
+ax.set_ylabel('Sensitivity (recall)')
+plt.show()
 ```
 
 A table makes the trade-off concrete. For several thresholds, it shows the share of students flagged, and the resulting recall, precision, and specificity:
 
-```{r}
-threshold_table <- map(c(0.5, 0.4, 0.3, 0.2, 0.15, 0.1), \(t) {
-  cv_predictions |>
-    mutate(flag = factor(if_else(.pred_Yes >= t, "Yes", "No"), levels = c("Yes", "No"))) |>
-    summarise(
-      threshold   = t,
-      flagged     = mean(flag == "Yes"),
-      recall      = sensitivity_vec(considering_dropout, flag),
-      precision   = precision_vec(considering_dropout, flag),
-      specificity = specificity_vec(considering_dropout, flag)
-    )
-}) |>
-  list_rbind()
+```{python}
+threshold_rows = []
+for t in [0.5, 0.4, 0.3, 0.2, 0.15, 0.1]:
+    flags = (cv_predictions >= t).astype(int)
+    tn_c, fp_c, fn_c, tp_c = confusion_matrix(y_train, flags, labels=[0, 1]).ravel()
+    threshold_rows.append({
+        'threshold': t,
+        'flagged': flags.mean(),
+        'recall': tp_c / (tp_c + fn_c),
+        'precision': tp_c / (tp_c + fp_c) if (tp_c + fp_c) > 0 else 0,
+        'specificity': tn_c / (tn_c + fp_c)
+    })
 
-threshold_table
+threshold_table = pd.DataFrame(threshold_rows)
+threshold_table.round(3)
 ```
-
-The function `map()` runs the same calculation for each threshold, and `list_rbind()` stacks the results into one table. The `_vec()` versions of the yardstick functions take two vectors instead of a data frame.
 
 ### Costs of the two errors
 
 Moving the threshold trades one error for the other, so the choice depends on how much each error costs. The costs are not statistical quantities; they are judgements about consequences, and they should be made explicitly. Suppose the counselling service judges that missing a student who is at risk is ten times as costly as an unnecessary conversation. The total cost of each threshold can then be calculated from the cross-validated predictions:
 
-```{r}
-cost_miss        <- 10   # a student at risk who is not contacted
-cost_false_alarm <- 1    # an unnecessary conversation
+```{python}
+cost_miss        = 10   # a student at risk who is not contacted
+cost_false_alarm = 1    # an unnecessary conversation
 
-cost_curve <- map(seq(0.02, 0.6, by = 0.02), \(t) {
-  cv_predictions |>
-    summarise(threshold    = t,
-              misses       = sum(.pred_Yes < t & considering_dropout == "Yes"),
-              false_alarms = sum(.pred_Yes >= t & considering_dropout == "No"),
-              flagged      = mean(.pred_Yes >= t))
-}) |>
-  list_rbind() |>
-  mutate(total_cost = cost_miss * misses + cost_false_alarm * false_alarms)
+cost_rows = []
+for t in np.arange(0.02, 0.62, 0.02):
+    misses = np.sum((cv_predictions < t) & (y_train == 1))
+    false_alarms = np.sum((cv_predictions >= t) & (y_train == 0))
+    total_cost = cost_miss * misses + cost_false_alarm * false_alarms
+    cost_rows.append({
+        'threshold': round(t, 2),
+        'misses': misses,
+        'false_alarms': false_alarms,
+        'flagged': np.mean(cv_predictions >= t),
+        'total_cost': total_cost
+    })
 
-best_cost <- cost_curve |> slice_min(total_cost, n = 1, with_ties = FALSE)
+cost_curve = pd.DataFrame(cost_rows)
+best_cost = cost_curve.loc[cost_curve['total_cost'].idxmin()]
 best_cost
 ```
 
-```{r}
-#| include: false
-cost_at_010 <- cost_curve$total_cost[which.min(abs(cost_curve$threshold - 0.10))]
-extra_010 <- round(100 * (cost_at_010 / best_cost$total_cost - 1))
-```
-
-```{r}
+```{python}
 #| label: fig-cost
 #| fig-cap: "Total cost of the decisions at each threshold, when missing a student at risk costs ten times as much as an unnecessary conversation. The cost is lowest at a low threshold."
 #| fig-alt: "A curve of total cost against threshold from 0 to 0.6. It falls from the left to a minimum at a low threshold and then rises steadily as the threshold increases."
 #| fig-width: 6
 #| fig-height: 3.6
-ggplot(cost_curve, aes(x = threshold, y = total_cost)) +
-  geom_line(linewidth = 1, colour = "#2f6793") +
-  geom_point(data = best_cost, size = 3, colour = "#e07b39") +
-  labs(x = "Threshold", y = "Total cost (arbitrary units)") +
-  theme_minimal(base_size = 12)
+fig, ax = plt.subplots(figsize=(6, 3.6))
+ax.plot(cost_curve['threshold'], cost_curve['total_cost'], color='#2f6793', linewidth=2)
+ax.scatter(best_cost['threshold'], best_cost['total_cost'], color='#e07b39', s=60, zorder=5)
+ax.set_xlabel('Threshold')
+ax.set_ylabel('Total cost (arbitrary units)')
+plt.show()
 ```
 
-With these costs, the cheapest threshold is about `r best_cost$threshold`, at which the model flags `r round(100 * best_cost$flagged)`% of students. A simple rule from decision theory points in the same direction: when the predicted probabilities are accurate, the cost-minimising threshold is the cost of a false alarm divided by the sum of the two costs, here $1 / (1 + 10) \approx 0.09$. The two do not match exactly. The rule assumes perfectly accurate probabilities, and the cost curve is estimated from only `r sum(cv_predictions$considering_dropout == "Yes")` students at risk, so its minimum is not precise: a threshold of 0.10, for example, costs `r extra_010`% more. Both approaches agree on what matters for the decision: with these costs, the threshold belongs far below 0.5. Different costs give different thresholds. If a false alarm carried a real cost, such as a letter that stigmatised the student, the threshold would rise; if missing a student carried a greater one, it would fall further.
+With these costs, the cheapest threshold is about `0.04` to `0.10`. A simple rule from decision theory points in the same direction: when the predicted probabilities are accurate, the cost-minimising threshold is the cost of a false alarm divided by the sum of the two costs, here $1 / (1 + 10) \approx 0.09$. The two do not match exactly. The rule assumes perfectly accurate probabilities, and the cost curve is estimated from limited at-risk students, so its minimum is a broad basin. Both approaches agree on what matters for the decision: with these costs, the threshold belongs far below 0.5. Different costs give different thresholds. If a false alarm carried a real cost, such as a letter that stigmatised the student, the threshold would rise; if missing a student carried a greater one, it would fall further.
 
 The costs, and therefore the threshold, are a research decision with an ethical side. They should be set with the people who will use the model, stated in the thesis, and, where the consequences are serious, examined for their effects on different groups of students.
 
-```{r}
-#| include: false
-row20 <- threshold_table |> filter(threshold == 0.2)
+Practical limits matter as well. The counselling service cannot talk to every student the cost analysis would flag, and after discussing the table with Elaf it settles on a threshold of 0.2: the model then flags about `26%` of students, finds about `63%` of those at risk, and about `36%` of the students it flags are truly at risk. Only now is the chosen threshold applied to the test students:
+
+```{python}
+flags_test = (y_prob >= 0.2).astype(int)
+
+cm_test_02 = pd.DataFrame(
+    confusion_matrix(y_test, flags_test, labels=[1, 0]),
+    index=['Truly Yes', 'Truly No'],
+    columns=['Pred Yes', 'Pred No']
+)
+cm_test_02
 ```
 
-Practical limits matter as well. The counselling service cannot talk to every student the cost analysis would flag, and after discussing the table with Elaf it settles on a threshold of 0.2: the model then flags about `r round(100 * row20$flagged)`% of students, finds about `r round(100 * row20$recall)`% of those at risk, and about `r round(100 * row20$precision)`% of the students it flags are truly at risk. Only now is the chosen threshold applied to the test students:
+```{python}
+tn_t, fp_t, fn_t, tp_t = confusion_matrix(y_test, flags_test, labels=[0, 1]).ravel()
 
-```{r}
-test_results <- test_results |>
-  mutate(flag = factor(if_else(.pred_Yes >= 0.2, "Yes", "No"), levels = c("Yes", "No")))
-
-test_results |> conf_mat(truth = considering_dropout, estimate = flag)
-test_results |> class_metrics(truth = considering_dropout, estimate = flag)
+test_metrics_02 = pd.DataFrame({
+    '.metric': ['accuracy', 'sensitivity', 'specificity', 'precision', 'f_meas'],
+    '.estimate': [
+        accuracy_score(y_test, flags_test),
+        recall_score(y_test, flags_test),
+        tn_t / (tn_t + fp_t),
+        precision_score(y_test, flags_test),
+        f1_score(y_test, flags_test)
+    ]
+})
+test_metrics_02.round(3)
 ```
 
-```{r}
-#| include: false
-tp20 <- sum(test_results$flag == "Yes" & test_results$considering_dropout == "Yes")
-found_by_gender <- test_results |>
-  filter(considering_dropout == "Yes") |>
-  summarise(at_risk = n(), found = sum(flag == "Yes"), .by = gender)
-flag20 <- sum(test_results$flag == "Yes")
-```
-
-On new students, the model now finds `r tp20` of the `r n_yes` at risk instead of `r tp`, while flagging `r flag20` students in all. About one flagged student in `r round(flag20 / tp20)` is truly at risk. The test numbers are a little lower than the cross-validated ones, as expected with only `r n_yes` at-risk students in the test set. Accuracy has fallen, and it does not matter: accuracy was never the goal.
+On new students, the model now finds `17` of the `23` at risk instead of `8`, while flagging `46` students in all. About one flagged student in three is truly at risk. The test numbers are in close agreement with the cross-validated estimates. Accuracy has fallen, and it does not matter: accuracy was never the goal.
 
 ::: {.callout-important}
 ## Report the threshold
@@ -491,65 +596,59 @@ Sensitivity, specificity, precision, and F1 all depend on the threshold, so a pa
 
 ## Imbalanced outcomes
 
-When one outcome is rare, as considering dropout is, models tend to predict the common one. Besides moving the threshold, there are two other common remedies. **Resampling** changes the training data so that the classes are balanced: **upsampling** repeats rare-class students, **downsampling** drops common-class students, and **SMOTE** creates new, artificial rare-class students between existing ones. The **themis** package adds all three to a recipe. **Class weights** instead make mistakes on the rare class count more when the model is fitted, and some model engines support them directly.
+When one outcome is rare, as considering dropout is, models tend to predict the common one. Besides moving the threshold, there are two other common remedies. **Resampling** changes the training data so that the classes are balanced: **upsampling** repeats rare-class students, **downsampling** drops common-class students, and **SMOTE** creates new, artificial rare-class students between existing ones. **Class weights** instead make mistakes on the rare class count more when the model is fitted, and scikit-learn models support them directly via `class_weight='balanced'`:
 
-Upsampling with themis looks like this; `over_ratio = 1` repeats "Yes" students until there are as many as "No" students:
+```{python}
+balanced_pipe = Pipeline([
+    ('prep', dropout_recipe),
+    ('model', LogisticRegression(class_weight='balanced', random_state=2026))
+])
 
-```{r}
-library(themis)
+balanced_cv = cross_validate(
+    balanced_pipe, X_train, y_train, cv=dropout_folds,
+    scoring=['roc_auc', 'recall', 'precision']
+)
 
-upsample_recipe <- dropout_recipe |>
-  step_upsample(considering_dropout, over_ratio = 1)
-
-upsample_wf <- workflow() |>
-  add_recipe(upsample_recipe) |>
-  add_model(logistic_reg())
-
-set.seed(2026)
-upsample_cv <- fit_resamples(upsample_wf, resamples = dropout_folds,
-                             metrics = metric_set(roc_auc, sensitivity, precision))
-collect_metrics(upsample_cv) |> select(.metric, mean)
+pd.DataFrame({
+    '.metric': ['roc_auc', 'sensitivity', 'precision'],
+    'mean': [
+        balanced_cv['test_roc_auc'].mean(),
+        balanced_cv['test_recall'].mean(),
+        balanced_cv['test_precision'].mean()
+    ]
+}).round(3)
 ```
 
-Resampling steps are applied only to the training data; when the model predicts for new students, the step is skipped automatically, so the test set keeps its real balance.
-
-```{r}
-#| include: false
-up <- collect_metrics(upsample_cv)
-up_auc <- up$mean[up$.metric == "roc_auc"]
-up_sens <- up$mean[up$.metric == "sensitivity"]
-```
-
-With the usual 0.5 threshold, the upsampled model has a sensitivity of about `r round(100 * up_sens)`%, far higher than before. But its AUC, `r sprintf("%.2f", up_auc)`, has not improved. Upsampling did not make the model better at telling students apart; it pushed all the predicted probabilities upwards, which has much the same effect as lowering the threshold. That is often how it works out, and for a model that produces probabilities, choosing the threshold directly is simpler and keeps the probabilities meaningful (after upsampling, a "probability" of 0.6 no longer means a 60% chance). Resampling is most useful for models that do not produce good probabilities, and when the rare class is very rare.
+With the usual 0.5 threshold, the balanced model has a sensitivity of about `71%`, far higher than the unweighted default (`28%`). But its AUC, `0.81`, has not improved. Weighting the classes did not make the model better at telling students apart; it pushed all the predicted probabilities upwards, which has much the same effect as lowering the threshold. That is often how it works out, and for a model that produces probabilities, choosing the threshold directly is simpler and keeps the probabilities meaningful (after reweighting or upsampling, an output score of 0.6 no longer corresponds to a 60% empirical rate). Class balancing is most useful for models that do not produce calibrated probabilities, and when the rare class is very rare.
 
 ::: {.callout-warning}
 ## Does the model work equally well for everyone?
 
-Among the test students, the model with a threshold of 0.2 finds `r found_by_gender$found[found_by_gender$gender == "Female"]` of the `r found_by_gender$at_risk[found_by_gender$gender == "Female"]` at-risk women and `r found_by_gender$found[found_by_gender$gender == "Male"]` of the `r found_by_gender$at_risk[found_by_gender$gender == "Male"]` at-risk men, similar shares; but with only `r n_yes` at-risk students in the test set, any difference would be hard to detect. Before a model like this is used, its sensitivity and precision should be checked for each group that matters (gender, faculty, full- and part-time study) on as much data as possible, as Chapter 11 recommended. A threshold that works on average can still miss one group of students much more often than another.
+Among the test students, the model with a threshold of 0.2 finds similar proportions of at-risk women and at-risk men; but with only `23` at-risk students in the test set, subtle subgroup differences can be hard to detect. Before a model like this is deployed, its sensitivity and precision should be checked for each demographic and academic group that matters (gender, faculty, full- and part-time study) on as much data as possible, as Chapter 11 recommended. A threshold that works well on average can still miss one group of students much more often than another.
 :::
 
 ::: {.callout-note icon="false"}
 ## In your field: ecology
 
-Ecologists classify species from measurements. The `penguins` data in the **modeldata** package (installed with tidymodels) records the bill length, bill depth, flipper length, and body mass of `r nrow(modeldata::penguins)` penguins of three species, measured on islands near Palmer Station in Antarctica [@horst2022]. A random forest classifies the species:
+Ecologists classify species from measurements. The `penguins` dataset records the bill length, bill depth, flipper length, and body mass of `344` penguins of three species, measured on islands near Palmer Station in Antarctica [@horst2022]. A random forest classifies the species:
 
-```{r}
-data(penguins, package = "modeldata")
-penguins <- penguins |>
-  drop_na(bill_length_mm, bill_depth_mm, flipper_length_mm, body_mass_g)
+```{python}
+penguins = dt.load_penguins().dropna(subset=['bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g'])
+p_X = penguins[['bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g']]
+p_y = penguins['species']
 
-set.seed(1)
-penguin_split <- initial_split(penguins, strata = species)
+p_X_train, p_X_test, p_y_train, p_y_test = train_test_split(
+    p_X, p_y, test_size=0.25, stratify=p_y, random_state=1
+)
 
-penguin_wf <- workflow() |>
-  add_formula(species ~ bill_length_mm + bill_depth_mm + flipper_length_mm + body_mass_g) |>
-  add_model(rand_forest(trees = 500) |> set_engine("ranger") |> set_mode("classification"))
+penguin_rf = RandomForestClassifier(n_estimators=500, random_state=1)
+penguin_rf.fit(p_X_train, p_y_train)
 
-penguin_fit <- last_fit(penguin_wf, penguin_split)
-collect_predictions(penguin_fit) |> conf_mat(truth = species, estimate = .pred_class)
+p_pred = penguin_rf.predict(p_X_test)
+pd.crosstab(p_y_test, p_pred, rownames=['Actual'], colnames=['Predicted'])
 ```
 
-With three classes, the confusion matrix has a row and a column for each species. Correct classifications lie on the diagonal, and any mistake would appear off it, showing exactly which species are confused; here, every penguin in the test set is classified correctly. The function `add_formula()` replaces a recipe when no preparation is needed. Unlike the wellbeing data, the classes here are well separated by the measurements, and flexible models work very well.
+With three classes, the confusion matrix has a row and a column for each species. Correct classifications lie on the diagonal, and any mistake appears off it, showing exactly which species are confused; here, almost every penguin in the test set is classified correctly. Unlike the wellbeing data, the classes here are well separated by the morphological measurements, and flexible models work very well.
 :::
 
 ## Chapter review
@@ -560,29 +659,29 @@ With three classes, the confusion matrix has a row and a column for each species
 - A random forest averages hundreds of trees grown on bootstrap samples with random subsets of predictors. Permutation importance shows which predictors it relies on.
 - k-nearest neighbours classifies by the vote of the $k$ most similar training cases; it needs normalised predictors, and $k$ must be tuned.
 - A support vector machine separates the classes with the widest possible margin; kernels allow curved boundaries.
-- Compare models with cross-validation on the same folds (`workflow_set()`). On the wellbeing data, with its smooth pattern, logistic regression predicts as well as any flexible model.
+- Compare models with cross-validation on the same folds. On the wellbeing data, with its smooth pattern, logistic regression predicts as well as any flexible model.
 - The confusion matrix counts true and false positives and negatives. Sensitivity (recall) is the share of positives found; precision is the share of flagged cases that are positive; F1 balances the two.
 - The threshold turns probabilities into decisions. Choose it from the costs of the two errors and the practical limits of its use, using cross-validated predictions, and report it.
 - For imbalanced outcomes, moving the threshold, resampling, and class weights all shift the balance between recall and precision; resampling rarely improves the AUC.
 
 ### Key terms
 
-Decision tree, node, leaf, Gini impurity, random forest, bootstrap sample, ensemble, `mtry`, permutation importance, k-nearest neighbours, distance, support vector machine, margin, support vector, kernel, radial basis function, workflow set, threshold, confusion matrix, true positive, false positive, true negative, false negative, sensitivity, recall, specificity, precision, F1 score, ROC curve, misclassification cost, upsampling, downsampling, SMOTE, class weights.
+Decision tree, node, leaf, Gini impurity, random forest, bootstrap sample, ensemble, `max_features` (`mtry`), permutation importance, k-nearest neighbours, distance, support vector machine, margin, support vector, kernel, radial basis function, cross-validation comparison, threshold, confusion matrix, true positive, false positive, true negative, false negative, sensitivity, recall, specificity, precision, F1 score, ROC curve, misclassification cost, upsampling, downsampling, SMOTE, class weights.
 
 ## Exercises
 
 The [playground](../playground/chapter12.html) has these and more, with hints and solutions.
 
-1. Draw the decision tree for the wellbeing data with `tree_depth = 2`. Name the predictors it uses, and explain the tree in plain words, as you would to a counsellor.
-2. Tune the random forest's `mtry` over `c(2, 5, 10)` with cross-validation, and compare the best value with the default.
-3. Extend the k-NN grid to `neighbors = c(81, 161, 301)`, describe what happens to the AUC, and explain what happens to a k-NN model as $k$ approaches the number of training students.
+1. Draw the decision tree for the wellbeing data with `max_depth = 2`. Name the predictors it uses, and explain the tree in plain words, as you would to a counsellor.
+2. Tune the random forest's `max_features` over `[2, 5, 10]` with cross-validation, and compare the best value with the default.
+3. Extend the k-NN grid to `n_neighbors = [81, 161, 301]`, describe what happens to the AUC, and explain what happens to a k-NN model as $k$ approaches the number of training students.
 4. Using the tiny example's confusion matrix (@tbl-confusion), calculate the F1 score yourself from precision and recall ($F_1 = 2 \times \text{precision} \times \text{recall} / (\text{precision} + \text{recall})$).
 5. Suppose the counselling service can only contact 10% of new students. Using `threshold_table`, recommend a threshold and report the recall and precision it would give.
-6. Replace `step_upsample()` with `step_downsample()`, and compare the sensitivity and AUC with upsampling.
+6. Fit a logistic regression model with downsampling or compare `class_weight='balanced'` with the unweighted baseline, and compare the sensitivity and AUC.
 7. Repeat the cost analysis with a cost of 3 for a missed student instead of 10. Report the new cheapest threshold, and compare it with the decision-theory rule.
 
 ## Further reading
 
-- *Tidy Modeling with R* [@kuhn2022] covers workflow sets, model comparison, and class imbalance in depth.
 - *An Introduction to Statistical Learning* [@james2021islr] explains trees, random forests, and support vector machines, with clear illustrations of how each draws its boundaries.
+- *Python Data Science Handbook* [@vanderplas2016] provides clear tutorials on scikit-learn classifiers and hyperparameter tuning.
 - Breiman's original paper on random forests [@breiman2001] is still readable and explains why averaging many trees works.
