@@ -1,0 +1,70 @@
+import os
+
+# Official, mathematically precise Python dual snake logo paths in 512x512
+# We can provide a stunning shield version or a crisp standalone modern emblem version
+# Let's check how both look.
+
+logo_svg = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="pyBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="30%" stop-color="#387eb8"/>
+      <stop offset="100%" stop-color="#1e40af"/>
+    </linearGradient>
+    <linearGradient id="pyYellow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="40%" stop-color="#ffd43b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+    <style>
+      .shield-bg { fill: #0f172a; }
+      .shield-left { fill: #1e293b; }
+      .shield-right { fill: #141e30; }
+      .facet-highlight { fill: #38bdf8; opacity: 0.2; }
+    </style>
+  </defs>
+
+  <!-- Outer Shield Lip with subtle border -->
+  <polygon class="shield-bg" points="72,36 440,36 408,420 256,476 104,420" stroke="#334155" stroke-width="4" stroke-linejoin="round" />
+
+  <!-- Left Facet -->
+  <polygon class="shield-left" points="256,66 102,66 128,392 256,438" />
+
+  <!-- Right Facet -->
+  <polygon class="shield-right" points="256,66 410,66 384,392 256,438" />
+
+  <!-- Top Bevel Highlight -->
+  <polygon class="facet-highlight" points="102,66 410,66 394,106 118,106" />
+
+  <!-- Center Python Snakes Emblem -->
+  <g transform="translate(256, 252) scale(2.05) translate(-55, -55)" filter="url(#glow)">
+    <!-- Blue Snake (Top Left) -->
+    <path fill="url(#pyBlue)" d="M 54.4 0 C 24.6 0 26.5 12.9 26.5 12.9 L 26.5 26.3 L 55.1 26.3 L 55.1 30.6 L 15.4 30.6 C 15.4 30.6 0 28.8 0 58.7 C 0 88.6 13.5 87.1 13.5 87.1 L 21.5 87.1 L 21.5 75.1 C 21.5 75.1 21.1 60.7 35.7 60.7 L 64.1 60.7 C 64.1 60.7 77.9 61.2 77.9 47.7 L 77.9 13.5 C 77.9 13.5 79.4 0 54.4 0 Z M 41.3 8.3 C 44.5 8.3 47.1 10.9 47.1 14.1 C 47.1 17.3 44.5 19.9 41.3 19.9 C 38.1 19.9 35.5 17.3 35.5 14.1 C 35.5 10.9 38.1 8.3 41.3 8.3 Z" />
+    
+    <!-- Yellow Snake (Bottom Right) -->
+    <path fill="url(#pyYellow)" d="M 55.6 110 C 85.4 110 83.5 97.1 83.5 97.1 L 83.5 83.7 L 54.9 83.7 L 54.9 79.4 L 94.6 79.4 C 94.6 79.4 110 81.2 110 51.3 C 110 21.4 96.5 22.9 96.5 22.9 L 88.5 22.9 L 88.5 34.9 C 88.5 34.9 88.9 49.3 74.3 49.3 L 45.9 49.3 C 45.9 49.3 32.1 48.8 32.1 62.3 L 32.1 96.5 C 32.1 96.5 30.6 110 55.6 110 Z M 68.7 101.7 C 65.5 101.7 62.9 99.1 62.9 95.9 C 62.9 92.7 65.5 90.1 68.7 90.1 C 71.9 90.1 74.5 92.7 74.5 95.9 C 74.5 99.1 71.9 101.7 68.7 101.7 Z" />
+  </g>
+</svg>"""
+
+with open("images/logo.svg", "w", encoding="utf-8") as f:
+    f.write(logo_svg)
+
+print("Updated images/logo.svg successfully!")
+
+import subprocess
+edge_path = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+if os.path.exists(edge_path):
+    cur_dir = os.path.abspath(".")
+    svg_uri = "file:///" + os.path.join(cur_dir, "images", "logo.svg").replace("\\", "/")
+    out_png = os.path.join(cur_dir, "test_logo_preview.png")
+    subprocess.run([edge_path, "--headless", "--disable-gpu", "--default-background-color=00000000", "--window-size=512,512", f"--screenshot={out_png}", svg_uri], check=False)
+    print("Exported test_logo_preview.png")
+

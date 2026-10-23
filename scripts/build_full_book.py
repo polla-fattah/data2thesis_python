@@ -195,7 +195,7 @@ def build_full_book():
         os.makedirs(os.path.dirname(target), exist_ok=True)
         # For root-level full.html vs full/index.html, adjust asset paths
         if target.endswith('full.html'):
-            content = full_html.replace('../0', '0').replace('../images/', 'images/').replace('../../../downloads/', '../../downloads/')
+            content = full_html.replace('../0', '0').replace('../../images/', '../images/').replace('../../../downloads/', '../downloads/')
         else:
             content = full_html
         with open(target, 'w', encoding='utf-8') as f:
@@ -365,7 +365,8 @@ def generate_template(chapters_data, foreword_html, total_chapters, total_append
   <meta name="description" content="Complete textbook 'FROM DATA TO THESIS: Using Python for Non-Technical' by Dr. Polla Abdulhamid Fattah and Collection of LLMs. Read all 19 chapters, references, and appendices online." />
   
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="../images/cover-front.png" />
+  <link rel="icon" type="image/svg+xml" href="../../images/logo.svg" />
+  <link rel="alternate icon" type="image/png" href="../../images/cover-front.png" />
 
   <!-- FontAwesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
@@ -1678,7 +1679,7 @@ tr:hover td {{
         <i class="fa-solid fa-bars"></i>
       </button>
       <a href="../../index.html" class="book-nav-brand">
-        <img src="../images/cover-front.png" alt="Cover Logo" class="book-nav-logo" />
+        <img src="../../images/logo.svg" alt="Python Logo" class="book-nav-logo" />
         <span>From Data to Thesis</span>
       </a>
       <span class="book-brand-badge">Full Book</span>
@@ -1729,7 +1730,7 @@ tr:hover td {{
       <!-- Hero Card -->
       <section class="book-hero-card" id="book-hero">
         <div class="book-hero-cover">
-          <img src="../images/cover-front.png" alt="FROM DATA TO THESIS: Using Python for Non-Technical Cover" class="book-cover-img" />
+          <img src="../../images/cover-front.png" alt="FROM DATA TO THESIS: Using Python for Non-Technical Cover" class="book-cover-img" />
         </div>
         <div class="book-hero-meta">
           <div class="hero-kicker">Complete Textbook Online Edition</div>
@@ -1779,7 +1780,7 @@ tr:hover td {{
       <!-- Back Cover Section -->
       <section class="book-back-cover-card" id="back-cover">
         <div class="book-hero-cover">
-          <img src="../images/cover-back.jpg" alt="FROM DATA TO THESIS: Using Python for Non-Technical Back Cover" class="book-cover-img" />
+          <img src="../../images/cover-back.jpg" alt="FROM DATA TO THESIS: Using Python for Non-Technical Back Cover" class="book-cover-img" />
         </div>
         <div class="book-hero-meta">
           <div class="hero-kicker">About this Publication</div>
