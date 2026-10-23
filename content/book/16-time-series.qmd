@@ -559,5 +559,5 @@ The [playground](../playground/chapter16.html) has these and more, with hints an
 ## Further reading
 
 - *Forecasting: Principles and Practice* [@hyndman2021], free online, is the standard textbook on forecasting principles.
-- *Time Series Analysis and Its Applications: With R Examples* [@shumway2017] covers classical time series, ARIMA, and spectral methods.
+- *Practical Time Series Analysis: Prediction with Statistics and Machine Learning* [@nielsen2019] covers applied time series, ARIMA, and machine learning methods with Python.
 - *Python for Data Analysis* [@mckinney2022] by the creator of pandas provides the standard reference for handling dates, time series, and resampling in Python.

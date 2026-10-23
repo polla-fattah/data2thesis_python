@@ -517,6 +517,6 @@ The [playground](../playground/chapter14.html) has these and more, with hints an
 
 ## Further reading
 
-- *An Introduction to Statistical Learning* [@james2021islr] introduces k-means and hierarchical clustering; its chapter on unsupervised learning is a good companion to Chapters 9 and 14.
+- *An Introduction to Statistical Learning: with Applications in Python* [@james2023islp] introduces k-means and hierarchical clustering; its chapter on unsupervised learning is a good companion to Chapters 9 and 14.
 - *Python Data Science Handbook* [@vanderplas2016] provides practical walkthroughs of Gaussian mixture models and density estimation.
 - The original DBSCAN paper [@ester1996] explains density-based clustering and the selection of `eps` and `minPts`.

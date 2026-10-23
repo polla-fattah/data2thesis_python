@@ -203,15 +203,16 @@ If the underlying dataset updates, the document is re-rendered, and every number
 The bibliography file uses the standard **BibTeX** format, which almost every reference manager (Zotero, Mendeley, EndNote) can export, and Google Scholar can provide for any paper:
 
 ```bibtex
-@book{wickham2023,
-  author    = {Wickham, Hadley and Çetinkaya-Rundel, Mine and Grolemund, Garrett},
-  title     = {R for Data Science},
+@book{mckinney2022,
+  author    = {McKinney, Wes},
+  title     = {Python for Data Analysis: Data Wrangling with pandas, NumPy, and Jupyter},
+  edition   = {3},
   publisher = {O'Reilly Media},
-  year      = {2023}
+  year      = {2022}
 }
 ```
 
-The citation key, `wickham2023`, follows the `@` symbol in the text. A `csl:` line in the YAML header chooses the citation style (APA 7th, Vancouver, Harvard, IEEE, or journal-specific styles), meaning that changing target journals never requires reformatting references by hand.
+The citation key, `mckinney2022`, follows the `@` symbol in the text. A `csl:` line in the YAML header chooses the citation style (APA 7th, Vancouver, Harvard, IEEE, or journal-specific styles), meaning that changing target journals never requires reformatting references by hand.
 
 ### Equations
 

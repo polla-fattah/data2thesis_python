@@ -553,5 +553,5 @@ The [playground](../playground/chapter09.html) has these and more, with hints an
 
 ## Further reading
 
-- *An Introduction to Statistical Learning* [@james2021islr], chapter "Unsupervised Learning", covers PCA and clustering in depth with Python implementations.
+- *An Introduction to Statistical Learning: with Applications in Python* [@james2023islp], chapter "Unsupervised Learning", covers PCA and clustering in depth with Python implementations.
 - *Applied Multivariate Statistical Analysis* [@johnson2007] is the classic comprehensive reference for factor analysis, PCA, and clustering theory.

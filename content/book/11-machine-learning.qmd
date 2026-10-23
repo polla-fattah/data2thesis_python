@@ -546,5 +546,5 @@ The [playground](../playground/chapter11.html) has these and more, with hints an
 
 ## Further reading
 
-- *An Introduction to Statistical Learning* [@james2021islr] explains the ideas behind overfitting, the bias-variance trade-off, cross-validation, and machine learning methods.
+- *An Introduction to Statistical Learning: with Applications in Python* [@james2023islp] explains the ideas behind overfitting, the bias-variance trade-off, cross-validation, and machine learning methods.
 - *Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow* by Aurélien Géron [@geron2022] is the definitive guide to scikit-learn pipelines and predictive modeling.

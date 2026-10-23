@@ -586,6 +586,6 @@ The [playground](../playground/chapter13.html) has these and more, with hints an
 
 ## Further reading
 
-- *An Introduction to Statistical Learning* [@james2021islr] explains ridge regression, the lasso, and boosting clearly, with the ideas behind why shrinkage helps.
+- *An Introduction to Statistical Learning: with Applications in Python* [@james2023islp] explains ridge regression, the lasso, and boosting clearly, with the ideas behind why shrinkage helps.
 - *Python Data Science Handbook* [@vanderplas2016] provides practical walkthroughs of linear regression, regularisation, and tree ensembles.
 - Tibshirani's paper introducing the lasso [@tibshirani1996] is a classic of modern statistics.

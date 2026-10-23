@@ -666,7 +666,7 @@ With three classes, the confusion matrix has a row and a column for each species
 
 ### Key terms
 
-Decision tree, node, leaf, Gini impurity, random forest, bootstrap sample, ensemble, `max_features` (`mtry`), permutation importance, k-nearest neighbours, distance, support vector machine, margin, support vector, kernel, radial basis function, cross-validation comparison, threshold, confusion matrix, true positive, false positive, true negative, false negative, sensitivity, recall, specificity, precision, F1 score, ROC curve, misclassification cost, upsampling, downsampling, SMOTE, class weights.
+Decision tree, node, leaf, Gini impurity, random forest, bootstrap sample, ensemble, `max_features`, permutation importance, k-nearest neighbours, distance, support vector machine, margin, support vector, kernel, radial basis function, cross-validation comparison, threshold, confusion matrix, true positive, false positive, true negative, false negative, sensitivity, recall, specificity, precision, F1 score, ROC curve, misclassification cost, upsampling, downsampling, SMOTE, class weights.
 
 ## Exercises
 
@@ -682,6 +682,6 @@ The [playground](../playground/chapter12.html) has these and more, with hints an
 
 ## Further reading
 
-- *An Introduction to Statistical Learning* [@james2021islr] explains trees, random forests, and support vector machines, with clear illustrations of how each draws its boundaries.
+- *An Introduction to Statistical Learning: with Applications in Python* [@james2023islp] explains trees, random forests, and support vector machines, with clear illustrations of how each draws its boundaries.
 - *Python Data Science Handbook* [@vanderplas2016] provides clear tutorials on scikit-learn classifiers and hyperparameter tuning.
 - Breiman's original paper on random forests [@breiman2001] is still readable and explains why averaging many trees works.
