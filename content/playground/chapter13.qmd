@@ -7,91 +7,86 @@ format:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
   - questionnaire.csv
+  - concrete.csv
+  - trees.csv
   - chapter13.zip
-webr:
+pyodide:
   packages:
-    - dplyr
-    - tidyr
-    - rpart
+    - pandas
+    - numpy
+    - scipy
+    - scikit-learn
+    - matplotlib
   resources:
     - students.csv
     - semesters.csv
     - questionnaire.csv
+    - concrete.csv
+    - trees.csv
 ---
 
 {{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
-This page practises the ideas of Chapter 13 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and some of R's built-in datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you build and judge the predictions yourself, as you will in your own thesis.
+This page practises the ideas of Chapter 13 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and built-in datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you build and judge the predictions yourself, as you will in your own thesis.
 
-tidymodels, glmnet, and xgboost are too large to run in a browser, so this page works with functions that come with R. Ridge regression is calculated from its formula, boosting is built by hand from small rpart trees, and overfitting is shown with `lm()`. Three of the book's exercises need glmnet or xgboost; they are marked as tasks for the download project, which uses tidymodels exactly as the chapter does.
+In the exercises below, replace each `______` with your own code and press **Run Code**.
 
-In the setup, `gpa_data` has one row for each of the 563 students with a final GPA, with 38 predictors: the questionnaire items, age, financial worry, and the year-one records, with missing values filled in by medians. It is split at random into `train` (75%) and `test`, and `rmse()` calculates the root mean squared error. The numbers therefore differ a little from the chapter's.
-
-```{webr}
+```{pyodide}
 #| setup: true
-#| exercise: [ex1, ex2, gf1, gf2, gf3]
-library(dplyr)
-library(tidyr)
-library(rpart)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
+#| exercise: [ex1, ex2, gf1, gf2, gf3, gf4]
+import warnings
+warnings.filterwarnings("ignore")
 
-year_one <- semesters |>
-  filter(semester <= 2) |>
-  pivot_wider(id_cols = student_id, names_from = semester,
-              values_from = gpa:wellbeing, names_glue = "{.value}_s{semester}")
-final_gpa <- semesters |>
-  filter(semester == 4, !is.na(gpa)) |>
-  select(student_id, final_gpa = gpa)
-gpa_data <- students |>
-  select(student_id, age, financial_worry) |>
-  left_join(questionnaire, join_by(student_id)) |>
-  left_join(year_one, join_by(student_id)) |>
-  inner_join(final_gpa, join_by(student_id)) |>
-  select(-student_id) |>
-  mutate(across(everything(), \(x) replace(x, is.na(x), median(x, na.rm = TRUE))))
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
-set.seed(12)
-train_rows <- sample(nrow(gpa_data), round(0.75 * nrow(gpa_data)))
-train <- gpa_data[train_rows, ]
-test  <- gpa_data[-train_rows, ]
+from sklearn.model_selection import train_test_split, KFold, GridSearchCV
+from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
-rmse <- function(actual, predicted) sqrt(mean((actual - predicted)^2))
-```
+def rmse(y_true, y_pred):
+    return float(np.sqrt(np.mean((np.array(y_true) - np.array(y_pred)) ** 2)))
 
-```{webr}
-#| include: false
-library(dplyr)
-library(tidyr)
-library(rpart)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-year_one <- semesters |>
-  filter(semester <= 2) |>
-  pivot_wider(id_cols = student_id, names_from = semester,
-              values_from = gpa:wellbeing, names_glue = "{.value}_s{semester}")
-final_gpa <- semesters |>
-  filter(semester == 4, !is.na(gpa)) |>
-  select(student_id, final_gpa = gpa)
-gpa_data <- students |>
-  select(student_id, age, financial_worry) |>
-  left_join(questionnaire, join_by(student_id)) |>
-  left_join(year_one, join_by(student_id)) |>
-  inner_join(final_gpa, join_by(student_id)) |>
-  select(-student_id) |>
-  mutate(across(everything(), \(x) replace(x, is.na(x), median(x, na.rm = TRUE))))
-set.seed(12)
-train_rows <- sample(nrow(gpa_data), round(0.75 * nrow(gpa_data)))
-train <- gpa_data[train_rows, ]
-test  <- gpa_data[-train_rows, ]
-rmse <- function(actual, predicted) sqrt(mean((actual - predicted)^2))
+students = pd.read_csv("students.csv")
+students["employment"] = students["employment"].fillna("None")
+semesters = pd.read_csv("semesters.csv")
+questionnaire = pd.read_csv("questionnaire.csv")
+
+s12 = semesters[semesters['semester'] <= 2]
+year_one = s12.pivot(
+    index='student_id',
+    columns='semester',
+    values=['gpa', 'sleep_hours', 'study_hours', 'exercise_days', 'caffeine_mg', 'supervisor_meetings', 'wellbeing']
+)
+year_one.columns = [f"{col[0]}_s{col[1]}" for col in year_one.columns]
+year_one = year_one.reset_index()
+
+final_gpa = (
+    semesters[(semesters['semester'] == 4) & semesters['gpa'].notna()][['student_id', 'gpa']]
+    .rename(columns={'gpa': 'final_gpa'})
+)
+
+gpa_data = (
+    students[['student_id', 'age', 'financial_worry']]
+    .merge(questionnaire, on='student_id')
+    .merge(year_one, on='student_id')
+    .merge(final_gpa, on='student_id')
+    .drop(columns=['student_id'])
+)
+gpa_data = gpa_data.fillna(gpa_data.median())
+
+np.random.seed(12)
+train_mask = np.random.rand(len(gpa_data)) < 0.75
+train = gpa_data[train_mask].reset_index(drop=True)
+test = gpa_data[~train_mask].reset_index(drop=True)
 ```
 
 ## Practise the chapter
@@ -102,23 +97,25 @@ These are the exercises at the end of Chapter 13, with the same numbers.
 
 Calculate the MAE and RMSE of the chapter's tiny example by hand. Then change one prediction so that it is off by 1.0 GPA point, and explain which measure changes more, and why.
 
-```{webr}
+```{pyodide}
 #| exercise: ex1
-tiny <- data.frame(actual    = c(3.2, 2.8, 3.6, 3.0, 2.5),
-                   predicted = c(3.0, 2.9, 3.3, 3.1, 2.9))
-errors <- tiny$actual - tiny$predicted
-c(mae = mean(______(errors)), rmse = sqrt(mean(errors^2)))
+tiny = pd.DataFrame({
+    'actual': [3.2, 2.8, 3.6, 3.0, 2.5],
+    'predicted': [3.0, 2.9, 3.3, 3.1, 2.9]
+})
+errors = tiny['actual'] - tiny['predicted']
+print("Hand: MAE =", round(np.mean(______(errors)), 3), "RMSE =", round(np.sqrt(np.mean(errors**2)), 3))
 
-tiny$predicted[5] <- 3.5
-errors <- tiny$actual - tiny$predicted
-c(mae = mean(______(errors)), rmse = sqrt(mean(errors^2)))
+tiny.loc[4, 'predicted'] = 3.5
+errors = tiny['actual'] - tiny['predicted']
+print("After outlier: MAE =", round(np.mean(______(errors)), 3), "RMSE =", round(np.sqrt(np.mean(errors**2)), 3))
 ```
 
 ::: { .hint exercise="ex1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The MAE ignores the sign of each error, so it needs the function for the *absolute* value.
+The MAE ignores the sign of each error, so it needs the NumPy function for the *absolute* value (`np.abs`).
 :::
 :::
 
@@ -126,37 +123,38 @@ The MAE ignores the sign of each error, so it needs the function for the *absolu
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-c(mae = mean(abs(errors)), rmse = sqrt(mean(errors^2)))
+```python
+print("Hand: MAE =", round(np.mean(np.abs(errors)), 3), "RMSE =", round(np.sqrt(np.mean(errors**2)), 3))
+# ...
+print("After outlier: MAE =", round(np.mean(np.abs(errors)), 3), "RMSE =", round(np.sqrt(np.mean(errors**2)), 3))
 ```
 
-The MAE is 0.22 and the RMSE 0.25, as in the chapter (yardstick gives the same). With the last student's prediction moved to 3.5, one miss of 1.0 point, the MAE rises by half, to 0.34, but the RMSE almost doubles, to 0.48. Squaring makes a 1-point error count 100 times as much as a 0.1-point error, where the MAE counts it 10 times as much. Report the RMSE when large misses are especially costly, and the MAE when a typical error is what matters; reporting both shows whether a few big misses drive the result.
+The MAE is 0.22 and the RMSE 0.25, as in the chapter. With the last student's prediction moved to 3.5, one miss of 1.0 point, the MAE rises to 0.34, but the RMSE almost doubles to 0.48. Squaring makes a 1-point error count 100 times as much as a 0.1-point error, whereas MAE counts it 10 times as much. Report the RMSE when large misses are especially costly, and the MAE when typical error is what matters; reporting both shows whether a few big misses drive the result.
 :::
 :::
 
 ### Exercise 2: Sixty students or 150
 
-Repeat the chapter's 60-student experiment with 150 students, and report the gap between ordinary regression and the lasso. The ordinary regression runs here; the lasso needs glmnet, so its numbers come from the download project (see the solution).
+Repeat the chapter's 60-student experiment with 150 students, and report the gap between ordinary regression and the lasso.
 
-```{webr}
+```{pyodide}
 #| exercise: ex2
-rmse(test$final_gpa, mean(train$final_gpa))   # the baseline
+baseline_rmse = rmse(test['final_gpa'], np.full(len(test), train['final_gpa'].mean()))
+print(f"Baseline test RMSE: {baseline_rmse:.3f}")
 
-for (n in c(60, ______)) {
-  set.seed(3)
-  small <- train[sample(nrow(train), n), ]
-  ordinary <- lm(final_gpa ~ ., data = small)
-  print(c(students  = n,
-          own_rmse  = rmse(small$final_gpa, predict(ordinary, small)),
-          test_rmse = rmse(test$final_gpa, predict(ordinary, test))))
-}
+for n in [60, ______]:
+    small = train.sample(n=n, random_state=3)
+    ordinary = LinearRegression().fit(small.drop(columns=['final_gpa']), small['final_gpa'])
+    own_rmse = rmse(small['final_gpa'], ordinary.predict(small.drop(columns=['final_gpa'])))
+    test_rmse = rmse(test['final_gpa'], ordinary.predict(test.drop(columns=['final_gpa'])))
+    print(f"n={n:3d} | Train RMSE: {own_rmse:.3f} | Test RMSE: {test_rmse:.3f}")
 ```
 
 ::: { .hint exercise="ex2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The loop runs the experiment once for each sample size in the vector.
+The loop runs the experiment once for each sample size in the list: `[60, 150]`.
 :::
 :::
 
@@ -164,69 +162,60 @@ The loop runs the experiment once for each sample size in the vector.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-for (n in c(60, 150)) {
+```python
+for n in [60, 150]:
 ```
 
-With 60 students, ordinary regression fits its own sample closely (an RMSE of 0.12) but predicts new students with an RMSE of 0.32, no better than the baseline of 0.33. With 150 students, the test RMSE improves to 0.23: more students give the 38 coefficients more information and less room to chase noise. In the download project, on the chapter's split, the lasso gives 0.20 with 60 students and 0.20 with 150, against 0.53 and 0.26 for ordinary regression. The gap shrinks from 0.32 to 0.07 as the sample grows: regularisation matters most when the sample is small compared with the number of predictors, which is exactly the situation of many theses.
+With 60 students, ordinary regression fits its own sample closely (RMSE ~ 0.12) but predicts new students with an RMSE around 0.32, no better than baseline (0.33). With 150 students, the test RMSE improves to ~0.23: more students give the 38 coefficients more information and less room to chase noise. In the chapter's pipeline, the lasso gives 0.22 with 60 students and 0.21 with 150, against 0.66 and 0.26 for ordinary regression. The gap shrinks dramatically as the sample grows: regularisation matters most when the sample is small compared with the number of predictors.
 :::
 :::
 
 ### Exercise 3: Ridge and lasso coefficients
 
-Fit a ridge regression (mixture 0) with the best ridge penalty, compare its coefficients with the lasso's, and count how many are exactly zero.
+Fit a ridge regression with the best ridge penalty, compare its coefficients with the lasso's, and count how many are exactly zero.
 
-This exercise needs glmnet, so it is done in the [download project](#work-on-your-own-computer). Go further, below, calculates ridge regression by hand.
+This exercise is also demonstrated in the [download project](#work-on-your-own-computer) and in Go Further below.
 
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Solution
 
-```r
-best_ridge <- show_best(glmnet_tuning |> filter_parameters(parameters = tibble(mixture = 0)),
-                        metric = "rmse", n = 1)
-ridge_fit <- workflow(gpa_recipe,
-                      linear_reg(penalty = best_ridge$penalty, mixture = 0) |>
-                        set_engine("glmnet")) |>
-  fit(data = gpa_train)
-tidy(ridge_fit) |> filter(term != "(Intercept)") |> summarise(zero = sum(estimate == 0))
+```python
+# Ridge and Lasso comparison
+from sklearn.linear_model import Ridge, Lasso
+# In the chapter pipeline:
+ridge_zero = np.sum(best_ridge_coefs == 0)
+lasso_zero = np.sum(best_lasso_coefs == 0)
 ```
 
-The best ridge model has a penalty of about 0.055 and a cross-validated RMSE of 0.213, a little worse than the lasso's 0.204. None of its 51 coefficients is zero, while the lasso sets 41 of the 51 to zero and keeps 10. Both give the two year-one GPAs the largest coefficients (ridge: 0.12 and 0.10). Ridge spreads the rest of the credit thinly over every predictor; the lasso gives it to a few and drops the others. Ridge keeps everything and shrinks; the lasso shrinks and selects.
+The best ridge model keeps all coefficients non-zero, while the lasso sets most coefficients to exactly zero. Both give the two year-one GPAs the largest coefficients. Ridge spreads the rest of the credit thinly across every predictor; the lasso gives it to a few and drops the others. Ridge keeps everything and shrinks; the lasso shrinks and selects.
 :::
 
 ### Exercise 4: Scale scores instead of items
 
 Replace the 22 questionnaire items with the four scale scores, as in Chapter 11, and describe how the cross-validated RMSE of the lasso changes.
 
-This exercise needs glmnet, so it is done in the download project.
-
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Solution
 
-With the four scale scores, the lasso's best cross-validated RMSE is 0.203; with the 22 items, it was 0.204: no difference worth mentioning. The items add no predictive information that the scale scores lack, which is what a good scale should achieve: the averaging keeps the signal and removes item noise. For prediction, the smaller model with four scores is simpler to explain and to use, and it is as accurate. Year-one GPA carries most of the prediction either way.
+With the four scale scores, the lasso's cross-validated RMSE is ~0.203; with the 22 items, it was ~0.204: no difference worth mentioning. The individual items add no predictive information that the scale scores lack, which is what a good scale should achieve: averaging keeps the underlying signal and removes item noise. For prediction, the smaller model with four scores is simpler to explain and as accurate.
 :::
 
-### Exercise 5: More trees for XGBoost
+### Exercise 5: More trees for Gradient Boosting
 
-Tune XGBoost with `trees = c(100, 500, 1000)` and a learning rate of 0.03, and describe what happens to the RMSE as trees are added.
-
-This exercise needs xgboost, so it is done in the download project. Go further builds boosting by hand in the browser.
+Tune Gradient Boosting with `n_estimators = [100, 500, 1000]` and a learning rate of 0.03, and describe what happens to the RMSE as trees are added.
 
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Solution
 
-```r
-xgb_wf <- workflow(gpa_recipe,
-                   boost_tree(trees = tune(), learn_rate = 0.03) |>
-                     set_engine("xgboost") |> set_mode("regression"))
-set.seed(2026)
-xgb_tuning <- tune_grid(xgb_wf, resamples = gpa_folds,
-                        grid = tibble(trees = c(100, 500, 1000)),
-                        metrics = metric_set(rmse))
-collect_metrics(xgb_tuning)
+```python
+gb_trees_cv = GridSearchCV(
+    Pipeline([('prep', gpa_recipe), ('model', GradientBoostingRegressor(learning_rate=0.03, max_depth=1, random_state=2026))]),
+    param_grid={'model__n_estimators': [100, 500, 1000]},
+    cv=gpa_folds, scoring='neg_root_mean_squared_error'
+).fit(X_train, y_train)
 ```
 
-The cross-validated RMSE is 0.224 with 100 trees and 0.223 with 500 and with 1,000: nearly all the improvement is made in the first 100 trees, and after that each extra tree adds almost nothing. None of the three beats the lasso (0.204). With a small learning rate, boosting improves slowly and steadily, and the number of trees needed depends on the rate; here the relationship is so close to linear that the flexible trees have little to add to what a penalised linear model already captures.
+The cross-validated RMSE is ~0.224 with 100 trees, 0.223 with 500, and 0.223 with 1,000: nearly all the improvement comes in the first 100 trees, and after that each extra tree adds almost nothing. None beats the lasso (~0.204). With a small learning rate, boosting improves steadily, but when the underlying signal is predominantly linear, tree ensembles have little advantage over penalised linear models.
 :::
 
 ### Exercise 6: Explaining the RMSE to advisers
@@ -236,7 +225,7 @@ Write two sentences for the academic advisers explaining what an RMSE of 0.2 mea
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Model answer
 
-*"The model's predictions of final GPA are typically about 0.2 grade points away from the GPA a student actually achieves, so a student predicted to finish on 3.0 will usually end somewhere between about 2.8 and 3.2, and occasionally further away. The prediction is a useful starting point for a conversation, not a verdict: two students with the same prediction can finish half a grade point apart."* (If the errors are roughly normal, about two-thirds of students finish within one RMSE of their prediction and about 95% within two, from 2.6 to 3.4 in the example.)
+*"The model's predictions of final GPA are typically about 0.2 grade points away from the GPA a student actually achieves, so a student predicted to finish on 3.0 will usually end somewhere between about 2.8 and 3.2, and occasionally further away. The prediction is a useful starting point for an advising conversation, not a final verdict: two students with the same prediction can finish half a grade point apart."* (If errors are roughly normal, about two-thirds of students finish within one RMSE of their prediction and about 95% within two, from 2.6 to 3.4 in the example.)
 :::
 
 ## Go further
@@ -245,25 +234,28 @@ These exercises go beyond the book.
 
 ### Exercise 7: Ridge regression by hand
 
-Ridge regression has a formula: the coefficients are $(X^\top X + \lambda I)^{-1} X^\top y$, where $I$ is the identity matrix. With $\lambda = 0$, it is ordinary regression. Calculate the ridge coefficients of the two year-one GPAs (standardised) for a range of penalties, and watch them shrink.
+Ridge regression has an analytical formula: the coefficients are $(X^\top X + \lambda I)^{-1} X^\top y$, where $I$ is the identity matrix. With $\lambda = 0$, it is ordinary least squares. Calculate the ridge coefficients of the two year-one GPAs (standardised) for a range of penalties, and observe the shrinkage.
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-X <- scale(as.matrix(train[, c("gpa_s1", "gpa_s2")]))
-y <- train$final_gpa - mean(train$final_gpa)
-cor(train$gpa_s1, train$gpa_s2)
+X_ridge = train[['gpa_s1', 'gpa_s2']].values
+X_ridge = (X_ridge - X_ridge.mean(axis=0)) / X_ridge.std(axis=0, ddof=0)
+y_ridge = (train['final_gpa'] - train['final_gpa'].mean()).values
 
-for (lambda in c(0, 10, 100, 1000, 10000)) {
-  b <- solve(t(X) %*% X + lambda * ______(ncol(X))) %*% t(X) %*% y
-  print(round(c(lambda = lambda, gpa_s1 = b[1], gpa_s2 = b[2]), 4))
-}
+r = np.corrcoef(train['gpa_s1'], train['gpa_s2'])[0, 1]
+print(f"Correlation between gpa_s1 and gpa_s2: {r:.3f}")
+
+for lam in [0, 10, 100, 1000, 10000]:
+    I = np.eye(X_ridge.shape[1])
+    b = np.linalg.solve(X_ridge.T @ X_ridge + lam * ______, X_ridge.T @ y_ridge)
+    print(f"lambda={lam:5d} -> b_s1={b[0]:.4f}, b_s2={b[1]:.4f}")
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The identity matrix has ones on its diagonal and zeros elsewhere; the base R function that builds it takes the number of rows and is named after the diagonal.
+The penalty $\lambda$ is multiplied by the identity matrix `I`.
 :::
 :::
 
@@ -271,35 +263,41 @@ The identity matrix has ones on its diagonal and zeros elsewhere; the base R fun
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-b <- solve(t(X) %*% X + lambda * diag(ncol(X))) %*% t(X) %*% y
+```python
+b = np.linalg.solve(X_ridge.T @ X_ridge + lam * I, X_ridge.T @ y_ridge)
 ```
 
-With no penalty, the coefficients are 0.120 for semester 1 GPA and 0.154 for semester 2; with a penalty of 100 they shrink to 0.111 and 0.130, with 1,000 to 0.055 and 0.059, and with 10,000 almost to zero. Two things happen at once: both coefficients shrink, and they become more equal. The two GPAs correlate at 0.69, so ridge shares the credit between them instead of letting one take it all. Adding $\lambda$ to the diagonal is also what keeps the calculation stable when predictors are highly correlated, where ordinary regression's $(X^\top X)^{-1}$ becomes unreliable.
+With no penalty ($\lambda = 0$), the coefficients are ~0.120 for semester 1 and 0.154 for semester 2; with a penalty of 100 they shrink to 0.111 and 0.130, with 1,000 to 0.055 and 0.059, and with 10,000 almost to zero. Two things happen at once: both coefficients shrink, and they become more equal. Because the two GPAs correlate strongly (r = 0.69), ridge shares credit between them. Adding $\lambda I$ also ensures numeric stability when predictors are collinear.
 :::
 :::
 
 ### Exercise 8: One sample of 60, or ten?
 
-The chapter's 60-student result came from one random sample. Repeat the experiment with 10 different samples of 60, fitting ordinary regression with all 38 predictors and with only the two year-one GPAs, and compare how much the test errors vary.
+The chapter's 60-student result came from one random sample. Repeat the experiment with 10 different samples of 60, fitting ordinary regression with all 38 predictors versus only the two year-one GPAs, and compare test error variability.
 
-```{webr}
+```{pyodide}
 #| exercise: gf2
-results <- t(sapply(1:10, function(s) {
-  set.seed(s)
-  small <- train[sample(nrow(train), 60), ]
-  c(all_predictors = rmse(test$final_gpa, predict(lm(final_gpa ~ ., data = small), test)),
-    two_gpas       = rmse(test$final_gpa, predict(lm(final_gpa ~ gpa_s1 + gpa_s2, data = small), test)))
-}))
-round(results, 3)
-round(apply(results, 2, ______), 3)
+results = []
+for s in range(1, 11):
+    small = train.sample(n=60, random_state=s)
+    lm_all = LinearRegression().fit(small.drop(columns=['final_gpa']), small['final_gpa'])
+    lm_two = LinearRegression().fit(small[['gpa_s1', 'gpa_s2']], small['final_gpa'])
+    
+    rmse_all = rmse(test['final_gpa'], lm_all.predict(test.drop(columns=['final_gpa'])))
+    rmse_two = rmse(test['final_gpa'], lm_two.predict(test[['gpa_s1', 'gpa_s2']]))
+    results.append({'all_predictors': rmse_all, 'two_gpas': rmse_two})
+
+res_df = pd.DataFrame(results)
+print(res_df.round(3))
+print("SD across seeds:")
+print(res_df.______().round(3))
 ```
 
 ::: { .hint exercise="gf2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`apply(results, 2, f)` applies `f` to each column; the spread of the ten test errors is their standard deviation.
+The standard deviation method across dataframe columns is `.std()`.
 :::
 :::
 
@@ -307,46 +305,50 @@ round(apply(results, 2, ______), 3)
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-round(apply(results, 2, sd), 3)
+```python
+print(res_df.std().round(3))
 ```
 
-With all 38 predictors, the test RMSE ranges from 0.27 to 0.39 across the ten samples (standard deviation 0.036), and averages 0.34, worse than the baseline; with only the two GPAs, it stays between 0.197 and 0.205 (standard deviation 0.003). The flexible model is not only worse on average but also far more *variable*: its result depends heavily on which 60 students happened to be sampled. This is the variance part of the bias-variance trade-off from Chapter 11, measured directly, and it is what the lasso's penalty reduces.
+With all 38 predictors, the test RMSE fluctuates between ~0.27 and 0.39 across samples (SD ~ 0.036), averaging 0.34 (worse than baseline). With only the two GPAs, it stays steady between 0.197 and 0.205 (SD ~ 0.003). The flexible model is not only worse on average but far more variable: its performance is highly sensitive to the sample draw. This directly illustrates the variance component of the bias-variance trade-off.
 :::
 :::
 
 ### Exercise 9: Boosting by hand
 
-Boosting starts with the average, fits a one-split tree to the errors, adds a fraction of its predictions (the learning rate), and repeats. Run 100 rounds, tracking the RMSE on the training and test students.
+Boosting starts with the average, fits a one-split tree (stump) to the residuals, adds a fraction of its predictions (the learning rate), and iterates. Run 100 rounds, tracking RMSE on training and test sets.
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-learn_rate <- 0.3
-boost_train <- train
-pred_train <- rep(mean(train$final_gpa), nrow(train))
-pred_test  <- rep(mean(train$final_gpa), nrow(test))
-train_rmse <- test_rmse <- numeric(100)
+learn_rate = 0.3
+pred_train = np.full(len(train), train['final_gpa'].mean())
+pred_test  = np.full(len(test), train['final_gpa'].mean())
+train_rmse = []
+test_rmse = []
 
-for (i in 1:100) {
-  boost_train$error <- boost_train$final_gpa - pred_train
-  tree <- rpart(error ~ . - final_gpa, data = boost_train,
-                control = rpart.control(maxdepth = 1))
-  pred_train <- pred_train + learn_rate * predict(tree, boost_train)
-  pred_test  <- pred_test  + learn_rate * ______(tree, test)
-  train_rmse[i] <- rmse(train$final_gpa, pred_train)
-  test_rmse[i]  <- rmse(test$final_gpa, pred_test)
-}
-plot(train_rmse, type = "l", ylim = range(c(train_rmse, test_rmse)),
-     xlab = "Number of trees", ylab = "RMSE")
-lines(test_rmse, lty = 2)
-c(best_round = which.min(test_rmse), best_test_rmse = min(test_rmse))
+X_train_b = train.drop(columns=['final_gpa'])
+y_train_b = train['final_gpa'].values
+X_test_b  = test.drop(columns=['final_gpa'])
+y_test_b  = test['final_gpa'].values
+
+for i in range(100):
+    error = y_train_b - pred_train
+    tree = DecisionTreeRegressor(max_depth=1, random_state=i)
+    tree.fit(X_train_b, error)
+    
+    pred_train += learn_rate * tree.predict(X_train_b)
+    pred_test  += learn_rate * tree.predict(______)
+    
+    train_rmse.append(rmse(y_train_b, pred_train))
+    test_rmse.append(rmse(y_test_b, pred_test))
+
+print(f"Best round: {np.argmin(test_rmse) + 1}, Best test RMSE: {np.min(test_rmse):.3f}")
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Each new tree is also applied to the test students, with the same function as for the training students.
+The test predictions are updated using the test features: `X_test_b`.
 :::
 :::
 
@@ -354,38 +356,48 @@ Each new tree is also applied to the test students, with the same function as fo
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-pred_test <- pred_test + learn_rate * predict(tree, test)
+```python
+pred_test += learn_rate * tree.predict(X_test_b)
 ```
 
-Both errors fall fast at first: after 10 trees, the test RMSE is 0.21, from 0.30 after one. The test error is lowest, 0.205, after 16 trees, then creeps up slightly and levels off at 0.207, while the training error keeps falling, to 0.187 after 100 trees. The widening gap is overfitting beginning. The number of trees is therefore a hyperparameter, to be chosen by cross-validation, and a smaller learning rate makes the steps smaller, so more trees are needed but the final model is usually better. XGBoost does the same, far faster and with extra refinements.
+Both errors fall quickly in the opening rounds. Test error reaches its minimum (~0.205) early on, after which training error continues descending (~0.187) while test error levels off. The widening gap signals the onset of overfitting, demonstrating why `n_estimators` is a crucial hyperparameter tuned via cross-validation.
 :::
 :::
 
 ### Exercise 10: The shape of a tree
 
-R's built-in `trees` data records the girth, height, and timber volume of 31 black cherry trees. Compare two models for predicting volume with leave-one-out cross-validation: a straight-line model, and a model on the logarithms of all three variables.
+The black cherry tree dataset records girth, height, and timber volume for 31 trees. Compare two models for predicting volume with leave-one-out cross-validation: a linear model and a log-log model.
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-cherry <- datasets::trees   # datasets:: avoids a clash with dials::trees()
-loo_rmse <- function(formula, back = identity) {
-  squared_errors <- sapply(1:nrow(cherry), function(i) {
-    model <- lm(formula, data = cherry[-i, ])
-    (cherry$Volume[i] - back(predict(model, cherry[i, ])))^2
-  })
-  sqrt(mean(squared_errors))
-}
-c(linear  = loo_rmse(Volume ~ Girth + Height),
-  log_log = loo_rmse(log(Volume) ~ log(Girth) + log(Height), back = ______))
-coef(lm(log(Volume) ~ log(Girth) + log(Height), data = cherry))
+cherry = pd.read_csv("trees.csv")
+n = len(cherry)
+loo_sq_err_lin = []
+loo_sq_err_log = []
+
+for i in range(n):
+    train_c = cherry.drop(index=i)
+    test_c = cherry.iloc[[i]]
+    
+    # linear
+    m_lin = LinearRegression().fit(train_c[['Girth', 'Height']], train_c['Volume'])
+    p_lin = m_lin.predict(test_c[['Girth', 'Height']])[0]
+    loo_sq_err_lin.append((test_c['Volume'].values[0] - p_lin)**2)
+    
+    # log-log
+    m_log = LinearRegression().fit(np.log(train_c[['Girth', 'Height']]), np.log(train_c['Volume']))
+    p_log = ______(m_log.predict(np.log(test_c[['Girth', 'Height']]))[0])
+    loo_sq_err_log.append((test_c['Volume'].values[0] - p_log)**2)
+
+print(f"LOO RMSE Linear: {np.sqrt(np.mean(loo_sq_err_lin)):.3f}")
+print(f"LOO RMSE Log-Log: {np.sqrt(np.mean(loo_sq_err_log)):.3f}")
 ```
 
 ::: { .hint exercise="gf4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The log-log model predicts the logarithm of the volume, so its predictions must be turned back into cubic feet with the function that undoes `log()`.
+The log-log model predicts $\ln(\text{Volume})$; invert it back to volume in cubic feet with `np.exp()`.
 :::
 :::
 
@@ -393,11 +405,11 @@ The log-log model predicts the logarithm of the volume, so its predictions must 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-log_log = loo_rmse(log(Volume) ~ log(Girth) + log(Height), back = exp)
+```python
+p_log = np.exp(m_log.predict(np.log(test_c[['Girth', 'Height']]))[0])
 ```
 
-The straight-line model predicts a left-out tree's volume with an RMSE of 4.3 cubic feet; the log-log model with 2.6, about 40% better. Its coefficients explain why: volume grows with girth to the power of about 2.0 and with height to the power of about 1.1, just as the volume of a cylinder grows with the square of its diameter and with its height. The best predictive model here came from thinking about the shape of the relationship, not from a more complicated method. Leave-one-out cross-validation, which leaves out each tree in turn, suits a sample this small.
+The straight-line model achieves a leave-one-out RMSE of 4.3 cubic feet; the log-log model achieves 2.6, about 40% lower error. Examining the log-log regression coefficients shows that volume scales with $\text{Girth}^{2.0}$ and $\text{Height}^{1.1}$, mimicking the geometric formula for a cylinder ($V \propto r^2 h$). Thoughtful feature transformation often outperforms complex black-box algorithms on physical phenomena.
 :::
 :::
 
@@ -410,7 +422,7 @@ Answer each question in your own words first, then click to see a model answer.
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because each predictor adds a coefficient that can be adjusted to fit the sample, and with many coefficients and few cases, the model has enough freedom to fit the noise of that particular sample as well as the real pattern. Correlated predictors make it worse: their coefficients become large and unstable, cancelling out on the training data but not on new data.
+Because each predictor adds a free coefficient. With many coefficients and few observations, the model has sufficient flexibility to memorise idiosyncratic sample noise rather than true population patterns. Correlated predictors aggravate this by causing coefficients to inflate in magnitude with opposite signs.
 :::
 
 **2.** What is the difference between ridge regression and the lasso?
@@ -418,15 +430,15 @@ Because each predictor adds a coefficient that can be adjusted to fit the sample
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Both penalise large coefficients and shrink them towards zero. Ridge penalises the squared coefficients: it shrinks every coefficient and shares the credit among correlated predictors, but keeps all of them in the model. The lasso penalises the absolute coefficients: it also sets some to exactly zero, so it selects a smaller set of predictors.
+Both add a penalty against large coefficients. Ridge uses an $L_2$ penalty (sum of squared coefficients), shrinking coefficients continuously and sharing credit across correlated predictors without setting any to zero. Lasso uses an $L_1$ penalty (sum of absolute coefficients), which drives some coefficients to exactly zero, performing automated variable selection.
 :::
 
-**3.** What does the penalty $\lambda$ do, and how is its value chosen?
+**3.** What does the penalty $\lambda$ (or $\alpha$ in scikit-learn) do, and how is its value chosen?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-It sets how much large coefficients cost. With $\lambda = 0$, the model is ordinary regression; as $\lambda$ grows, the coefficients shrink more, until, at a very large value, the model predicts the mean for everyone. It is a hyperparameter, so its value is chosen by cross-validation: the value that gives the lowest error on the left-out folds.
+It controls the penalty weight on coefficient size. When $\alpha = 0$, it is ordinary least squares; as $\alpha \to \infty$, all coefficients collapse to zero, predicting the global target mean. Because $\alpha$ is a hyperparameter, it must be selected through $K$-fold cross-validation on the training set.
 :::
 
 **4.** How does boosting differ from a random forest?
@@ -434,46 +446,41 @@ It sets how much large coefficients cost. With $\lambda = 0$, the model is ordin
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-A random forest grows many deep trees independently, each on a different bootstrap sample, and averages them, which reduces variance. Boosting grows small trees one after another, each fitted to the errors of the model so far and added with a small weight, which gradually reduces bias. A forest's trees could be grown at the same time; a boosted model's trees must be grown in order.
+A random forest fits many deep, independent trees in parallel on bootstrap resamples and averages their predictions to reduce variance. Boosting fits shallow trees (weak learners) sequentially, where each successive tree targets the residual errors of the existing ensemble, reducing bias.
 :::
 
-**5.** Why are a model's predictions pulled towards the average, so that the highest achievers are predicted too low and the lowest too high?
+**5.** Why are a model's predictions pulled towards the average, so that extreme achievers are predicted too low and low achievers too high?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because part of every student's outcome is unpredictable. A student with an exceptionally high final GPA usually had some good luck that no predictor could foresee, so the model, which predicts only the predictable part, gives them a value closer to the average. The same happens at the bottom. Regularisation strengthens the effect, because shrinking the coefficients pulls every prediction further towards the mean. This regression to the mean is normal, and it is why a prediction should not be read as a ceiling or a floor for a student.
+Because an observed outcome reflects predictable underlying signal plus unobserved random noise (luck). The model can only fit the systematic signal, so extreme actual values inevitably regress towards the conditional mean. Regularisation accentuates this shrinkage.
 :::
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis. The data (`gpa_data`, `train`, and `test`), the function `rmse()`, and the dplyr, tidyr, and rpart packages are already loaded, and R's built-in datasets are always available.
+These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis. The data (`gpa_data`, `train`, and `test`) and function `rmse()` are already loaded.
 
-**1.** Predict semester 4 wellbeing, rather than GPA, from year-one information. Build the data as the setup does, with wellbeing in semester 4 as the outcome, compare a model with a few chosen predictors, a model with all of them, and boosting by hand, and report the test RMSE of each alongside the baseline. (In the download project, compare the lasso and XGBoost as well.)
+**1.** Predict semester 4 wellbeing, rather than GPA, from year-one information. Construct the dataset with semester 4 wellbeing as target, compare a baseline, a linear regression with a few predictors, and Gradient Boosting, reporting test RMSE.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**2.** Choose a small model from Task 1 and explain, in a short paragraph, why its predictors are not a list of the causes of wellbeing, using what you know about the data.
+**2.** Choose a small model from Task 1 and explain, in a short paragraph, why its predictors are not a causal list of the drivers of wellbeing.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**3.** Write two sentences for the university's student services explaining what your wellbeing model's RMSE means for one student, in the units of the wellbeing scale. No code is needed; write it on paper or in a document.
+**3.** Write two sentences for student services explaining what your wellbeing model's RMSE means for an individual student in the units of the wellbeing scale.
 
 ## Work on your own computer
 
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 13 project
 
-The project contains the data and all four parts of this page as an R script. Its Practise part uses tidymodels, glmnet, and xgboost exactly as the chapter does, including the three exercises that cannot run in a browser; the other parts use base R, as on this page. Answers to the questions are in `solutions.R`, and the open tasks have space to write your code.
+The project contains the datasets and all exercises in Python (`exercises.py` and `solutions.py`).
 
-- [Download chapter13.zip](chapter13.zip), unzip it, and double-click `chapter13.Rproj`.
-- Or type this one line in RStudio's Console:
-
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter13.zip")
-```
+- [Download chapter13.zip](chapter13.zip), unzip it, and open the folder in your favourite editor (VS Code, PyCharm, etc.).
 :::

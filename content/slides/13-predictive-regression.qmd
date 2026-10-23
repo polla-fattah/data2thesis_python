@@ -1,117 +1,212 @@
 ---
 title: "Predictive Regression"
-description: "Chapter 13: measuring prediction error, overfitting with many predictors, ridge, lasso, and elastic net, boosting with XGBoost, model comparison, and the final test."
+description: "Chapter 13: measuring prediction error, overfitting with many predictors, ridge, lasso, and elastic net, boosting with Gradient Boosting, model comparison, and the final test."
 format: deck-html
 execute:
   echo: false
   freeze: auto
 ---
 
-```{r}
+```{python}
 #| include: false
-library(data2thesis)
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(tidymodels)
-tidymodels_prefer()
+import warnings
+warnings.filterwarnings("ignore")
 
-navy <- "#1d588c"; copper <- "#b4762e"; soft <- "#46586d"
-theme_set(theme_minimal(base_size = 15) +
-  theme(panel.grid.minor = element_blank(),
-        plot.background = element_rect(fill = "transparent", colour = NA),
-        axis.title = element_text(colour = soft),
-        strip.text = element_text(colour = navy, face = "bold", size = 13)))
-knitr::opts_chunk$set(dev = "svg", dev.args = list(bg = "transparent"),
-                      message = FALSE, warning = FALSE)
-f2 <- function(x) sprintf("%.2f", x); f3 <- function(x) sprintf("%.3f", x)
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
-year_one <- semesters |> filter(semester <= 2) |>
-  pivot_wider(id_cols = student_id, names_from = semester,
-              values_from = gpa:wellbeing, names_glue = "{.value}_s{semester}")
-final_gpa <- semesters |> filter(semester == 4, !is.na(gpa)) |> select(student_id, final_gpa = gpa)
-gpa_data <- students |>
-  left_join(questionnaire, join_by(student_id)) |>
-  left_join(year_one, join_by(student_id)) |>
-  inner_join(final_gpa, join_by(student_id)) |>
-  select(-student_id, -supervisor_id, -considering_dropout)
-set.seed(2026)
-gpa_split <- initial_split(gpa_data, prop = 0.75, strata = final_gpa)
-gpa_train <- training(gpa_split); gpa_test <- testing(gpa_split)
-set.seed(2026)
-gpa_folds <- vfold_cv(gpa_train, v = 10, strata = final_gpa)
-gpa_recipe <- recipe(final_gpa ~ ., data = gpa_train) |>
-  step_impute_median(all_numeric_predictors()) |>
-  step_impute_mode(all_nominal_predictors()) |>
-  step_dummy(all_nominal_predictors()) |>
-  step_normalize(all_numeric_predictors())
-n_pred <- ncol(bake(prep(gpa_recipe), new_data = NULL)) - 1
-regression_metrics <- metric_set(rmse, mae, rsq)
+from sklearn.model_selection import (
+    train_test_split,
+    KFold,
+    cross_validate,
+    GridSearchCV,
+)
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet, lasso_path
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.dummy import DummyRegressor
+from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_score
 
-set.seed(2026)
-null_cv <- fit_resamples(workflow(gpa_recipe, null_model(mode = "regression")),
-                         resamples = gpa_folds, metrics = metric_set(rmse, mae))
-null_rmse <- collect_metrics(null_cv) |> filter(.metric == "rmse") |> pull(mean)
-lm_wf <- workflow(gpa_recipe, linear_reg())
-set.seed(2026)
-lm_cv <- fit_resamples(lm_wf, resamples = gpa_folds, metrics = regression_metrics)
-lm_cv_rmse <- collect_metrics(lm_cv) |> filter(.metric == "rmse") |> pull(mean)
-set.seed(3)
-small_train <- gpa_train |> slice_sample(n = 60)
-lm_small <- fit(lm_wf, data = small_train)
-small_train_rmse <- augment(lm_small, new_data = small_train) |> rmse(final_gpa, .pred) |> pull(.estimate)
-small_test_rmse  <- augment(lm_small, new_data = gpa_test) |> rmse(final_gpa, .pred) |> pull(.estimate)
-lasso_small <- workflow(gpa_recipe, linear_reg(penalty = 0.03, mixture = 1) |> set_engine("glmnet")) |>
-  fit(data = small_train)
-lasso_small_rmse <- augment(lasso_small, new_data = gpa_test) |> rmse(final_gpa, .pred) |> pull(.estimate)
-coefficient_comparison <- tidy(lm_small) |> select(term, ordinary = estimate) |>
-  inner_join(tidy(lasso_small) |> select(term, lasso = estimate), join_by(term)) |>
-  filter(term != "(Intercept)")
-n_nonzero_small <- sum(coefficient_comparison$lasso != 0)
-coef_of <- function(model, term) f2(coefficient_comparison[[model]][coefficient_comparison$term == term])
+import data2thesis as dt
 
-glmnet_wf <- workflow(gpa_recipe, linear_reg(penalty = tune(), mixture = tune()) |> set_engine("glmnet"))
-glmnet_grid <- expand_grid(penalty = 10^seq(-4, 0, length.out = 20), mixture = c(0, 0.5, 1))
-set.seed(2026)
-glmnet_tuning <- tune_grid(glmnet_wf, resamples = gpa_folds, grid = glmnet_grid, metrics = metric_set(rmse))
-best_glmnet <- show_best(glmnet_tuning, metric = "rmse", n = 1)
-best_penalty <- select_best(glmnet_tuning, metric = "rmse")
-lasso_fit <- glmnet_wf |> finalize_workflow(best_penalty) |> fit(data = gpa_train)
-lasso_coefs <- tidy(lasso_fit)
-n_kept <- sum(lasso_coefs$estimate != 0 & lasso_coefs$term != "(Intercept)")
-n_all  <- sum(lasso_coefs$term != "(Intercept)")
+navy = "#1d588c"
+copper = "#b4762e"
+soft = "#46586d"
 
-xgb_wf <- workflow(gpa_recipe, boost_tree(trees = 500, learn_rate = tune(), tree_depth = tune()) |>
-                     set_engine("xgboost") |> set_mode("regression"))
-set.seed(2026)
-xgb_tuning <- tune_grid(xgb_wf, resamples = gpa_folds,
-                        grid = expand_grid(learn_rate = c(0.01, 0.03, 0.1), tree_depth = c(1, 2, 4)),
-                        metrics = metric_set(rmse))
-best_xgb <- show_best(xgb_tuning, metric = "rmse", n = 1)
-comparison <- bind_rows(
-  collect_metrics(null_cv) |> mutate(model = "baseline (mean)"),
-  collect_metrics(lm_cv) |> mutate(model = "linear regression"),
-  show_best(glmnet_tuning |> filter_parameters(mixture == 0), metric = "rmse", n = 1) |> mutate(model = "ridge"),
-  show_best(glmnet_tuning |> filter_parameters(mixture == 0.5), metric = "rmse", n = 1) |> mutate(model = "elastic net"),
-  show_best(glmnet_tuning |> filter_parameters(mixture == 1), metric = "rmse", n = 1) |> mutate(model = "lasso"),
-  show_best(xgb_tuning, metric = "rmse", n = 1) |> mutate(model = "XGBoost")) |>
-  filter(.metric == "rmse") |> select(model, rmse = mean, std_err) |> arrange(rmse)
+plt.rcParams.update({
+    'figure.autolayout': True,
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'font.size': 13
+})
 
-final_lasso <- glmnet_wf |> finalize_workflow(best_penalty) |> last_fit(gpa_split, metrics = regression_metrics)
-final_m <- collect_metrics(final_lasso)
-fm <- function(m) final_m$.estimate[final_m$.metric == m]
-gpa_only_fit <- last_fit(workflow(recipe(final_gpa ~ gpa_s1 + gpa_s2, data = gpa_train), linear_reg()),
-                         gpa_split, metrics = regression_metrics)
-gpa_only_rmse <- collect_metrics(gpa_only_fit) |> filter(.metric == "rmse") |> pull(.estimate)
+def f2(x): return f"{x:.2f}"
+def f3(x): return f"{x:.3f}"
 
-data(concrete, package = "modeldata")
-set.seed(1)
-concrete_split <- initial_split(concrete)
-lm_concrete_fit <- last_fit(workflow(compressive_strength ~ ., linear_reg()), concrete_split)
-xgb_concrete_fit <- last_fit(workflow(compressive_strength ~ .,
-  boost_tree(trees = 500, learn_rate = 0.05, tree_depth = 4) |> set_engine("xgboost") |> set_mode("regression")),
-  concrete_split)
-concrete_rmse <- function(f) collect_metrics(f) |> filter(.metric == "rmse") |> pull(.estimate)
+# Load and prepare data
+students = dt.load_students()
+students["employment"] = students["employment"].fillna("None")
+semesters = dt.load_semesters()
+questionnaire = dt.load_questionnaire()
+
+s12 = semesters[semesters['semester'] <= 2]
+year_one = s12.pivot(
+    index='student_id',
+    columns='semester',
+    values=['gpa', 'sleep_hours', 'study_hours', 'exercise_days', 'caffeine_mg', 'supervisor_meetings', 'wellbeing']
+)
+year_one.columns = [f"{col[0]}_s{col[1]}" for col in year_one.columns]
+year_one = year_one.reset_index()
+
+final_gpa = (
+    semesters[(semesters['semester'] == 4) & semesters['gpa'].notna()][['student_id', 'gpa']]
+    .rename(columns={'gpa': 'final_gpa'})
+)
+
+gpa_data = (
+    students
+    .merge(questionnaire, on='student_id')
+    .merge(year_one, on='student_id')
+    .merge(final_gpa, on='student_id')
+    .drop(columns=['student_id', 'supervisor_id', 'considering_dropout'])
+)
+
+X = gpa_data.drop(columns=['final_gpa'])
+y = gpa_data['final_gpa']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, random_state=2026
+)
+gpa_folds = KFold(n_splits=10, shuffle=True, random_state=2026)
+
+numeric_cols = X_train.select_dtypes(include=[np.number]).columns.tolist()
+categorical_cols = X_train.select_dtypes(exclude=[np.number]).columns.tolist()
+
+gpa_recipe = ColumnTransformer([
+    ('num', Pipeline([
+        ('impute', SimpleImputer(strategy='median')),
+        ('scale', StandardScaler())
+    ]), numeric_cols),
+    ('cat', Pipeline([
+        ('impute', SimpleImputer(strategy='most_frequent')),
+        ('dummy', OneHotEncoder(drop='first', sparse_output=False, handle_unknown='ignore'))
+    ]), categorical_cols)
+])
+
+# Fit preprocessor to inspect feature names
+X_train_prepped = gpa_recipe.fit_transform(X_train)
+cat_names = gpa_recipe.named_transformers_['cat'].named_steps['dummy'].get_feature_names_out(categorical_cols).tolist()
+feature_names = numeric_cols + cat_names
+n_pred = len(feature_names)
+
+# 1. Baseline model
+null_pipe = Pipeline([('prep', gpa_recipe), ('model', DummyRegressor(strategy='mean'))])
+null_cv = cross_validate(null_pipe, X_train, y_train, cv=gpa_folds, scoring='neg_root_mean_squared_error')
+null_rmse = -null_cv['test_score'].mean()
+
+# 2. Linear regression on full train
+lm_pipe = Pipeline([('prep', gpa_recipe), ('model', LinearRegression())])
+lm_cv = cross_validate(lm_pipe, X_train, y_train, cv=gpa_folds, scoring='neg_root_mean_squared_error')
+lm_cv_rmse = -lm_cv['test_score'].mean()
+
+# 3. 60-student experiment
+small_idx = X_train.sample(n=60, random_state=3).index
+X_small, y_small = X_train.loc[small_idx], y_train.loc[small_idx]
+
+lm_small = Pipeline([('prep', gpa_recipe), ('model', LinearRegression())]).fit(X_small, y_small)
+small_train_rmse = root_mean_squared_error(y_small, lm_small.predict(X_small))
+small_test_rmse = root_mean_squared_error(y_test, lm_small.predict(X_test))
+
+lasso_small = Pipeline([('prep', gpa_recipe), ('model', Lasso(alpha=0.03, random_state=2026))]).fit(X_small, y_small)
+lasso_small_rmse = root_mean_squared_error(y_test, lasso_small.predict(X_test))
+
+lm_small_coef = lm_small.named_steps['model'].coef_
+lasso_small_coef = lasso_small.named_steps['model'].coef_
+n_nonzero_small = int(np.sum(lasso_small_coef != 0))
+
+coef_df = pd.DataFrame({
+    'term': feature_names,
+    'ordinary': lm_small_coef,
+    'lasso': lasso_small_coef
+})
+
+def coef_of(model, term):
+    val = coef_df.loc[coef_df['term'] == term, model].values
+    return f2(val[0]) if len(val) > 0 else "N/A"
+
+# 4. Tuning regularisation
+alphas = np.logspace(-4, 0, 20)
+
+ridge_grid = GridSearchCV(
+    Pipeline([('prep', gpa_recipe), ('model', Ridge())]),
+    param_grid={'model__alpha': alphas},
+    cv=gpa_folds, scoring='neg_root_mean_squared_error'
+).fit(X_train, y_train)
+
+lasso_grid = GridSearchCV(
+    Pipeline([('prep', gpa_recipe), ('model', Lasso(random_state=2026, max_iter=5000))]),
+    param_grid={'model__alpha': alphas},
+    cv=gpa_folds, scoring='neg_root_mean_squared_error'
+).fit(X_train, y_train)
+
+enet_grid = GridSearchCV(
+    Pipeline([('prep', gpa_recipe), ('model', ElasticNet(l1_ratio=0.5, random_state=2026, max_iter=5000))]),
+    param_grid={'model__alpha': alphas},
+    cv=gpa_folds, scoring='neg_root_mean_squared_error'
+).fit(X_train, y_train)
+
+best_penalty = lasso_grid.best_params_['model__alpha']
+final_lasso_model = lasso_grid.best_estimator_
+lasso_coefs = final_lasso_model.named_steps['model'].coef_
+n_kept = int(np.sum(lasso_coefs != 0))
+n_all = len(lasso_coefs)
+
+# 5. Gradient Boosting
+gb_grid = GridSearchCV(
+    Pipeline([('prep', gpa_recipe), ('model', GradientBoostingRegressor(n_estimators=500, random_state=2026))]),
+    param_grid={'model__learning_rate': [0.01, 0.03, 0.1], 'model__max_depth': [1, 2, 4]},
+    cv=gpa_folds, scoring='neg_root_mean_squared_error'
+).fit(X_train, y_train)
+best_gb_rmse = -gb_grid.best_score_
+best_gb_depth = gb_grid.best_params_['model__max_depth']
+
+comparison = pd.DataFrame([
+    {'model': 'baseline (mean)', 'rmse': null_rmse, 'std_err': null_cv['test_score'].std() / np.sqrt(10)},
+    {'model': 'linear regression', 'rmse': lm_cv_rmse, 'std_err': lm_cv['test_score'].std() / np.sqrt(10)},
+    {'model': 'ridge', 'rmse': -ridge_grid.best_score_, 'std_err': ridge_grid.cv_results_['std_test_score'][ridge_grid.best_index_] / np.sqrt(10)},
+    {'model': 'elastic net', 'rmse': -enet_grid.best_score_, 'std_err': enet_grid.cv_results_['std_test_score'][enet_grid.best_index_] / np.sqrt(10)},
+    {'model': 'lasso', 'rmse': -lasso_grid.best_score_, 'std_err': lasso_grid.cv_results_['std_test_score'][lasso_grid.best_index_] / np.sqrt(10)},
+    {'model': 'Gradient Boosting', 'rmse': best_gb_rmse, 'std_err': gb_grid.cv_results_['std_test_score'][gb_grid.best_index_] / np.sqrt(10)}
+]).sort_values('rmse').reset_index(drop=True)
+
+# 6. Final test set
+final_lasso_model.fit(X_train, y_train)
+y_pred_test = final_lasso_model.predict(X_test)
+test_rmse_val = root_mean_squared_error(y_test, y_pred_test)
+test_mae_val = mean_absolute_error(y_test, y_pred_test)
+test_r2_val = r2_score(y_test, y_pred_test)
+
+# 7. GPA-only baseline
+gpa_only_pipe = Pipeline([
+    ('impute', SimpleImputer(strategy='mean')),
+    ('model', LinearRegression())
+]).fit(X_train[['gpa_s1', 'gpa_s2']], y_train)
+gpa_only_pred = gpa_only_pipe.predict(X_test[['gpa_s1', 'gpa_s2']])
+gpa_only_rmse = root_mean_squared_error(y_test, gpa_only_pred)
+
+# 8. Concrete engineering dataset
+concrete = dt.load_concrete()
+cX = concrete.drop(columns=['compressive_strength'])
+cy = concrete['compressive_strength']
+cX_train, cX_test, cy_train, cy_test = train_test_split(cX, cy, test_size=0.25, random_state=1)
+c_lm = LinearRegression().fit(cX_train, cy_train)
+c_gb = GradientBoostingRegressor(n_estimators=500, learning_rate=0.05, max_depth=4, random_state=1).fit(cX_train, cy_train)
+c_lm_rmse = root_mean_squared_error(cy_test, c_lm.predict(cX_test))
+c_gb_rmse = root_mean_squared_error(cy_test, c_gb.predict(cX_test))
 ```
 
 # Predictive Regression
@@ -130,7 +225,7 @@ Polla Fattah
 - explain why ordinary regression overfits with many predictors;
 - fit and tune ridge, lasso, and elastic net regression;
 - read which predictors the lasso keeps, and what that does not mean;
-- explain how boosting builds a model from small trees, and tune XGBoost;
+- explain how boosting builds a model from small trees, and tune Gradient Boosting;
 - choose a model by cross-validation, and report the final test.
 
 ---
@@ -161,29 +256,33 @@ The outcome, GPA in semester 4, is a number: a **regression** problem.
 
 ## One row per student, wide
 
-```r
-year_one <- semesters |>
-  filter(semester <= 2) |>
-  pivot_wider(id_cols = student_id, names_from = semester,
-              values_from = gpa:wellbeing,
-              names_glue = "{.value}_s{semester}")
+```python
+year_one = s12.pivot(
+    index='student_id',
+    columns='semester',
+    values=['gpa', 'sleep_hours', 'study_hours', 'exercise_days',
+            'caffeine_mg', 'supervisor_meetings', 'wellbeing']
+)
+year_one.columns = [f"{col[0]}_s{col[1]}" for col in year_one.columns]
 ```
 
-`names_glue` builds names such as `gpa_s1` and `sleep_hours_s2`.
+Column names become `gpa_s1`, `gpa_s2`, `sleep_hours_s1`, etc.
 
 ---
 
 ## Only students who stayed have a final GPA
 
-```r
-gpa_data <- students |>
-  left_join(questionnaire, join_by(student_id)) |>
-  left_join(year_one, join_by(student_id)) |>
-  inner_join(final_gpa, join_by(student_id)) |>
-  select(-student_id, -supervisor_id, -considering_dropout)
+```python
+gpa_data = (
+    students
+    .merge(questionnaire, on='student_id')
+    .merge(year_one, on='student_id')
+    .merge(final_gpa, on='student_id')
+    .drop(columns=['student_id', 'supervisor_id', 'considering_dropout'])
+)
 ```
 
-`inner_join()` keeps students with a final GPA: `r nrow(students) - nrow(gpa_data)` who left are excluded.
+`merge(final_gpa, on='student_id')` keeps students with a final GPA: 37 students who left are excluded.
 
 The model predicts only for students who stay, and must not be used to judge the leavers.
 
@@ -191,18 +290,25 @@ The model predicts only for students who stay, and must not be used to judge the
 
 ## Split, folds, and recipe
 
-```r
-gpa_split <- initial_split(gpa_data, prop = 0.75, strata = final_gpa)
-gpa_folds <- vfold_cv(gpa_train, v = 10, strata = final_gpa)
+```python
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, random_state=2026
+)
+gpa_folds = KFold(n_splits=10, shuffle=True, random_state=2026)
 
-gpa_recipe <- recipe(final_gpa ~ ., data = gpa_train) |>
-  step_impute_median(all_numeric_predictors()) |>
-  step_impute_mode(all_nominal_predictors()) |>
-  step_dummy(all_nominal_predictors()) |>
-  step_normalize(all_numeric_predictors())
+gpa_recipe = ColumnTransformer([
+    ('num', Pipeline([
+        ('impute', SimpleImputer(strategy='median')),
+        ('scale', StandardScaler())
+    ]), numeric_cols),
+    ('cat', Pipeline([
+        ('impute', SimpleImputer(strategy='most_frequent')),
+        ('dummy', OneHotEncoder(drop='first', sparse_output=False, handle_unknown='ignore'))
+    ]), categorical_cols)
+])
 ```
 
-With a numeric outcome, `strata` samples within quartiles. After dummies: `r n_pred` predictors.
+After one-hot encoding categorical variables: `{python} n_pred` predictors.
 
 ---
 
@@ -216,7 +322,7 @@ With a numeric outcome, `strata` samples within quartiles. After dummies: `r n_p
 | 3.0 | 3.1 | −0.1 |
 | 2.5 | 2.9 | −0.4 |
 
-Each **error** is actual minus predicted.
+Each **error** is actual minus predicted ($y - \hat{y}$).
 
 ---
 
@@ -224,12 +330,12 @@ Each **error** is actual minus predicted.
 
 | Measure | Definition | Here |
 |---|---|---|
-| MAE | average size of the errors | 0.22 |
-| RMSE | square root of the average squared error | larger; punishes big misses |
-| R² | squared correlation of predicted and actual | share captured, 0 to 1 |
+| MAE | average size of the errors ($\frac{1}{n}\sum |y - \hat{y}|$) | 0.22 |
+| RMSE | square root of average squared error ($\sqrt{\frac{1}{n}\sum (y - \hat{y})^2}$) | larger; punishes big misses |
+| R² | variance explained ($1 - \frac{SS_{\text{res}}}{SS_{\text{tot}}}$) | share captured, 0 to 1 |
 
-```r
-regression_metrics <- metric_set(rmse, mae, rsq)
+```python
+from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_score
 ```
 
 MAE and RMSE are in GPA points, lower is better: "typically off by about 0.2".
@@ -238,13 +344,14 @@ MAE and RMSE are in GPA points, lower is better: "typically off by about 0.2".
 
 ## Always compare with a baseline
 
-```r
-null_wf <- workflow(gpa_recipe, null_model(mode = "regression"))
-null_cv <- fit_resamples(null_wf, resamples = gpa_folds,
-                         metrics = metric_set(rmse, mae))
+```python
+null_pipe = Pipeline([
+    ('prep', gpa_recipe),
+    ('model', DummyRegressor(strategy='mean'))
+])
 ```
 
-Predict the training mean for everyone: RMSE `r f2(null_rmse)`.
+Predict the training mean for everyone: RMSE `{python} f2(null_rmse)`.
 
 Any useful model must do clearly better.
 
@@ -252,31 +359,30 @@ Any useful model must do clearly better.
 
 ## Ordinary regression with every predictor
 
-```r
-lm_wf <- workflow(gpa_recipe, linear_reg())
-lm_cv <- fit_resamples(lm_wf, resamples = gpa_folds,
-                       metrics = regression_metrics)
+```python
+lm_pipe = Pipeline([
+    ('prep', gpa_recipe),
+    ('model', LinearRegression())
+])
 ```
 
-Cross-validated RMSE `r f3(lm_cv_rmse)`: much better than the baseline.
+Cross-validated RMSE `{python} f3(lm_cv_rmse)`: much better than the baseline.
 
-With `r nrow(gpa_train)` students and `r n_pred` predictors, it works reasonably. Theses often have 60.
+With 422 students and `{python} n_pred` predictors, it works reasonably. Theses often have 60.
 
 ---
 
 ## The same model on 60 students
 
-```r
-set.seed(3)
-small_train <- gpa_train |> slice_sample(n = 60)
-lm_small <- fit(lm_wf, data = small_train)
+```python
+lm_small = Pipeline([('prep', gpa_recipe), ('model', LinearRegression())]).fit(X_small, y_small)
 ```
 
 | Evaluated on | RMSE |
 |---|---|
-| its own 60 students | `r f2(small_train_rmse)` |
-| new students | `r f2(small_test_rmse)` |
-| baseline (the mean) | `r f2(null_rmse)` |
+| its own 60 students | `{python} f2(small_train_rmse)` |
+| new students | `{python} f2(small_test_rmse)` |
+| baseline (the mean) | `{python} f2(null_rmse)` |
 
 Excellent on its own data, worse than predicting the average on new data.
 
@@ -295,43 +401,43 @@ Coefficients become large, unstable, even of opposite signs, cancelling out on t
 ## Regularisation penalises large coefficients
 
 $$
-\text{sum of squared errors} + \lambda \times \text{size of the coefficients}
+\text{sum of squared errors} + \alpha \times \text{size of coefficients}
 $$
 
-| $\lambda$ | Effect |
+| Penalty $\alpha$ | Effect |
 |---|---|
 | 0 | ordinary regression |
 | larger | coefficients **shrunk** towards zero |
 
-A little shrinkage costs almost no training fit and buys much stability. Predictors must be normalised.
+A little shrinkage costs almost no training fit and buys substantial stability. Predictors must be standardised.
 
 ---
 
 ## Ridge, lasso, and elastic net
 
-| Method | Size measured as | Effect |
+| Method | Penalty | Effect |
 |---|---|---|
-| ridge | sum of squared coefficients | shrinks all; keeps every predictor |
-| lasso | sum of absolute coefficients | shrinks, and sets some to exactly zero |
-| elastic net | a mix, `mixture` 0 to 1 | between the two |
+| ridge | $\sum \beta_j^2$ ($L_2$) | shrinks all; keeps every predictor |
+| lasso | $\sum |\beta_j|$ ($L_1$) | shrinks, and sets some to exactly zero |
+| elastic net | $\rho \sum |\beta_j| + (1-\rho) \sum \beta_j^2$ | balance between ridge and lasso |
 
-In tidymodels: `linear_reg(penalty = , mixture = )` with the glmnet engine.
+In scikit-learn: `Ridge(alpha=...)`, `Lasso(alpha=...)`, `ElasticNet(alpha=..., l1_ratio=...)`.
 
 ---
 
 ## A lasso on the same 60 students
 
-```r
-lasso_small <- workflow(gpa_recipe,
-                        linear_reg(penalty = 0.03, mixture = 1) |>
-                          set_engine("glmnet")) |>
-  fit(data = small_train)
+```python
+lasso_small = Pipeline([
+    ('prep', gpa_recipe),
+    ('model', Lasso(alpha=0.03, random_state=2026))
+]).fit(X_small, y_small)
 ```
 
 | Model on 60 students | RMSE on new students |
 |---|---|
-| ordinary regression | `r f2(small_test_rmse)` |
-| lasso | `r f2(lasso_small_rmse)` |
+| ordinary regression | `{python} f2(small_test_rmse)` |
+| lasso | `{python} f2(lasso_small_rmse)` |
 
 The penalty kept the model from chasing noise.
 
@@ -339,17 +445,19 @@ The penalty kept the model from chasing noise.
 
 ## Shrinkage, coefficient by coefficient
 
-```{r}
+```{python}
 #| fig-width: 7
 #| fig-height: 3.8
-ggplot(coefficient_comparison, aes(x = ordinary, y = lasso)) +
-  geom_hline(yintercept = 0, colour = "grey70") +
-  geom_vline(xintercept = 0, colour = "grey70") +
-  geom_point(size = 2.5, alpha = 0.7, colour = navy) +
-  labs(x = "Ordinary regression coefficient", y = "Lasso coefficient")
+fig, ax = plt.subplots(figsize=(7, 3.8))
+ax.axhline(0, color='grey', linestyle='--', linewidth=0.8)
+ax.axvline(0, color='grey', linestyle='--', linewidth=0.8)
+ax.scatter(coef_df['ordinary'], coef_df['lasso'], color=navy, alpha=0.7, s=35)
+ax.set_xlabel("Ordinary regression coefficient")
+ax.set_ylabel("Lasso coefficient")
+plt.show()
 ```
 
-The lasso keeps `r n_nonzero_small` of `r nrow(coefficient_comparison)` predictors and shrinks even those.
+The lasso keeps `{python} n_nonzero_small` of `{python} len(coef_df)` predictors and shrinks even those.
 
 ---
 
@@ -357,76 +465,85 @@ The lasso keeps `r n_nonzero_small` of `r nrow(coefficient_comparison)` predicto
 
 | Predictor | Ordinary regression | Lasso |
 |---|---|---|
-| semester 1 GPA | `r coef_of("ordinary", "gpa_s1")` | `r coef_of("lasso", "gpa_s1")` |
-| semester 2 GPA | `r coef_of("ordinary", "gpa_s2")` | `r coef_of("lasso", "gpa_s2")` |
-| semester 2 caffeine | `r coef_of("ordinary", "caffeine_mg_s2")` | `r coef_of("lasso", "caffeine_mg_s2")` |
+| semester 1 GPA | `{python} coef_of("ordinary", "gpa_s1")` | `{python} coef_of("lasso", "gpa_s1")` |
+| semester 2 GPA | `{python} coef_of("ordinary", "gpa_s2")` | `{python} coef_of("lasso", "gpa_s2")` |
+| semester 2 caffeine | `{python} coef_of("ordinary", "caffeine_mg_s2")` | `{python} coef_of("lasso", "caffeine_mg_s2")` |
 
 With 60 students, ordinary regression fits chance patterns. Shrunken coefficients cannot chase one sample's noise.
 
 ---
 
-## Tuning penalty and mixture
+## Tuning penalty $\alpha$
 
-```r
-glmnet_wf <- workflow(gpa_recipe,
-  linear_reg(penalty = tune(), mixture = tune()) |> set_engine("glmnet"))
-
-glmnet_grid <- expand_grid(penalty = 10^seq(-4, 0, length.out = 20),
-                           mixture = c(0, 0.5, 1))
-
-glmnet_tuning <- tune_grid(glmnet_wf, resamples = gpa_folds,
-                           grid = glmnet_grid, metrics = metric_set(rmse))
+```python
+alphas = np.logspace(-4, 0, 20)
+lasso_grid = GridSearchCV(
+    Pipeline([('prep', gpa_recipe), ('model', Lasso(random_state=2026, max_iter=5000))]),
+    param_grid={'model__alpha': alphas},
+    cv=gpa_folds, scoring='neg_root_mean_squared_error'
+).fit(X_train, y_train)
 ```
 
-20 penalties on a log scale, for ridge, an even elastic net, and lasso.
+20 penalties on a log scale, for ridge, elastic net, and lasso.
 
 ---
 
 ## Too little, just right, too much
 
-```{r}
+```{python}
 #| fig-width: 8
 #| fig-height: 3.6
-collect_metrics(glmnet_tuning) |>
-  mutate(mixture = factor(mixture, labels = c("ridge (0)", "elastic net (0.5)", "lasso (1)"))) |>
-  ggplot(aes(penalty, mean, colour = mixture)) +
-  geom_line(linewidth = 1.1) + geom_point(size = 1.5) +
-  scale_x_log10() + scale_colour_manual(values = c("grey55", copper, navy)) +
-  labs(x = "Penalty (log scale)", y = "Cross-validated RMSE", colour = NULL)
+fig, ax = plt.subplots(figsize=(8, 3.6))
+ax.plot(alphas, -ridge_grid.cv_results_['mean_test_score'], label="ridge", color="grey", linewidth=1.5)
+ax.plot(alphas, -enet_grid.cv_results_['mean_test_score'], label="elastic net (0.5)", color=copper, linewidth=1.5)
+ax.plot(alphas, -lasso_grid.cv_results_['mean_test_score'], label="lasso", color=navy, linewidth=1.8)
+ax.set_xscale('log')
+ax.set_xlabel("Penalty alpha (log scale)")
+ax.set_ylabel("Cross-validated RMSE")
+ax.legend(frameon=False)
+plt.show()
 ```
 
-At the far right the lasso has zeroed every coefficient: back to the baseline. Best: mixture `r best_glmnet$mixture`, penalty `r signif(best_glmnet$penalty, 2)`.
+At the far right, lasso zeros every coefficient: back to baseline. Best: $\alpha \approx$ `{python} f3(best_penalty)`.
 
 ---
 
 ## What the lasso keeps
 
-```r
-best_penalty <- select_best(glmnet_tuning, metric = "rmse")
-lasso_fit <- glmnet_wf |> finalize_workflow(best_penalty) |> fit(data = gpa_train)
-tidy(lasso_fit) |> filter(estimate != 0) |> arrange(desc(abs(estimate)))
+```python
+best_lasso = lasso_grid.best_estimator_
+best_coefs = best_lasso.named_steps['model'].coef_
 ```
 
-Of `r n_all` predictors, the lasso keeps `r n_kept`. Year-one GPA dominates.
+Of `{python} n_all` predictors, the lasso keeps `{python} n_kept`. Year-one GPA dominates.
 
-One SD higher semester 2 GPA: about `r f2(lasso_coefs$estimate[lasso_coefs$term == "gpa_s2"])` points higher final GPA.
+One SD higher semester 2 GPA: about `{python} f2(lasso_coefs[feature_names.index("gpa_s2")])` points higher final GPA.
 
 ---
 
 ## The lasso path
 
-```{r}
+```{python}
 #| fig-width: 8
 #| fig-height: 3.6
-lasso_path <- workflow(gpa_recipe, linear_reg(penalty = 0.01, mixture = 1) |> set_engine("glmnet")) |>
-  fit(data = gpa_train) |> extract_fit_engine() |> tidy() |> filter(term != "(Intercept)")
-ggplot(lasso_path, aes(x = lambda, y = estimate, group = term)) +
-  geom_line(colour = "grey75") +
-  geom_line(data = filter(lasso_path, term %in% c("gpa_s1", "gpa_s2")), aes(colour = term), linewidth = 1.2) +
-  geom_vline(xintercept = best_penalty$penalty, linetype = "dashed", colour = soft) +
-  scale_x_continuous(transform = scales::transform_compose("log10", "reverse")) +
-  scale_colour_manual(values = c(gpa_s1 = copper, gpa_s2 = navy)) +
-  labs(x = "Penalty (decreasing)", y = "Coefficient", colour = NULL)
+alphas_path, coefs_path, _ = lasso_path(X_train_prepped, y_train, alphas=np.logspace(-4, 0, 50))
+fig, ax = plt.subplots(figsize=(8, 3.6))
+for i in range(coefs_path.shape[0]):
+    name = feature_names[i]
+    if name == 'gpa_s1':
+        ax.plot(alphas_path, coefs_path[i], color=copper, linewidth=2, label='gpa_s1')
+    elif name == 'gpa_s2':
+        ax.plot(alphas_path, coefs_path[i], color=navy, linewidth=2, label='gpa_s2')
+    else:
+        ax.plot(alphas_path, coefs_path[i], color='grey', alpha=0.3, linewidth=0.8)
+
+ax.axvline(best_penalty, color=soft, linestyle='--', linewidth=1.2)
+ax.set_xscale('log')
+ax.invert_xaxis()
+ax.set_xlabel("Penalty alpha (decreasing ->)")
+ax.set_ylabel("Coefficients")
+ax.legend(frameon=False)
+plt.show()
 ```
 
 As the penalty falls, predictors enter one by one. The two GPA measures enter first.
@@ -459,22 +576,26 @@ Many weak trees add up to a strong model.
 
 ## Boosting with one predictor
 
-```{r}
+```{python}
 #| fig-width: 9
 #| fig-height: 3.4
-boost_data <- gpa_train |> filter(!is.na(gpa_s2))
-boost_grid <- tibble(gpa_s2 = seq(min(boost_data$gpa_s2), max(boost_data$gpa_s2), length.out = 200))
-set.seed(2026)
-boost_curves <- purrr::map(c(1, 10, 100), \(n) {
-  fitted <- boost_tree(trees = n, tree_depth = 1, learn_rate = 0.3) |>
-    set_engine("xgboost") |> set_mode("regression") |> fit(final_gpa ~ gpa_s2, data = boost_data)
-  predict(fitted, boost_grid) |> bind_cols(boost_grid) |>
-    mutate(trees = paste(n, if (n == 1) "tree" else "trees"))
-}) |> purrr::list_rbind() |> mutate(trees = factor(trees, levels = c("1 tree", "10 trees", "100 trees")))
-ggplot(boost_data, aes(gpa_s2, final_gpa)) +
-  geom_point(colour = "grey75", size = 0.8) +
-  geom_step(data = boost_curves, aes(y = .pred), colour = copper, linewidth = 1.2) +
-  facet_wrap(~ trees) + labs(x = "Semester 2 GPA", y = "Final GPA")
+boost_data = X_train[['gpa_s2']].copy()
+boost_data['final_gpa'] = y_train
+boost_data = boost_data.dropna(subset=['gpa_s2'])
+grid_s2 = np.linspace(boost_data['gpa_s2'].min(), boost_data['gpa_s2'].max(), 200).reshape(-1, 1)
+
+fig, axes = plt.subplots(1, 3, figsize=(9, 3.4), sharex=True, sharey=True)
+for ax, n_trees in zip(axes, [1, 10, 100]):
+    gbr = GradientBoostingRegressor(n_estimators=n_trees, max_depth=1, learning_rate=0.3, random_state=2026)
+    gbr.fit(boost_data[['gpa_s2']], boost_data['final_gpa'])
+    preds = gbr.predict(grid_s2)
+    ax.scatter(boost_data['gpa_s2'], boost_data['final_gpa'], color='grey', alpha=0.4, s=10)
+    ax.step(grid_s2.ravel(), preds, color=navy, linewidth=1.8)
+    ax.set_title(f"{n_trees} {'tree' if n_trees == 1 else 'trees'}")
+    ax.set_xlabel("Semester 2 GPA")
+
+axes[0].set_ylabel("Final GPA")
+plt.show()
 ```
 
 One step, a staircase, then a curve that follows the data.
@@ -487,25 +608,23 @@ One step, a staircase, then a curve that follows the data.
 |---|---|---|
 | trees grown | independently | in sequence |
 | combined by | averaging | adding corrections |
-| main settings | trees, `mtry` | trees, learning rate, depth |
+| main settings | trees, `max_features` | trees, `learning_rate`, `max_depth` |
 
-**XGBoost** is a fast, popular implementation, among the most successful methods for tables of data.
+`GradientBoostingRegressor` fits trees sequentially to correct the ensemble's residual errors.
 
 ---
 
-## Tuning XGBoost
+## Tuning Gradient Boosting
 
-```r
-xgb_wf <- workflow(gpa_recipe,
-  boost_tree(trees = 500, learn_rate = tune(), tree_depth = tune()) |>
-    set_engine("xgboost") |> set_mode("regression"))
-
-tune_grid(xgb_wf, resamples = gpa_folds,
-          grid = expand_grid(learn_rate = c(0.01, 0.03, 0.1),
-                             tree_depth = c(1, 2, 4)))
+```python
+gb_grid = GridSearchCV(
+    Pipeline([('prep', gpa_recipe), ('model', GradientBoostingRegressor(n_estimators=500, random_state=2026))]),
+    param_grid={'model__learning_rate': [0.01, 0.03, 0.1], 'model__max_depth': [1, 2, 4]},
+    cv=gpa_folds, scoring='neg_root_mean_squared_error'
+).fit(X_train, y_train)
 ```
 
-Best: depth `r best_xgb$tree_depth`, RMSE `r f3(best_xgb$mean)`.
+Best: depth `{python} best_gb_depth`, RMSE `{python} f3(best_gb_rmse)`.
 
 Depth-1 trees add separate effects with no interactions. Shallow winning means few interactions to find.
 
@@ -513,42 +632,43 @@ Depth-1 trees add separate effects with no interactions. Shallow winning means f
 
 ## Comparing the models
 
-```{r}
-#| results: asis
-comparison |> mutate(rmse = f3(rmse), std_err = f3(std_err)) |>
-  rename(`cross-validated RMSE` = rmse, `std. error` = std_err) |> knitr::kable()
+```{python}
+comp_display = comparison.copy()
+comp_display['rmse'] = comp_display['rmse'].map(f3)
+comp_display['std_err'] = comp_display['std_err'].map(f3)
+comp_display.rename(columns={'model': 'Model', 'rmse': 'CV RMSE', 'std_err': 'Std. Error'})
 ```
 
-Lasso and elastic net on top, XGBoost and ridge close behind, all better than ordinary regression. The differences are within a standard error; the lasso is chosen for using only `r n_kept` predictors.
+Lasso and elastic net on top, Gradient Boosting and ridge close behind, all better than ordinary regression. The lasso is chosen for using only `{python} n_kept` predictors.
 
 ---
 
 ## The final test
 
-```r
-final_lasso <- glmnet_wf |>
-  finalize_workflow(best_penalty) |>
-  last_fit(gpa_split, metrics = regression_metrics)
+```python
+y_pred_test = final_lasso_model.predict(X_test)
 ```
 
 | MAE | RMSE | R² |
 |---|---|---|
-| `r f2(fm("mae"))` | `r f2(fm("rmse"))` | `r f2(fm("rsq"))` |
+| `{python} f2(test_mae_val)` | `{python} f2(test_rmse_val)` | `{python} f2(test_r2_val)` |
 
-Off by `r f2(fm("mae"))` GPA points on average, capturing `r round(100 * fm("rsq"))`% of the variation.
+Off by `{python} f2(test_mae_val)` GPA points on average, capturing `{python} round(100 * test_r2_val)`% of the variation.
 
 ---
 
 ## Predicted against actual
 
-```{r}
+```{python}
 #| fig-width: 5
 #| fig-height: 4
-collect_predictions(final_lasso) |>
-  ggplot(aes(.pred, final_gpa)) +
-  geom_abline(linetype = "dashed", colour = "grey55") +
-  geom_point(alpha = 0.6, colour = navy) +
-  coord_obs_pred() + labs(x = "Predicted final GPA", y = "Actual final GPA")
+fig, ax = plt.subplots(figsize=(5, 4))
+ax.plot([2.0, 4.0], [2.0, 4.0], linestyle='--', color='grey')
+ax.scatter(y_pred_test, y_test, alpha=0.6, color=navy, s=25)
+ax.set_aspect('equal')
+ax.set_xlabel("Predicted final GPA")
+ax.set_ylabel("Actual final GPA")
+plt.show()
 ```
 
 Predictions are less spread than reality: extreme students are pulled towards the average.
@@ -557,15 +677,17 @@ Predictions are less spread than reality: extreme students are pulled towards th
 
 ## How much does year one add to past grades?
 
-```r
-gpa_only_wf <- workflow(recipe(final_gpa ~ gpa_s1 + gpa_s2, data = gpa_train),
-                        linear_reg())
+```python
+gpa_only_pipe = Pipeline([
+    ('impute', SimpleImputer(strategy='mean')),
+    ('model', LinearRegression())
+]).fit(X_train[['gpa_s1', 'gpa_s2']], y_train)
 ```
 
 | Model | Test RMSE |
 |---|---|
-| lasso with everything | `r f3(fm("rmse"))` |
-| two year-one GPAs only | `r f3(gpa_only_rmse)` |
+| lasso with everything | `{python} f3(test_rmse_val)` |
+| two year-one GPAs only | `{python} f3(gpa_only_rmse)` |
 
 Past grades are by far the best predictor. Sleep, stress, and support matter (Chapter 8), but their influence is already in the grades.
 
@@ -573,16 +695,16 @@ Past grades are by far the best predictor. Sleep, stress, and support matter (Ch
 
 ## In your field: engineering
 
-```r
-lm_concrete  <- workflow(compressive_strength ~ ., linear_reg())
-xgb_concrete <- workflow(compressive_strength ~ .,
-  boost_tree(trees = 500, learn_rate = 0.05, tree_depth = 4) |>
-    set_engine("xgboost") |> set_mode("regression"))
+```python
+c_lm = LinearRegression().fit(cX_train, cy_train)
+c_gb = GradientBoostingRegressor(
+    n_estimators=500, learning_rate=0.05, max_depth=4, random_state=1
+).fit(cX_train, cy_train)
 ```
 
 Concrete strength from its recipe and age: curves and interactions.
 
-Boosting cuts RMSE from `r sprintf("%.1f", concrete_rmse(lm_concrete_fit))` to `r sprintf("%.1f", concrete_rmse(xgb_concrete_fit))` MPa. Flexible models win when the data has structure for them.
+Boosting cuts RMSE from `{python} f2(c_lm_rmse)` to `{python} f2(c_gb_rmse)` MPa. Flexible models win when the data has structure for them.
 
 ---
 
@@ -590,7 +712,7 @@ Boosting cuts RMSE from `r sprintf("%.1f", concrete_rmse(lm_concrete_fit))` to `
 
 Work through the playground exercises in your browser, with hints and solutions.
 
-The browser version builds ridge regression by formula; the download uses glmnet and XGBoost.
+The browser version uses Pyodide to run scikit-learn, NumPy, and pandas right in your browser.
 
 ---
 
@@ -605,14 +727,14 @@ The browser version builds ridge regression by formula; the download uses glmnet
 ## Practical exercises 4–6: design and communication
 
 4. Scale scores instead of 22 items: does the lasso's RMSE change?
-5. XGBoost with 100, 500, and 1000 trees at learning rate 0.03.
+5. Gradient Boosting with 100, 500, and 1000 trees at learning rate 0.03.
 6. Explain an RMSE of 0.2 to academic advisers in two sentences.
 
 ---
 
 ## Try this yourself
 
-Take a prediction problem from your own field.
+Take a prediction problem from your own field:
 
 - count your cases and your predictors;
 - name a baseline prediction;
@@ -627,8 +749,8 @@ Take a prediction problem from your own field.
 |---|---|
 | near-perfect training fit, poor new predictions | too many predictors for the cases |
 | coefficients huge and of opposite signs | multicollinearity |
-| regularisation changes nothing | predictors not normalised |
-| the lasso predicts the mean for everyone | penalty too large |
+| regularisation changes nothing | predictors not standardised |
+| the lasso predicts the mean for everyone | penalty $\alpha$ too large |
 
 ---
 
@@ -648,8 +770,8 @@ Take a prediction problem from your own field.
 - [ ] predictors are known at prediction time;
 - [ ] a baseline is reported;
 - [ ] RMSE, MAE, and R² are reported;
-- [ ] predictors are normalised before regularising;
-- [ ] penalty and mixture are tuned by cross-validation;
+- [ ] predictors are standardised before regularising;
+- [ ] penalty $\alpha$ and mixture are tuned by cross-validation;
 - [ ] selected predictors are not described as causes;
 - [ ] the test set is used once.
 
