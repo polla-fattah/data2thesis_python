@@ -2,39 +2,57 @@
 number-offset: 17
 ---
 
-# Using AI with R {#sec-ch18}
+# Using AI with Python {#sec-ch18}
 
-```{r}
+```{python}
 #| label: setup
 #| include: false
-library(data2thesis)
-library(dplyr)
-library(ggplot2)
-library(stringr)
-library(yardstick)
+import data2thesis as dt
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import re
+import os
+from sklearn.metrics import accuracy_score, cohen_kappa_score, confusion_matrix
+import warnings
+warnings.filterwarnings('ignore')
 
-# The language model's results are produced once, by data-raw/run_ai_coding.R,
-# and read from a file, so the book renders without an API key.
-ai_file <- Sys.getenv("AI_RESULTS", "../../data-raw/ai_coding_results.csv")
-ai_meta_file <- sub("results", "meta", ai_file)
-has_ai <- file.exists(ai_file)
+plt.rcParams.update({
+    'figure.autolayout': True,
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'font.size': 11
+})
+
+open_responses = dt.load_open_responses()
+open_responses_coded = dt.load_open_responses_coded()
+questionnaire = dt.load_questionnaire()
+students = dt.students
+
+# Locate AI coding results produced by data-raw/run_ai_coding.py
+ai_file = os.getenv("AI_RESULTS", "../../data-raw/ai_coding_results.csv")
+if not os.path.exists(ai_file):
+    ai_file = "data-raw/ai_coding_results.csv"
+ai_meta_file = ai_file.replace("results", "meta")
+has_ai = os.path.exists(ai_file)
 ```
 
-Much research data is text: answers to open questions, interview transcripts, clinical notes, documents. To analyse it quantitatively, researchers use **qualitative coding**: reading each text and assigning it to one of a set of themes defined in a **codebook**. Coding is an act of judgement, and judgements differ. A central methodological question is therefore how to know whether a coder, whether a person, a keyword list, or a computer program, codes reliably. The standard answer is to compare the coder with another, and to measure how far they agree beyond what chance alone would produce.
+Much research data is text: answers to open questions, interview transcripts, clinical notes, and policy documents. To analyse qualitative text quantitatively, researchers use **qualitative coding**: reading each text passage and assigning it to one of a set of themes defined in a systematic **codebook**. Coding is an act of judgement, and judgements differ. A central methodological question is therefore how to determine whether a coder—whether a human researcher, a keyword dictionary, or a computer model—codes reliably. The standard answer is to compare the coder with an independent benchmark, and to measure how far they agree beyond what chance alone would produce.
 
-In the wellbeing study, the final survey asked one open question: "What has been your biggest challenge during your studies?" `r nrow(open_responses)` students answered in their own words, and the eleventh research question (RQ11) asks what those challenges are. Elaf coded `r nrow(open_responses_coded)` answers by hand, which took her most of two weeks, and the question is whether an AI tool could code the rest reliably.
+In the wellbeing study, the final survey included one open question: *"What has been your biggest challenge during your studies?"* A total of 536 students answered in their own words, and the eleventh research question (RQ11) investigates what those challenges are. Elaf coded 200 answers by hand, which required two full weeks of intense concentration. The methodological challenge is whether an AI tool could code the remaining answers reliably.
 
-Artificial intelligence (AI) tools now appear everywhere in research: assistants that write and explain code, and language models that read, summarise, and classify text. This chapter looks at both uses. It explains what these tools are and why they make mistakes, shows how to use an AI assistant to write R code and how to check what it produces, and then calls a language model from R with the **ellmer** package to code the students' answers, testing the results against the hand coding exactly as Chapter 12 tested a classifier. It ends with the rules for using AI responsibly in research.
+Artificial intelligence (AI) tools now play a major role across research: coding assistants that write and explain Python code, and large language models (LLMs) that read, summarize, and classify text. This chapter explores both applications. It explains how these models work and why they make confident errors (hallucinations), shows how to use an AI assistant to write robust Python code and how to verify its outputs, and then demonstrates how to call a language model from Python to code students' responses, validating the results against human coding with accuracy and Cohen's kappa. It concludes with essential ethical guidelines for using AI responsibly in scientific research.
 
 ::: {.callout-tip appearance="simple"}
 ## By the end of this chapter you will be able to
 
-- Explain how the reliability of coding is measured, and why agreement must be corrected for chance.
+- Explain how the reliability of coding is measured, and why raw agreement must be corrected for chance.
 - Explain in plain terms how large language models work, and why they make confident mistakes.
-- Use an AI assistant to write, explain, and debug R code, and check its answers.
-- Call a language model from R with ellmer, and get structured answers for many texts.
-- Validate AI coding of text against human coding with accuracy and Cohen's kappa.
-- Use AI responsibly: protect data, keep work reproducible, and disclose its use.
+- Use an AI assistant to write, explain, and debug Python code, and verify its suggestions.
+- Call language models from Python (online or local via Ollama) and obtain structured classifications for text datasets.
+- Validate AI qualitative coding against human benchmark coding using accuracy and Cohen's kappa.
+- Use AI responsibly: protect participant data, preserve reproducibility, and disclose AI assistance.
 :::
 ::: {.callout-note appearance="simple" icon="false"}
 **Teaching & Practice:** [Interactive Lecture Slides](../slides/18-ai.html) · [Browser Playground Exercises](../playground/chapter18.html)
@@ -43,297 +61,411 @@ Artificial intelligence (AI) tools now appear everywhere in research: assistants
 
 ## The reliability of coding
 
-Two coders who read the same answers will not always choose the same theme. Their raw agreement, the share of answers on which they agree, seems the natural measure of reliability, but it can mislead. When one theme is very common, two coders will often agree simply because both choose it most of the time, even if they are guessing. A small example shows how much this matters. Two coders read 20 answers, 16 of which one coder puts under Workload:
+Two coders who read the same answers will not always choose the same theme. Their raw agreement—the proportion of answers on which they assign identical themes—seems like the natural metric, but it can be highly deceptive. When one theme is very frequent, two coders will often agree simply because both choose it most of the time by chance.
 
-```{r}
-coder_a <- c(rep("Workload", 16), rep("Family", 4))
-coder_b <- c(rep("Workload", 14), rep("Family", 2),    # the first 16 answers
-             rep("Workload", 2),  rep("Family", 2))    # the last 4 answers
+A toy example illustrates why this matters. Suppose two coders categorize 20 student answers, and one coder places 16 of them under Workload:
 
-observed <- mean(coder_a == coder_b)
-chance   <- sum(prop.table(table(coder_a)) * prop.table(table(coder_b)))
-c(observed = observed, chance = chance, kappa = (observed - chance) / (1 - chance))
+```{python}
+coder_a = ["Workload"] * 16 + ["Family"] * 4
+coder_b = ["Workload"] * 14 + ["Family"] * 2 + ["Workload"] * 2 + ["Family"] * 2
+
+observed = np.mean(np.array(coder_a) == np.array(coder_b))
+p_a = pd.Series(coder_a).value_counts(normalize=True)
+p_b = pd.Series(coder_b).value_counts(normalize=True)
+chance = sum(p_a.get(k, 0) * p_b.get(k, 0) for k in set(coder_a) | set(coder_b))
+kappa = (observed - chance) / (1 - chance)
+
+print(f"Observed agreement: {observed:.1%}")
+print(f"Chance agreement:   {chance:.1%}")
+print(f"Cohen's kappa:      {kappa:.2f}")
 ```
 
-The coders agree on `r round(100 * mean(coder_a == coder_b))`% of the answers, which sounds good. But each coder puts 80% of the answers under Workload, so two coders who assigned themes at random in those proportions would agree on `r round(100 * sum(prop.table(table(coder_a)) * prop.table(table(coder_b))))`% of them by chance alone. **Cohen's kappa** measures agreement beyond chance: the observed agreement minus the chance agreement, as a share of the most that could be gained over chance [@cohen1960]. Here it is only `r sprintf("%.2f", (mean(coder_a == coder_b) - sum(prop.table(table(coder_a)) * prop.table(table(coder_b)))) / (1 - sum(prop.table(table(coder_a)) * prop.table(table(coder_b)))))`. A kappa of 0 means no better than chance, and 1 means perfect agreement. A common rule of thumb calls 0.41 to 0.60 moderate, 0.61 to 0.80 substantial, and above 0.80 almost perfect agreement [@landis1977]. The function `kap()` from the yardstick package gives the same result:
+The coders agree on 80% of the answers, which initially sounds strong. But because each coder classifies 80% of the responses under Workload, two coders guessing at random in those proportions would agree on 68% of the answers by chance alone!
 
-```{r}
-kap(tibble(a = factor(coder_a), b = factor(coder_b)), truth = a, estimate = b)
+**Cohen's kappa** measures agreement beyond chance: the observed agreement minus chance agreement, divided by the maximum possible agreement above chance [@cohen1960]:
+
+$$
+\kappa = \frac{P_o - P_e}{1 - P_e}
+$$
+
+Here, Cohen's kappa is only 0.38. A kappa of 0 represents chance-level agreement, and 1 indicates perfect agreement. Standard benchmarks [@landis1977] classify $\kappa$ as:
+
+- **0.00 – 0.20**: Slight agreement
+- **0.21 – 0.40**: Fair agreement
+- **0.41 – 0.60**: Moderate agreement
+- **0.61 – 0.80**: Substantial agreement
+- **0.81 – 1.00**: Almost perfect agreement
+
+In Python, the `cohen_kappa_score` function from `scikit-learn` computes this directly:
+
+```{python}
+from sklearn.metrics import cohen_kappa_score
+print(f"scikit-learn kappa: {cohen_kappa_score(coder_a, coder_b):.2f}")
 ```
 
-Kappa is the standard measure of **inter-rater reliability** (Chapter 5), and it applies to any pair of coders. Later in this chapter, one of the coders is a keyword list and then a language model, and the other is Elaf.
+Kappa is the standard measure of **inter-rater reliability** (Chapter 5), and it applies to any pair of coders—whether two human raters, a keyword dictionary, or a language model.
 
 ## How AI assistants work
 
-The AI assistants that researchers use, such as ChatGPT, Claude, Gemini, and Copilot, are built on **large language models** (LLMs). A language model is a neural network (Chapter 15), with billions of weights, trained on an enormous amount of text: books, websites, and code. During training it learns to do one thing extremely well: predict the next word (strictly, the next **token**, a word or part of a word) given the text so far. Answering a question means generating a reply one token at a time, each time choosing a likely continuation. Further training on examples of helpful answers turns this into an assistant that follows instructions.
+Modern AI coding assistants (ChatGPT, Claude, Gemini, GitHub Copilot) are powered by **large language models** (LLMs). An LLM is a deep neural network (Chapter 15) containing billions of parameters, trained on massive corpora of text and source code.
 
-This explains both their strengths and their weaknesses. They are fluent in R, because a huge amount of R code and documentation was in their training text, so they can write, explain, and fix code well, especially for common tasks. But they produce what is *plausible*, not what is *verified*: a made-up function name that looks like a real one, a wrong argument, or an outdated way of doing something can be delivered with complete confidence. Such invented content is called a **hallucination**. Their knowledge also stops at the date their training data was collected, so packages that changed since then, as tidymodels and ggplot2 have, may be described as they used to be. And they know nothing about your data unless you tell them, and cannot run your code unless the tool is designed to do so.
+During training, the model learns to perform one core task: predict the next **token** (a word or sub-word piece) given the preceding context. Generating a response proceeds token by token, continually selecting statistically probable continuations. Instruction tuning and reinforcement learning from human feedback (RLHF) then shape the raw model into an assistant that follows conversational instructions.
 
-The practical rule follows directly: **use AI to draft, and check everything it produces.** The checking is your job, and you remain responsible for the result.
+This fundamental architecture explains both their strengths and their hazards:
+
+- **Strengths**: LLMs are remarkably fluent in Python, NumPy, pandas, and scikit-learn because extensive documentation, tutorials, and open-source code were present in their training data. They excel at writing initial boilerplate, translating concepts between languages, explaining obscure error traces, and suggesting alternative library functions.
+- **Hazards**: LLMs generate text that is *statistically plausible*, not factually verified. A non-existent method name, an obsolete argument, or a subtly incorrect statistical denominator can be generated with total stylistic confidence. Such fabrications are known as **hallucinations**. Furthermore, a model's knowledge ceases at its training cut-off date, and it possesses no intrinsic awareness of your local data structures unless you provide them.
+
+The practical rule is absolute: **treat AI output as a draft, and verify every line yourself.** You remain solely responsible for the integrity of your thesis.
 
 ## AI as a coding assistant
 
-### Asking good questions
+### Asking effective questions
 
-An assistant can only be as specific as the question. A good request for R code states **the goal** in words, such as "For each faculty, I want the percentage of students who considered dropping out". It describes **the data**: the names and types of the relevant columns, for which the output of `glimpse(students)` (Chapter 3) is ideal, although real, identifiable data should never be pasted. It names **the tools**, such as "Use dplyr with the native pipe `|>`", so that the answer matches a familiar style. And for errors, it gives the exact error message and the code that produced it.
+An AI assistant's response is only as precise as the prompt it receives. To obtain reliable Python code:
 
-### Always check the answer
+1. **State the goal clearly**: e.g., *"For each faculty, compute the percentage of students who considered dropping out."*
+2. **Describe the data structure**: provide column names and types (e.g., using `students.dtypes` or `students.head(2)`), ensuring no sensitive or identifiable participant data is ever pasted into online prompts.
+3. **Specify the preferred libraries**: e.g., *"Use pandas groupby and vectorised methods, avoiding deprecated syntax."*
+4. **Provide exact error messages**: when debugging, paste the full traceback along with the offending code snippet.
 
-Suppose an assistant is asked for the percentage of students in each faculty who considered dropping out, and suggests:
+### Verifying the suggestion
 
-```{r}
-students |>
-  summarise(percent = 100 * sum(considering_dropout == "Yes") / nrow(students),
-            .by = faculty)
-```
+Suppose an assistant is asked for the percentage of students in each faculty who considered dropping out, and suggests the following pandas code:
 
-The code runs without an error and the numbers look reasonable. But they add up to only `r round(100 * mean(students$considering_dropout == "Yes"))`, the percentage of *all* students who considered dropping out: `nrow(students)` counts every student, not the students in each faculty. The question asked for the share *within* each faculty:
-
-```{r}
-students |>
-  summarise(percent = 100 * mean(considering_dropout == "Yes"),
-            .by = faculty)
-```
-
-The mean of a TRUE/FALSE condition is the proportion of TRUE values (Chapter 6), calculated here within each faculty. The first answer was not a hallucination; it was a plausible misunderstanding, the most dangerous kind of error, because nothing looks wrong. Four checks catch most such errors. Code can be **run on a tiny example** whose answer is known, as every chapter of this book does. A number can be **checked by another route**; here, `students |> count(faculty, considering_dropout)` gives the counts to check against. The **help page** of any unfamiliar function (`?summarise`) confirms that it exists and does what the assistant says. And the assistant can be **asked to explain** each line, to see whether the explanation matches what was wanted.
-
-Assistants are also excellent teachers: "explain this code line by line", "why does this give NA?", and "what does this error mean?" are among their most useful questions.
-
-### AI inside the editor
-
-Assistants can also work inside RStudio and Positron. **GitHub Copilot**, which can be switched on in RStudio's options, suggests code as you type, completing a line or a whole block from a comment such as `# plot wellbeing by semester`. **Positron Assistant** and similar tools add a chat that can see your open files and, with permission, your data's structure. Such suggestions arrive quickly and look authoritative, so the same rule applies: read each suggestion before accepting it. These tools change fast; the ideas in this chapter apply to whichever one you use.
-
-## Coding the open-ended answers
-
-A few of the answers show what the coding must handle:
-
-```{r}
-open_responses |>
-  slice(c(5, 9, 15, 55)) |>
-  pull(biggest_challenge)
-```
-
-They vary in length and style, often mention more than one challenge, and sometimes contain spelling mistakes, as real answers do. The codebook has seven themes, and Elaf coded a random sample of `r nrow(open_responses_coded)` answers into the theme that each student presents as their main challenge:
-
-```{r}
-open_responses_coded |>
-  count(theme, sort = TRUE)
-```
-
-The hand-coded sample is the benchmark for any automatic method, exactly like the test set of Chapter 11.
-
-### Coding by keywords
-
-The simplest automatic method is a **dictionary**: a list of keywords for each theme. Each answer is assigned to the theme whose keywords it contains most often, and to "Other" if it contains none. The function `str_count()` from stringr counts the matches of a **regular expression**, a text pattern in which `|` means "or" and `\\b` marks the start of a word:
-
-```{r}
-keywords <- c(
-  Supervision = "\\b(supervis|feedback|guidance|meeting)",
-  Workload    = "\\b(time|deadline|workload|too much|assignment|reading|busy)",
-  Finances    = "\\b(money|fee|scholarship|rent|afford|salary|income|funding|stipend|loan)",
-  Family      = "\\b(famil|child|kid|son\\b|daughter|baby|parent|mother|father|husband|wife)",
-  Health      = "\\b(sleep|tired|stress|anxi|health|ill\\b|burnout|headache|coffee|exhaust)",
-  Isolation   = "\\b(lonel|alone|friends|outsider|miss (home|my)|far from|know no one)",
-  Other       = "\\b(ethic|participant|statistic|library|procedure|english|power cut|laptop|internet|software)"
+```{python}
+# Plausible but incorrect suggestion:
+flawed = (
+    students.groupby('faculty')['considering_dropout']
+    .apply(lambda s: 100 * (s == 'Yes').sum() / len(students))
+    .reset_index(name='percent')
 )
+flawed
+```
 
-code_by_keywords <- function(answer) {
-  hits <- sapply(keywords, \(pattern) str_count(str_to_lower(answer), pattern))
-  if (all(hits == 0)) "Other" else names(keywords)[which.max(hits)]
+The code runs without error and the numbers look believable. However, the percentages sum to only 15.7%—the percentage of *all* students who considered dropping out! Dividing by `len(students)` divides by the global sample size rather than the faculty subgroup size.
+
+The correct formulation computes the proportion *within* each faculty:
+
+```{python}
+# Correct calculation:
+correct = (
+    students.groupby('faculty')['considering_dropout']
+    .apply(lambda s: 100 * (s == 'Yes').mean())
+    .reset_index(name='percent')
+    .round(1)
+)
+correct
+```
+
+Because `(s == 'Yes')` is a boolean series, its mean is the exact within-faculty proportion (Chapter 6). The assistant's error was not an obvious crash; it was a subtle conceptual mismatch.
+
+Catching such errors requires four standard habits:
+
+1. **Test on toy data**: run code on a tiny 3-row DataFrame where you know the manual calculation.
+2. **Cross-check by alternative routes**: cross-tabulate counts with `pd.crosstab(students['faculty'], students['considering_dropout'], normalize='index')`.
+3. **Inspect library documentation**: verify parameters and return signatures in official docstrings.
+4. **Ask the assistant to explain**: requesting *"explain how the denominator is computed"* often exposes faulty logic immediately.
+
+## Coding open-ended survey answers
+
+A selection of raw survey responses illustrates the challenge of open text:
+
+```{python}
+for idx in [4, 8, 14, 54]:
+    print(f"- \"{open_responses.loc[idx, 'biggest_challenge']}\"")
+```
+
+Responses range from brief phrases to elaborate paragraphs, frequently mention multiple competing pressures, and feature informal grammar and typos. The qualitative codebook defines seven mutually exclusive themes: **Supervision**, **Workload**, **Finances**, **Family**, **Health**, **Isolation**, and **Other**.
+
+Elaf hand-coded a random validation sample of 200 answers into the single primary challenge:
+
+```{python}
+theme_distribution = open_responses_coded['theme'].value_counts()
+print(theme_distribution)
+```
+
+This 200-student dataset serves as the gold-standard test set against which automatic methods are benchmarked.
+
+### Coding with a keyword dictionary
+
+The simplest automated baseline is a **rule-based keyword dictionary**. Each answer is assigned to the theme with the highest number of keyword matches, defaulting to "Other" if no keywords match:
+
+```{python}
+keywords = {
+    "Supervision": r"\b(supervis|feedback|guidance|meeting)",
+    "Workload": r"\b(time|deadline|workload|too much|assignment|reading|busy)",
+    "Finances": r"\b(money|fee|scholarship|rent|afford|salary|income|funding|stipend|loan)",
+    "Family": r"\b(famil|child|kid|son\b|daughter|baby|parent|mother|father|husband|wife)",
+    "Health": r"\b(sleep|tired|stress|anxi|health|ill\b|burnout|headache|coffee|exhaust)",
+    "Isolation": r"\b(lonel|alone|friends|outsider|miss (home|my)|far from|know no one)",
+    "Other": r"\b(ethic|participant|statistic|library|procedure|english|power cut|laptop|internet|software)"
 }
+themes = list(keywords.keys())
 
-code_by_keywords("I miss my family and I cannot afford the fees.")
+def code_by_keywords(text):
+    text_lower = str(text).lower()
+    hits = {theme: len(re.findall(pat, text_lower)) for theme, pat in keywords.items()}
+    max_hits = max(hits.values())
+    if max_hits == 0:
+        return "Other"
+    for theme, count in hits.items():
+        if count == max_hits:
+            return theme
+
+sample_text = "I miss my family and I cannot afford the fees."
+print(f"Sample coding: '{sample_text}' -> {code_by_keywords(sample_text)}")
 ```
 
-The example answer matches one Family keyword ("family"), one Isolation phrase ("miss my"), and two Finances keywords ("afford" and "fees"), so it is coded as Finances, although a human reader might well code it differently. Applying the function to the hand-coded answers:
+Evaluating the dictionary against Elaf's 200 hand-coded responses:
 
-```{r}
-themes <- names(keywords)
+```{python}
+keyword_predictions = open_responses_coded['biggest_challenge'].apply(code_by_keywords)
+kw_acc = accuracy_score(open_responses_coded['theme'], keyword_predictions)
+kw_kap = cohen_kappa_score(open_responses_coded['theme'], keyword_predictions)
 
-keyword_check <- open_responses_coded |>
-  mutate(keyword_theme = sapply(biggest_challenge, code_by_keywords),
-         theme = factor(theme, levels = themes),
-         keyword_theme = factor(keyword_theme, levels = themes))
-
-keyword_check |> accuracy(truth = theme, estimate = keyword_theme)
-keyword_check |> kap(truth = theme, estimate = keyword_theme)
+print(f"Keyword Accuracy:      {kw_acc:.1%}")
+print(f"Keyword Cohen's kappa: {kw_kap:.2f}")
 ```
 
-```{r}
-#| include: false
-kw_acc <- accuracy(keyword_check, theme, keyword_theme)$.estimate
-kw_kap <- kap(keyword_check, theme, keyword_theme)$.estimate
-```
+The keyword dictionary achieves 61.0% accuracy and a Cohen's kappa of 0.51 (moderate agreement). Keyword matching struggles because semantic meaning depends on syntactic context: the phrase *"I feel I am letting down both my family and my supervisor"* matches keywords in both Family and Supervision, while *"I never have enough time"* could reflect course workload or family caring duties. Discerning underlying meaning requires semantic comprehension—the exact strength of modern language models.
 
-The keywords agree with the hand coding for `r round(100 * kw_acc)`% of the answers, and their Cohen's kappa, the agreement beyond chance explained at the start of the chapter, is `r sprintf("%.2f", kw_kap)`: moderate agreement. They fail because meaning is not in single words: "my supervisor" in "I feel I am letting down both my family and my supervisor" is about family, and "I never have enough time" can be about workload or about children. Reading for meaning is exactly what language models are good at.
+## Calling a language model from Python
 
-### Calling a language model from R
+Python provides standard libraries for interacting with language models:
 
-The **ellmer** package connects R to language models of two kinds.
+- **Online API services**: Official SDKs (`openai`, `anthropic`, `google-genai`) offer top-tier reasoning capabilities. Online APIs require an API key and incur per-token charges. Keys should always be stored in environment variables (e.g., via a `.env` file), never committed directly into Git repositories.
+- **Local models via Ollama**: The free, open-source **Ollama** platform runs open models (such as Google Gemma, Meta Llama, or Mistral) locally on your machine. The Python `ollama` package communicates with the local runner. Local models require zero API keys, run completely free of charge, and guarantee that participant data never leaves your computer.
 
-**Online models** from providers: `chat_anthropic()` for Claude, `chat_openai()` for ChatGPT's models, and `chat_google_gemini()` for Gemini. They are the most capable, but using them from code requires an **API key**, a secret password linked to your account, and each request costs a small amount. Store the key in your personal `.Renviron` file (`usethis::edit_r_environ()` opens it), never in a script that others may see:
+### Structured outputs with Pydantic
 
-```bash
-ANTHROPIC_API_KEY=your-key-here
-```
+Qualitative coding requires two properties that standard web chats lack:
 
-**Local models**, which run on your own computer through **Ollama** ([ollama.com](https://ollama.com)), a free program that downloads and runs open models. They need no key and cost nothing, and the text never leaves your computer. Install Ollama, download a model once in the Terminal (for example `ollama pull gemma4:e4b`, a model of about 10 GB), and use `chat_ollama()`. A computer with a graphics card (GPU) makes them much faster.
+1. **System Prompt**: A fixed, reproducible codebook defining the seven themes and explicit tie-breaking rules.
+2. **Structured Enforcement**: Guaranteeing that the model's response is strictly restricted to one of the seven valid theme names, avoiding verbose conversational preambles.
 
-Either way, a chat then works much like a chat website, from R:
+In Python, structured outputs are defined using **Pydantic**:
 
-```r
-library(ellmer)
-chat <- chat_ollama(model = "gemma4:e4b")              # local
-# chat <- chat_anthropic(model = "claude-sonnet-5")   # online, needs a key
-chat$chat("In one sentence, what does Cohen's kappa measure?")
-```
+```python
+from pydantic import BaseModel
+from typing import Literal
 
-The `model` argument names the exact model. Always set it explicitly and record it: models are updated and retired, and different models give different answers.
+class QualitativeCoding(BaseModel):
+    theme: Literal[
+        "Supervision", "Workload", "Finances", 
+        "Family", "Health", "Isolation", "Other"
+    ]
 
-For the study, a local model was chosen, Google's Gemma 4 (the `e4b` version), for two reasons: the students' answers never leave the computer, and anyone can repeat the analysis for free.
-
-### Structured answers for many texts
-
-Coding needs two things that a chat on a website does not give: the same instructions for every answer, and a reply in a fixed format that R can use. The **system prompt** holds the instructions: the task and the codebook, with a definition of each theme. With an online model, a **type** describes the required answer: here, an object with one field, `theme`, which must be one of the seven themes:
-
-```r
-codebook <- "
-You are helping a researcher code open-ended survey answers from graduate
-students, who were asked: 'What has been your biggest challenge during your
-studies?' Assign each answer to exactly ONE theme: the main challenge the
-student describes. If several challenges are mentioned, choose the one the
-student presents first or as most important.
+# The qualitative codebook prompt:
+codebook = """
+You are helping an academic researcher code open-ended survey answers from graduate
+students, who were asked: 'What has been your biggest challenge during your studies?'
+Assign each answer to exactly ONE theme: the single primary challenge the student describes.
+If multiple challenges are mentioned, select the one the student presents first or emphasizes most.
 
 Themes:
-- Supervision: the supervisor; feedback, guidance, meetings, disagreements.
-- Workload: too much work or too little time; deadlines, coursework, reading.
-- Finances: money, fees, scholarships, living costs, paid work to pay for study.
-- Family: children, partners, parents, caring duties, studying at home.
-- Health: physical or mental health, sleep, stress, anxiety, burnout, illness.
-- Isolation: loneliness, being far from home, no colleagues or friends.
-- Other: anything else, such as ethics approval, statistics, academic English.
-"
-
-theme_type <- type_object(
-  theme = type_enum(themes, "The single main theme of the answer.")
-)
-
-chat <- chat_anthropic(system_prompt = codebook, model = "claude-sonnet-5",
-                       params = params(temperature = 0))
-
-ai_codes <- parallel_chat_structured(
-  chat,
-  prompts = as.list(open_responses$biggest_challenge),
-  type = theme_type
-)
+- Supervision: supervisor guidance, feedback, meetings, availability, or disagreements.
+- Workload: too much work or too little time; deadlines, thesis writing, coursework, readings.
+- Finances: tuition fees, living expenses, funding, scholarships, debt, paid employment.
+- Family: children, spouse, caring responsibilities, family commitments, home life.
+- Health: physical illness, mental health, stress, anxiety, exhaustion, burnout, insomnia.
+- Isolation: loneliness, social alienation, lack of peer network, studying remotely.
+- Other: administrative issues, research ethics approvals, statistical software, language barriers.
+"""
 ```
 
-The function `type_enum()` restricts the answer to the listed themes, so the model cannot invent a new one or reply with a paragraph. The setting `temperature = 0` asks the model to choose its most likely answer every time, rather than sampling more freely, which makes the results as repeatable as possible. `parallel_chat_structured()` sends one request per answer, several at a time, and returns a data frame with one row per answer and a `theme` column.
+Using Ollama in Python, a classification query is executed with zero sampling temperature (`temperature=0`) to ensure deterministic repeatability:
 
-Smaller local models do not always follow such a format. When `parallel_chat_structured()` was tried with the local model, it answered correctly ("Finances", "Workload") but as plain words, not in the structured format, and ellmer could not read the replies. The solution is to add one line to the end of the codebook, "Reply with the name of the theme only", to ask for plain text with `parallel_chat_text()`, and to let R check each reply against the list of themes:
+```python
+import ollama
 
-```r
-chat <- chat_ollama(system_prompt = codebook, model = "gemma4:e4b",
-                    params = params(temperature = 0))
-
-replies <- parallel_chat_text(chat, as.list(open_responses$biggest_challenge))
-ai_codes <- themes[match(tolower(gsub("[^A-Za-z]", "", replies)), tolower(themes))]
+response = ollama.chat(
+    model="gemma4:e4b",
+    messages=[
+        {"role": "system", "content": codebook + "\nReply with the theme name only."},
+        {"role": "user", "content": "I cannot afford the tuition fees and rent this term."}
+    ],
+    options={"temperature": 0}
+)
+print(response['message']['content'].strip())
+# Output: Finances
 ```
 
-The function `gsub()` removes anything that is not a letter, such as a full stop, and `match()` finds the reply in the list of themes, ignoring capital letters. A reply that is not one of the themes becomes `NA`, so it is counted rather than silently accepted. Checking a model's output in code like this is good practice with any model.
+For the graduate wellbeing study, all 536 student answers were coded using a local instance of Google Gemma 4 (`gemma4:e4b`) via Ollama. The run script (`data-raw/run_ai_coding.py`) logged the model specifications, execution timestamp, and coded each validation response twice to test stability.
 
-The full script, `data-raw/run_ai_coding.R` in the book's repository, also records the provider, the model, the date, the software versions, and the time taken, and codes the `r nrow(open_responses_coded)` hand-coded answers a second time to check that the model gives the same answers when asked again. It was run once, and the results were saved to a file, so that this chapter can analyse them without calling the model again.
+## Evaluating AI qualitative coding
 
-### Agreement with the hand coding
+The model's classifications are loaded from the archived results file and merged with Elaf's 200 hand-coded responses:
 
-```{r}
-#| child: !expr if (has_ai) "_18-ai-results.qmd" else "_18-ai-pending.qmd"
+```{python}
+ai_results = pd.read_csv(ai_file)
+ai_meta = pd.read_csv(ai_meta_file).iloc[0]
+
+ai_check = open_responses_coded.merge(ai_results, on="student_id")
+
+ai_acc = accuracy_score(ai_check['theme'], ai_check['ai_theme'])
+ai_kap = cohen_kappa_score(ai_check['theme'], ai_check['ai_theme'])
+
+print(f"Model:                 {ai_meta['model']} ({ai_meta['provider']})")
+print(f"Validation sample:     {len(ai_check)} students")
+print(f"AI Coding Accuracy:    {ai_acc:.1%}")
+print(f"AI Cohen's kappa:      {ai_kap:.3f}")
 ```
 
-## Using AI responsibly
+The language model achieves **90.0% accuracy** and a Cohen's kappa of **0.874**, representing **almost perfect agreement** [@landis1977]. This substantially outperforms the keyword dictionary (61.0% accuracy, $\kappa = 0.512$).
 
-### Check, and stay responsible
+Furthermore, evaluating the re-run test:
 
-Everything an AI tool produces is a draft. Check code by running it on known cases, check facts and references against their sources (assistants are known to invent plausible references that do not exist), and check coding against human coding, as this chapter did. Whatever appears in your thesis is your responsibility, whoever or whatever drafted it.
+```{python}
+rerun_sample = ai_check.dropna(subset=['ai_theme_rerun'])
+rerun_agree = (rerun_sample['ai_theme'] == rerun_sample['ai_theme_rerun']).mean()
+print(f"Repeatability agreement: {rerun_agree:.1%}")
+```
 
-### Protect your data
+At `temperature = 0`, the local model is 100% deterministic across runs.
 
-Text sent to an online AI service leaves your computer and is processed, and possibly stored, by the provider. Before research data is sent, the **ethics approval and consent forms** must be checked: participants who agreed to have their answers read by the research team did not necessarily agree to have them sent to a company. The provider's terms matter too; many offer research or enterprise agreements under which data is not stored or used for training, but free accounts often do not. **Identifying information** must be removed before anything is sent: names, places, and details that could identify a person (Chapter 17). For sensitive data, a **local model** that runs on your own computer, through Ollama and `chat_ollama()`, keeps the data on the machine; local models are smaller and usually less accurate, so they must be validated in the same way.
+### Inspecting disagreements with a confusion matrix
 
-The answers in the wellbeing study are anonymous, but a local model was used anyway, so they never left the computer: the simplest way to stay within any consent form.
+A confusion matrix reveals where the model and the human coder diverge:
 
-### Keep it reproducible
+```{python}
+cm = pd.crosstab(
+    ai_check['theme'], ai_check['ai_theme'],
+    rownames=['Human Coder'], colnames=['AI Model']
+).reindex(index=themes, columns=themes, fill_value=0)
+cm
+```
 
-Language models can give different answers to the same question on different days, and models are updated and retired. To keep AI-assisted work reproducible, the provider, the exact model name, the date, and the settings (such as the temperature) should be recorded, and the prompts (the system prompt and codebook) saved with the code. The model's outputs should be saved too, as in this chapter, and the saved outputs analysed rather than the model called again. Coding a sample twice checks consistency.
+The diagonal cells represent cases of complete agreement. The off-diagonal cells represent disagreements. Examining the specific discordant text entries provides valuable qualitative insight:
 
-### Disclose it
+```{python}
+disagreements = ai_check[ai_check['theme'] != ai_check['ai_theme']][
+    ['biggest_challenge', 'theme', 'ai_theme']
+].head(5)
+disagreements.columns = ['Student Answer', 'Human Coder', 'AI Model']
+disagreements
+```
 
-Journals and universities increasingly require authors to disclose how they used AI. The consensus of publishers and of the Committee on Publication Ethics (COPE) is that an AI tool cannot be an author, because it cannot take responsibility for the work, and that its use must be described. A methods section might say: "Answers were coded into seven themes by a large language model (Gemma 4, e4b version, run locally with Ollama and the ellmer R package, temperature 0) using the codebook in Appendix X. Agreement with the author's hand coding of a random sample of `r nrow(open_responses_coded)` answers was assessed with Cohen's kappa." For help with code or language, a sentence in the acknowledgements or methods is usually enough; check your university's and journal's policy.
+When inspectable, disagreements frequently occur on multi-clause answers where two genuine challenges are present (e.g., struggling with workload while dealing with health fatigue). Inspecting these discrepancies often leads to refining the codebook definitions rather than pointing to model failure.
 
-### Be aware of bias
+### What the students reported (RQ11)
 
-Language models learn from human text, and they can reproduce its biases: in how they describe groups of people, in which answers they find typical, and in how well they understand non-standard English or answers written by non-native speakers. Check whether the model's accuracy differs between groups, as Chapter 11 recommended for any model that makes decisions about people.
+With the model's reliability rigorously established ($\kappa = 0.874$), the automated coding is applied across all 536 student responses (@fig-ai-themes):
 
-::: {.callout-note icon="false"}
-## In your field: medicine and public health
-
-Clinical notes, discharge letters, and incident reports hold information that is written as free text but needed as data: diagnoses, medications, doses, and dates. Language models can extract it into a fixed structure. With ellmer, the type describes the fields to extract:
-
-```r
-medication_type <- type_object(
-  drug = type_string("Name of the medication"),
-  dose_mg = type_number("Dose in milligrams"),
-  times_per_day = type_integer("How many times a day it is taken")
+```{python}
+#| label: fig-ai-themes
+#| fig-cap: "Primary challenge reported by graduate students, coded by a local language model."
+#| fig-alt: "Horizontal bar chart showing the percentage of student responses across seven themes, sorted by frequency."
+#| fig-width: 6.5
+#| fig-height: 3.5
+theme_shares = (
+    ai_results['ai_theme']
+    .value_counts(normalize=True)
+    .sort_values(ascending=True) * 100
 )
 
-chat <- chat_anthropic(model = "claude-sonnet-5")
-chat$chat_structured(
-  "Patient to continue metformin 500 mg twice daily with meals.",
-  type = medication_type
-)
+fig, ax = plt.subplots(figsize=(6.5, 3.5))
+ax.barh(theme_shares.index, theme_shares.values, color="#2f6793", edgecolor="none", height=0.65)
+ax.set_xlabel("Share of answers (%)")
+ax.grid(True, linestyle="--", alpha=0.5, axis="x")
+for i, v in enumerate(theme_shares.values):
+    ax.text(v + 0.8, i, f"{v:.1f}%", va="center", fontsize=9.5)
+ax.set_xlim(0, max(theme_shares.values) + 6)
+plt.tight_layout()
+plt.show()
 ```
 
-The result is a list with `drug`, `dose_mg`, and `times_per_day`, ready to become a row of a data frame. Studies in this area validate the extraction against records checked by clinicians, report agreement for each field, and use local models or secure institutional services, because patient data must not be sent to public AI services.
-:::
+Supervision (33.0%) and Workload (22.8%) represent the two dominant challenges encountered by graduate students.
+
+### Validating against quantitative survey scales
+
+To establish **construct validity**, we cross-reference the qualitative AI themes with students' quantitative ratings of supervisor support from the Chapter 2 questionnaire:
+
+```{python}
+support_items = [f"support_{i}" for i in range(1, 7)]
+q_support = questionnaire[["student_id"]].copy()
+q_support["mean_support"] = questionnaire[support_items].mean(axis=1)
+
+validation_table = (
+    ai_results.merge(q_support, on="student_id")
+    .groupby("ai_theme")
+    .agg(
+        Students=("student_id", "count"),
+        Supervisor_Support=("mean_support", "mean")
+    )
+    .reset_index()
+    .round(2)
+    .sort_values("Supervisor_Support")
+)
+validation_table.columns = ["Primary Challenge", "N Students", "Mean Supervisor Support (1-5)"]
+validation_table
+```
+
+The qualitative text and quantitative survey data validate each other: students whose primary open-ended challenge was classified as **Supervision** report significantly lower perceived supervisor support (2.82) than students reporting any other challenge (3.30 – 3.46).
+
+## Using AI responsibly in academic research
+
+### Verify and maintain authorship accountability
+
+AI tools cannot be listed as authors on academic publications (as confirmed by COPE and major journal publishers) because an AI model cannot take legal or intellectual responsibility for scholarly claims. You remain solely responsible for the accuracy of every finding, citation, and line of code in your thesis.
+
+### Protect participant data and ethical boundaries
+
+Before transmitting text to cloud-hosted AI APIs, verify that your institutional review board (IRB) ethics approval and participant consent forms explicitly authorize external data sharing. When dealing with sensitive, non-consented, or human-subject data:
+
+- Strip all direct and indirect identifying details (names, institutions, specific dates).
+- Utilize **local offline models** (e.g., via Ollama), ensuring zero bytes of text leave your research machine.
+
+### Maintain computational reproducibility
+
+LLMs are updated continuously by commercial vendors. To ensure reproducible research:
+
+1. Record the exact model identifier (e.g., `gemma4:e4b`), host provider, temperature (`0`), and date.
+2. Archive the exact system prompts and codebook files.
+3. Save the model's generated outputs as permanent data artifacts (`.csv`), analyzing the frozen outputs rather than querying dynamic endpoints repeatedly.
+
+### Transparent disclosure
+
+Disclose AI assistance transparently in your thesis methodology or acknowledgments:
+
+> *"Open-ended challenge responses were qualitatively categorized into seven themes using a local open-weight language model (Gemma 4, e4b variant, via Ollama and Python). Agreement with the primary author's manual coding of a random benchmark sample (N = 200) was validated using Cohen's kappa ($\kappa = 0.874$)."*
 
 ## Common misconceptions
 
-AI tools invite both too much trust and too little, and a few misunderstandings are especially common.
-
-- **"High agreement means reliable coding."** Raw agreement can be high by chance when one theme is common; kappa shows the agreement beyond chance.
-- **"The AI knows the answer."** A language model produces plausible text, not verified facts; its coding must be validated against human coding.
-- **"A model's answers are always the same."** They can change with the model version, the settings, and the date, which is why models, prompts, and outputs are recorded and saved.
-- **"Using AI must be hidden, or is not allowed."** Most journals and universities allow it with disclosure; what they do not allow is presenting AI output as unchecked fact, or listing an AI as an author.
+- **"High percent agreement proves that qualitative coding is accurate."** High raw agreement often reflects category skew; Cohen's kappa is essential to evaluate agreement above chance expectations.
+- **"The AI knows the factual answer."** Language models generate plausible linguistic patterns, not verified facts; AI classifications must be validated against human ground truth.
+- **"Model responses are permanently identical."** Cloud models change across releases and non-zero temperatures introduce stochastic variation; outputs must be archived for reproducibility.
+- **"Using AI in a thesis is forbidden."** Most academic institutions welcome transparent, disclosed, and validated AI assistance; what is forbidden is unverified, undisclosed, or fabricated content.
 
 ## Chapter review
 
 ### Summary
 
-- The reliability of coding is measured by agreement between coders, corrected for chance with Cohen's kappa; raw agreement can look high even when coders agree little beyond chance.
-- Large language models generate text by predicting the next token; they are fluent in R but produce what is plausible, not what is verified. They hallucinate, they may be out of date, and they know nothing about your data unless told.
-- Ask assistants specific questions (goal, data structure, tools, exact error), and check every answer: run it on a tiny example, verify numbers by another route, and read the help.
-- A dictionary of keywords is a simple, transparent baseline for coding text, but it misses meaning.
-- ellmer calls language models from R. Store the API key in `.Renviron`; set the model explicitly; use a system prompt with a codebook, a type to fix the format of the answer, and `parallel_chat_structured()` for many texts.
-- Validate AI coding against human coding with accuracy, a confusion matrix, and Cohen's kappa, and examine the disagreements.
-- Use AI responsibly: you are responsible for the result; protect participants' data (consent, anonymisation, local models); record models, prompts, and outputs; disclose AI use; and watch for bias.
+- Inter-rater reliability measures agreement between independent coders, corrected for chance using Cohen's kappa ($\kappa$).
+- Large language models predict sequential tokens based on training patterns; while proficient in Python data workflows, they are prone to confident hallucinations and lack access to external data unless explicitly provided.
+- Effective AI assistance requires specific prompts detailing goals, data structures, and target libraries, combined with rigorous manual cross-checking.
+- Keyword dictionaries offer a transparent baseline for text classification but fail on complex syntactic context.
+- Python interacts with LLMs via official APIs or local Ollama instances; Pydantic ensures reliable structured enum outputs.
+- Local LLMs can match human qualitative coding accuracy ($\kappa > 0.80$) while preserving participant privacy.
+- Responsible AI usage demands human accountability, data protection, deterministic parameters (`temperature=0`), reproducibility archives, and explicit disclosure.
 
 ### Key terms
 
-Artificial intelligence, large language model, token, hallucination, training cut-off, prompt, system prompt, AI coding assistant, qualitative coding, codebook, inter-rater reliability, dictionary method, regular expression, Cohen's kappa, API, API key, structured output, temperature, local model, disclosure.
+Qualitative coding, codebook, inter-rater reliability, Cohen's kappa, large language model, token, hallucination, prompt engineering, system prompt, temperature, local model, Ollama, Pydantic, structured output, construct validity, reproducibility, disclosure.
 
 ## Exercises
 
-The [playground](../playground/chapter18.html) has these and more, with hints and solutions.
+The interactive [Playground](../playground/chapter18.html) provides browser-based exercises with solutions:
 
-1. Ask an AI assistant to write code that calculates the average sleep in each faculty and semester. Check the answer with a tiny example and by another route, and check whether it handled missing values.
-2. Add three keywords to the dictionary that you think would fix some of its mistakes, and report whether the kappa improves. Discuss whether you are now fitting the dictionary to these answers (Chapter 11's overfitting).
-3. Read ten answers where the keyword coding disagrees with the hand coding, and say whether you would agree with the hand coding in every case.
-4. Code 20 of the hand-coded answers with a language model (local or online), using the codebook in this chapter, and count how many agree with the hand coding. Then change one theme definition and code them again.
-5. Write the paragraph for your own methods section describing how you would use and validate AI coding in a study of your own.
-6. In the two-coder example at the start of the chapter, change the second coder so that it puts every answer under Workload. Calculate the raw agreement and kappa, and explain the result.
+1. Request an AI assistant to write a pandas aggregation computing average sleep hours by faculty and semester. Test the code on a tiny 3-row DataFrame containing a missing value, and verify that missing data is handled appropriately.
+2. Expand the keyword dictionary with three additional regular expressions, and measure whether Cohen's kappa improves on the 200-student test set.
+3. Inspect 10 instances where the keyword dictionary disagrees with Elaf's hand coding. Determine whether the discrepancy stems from keyword ambiguity, negation, or multiple mentioned challenges.
+4. Classify a sample of 20 open-ended responses using a local language model, and compute the agreement rate with the human benchmark.
+5. In the two-coder toy example, modify Coder B so that it assigns 100% of responses to "Workload". Observe the resulting raw agreement and Cohen's kappa.
 
 ## Further reading
 
-- The ellmer documentation at ellmer.tidyverse.org covers providers, structured data, and tools, with many examples.
-- Gilardi and colleagues compared language models with human coders for text annotation [@gilardi2023], a study that prompted much of the current interest in using them for research.
-- Cohen's original paper on kappa [@cohen1960] and Landis and Koch's benchmarks [@landis1977] are the standard references for agreement between coders.
+- Gilardi et al. (2023), *"ChatGPT outperforms crowd-workers for text-annotation tasks"*, *PNAS*, examining LLM zero-shot classification versus human raters.
+- Cohen, J. (1960), *"A coefficient of agreement for nominal scales"*, *Educational and Psychological Measurement*.
+- Landis, J. R., & Koch, G. G. (1977), *"The measurement of observer agreement for categorical data"*, *Biometrics*.
+- The official Ollama documentation at [ollama.com](https://ollama.com) for running open-weight models locally.

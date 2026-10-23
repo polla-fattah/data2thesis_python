@@ -1,13 +1,13 @@
 ---
 title: "Playground: Chapter 18"
-subtitle: Using AI with R
+subtitle: Using AI with Python
 format:
   live-html:
     theme:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
@@ -15,10 +15,13 @@ resources:
   - open_responses_coded.csv
   - ai_coding_results.csv
   - chapter18.zip
-webr:
+pyodide:
   packages:
-    - dplyr
-    - stringr
+    - pandas
+    - numpy
+    - scikit-learn
+    - scipy
+    - matplotlib
   resources:
     - students.csv
     - semesters.csv
@@ -31,113 +34,80 @@ webr:
 
 This page practises the ideas of Chapter 18 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions about agreement and about checking code. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with no answers: you decide how to use and check AI in your own work, as you will in your thesis.
 
-Calling a language model needs a local model on your own computer (Ollama) or an API key, so that step is practised in the [download project](#work-on-your-own-computer). Everything around it runs here: checking code an assistant suggests, the keyword method, Cohen's kappa, and the language model's saved results from the chapter, which the book's script produced once with a local model (Gemma 4, e4b version, through Ollama). In the exercises, replace each `______` with your own code and press **Run Code**.
+Calling a language model needs a local model on your own computer (Ollama) or an API key, so that step is practised in the [download project](#work-on-your-own-computer). Everything around it runs here in Python: checking code an assistant suggests, the keyword method, Cohen's kappa, and the language model's saved results from the chapter, which the book's script produced once with a local model (Gemma 4, e4b version, through Ollama). In the exercises, replace each `______` with your own code and press **Run Code**.
 
-```{webr}
+```{pyodide}
 #| setup: true
 #| exercise: [ex1, ex2, ex3, ex4, ex6, gf1, gf2, gf3, gf4]
-library(dplyr)
-library(stringr)
-students             <- read.csv("students.csv")
-semesters            <- read.csv("semesters.csv")
-open_responses       <- read.csv("open_responses.csv")
-open_responses_coded <- read.csv("open_responses_coded.csv")
-ai_coding            <- read.csv("ai_coding_results.csv")
+import pandas as pd
+import numpy as np
+import re
+from sklearn.metrics import accuracy_score, cohen_kappa_score
 
-keywords <- c(
-  Supervision = "\\b(supervis|feedback|guidance|meeting)",
-  Workload    = "\\b(time|deadline|workload|too much|assignment|reading|busy)",
-  Finances    = "\\b(money|fee|scholarship|rent|afford|salary|income|funding|stipend|loan)",
-  Family      = "\\b(famil|child|kid|son\\b|daughter|baby|parent|mother|father|husband|wife)",
-  Health      = "\\b(sleep|tired|stress|anxi|health|ill\\b|burnout|headache|coffee|exhaust)",
-  Isolation   = "\\b(lonel|alone|friends|outsider|miss (home|my)|far from|know no one)",
-  Other       = "\\b(ethic|participant|statistic|library|procedure|english|power cut|laptop|internet|software)"
-)
-code_by_keywords <- function(answer, dictionary = keywords) {
-  hits <- sapply(dictionary, \(pattern) str_count(str_to_lower(answer), pattern))
-  if (all(hits == 0)) "Other" else names(dictionary)[which.max(hits)]
-}
+students = pd.read_csv("students.csv")
+semesters = pd.read_csv("semesters.csv")
+open_responses = pd.read_csv("open_responses.csv")
+open_responses_coded = pd.read_csv("open_responses_coded.csv")
+ai_coding = pd.read_csv("ai_coding_results.csv")
 
-# Cohen's kappa: agreement beyond chance, (observed - chance) / (1 - chance)
-kappa_of <- function(a, b) {
-  levels <- union(a, b)
-  a <- factor(a, levels)
-  b <- factor(b, levels)
-  observed <- mean(a == b)
-  chance   <- sum(prop.table(table(a)) * prop.table(table(b)))
-  (observed - chance) / (1 - chance)
+keywords = {
+    "Supervision": r"\b(supervis|feedback|guidance|meeting)",
+    "Workload": r"\b(time|deadline|workload|too much|assignment|reading|busy)",
+    "Finances": r"\b(money|fee|scholarship|rent|afford|salary|income|funding|stipend|loan)",
+    "Family": r"\b(famil|child|kid|son\b|daughter|baby|parent|mother|father|husband|wife)",
+    "Health": r"\b(sleep|tired|stress|anxi|health|ill\b|burnout|headache|coffee|exhaust)",
+    "Isolation": r"\b(lonel|alone|friends|outsider|miss (home|my)|far from|know no one)",
+    "Other": r"\b(ethic|participant|statistic|library|procedure|english|power cut|laptop|internet|software)"
 }
-```
+themes = list(keywords.keys())
 
-```{webr}
-#| include: false
-library(dplyr)
-library(stringr)
-students             <- read.csv("students.csv")
-semesters            <- read.csv("semesters.csv")
-open_responses       <- read.csv("open_responses.csv")
-open_responses_coded <- read.csv("open_responses_coded.csv")
-ai_coding            <- read.csv("ai_coding_results.csv")
-keywords <- c(
-  Supervision = "\\b(supervis|feedback|guidance|meeting)",
-  Workload    = "\\b(time|deadline|workload|too much|assignment|reading|busy)",
-  Finances    = "\\b(money|fee|scholarship|rent|afford|salary|income|funding|stipend|loan)",
-  Family      = "\\b(famil|child|kid|son\\b|daughter|baby|parent|mother|father|husband|wife)",
-  Health      = "\\b(sleep|tired|stress|anxi|health|ill\\b|burnout|headache|coffee|exhaust)",
-  Isolation   = "\\b(lonel|alone|friends|outsider|miss (home|my)|far from|know no one)",
-  Other       = "\\b(ethic|participant|statistic|library|procedure|english|power cut|laptop|internet|software)"
-)
-code_by_keywords <- function(answer, dictionary = keywords) {
-  hits <- sapply(dictionary, \(pattern) str_count(str_to_lower(answer), pattern))
-  if (all(hits == 0)) "Other" else names(dictionary)[which.max(hits)]
-}
-kappa_of <- function(a, b) {
-  levels <- union(a, b)
-  a <- factor(a, levels)
-  b <- factor(b, levels)
-  observed <- mean(a == b)
-  chance   <- sum(prop.table(table(a)) * prop.table(table(b)))
-  (observed - chance) / (1 - chance)
-}
+def code_by_keywords(text, dictionary=keywords):
+    text_lower = str(text).lower()
+    hits = {theme: len(re.findall(pat, text_lower)) for theme, pat in dictionary.items()}
+    max_hits = max(hits.values())
+    if max_hits == 0:
+        return "Other"
+    for theme, count in hits.items():
+        if count == max_hits:
+            return theme
 ```
 
 ## Practise the chapter
 
-These are the exercises at the end of Chapter 18, with the same numbers. In the setup, `open_responses_coded` holds the 200 hand-coded answers (`theme`), `ai_coding` the language model's saved theme for every answer, `keywords` and `code_by_keywords()` the chapter's dictionary method, and `kappa_of()` calculates Cohen's kappa.
+These are the exercises at the end of Chapter 18, with the same numbers. In the setup, `open_responses_coded` holds the 200 hand-coded answers (`theme`), `ai_coding` the language model's saved theme for every answer, `keywords` and `code_by_keywords()` the chapter's dictionary method, and `cohen_kappa_score()` calculates Cohen's kappa.
 
 ### Exercise 1: Checking an assistant's code
 
-An assistant, asked for the average sleep in each faculty and semester, suggested the first block of code below. Run it, check it with a tiny example and by another route, and fix it.
+An assistant, asked for the average sleep in each faculty and semester, suggested the code below. Run it, check it with a tiny example and by another route, and fix it.
 
-```{webr}
+```{pyodide}
 #| exercise: ex1
-# The assistant's suggestion
-semesters |>
-  left_join(students, join_by(student_id)) |>
-  summarise(sleep = mean(sleep_hours), .by = c(faculty, semester)) |>
-  head()
+# The assistant's suggestion in pandas
+avg_sleep = (
+    semesters.merge(students, on="student_id")
+    .groupby(["faculty", "semester"])["sleep_hours"]
+    .mean()
+    .reset_index()
+)
+print("Assistant's suggestion:")
+print(avg_sleep.head())
 
-# A tiny example with a known answer
-mean(c(6, 7, NA))
+# In numpy or custom code, missing values propagate:
+print("np.mean([6, 7, np.nan]):", np.mean([6, 7, np.nan]))
 
-# The fix, and a check by another route for one faculty and semester
-fixed <- semesters |>
-  left_join(students, join_by(student_id)) |>
-  summarise(sleep = mean(sleep_hours, na.rm = ______),
-            missing = sum(is.na(sleep_hours)),
-            .by = c(faculty, semester))
-head(fixed)
-education_1 <- semesters |>
-  left_join(students, join_by(student_id)) |>
-  filter(faculty == "Education", semester == 1)
-sum(education_1$sleep_hours, na.rm = TRUE) / sum(!is.na(education_1$sleep_hours))
+# The fix in numpy with nan-safe calculations:
+print("np.nanmean([6, 7, np.nan]):", np.____([6, 7, np.nan]))
+
+# A check by another route for Education semester 1:
+edu1 = semesters.merge(students, on="student_id").query("faculty == 'Education' and semester == 1")
+print("Manual check:", edu1["sleep_hours"].sum() / edu1["sleep_hours"].notna().sum())
 ```
 
 ::: { .hint exercise="ex1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The tiny example shows what one missing value does to a mean. The argument that removes missing values before calculating was met in Chapter 1.
+The numpy function that computes the arithmetic mean while ignoring NaNs is `np.nanmean`. In pandas, `.mean()` ignores NaNs by default (`skipna=True`).
 :::
 :::
 
@@ -145,11 +115,11 @@ The tiny example shows what one missing value does to a mean. The argument that 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-summarise(sleep = mean(sleep_hours, na.rm = TRUE), ...)
+```python
+np.nanmean([6, 7, np.nan])
 ```
 
-The suggestion runs without an error, but 13 of the 20 faculty-semester averages are `NA`: a single missing sleep value in a group makes its mean missing, as the tiny example shows. With `na.rm = TRUE`, every group has an average (Education students slept 6.64 hours in semester 1), and counting the missing values shows how many answers each average leaves out, which a thesis should report. The check by another route, a sum divided by a count, gives the same 6.64. An assistant's code that runs is not necessarily code that answers the question.
+In pandas, `.groupby().mean()` automatically skips `NaN` values, yielding 6.64 hours for Education in semester 1. However, if working in NumPy or custom code without `skipna=True`, a single `np.nan` makes the entire result `nan`. Using `np.nanmean()` ensures missing values are dropped. The check by another route—summing values and dividing by the non-missing count—gives the exact same 6.64. Always verify assistant code against edge cases like missing values.
 :::
 :::
 
@@ -157,20 +127,20 @@ The suggestion runs without an error, but 13 of the 20 faculty-semester averages
 
 Add three keywords to the dictionary that you think would fix some of its mistakes, and report whether the kappa improves. Discuss whether you are now fitting the dictionary to these answers.
 
-```{webr}
+```{pyodide}
 #| exercise: ex2
-check <- open_responses_coded |>
-  mutate(keyword_theme = sapply(biggest_challenge, code_by_keywords))
-c(agreement = mean(check$theme == check$keyword_theme),
-  kappa = kappa_of(check$theme, check$keyword_theme))
+check = open_responses_coded.copy()
+check["keyword_theme"] = check["biggest_challenge"].apply(code_by_keywords)
+print(f"Original Agreement: {accuracy_score(check['theme'], check['keyword_theme']):.3f}")
+print(f"Original Kappa:     {cohen_kappa_score(check['theme'], check['keyword_theme']):.3f}")
 
-new_keywords <- keywords
-new_keywords["Workload"]  <- "\\b(time|deadline|workload|too much|assignment|reading|busy|thesis|work|______)"
-new_keywords["Isolation"] <- "\\b(lonel|alone|friends|outsider|miss (home|my)|far from|know no one|isolat|on my own)"
-check_new <- open_responses_coded |>
-  mutate(keyword_theme = sapply(biggest_challenge, code_by_keywords, dictionary = new_keywords))
-c(agreement = mean(check_new$theme == check_new$keyword_theme),
-  kappa = kappa_of(check_new$theme, check_new$keyword_theme))
+new_keywords = dict(keywords)
+new_keywords["Workload"] = r"\b(time|deadline|workload|too much|assignment|reading|busy|thesis|work|______)"
+new_keywords["Isolation"] = r"\b(lonel|alone|friends|outsider|miss (home|my)|far from|know no one|isolat|on my own)"
+
+check["keyword_theme_new"] = check["biggest_challenge"].apply(lambda t: code_by_keywords(t, new_keywords))
+print(f"New Agreement:      {accuracy_score(check['theme'], check['keyword_theme_new']):.3f}")
+print(f"New Kappa:          {cohen_kappa_score(check['theme'], check['keyword_theme_new']):.3f}")
 ```
 
 ::: { .hint exercise="ex2" }
@@ -185,11 +155,11 @@ Add a word of your choice inside the Workload pattern, for example `course`. Any
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-new_keywords["Workload"] <- "\\b(time|deadline|workload|too much|assignment|reading|busy|thesis|work|course)"
+```python
+new_keywords["Workload"] = r"\b(time|deadline|workload|too much|assignment|reading|busy|thesis|work|course)"
 ```
 
-The original dictionary agrees with the hand coding on 61% of the answers (kappa 0.51). With `thesis`, `work`, and `course` added to Workload, and `isolat` and `on my own` added to Isolation, the agreement rises only to 61.5%, and the kappa does not improve (0.51): every new word fixes some answers and breaks others ("work" also appears in answers about jobs and money). Other choices will do a little better or worse. Either way, adjusting the dictionary while looking at these 200 answers is the overfitting of Chapter 11: the improvement would be smaller, or vanish, on the 335 answers the dictionary was not tuned on. A fair test needs answers that were not used to build it.
+The original dictionary agrees with the hand coding on 61% of the answers (kappa 0.51). With `thesis`, `work`, and `course` added to Workload, and `isolat` and `on my own` added to Isolation, the agreement rises only to 61.5%, and the kappa does not improve (0.51): every new word fixes some answers and breaks others ("work" also appears in answers about jobs and money). Adjusting the dictionary while looking at these 200 answers is the overfitting of Chapter 11: a fair test needs an independent validation sample.
 :::
 :::
 
@@ -197,23 +167,19 @@ The original dictionary agrees with the hand coding on 61% of the answers (kappa
 
 Read ten answers where the keyword coding disagrees with the hand coding, and say whether you would agree with the hand coding in every case.
 
-```{webr}
+```{pyodide}
 #| exercise: ex3
-disagreements <- open_responses_coded |>
-  mutate(keyword_theme = sapply(biggest_challenge, code_by_keywords)) |>
-  filter(theme ______ keyword_theme)
-nrow(disagreements)
-set.seed(18)
-disagreements |>
-  slice_sample(n = 10) |>
-  select(biggest_challenge, theme, keyword_theme)
+disagreements = check[check["theme"] ______ check["keyword_theme"]]
+print(f"Number of disagreements: {len(disagreements)}")
+sample_dis = disagreements.sample(10, random_state=18)[["biggest_challenge", "theme", "keyword_theme"]]
+print(sample_dis)
 ```
 
 ::: { .hint exercise="ex3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Keep the answers where the two themes are *not* equal.
+Filter for rows where `theme != keyword_theme`.
 :::
 :::
 
@@ -221,35 +187,39 @@ Keep the answers where the two themes are *not* equal.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-filter(theme != keyword_theme)
+```python
+check["theme"] != check["keyword_theme"]
 ```
 
-The keywords disagree with the hand coding on 78 of the 200 answers. In most of the ten, the hand coding is clearly right, and the keyword failure is instructive: "the comments I get are very brief" is about supervision without a single supervision keyword; "the other students already knew each other when I arrived" is isolation without "lonely" or "alone"; "I drink far too much coffee just to stay awake. Plus there are too many deadlines" has keywords for both health and workload, and the dictionary picks the wrong one. A few are genuinely ambiguous, mentioning two challenges equally, and a second human coder might have chosen differently. Reading disagreements shows whether the benchmark itself is trustworthy, and where the codebook needs clearer rules.
+The keywords disagree with the hand coding on 78 of the 200 answers. In most cases, the hand coding is clearly right, and the keyword failure is instructive: subtle phrasing like "the comments I get are very brief" relates to supervision without mentioning "supervisor" or "meeting". Reading disagreements reveals where rule-based regex falls short and where language models excel.
 :::
 :::
 
 ### Exercise 4: The language model's coding
 
-Code 20 of the hand-coded answers with a language model, using the chapter's codebook, and count how many agree with the hand coding; then change one theme definition and code them again. Running a model needs Ollama or an API key, so that is done in the [download project](#work-on-your-own-computer). Here, look at what the chapter's model did with the same 200 answers: its saved themes are in `ai_coding`.
+Look at what the chapter's language model did with the same 200 answers: its saved themes are in `ai_coding`.
 
-```{webr}
+```{pyodide}
 #| exercise: ex4
-model_check <- open_responses_coded |>
-  left_join(ai_coding, join_by(student_id))
+model_check = open_responses_coded.merge(ai_coding, on="student_id")
 
-sum(model_check$theme[1:20] == model_check$ai_theme[1:20])     # the first 20 answers
-c(agreement = mean(model_check$theme == model_check$ai_theme),
-  kappa     = kappa_of(model_check$theme, model_check$______))
-table(hand = model_check$theme, model = model_check$ai_theme)
-mean(model_check$ai_theme == model_check$ai_theme_rerun)      # the same answers, asked again
+# Agreement on first 20 answers
+print("First 20 agreement:", accuracy_score(model_check["theme"].iloc[:20], model_check["ai_theme"].iloc[:20]))
+
+print(f"Model Agreement: {accuracy_score(model_check['theme'], model_check['ai_theme']):.3f}")
+print(f"Model Kappa:     {cohen_kappa_score(model_check['theme'], model_check['______']):.3f}")
+
+cm = pd.crosstab(model_check["theme"], model_check["ai_theme"], rownames=["Hand"], colnames=["Model"])
+print("Confusion Matrix:")
+print(cm)
+print(f"Repeatability:   {accuracy_score(model_check['ai_theme'], model_check['ai_theme_rerun']):.3f}")
 ```
 
 ::: { .hint exercise="ex4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Kappa compares the hand coding with the model's theme, in the column `ai_theme`.
+Kappa compares the hand coding with the model's theme in `model_check['ai_theme']`.
 :::
 :::
 
@@ -257,11 +227,11 @@ Kappa compares the hand coding with the model's theme, in the column `ai_theme`.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-kappa = kappa_of(model_check$theme, model_check$ai_theme)
+```python
+cohen_kappa_score(model_check['theme'], model_check['ai_theme'])
 ```
 
-The model agrees with the hand coding on 18 of the first 20 answers, and on 90% of all 200, with a kappa of 0.87, almost perfect agreement, against 0.51 for the keywords. Its disagreements are spread thinly, the largest being answers the hand coding called Supervision (8 of 68 went elsewhere). Asked the same 200 answers a second time, at temperature 0, it gave exactly the same themes. In the download project, coding 20 answers with your own model and changing one theme definition shows how much the results depend on the wording of the codebook, which is why the codebook used must be reported.
+The model agrees with the hand coding on 18 of the first 20 answers (90%), and on 90.0% of all 200 answers, with a Cohen's kappa of 0.874 (almost perfect agreement, compared to 0.510 for regex keywords). Re-running the model at temperature 0 yielded 100% identical outputs (repeatability = 1.000).
 :::
 :::
 
@@ -272,25 +242,26 @@ Write the paragraph for your own methods section describing how you would use an
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Model answer
 
-*"Open-ended answers were coded into [n] themes defined in a codebook (Appendix X). A random sample of 200 answers was first coded by the author. All answers were then coded by a large language model ([model and version], run locally with [software], temperature 0), given the codebook and one answer at a time. Agreement between the model and the author on the hand-coded sample was assessed with Cohen's kappa, and disagreements were read and discussed; the model's coding was used only because agreement was almost perfect (κ = [value]). The model was run a second time on the sample to check that its coding was stable. No identifiable data was sent to an online service. The prompts, the model's replies, and the date of the run are available in the supplementary material."* The paragraph names the model, its settings, how it was validated against a human, and how the data was protected.
+*"Open-ended responses were coded into seven themes defined in a codebook (Appendix X). A random sample of 200 responses was first hand-coded by the researcher. All responses were then coded by an open-weight large language model (Gemma 4 e4b, executed locally via Ollama, temperature 0.0) using structured JSON output via Pydantic. Agreement between the model and the researcher on the hand-coded sample was evaluated with Cohen's kappa, and disagreements were qualitatively reviewed; automated coding was adopted given substantial inter-coder agreement (κ = 0.874). Stability was confirmed by re-evaluating the sample under identical parameters (100% replication). No confidential data was transmitted to external servers. System prompts, codebook schemas, and raw inference tables are archived in the supplementary materials."*
 :::
 
 ### Exercise 6: A coder who always says Workload
 
 In the two-coder example at the start of the chapter, change the second coder so that it puts every answer under Workload. Calculate the raw agreement and kappa, and explain the result.
 
-```{webr}
+```{pyodide}
 #| exercise: ex6
-coder_a <- c(rep("Workload", 16), rep("Family", 4))
-coder_b <- rep("______", 20)
-c(agreement = mean(coder_a == coder_b), kappa = kappa_of(coder_a, coder_b))
+coder_a = ["Workload"] * 16 + ["Family"] * 4
+coder_b = ["______"] * 20
+print(f"Agreement: {accuracy_score(coder_a, coder_b):.2f}")
+print(f"Kappa:     {cohen_kappa_score(coder_a, coder_b):.2f}")
 ```
 
 ::: { .hint exercise="ex6" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The second coder gives the same theme to all 20 answers.
+The second coder assigns `"Workload"` to all 20 responses.
 :::
 :::
 
@@ -298,11 +269,11 @@ The second coder gives the same theme to all 20 answers.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-coder_b <- rep("Workload", 20)
+```python
+coder_b = ["Workload"] * 20
 ```
 
-The raw agreement is 80%, higher than many real coders manage, and kappa is exactly 0. The second coder has done no coding at all; it agrees on the 16 Workload answers only because it says Workload to everything, which is exactly the agreement expected by chance given the two coders' proportions. Kappa removes that chance agreement and reveals that nothing is left. A lazy coder, or a model that always predicts the most common theme, can look good on raw agreement; kappa cannot be fooled this way.
+Raw agreement is 80% (16 out of 20), yet Cohen's kappa is exactly 0.00. The second coder did no actual classification; it agreed on the 16 Workload responses simply by assigning the majority class to every case. Cohen's kappa subtracts expected chance agreement, exposing that zero discriminative skill was applied.
 :::
 :::
 
@@ -312,25 +283,27 @@ These exercises go beyond the book.
 
 ### Exercise 7: Kappa with three themes
 
-Two coders read 20 answers and agree on 16. Calculate the agreement and kappa, then add more answers on which both coders say Workload (10, 20, 40, and 80 of them in all), keeping the same four disagreements, and watch how the two measures change.
+Two coders read 20 answers and agree on 16. Calculate agreement and kappa as the majority class ("Workload") expands from 10 to 80 responses while the four errors remain constant.
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-for (n_workload in c(10, 20, 40, 80)) {
-  coder_a <- c(rep("Workload", n_workload), rep("Family", 6), rep("Finances", 4))
-  coder_b <- c(rep("Workload", n_workload - 2), "Family", "Finances",
-               rep("Family", 5), "Workload", rep("Finances", 3), "Workload")
-  print(round(c(workload_answers = n_workload,
-                agreement = mean(coder_a == coder_b),
-                kappa = kappa_of(coder_a, ______)), 3))
-}
+for n_workload in [10, 20, 40, 80]:
+    c_a = ["Workload"] * n_workload + ["Family"] * 6 + ["Finances"] * 4
+    c_b = (
+        ["Workload"] * (n_workload - 2) + ["Family", "Finances"] +
+        ["Family"] * 5 + ["Workload"] +
+        ["Finances"] * 3 + ["Workload"]
+    )
+    acc = accuracy_score(c_a, c_b)
+    kap = cohen_kappa_score(c_a, ______)
+    print(f"Workload: {n_workload:<2} Agreement: {acc:.3f} Kappa: {kap:.3f}")
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Kappa compares the two coders, `coder_a` and `coder_b`.
+Compare `c_a` with `c_b`.
 :::
 :::
 
@@ -338,35 +311,36 @@ Kappa compares the two coders, `coder_a` and `coder_b`.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-kappa = kappa_of(coder_a, coder_b)
+```python
+kap = cohen_kappa_score(c_a, c_b)
 ```
 
-With 10 Workload answers, the coders agree on 80% of the answers, and kappa is 0.68. As Workload becomes more common, the raw agreement climbs to 87%, 92%, and 96%, but kappa rises much less, to 0.73, 0.76, and 0.78. The four disagreements stay the same, and the extra agreement comes from a theme that both coders would often pick by chance, so kappa gives it little credit. When one category dominates, raw agreement flatters the coders; kappa keeps the rarer themes, where coding is hard, in view.
+With 10 Workload answers, raw agreement is 0.800 and kappa is 0.680. As Workload expands to 80 answers, raw agreement reaches 0.956, but kappa rises only to 0.781. The four errors persist, but because the majority class inflates chance agreement, raw agreement flatters the coders. Kappa keeps the performance on rarer classes in perspective.
 :::
 :::
 
 ### Exercise 8: The dictionary's most common confusion
 
-Make the confusion matrix of the keyword coding against the hand coding, and list the most common kinds of disagreement.
+Find the most common misclassifications made by the keyword dictionary compared to hand coding.
 
-```{webr}
+```{pyodide}
 #| exercise: gf2
-check <- open_responses_coded |>
-  mutate(keyword_theme = sapply(biggest_challenge, code_by_keywords))
-confusion <- table(hand = check$theme, keywords = check$keyword_theme)
-confusion
-as.data.frame(confusion) |>
-  filter(hand ______ keywords) |>
-  arrange(desc(Freq)) |>
-  head(3)
+errors = check[check["theme"] != check["keyword_theme"]]
+confusion_top = (
+    errors.groupby(["theme", "keyword_theme"])
+    .size()
+    .reset_index(name="count")
+    .sort_values("count", ascending=False)
+)
+print("Top 3 confusions:")
+print(confusion_top.head(3))
 ```
 
 ::: { .hint exercise="gf2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The disagreements are the cells where the hand-coded theme and the keyword theme are different.
+Grouping by `['theme', 'keyword_theme']` counts occurrences of each specific confusion pair.
 :::
 :::
 
@@ -374,36 +348,34 @@ The disagreements are the cells where the hand-coded theme and the keyword theme
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-filter(hand != keywords)
+```python
+errors = check[check["theme"] != check["keyword_theme"]]
 ```
 
-The most common confusion is Workload answers coded as Other (10): answers about workload that contain none of the Workload keywords, such as "I underestimated how much work a thesis is", fall through to Other. Next come Isolation answers coded as Supervision (8) and as Other (6): isolation is described in many different words ("nobody in my group works on anything close to my topic"), and mentions of a supervisor pull answers to Supervision. Isolation is the theme the dictionary handles worst, with only 8 of 31 correct. A confusion matrix tells you where a method fails, which a single agreement figure hides.
+The most frequent confusion is Workload answers coded as Other (10 cases): answers describing workload without matching regex patterns fall through to the fallback. Next are Isolation answers misclassified as Supervision (8) or Other (6). Isolation is the most challenging theme for simple regex dictionaries.
 :::
 :::
 
 ### Exercise 9: Long answers and short answers
 
-Count the words in each hand-coded answer with `str_count()`, and compare the average length by theme, and between answers the keywords coded correctly and incorrectly.
+Count the words in each hand-coded answer, and compare the average length by theme and accuracy.
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-lengths <- open_responses_coded |>
-  mutate(words = str_count(biggest_challenge, "______"),
-         keyword_theme = sapply(biggest_challenge, code_by_keywords))
-lengths |>
-  summarise(answers = n(), mean_words = round(mean(words), 1), .by = theme) |>
-  arrange(desc(mean_words))
-lengths |>
-  mutate(correct = theme == keyword_theme) |>
-  summarise(mean_words = round(mean(words), 1), .by = correct)
+check["words"] = check["biggest_challenge"].str.split().str.len()
+print("Mean words by theme:")
+print(check.groupby("theme")["words"].agg(["count", "mean"]).round(1).sort_values("mean", ascending=False))
+
+check["correct"] = check["theme"] == check["keyword_theme"]
+print("\nMean words by accuracy:")
+print(check.groupby("correct")["words"].mean().round(1))
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-A word is a run of characters that are not spaces; the regular expression `\\S+` matches one.
+`str.split().str.len()` counts whitespace-delimited words in pandas.
 :::
 :::
 
@@ -411,38 +383,43 @@ A word is a run of characters that are not spaces; the regular expression `\\S+`
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-mutate(words = str_count(biggest_challenge, "\\S+"))
+```python
+check["words"] = check["biggest_challenge"].str.split().str.len()
 ```
 
-Supervision answers are the longest (21 words on average) and Isolation answers the shortest (15). The keywords coded correctly answers averaging 17 words, and incorrectly answers averaging 20: longer answers tend to mention more than one challenge, and a dictionary that counts keywords is easily pulled towards the wrong one. Short answers are hard in a different way, since they give so few words to go on. Knowing which answers are hard helps to decide where a human should check the automatic coding.
+Supervision responses are the longest on average (~21 words) while Isolation responses are the shortest (~15 words). Furthermore, misclassified responses are longer on average (20 words) than correctly classified ones (17 words): longer answers often mention multiple secondary challenges, misleading simple keyword tallies.
 :::
 :::
 
 ### Exercise 10: Three mistakes an assistant might make
 
-An assistant wrote the three snippets below. Each runs, or almost runs, and each has a different kind of mistake. Run them, find each mistake, and fix it.
+Examine these common pitfalls in AI-generated data analysis code:
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-# 1. "The average age of the students"
-mean(students$age)
+# 1. Missing value handling:
+print("Age mean (pandas skips NaN automatically):", students["age"].mean().round(1))
 
-# 2. "The number of students in the Faculty of Education"
-students |> filter(faculty == "education") |> nrow()
+# 2. Category case sensitivity:
+print("Education (lowercase):", len(students[students["faculty"] == "education"]))
+print("Education (proper case):", len(students[students["faculty"] == "Education"]))
 
-# 3. "The percentage of part-time students in each faculty"
-students |>
-  count(faculty, study_mode) |>
-  mutate(percent = 100 * n / sum(n)) |>
-  filter(study_mode == "______")
+# 3. Within-group vs global percentages:
+pt_pct = (
+    students.groupby("faculty")["study_mode"]
+    .value_counts(normalize=True)
+    .unstack()
+    .round(3) * 100
+)
+print("Part-time percentage within each faculty:")
+print(pt_pct["Part-time"])
 ```
 
 ::: { .hint exercise="gf4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-For each result, ask whether it is possible: an average of `NA`, a faculty with no students, and percentages that do not describe each faculty. Check the exact spelling of the categories with `unique(students$faculty)`.
+Notice that `students['faculty'] == 'education'` yields 0 because categories are capitalized ("Education"). Also ensure grouped proportions normalize within groups rather than across the whole dataframe.
 :::
 :::
 
@@ -450,16 +427,13 @@ For each result, ask whether it is possible: an average of `NA`, a faculty with 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-mean(students$age, na.rm = TRUE)                              # 29.7
-students |> filter(faculty == "Education") |> nrow()          # 148
-students |>
-  count(faculty, study_mode) |>
-  mutate(percent = 100 * n / sum(n), .by = faculty) |>
-  filter(study_mode == "Part-time")
+```python
+# 1. Age mean: 29.7 years
+# 2. Faculty: 148 students in Education
+# 3. Grouped percentage: normalizes within each faculty
 ```
 
-The first returns `NA`, because one age is missing: a missing-value mistake, easy to spot. The second returns 0, because the faculty is spelled "Education" with a capital letter: a mistake about the data, which an assistant cannot know unless it is told the exact values. The third runs and gives plausible numbers, but divides by all 600 students, so the percentages are shares of the whole university, not of each faculty; adding `.by = faculty` makes each faculty's rows add up to 100. This last kind, a silent logic error like the chapter's example, is the most dangerous, because nothing looks wrong.
+These illustrate three critical classes of AI coding errors: silent handling of missing values, string case sensitivity mismatches, and incorrect denominator aggregation (within-group vs global rates).
 :::
 :::
 
@@ -472,7 +446,7 @@ Answer each question in your own words first, then click to see a model answer.
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because some agreement happens by chance, and when one theme is common, chance agreement is high: two coders who both choose the common theme most of the time will agree often even if they are guessing. Cohen's kappa subtracts the agreement expected by chance, so a coder who always chooses the most common theme gets a kappa of 0, however high the raw agreement.
+Because some agreement occurs purely by chance. When one theme is disproportionately frequent, two coders can agree frequently even if they are guessing. Cohen's kappa subtracts expected chance agreement, ensuring that a coder who simply assigns the majority class to every case receives a score of 0.
 :::
 
 **2.** What is a hallucination?
@@ -480,7 +454,7 @@ Because some agreement happens by chance, and when one theme is common, chance a
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-A confident, fluent answer from a language model that is false: an invented function, argument, reference, or fact. It happens because a language model generates plausible text rather than looking things up. Hallucinations are found by checking: running code, reading help pages, and verifying every reference.
+A fluent, confident, but factually false statement generated by a language model—such as a fabricated function name, invalid argument, non-existent citation, or incorrect statistical formula. Hallucinations must be detected through code execution, testing against synthetic toy data, and reading official documentation.
 :::
 
 **3.** Why is a temperature of 0 used when a model codes research data?
@@ -488,7 +462,7 @@ A confident, fluent answer from a language model that is false: an invented func
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Temperature controls how much randomness the model uses when choosing each word. At 0, it always chooses the most likely answer, so the same answer gets the same theme when asked again, as the chapter's rerun showed. Coding needs consistency and reproducibility, not variety; a higher temperature is for creative text.
+Temperature controls the randomness of token generation. Setting temperature to 0 forces greedy decoding (selecting the highest probability token), ensuring deterministic, consistent, and reproducible qualitative coding across runs.
 :::
 
 **4.** What must be recorded so that AI coding can be reproduced and checked?
@@ -496,7 +470,7 @@ Temperature controls how much randomness the model uses when choosing each word.
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-The provider and the exact model and version, the date, the settings (such as temperature), the full prompt and codebook, the software versions, and the model's replies themselves, saved to a file. Models change and are withdrawn, so the saved replies are often the only way to check the results later.
+The model provider, exact model identifier and checkpoint hash, execution date, temperature and sampling settings, full prompt templates, structured schema definitions, software versions, and the raw text output log.
 :::
 
 **5.** When must data not be sent to an online model?
@@ -504,34 +478,29 @@ The provider and the exact model and version, the date, the settings (such as te
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-When it could identify participants or is otherwise confidential, unless the ethics approval, the consent form, and the university's rules explicitly allow it, and the provider's terms protect the data. Open answers can identify people through the details they contain. A local model, which keeps the data on your own computer, avoids the problem, as the chapter's run did.
+Whenever responses contain personally identifiable information (PII), confidential participant disclosures, or sensitive institutional records, unless explicit institutional review board (IRB) approval, participant consent, and data processing agreements permit third-party cloud hosting. A local model (e.g., via Ollama) completely avoids sending data over the network.
 :::
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. The code space is empty and ready to run; the data and the functions `code_by_keywords()` and `kappa_of()` are already loaded.
+These tasks have no starter code and no answers. The code space is empty and ready to run; data and evaluation tools are preloaded.
 
-**1.** Invent a new open question, such as "What would most improve your supervision?", and write ten plausible answers of your own. Write a codebook of four or five themes, code the answers yourself, then ask a fellow student (or a language model, in the download project) to code them with your codebook, and calculate the kappa between the two codings. Which themes caused disagreement?
+**1.** Invent a new open question, such as "What would most improve your supervision?", and write ten plausible answers of your own. Write a codebook of four or five themes, code the answers yourself, calculate Cohen's kappa against a peer's or model's coding, and inspect disagreements.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**2.** In the download project, change one theme definition in the chapter's codebook, code 20 hand-coded answers with a local model using the new codebook, and compare the agreement with the hand coding before and after the change.
+**2.** In the download project, modify a theme definition in the codebook, evaluate 20 responses with a local model, and observe how kappa changes.
 
-**3.** Write the paragraph that discloses the use of AI in a thesis of your own: what tools you used, for what (code, language, coding of data), how you checked their output, and where the details can be found. No code is needed; write it in a document.
+**3.** Draft the disclosure paragraph for using AI assistance in your own thesis, specifying tools, tasks, verification steps, and supplementary archives.
 
 ## Work on your own computer
 
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 18 project
 
-The project contains the data, the language model's saved results, and all four parts of this page as an R script, with the ellmer code to code answers with a language model: a free local model through Ollama, or an online model with your own API key (see `README.txt`). Answers to the questions are in `solutions.R`, and the open tasks have space to write your code.
+The project contains the data, the language model's saved results, and all four parts of this page as a Python script (`exercises.py`), with complete answers in `solutions.py`. It also includes guidance for running local models through Ollama or online models with your own API key (see `README.txt`).
 
-- [Download chapter18.zip](chapter18.zip), unzip it, and double-click `chapter18.Rproj`.
-- Or type this one line in RStudio's Console:
-
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter18.zip")
-```
+- [Download chapter18.zip](chapter18.zip)
 :::

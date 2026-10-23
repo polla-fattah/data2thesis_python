@@ -1,34 +1,35 @@
-FROM DATA TO THESIS: Using R for Non-Technical
-Playground, Chapter 18: Using AI with R
+FROM DATA TO THESIS: Using Python for Non-Technical
+Playground, Chapter 18: Using AI with Python
 
 How to use this project
-1. Double-click chapter18.Rproj. RStudio opens with this folder as the working directory.
-2. Open exercises.R. It has four parts:
+1. Open this folder in VS Code, PyCharm, or your chosen Python editor.
+2. Open exercises.py. It has four parts:
    A. Practise the chapter       the book's exercises, with blanks (______) to fill
    B. Go further                 new exercises beyond the book
    C. Check your understanding   short questions to answer in your own words
    D. Do it yourself             open tasks: no starter code and no answers
-   Run a line with Ctrl+Enter (Cmd+Enter on a Mac).
-3. Check parts A to C in solutions.R, after you have tried each one yourself.
+   Run lines or sections interactively (Shift+Enter or via terminal: python exercises.py).
+3. Check parts A to C in solutions.py, after you have tried each one yourself.
 
 The exercises need these packages (install once):
-install.packages(c("dplyr", "stringr", "ellmer", "usethis"))
+pip install pandas numpy scikit-learn
 
-Everything except Exercise 4 and Task 2 runs without a language model.
-The chapter uses a free local model, which needs no key and keeps the data on
+Everything except live model execution runs directly without external AI APIs.
+The chapter uses a free local model, which needs no API key and keeps all data on
 your computer:
 - Install Ollama from ollama.com, then run this once in a terminal:
     ollama pull gemma4:e4b
-  (a download of about 10 GB; a computer with a graphics card is much faster).
-Or use an online model: set use_local <- FALSE in the scripts, create an API key
-with a provider (for example Anthropic), run usethis::edit_r_environ(), add a
-line such as ANTHROPIC_API_KEY=your-key, save, and restart R. Never put a key
-in a script. Real research data may only be sent to an online service if your
-ethics approval allows it.
+  (or use any local model supported by Ollama).
+- In Python, you can interact with Ollama using the official `ollama` package
+  or standard HTTP requests to `http://localhost:11434/api/generate`.
+Alternatively, if using an online model (e.g. OpenAI, Anthropic), set your API key
+in your environment variables (e.g. `export OPENAI_API_KEY="your-key"` or via `.env`).
+Never put a key in a script. Real research data may only be sent to an online service
+if your ethics approval specifically permits third-party cloud data transmission.
 
 Files
-- exercises.R               the four parts, with starter code for parts A and B
-- solutions.R               solutions for parts A and B, model answers for part C
+- exercises.py               the four parts, with starter code for parts A and B
+- solutions.py               solutions for parts A and B, model answers for part C
 - students.csv              one row per student in the wellbeing study (600 students)
 - semesters.csv             one row per student per semester
 - open_responses.csv        the students' answers to the open question
@@ -40,4 +41,4 @@ computer program to look realistic, and its patterns were built in by the
 author. It describes no real people and is not evidence about real students;
 do not cite or use it as research findings.
 Browser exercises for this chapter are at:
-https://polla-fattah.github.io/data2thesis_r/playground/chapter18.html
+https://polla-fattah.github.io/data2thesis_python/playground/chapter18.html
