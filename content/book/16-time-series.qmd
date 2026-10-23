@@ -4,24 +4,36 @@ number-offset: 15
 
 # Time Series Forecasting {#sec-ch16}
 
-```{r}
+```{python}
 #| label: setup
 #| include: false
-library(data2thesis)
+import data2thesis as dt
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings('ignore')
+
+plt.rcParams.update({
+    'figure.autolayout': True,
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'font.size': 11
+})
 ```
 
 Much of the data that organisations keep is recorded over time: patients admitted each day, products sold each month, rainfall each week. Such a sequence of measurements taken at regular intervals is a **time series**, and it calls for a different way of thinking from the surveys of the previous chapters. The observations are not independent: this week's value is related to last week's, and the order of the observations carries information. The patterns are also of a particular kind. A series usually combines a slow **trend**, a **seasonal** pattern that repeats over a fixed period, and irregular **noise**, and understanding a series largely means separating these parts. Finally, the future of a series can never be known exactly, so a forecast is honestly a range of plausible values, not a single number.
 
-This chapter develops these ideas and the methods built on them, using the **fable** family of packages. The example comes from outside the thesis. The doctors at the university counselling service have heard about Elaf's wellbeing study and ask her to analyse their records: five years of weekly visit counts, with the service overwhelmed before exams and quiet in the summer, and staffing planned by guesswork. They want to know how many visits to expect next year, week by week. This is an **internal analysis**, done for the service rather than for publication, and a common situation for anyone who knows some data analysis: being asked to analyse someone else's data.
+This chapter develops these ideas and the methods built on them, using Python's standard data science and statistical libraries (`pandas` and `statsmodels`). The example comes from outside the thesis. The doctors at the university counselling service have heard about Elaf's wellbeing study and ask her to analyse their records: five years of weekly visit counts, with the service overwhelmed before exams and quiet in the summer, and staffing planned by guesswork. They want to know how many visits to expect next year, week by week. This is an **internal analysis**, done for the service rather than for publication, and a common situation for anyone who knows some data analysis: being asked to analyse someone else's data.
 
 ::: {.callout-tip appearance="simple"}
 ## By the end of this chapter you will be able to
 
 - Explain dependence over time, the parts of a time series (trend, seasonality, and noise), and why forecasts are ranges.
-- Store a time series as a tsibble, and plot it.
+- Store a time series in pandas with a datetime index, and plot it.
 - Recognise trend, seasonality, and unusual observations, using time plots, seasonal plots, and autocorrelation.
 - Decompose a series into trend, seasonal, and remainder components with STL.
-- Produce benchmark forecasts, and forecasts from exponential smoothing (ETS) and ARIMA models, with fable.
+- Produce benchmark forecasts (mean, naive, seasonal naive), and forecasts from exponential smoothing (ETS) and ARIMA models.
 - Evaluate forecasts on a test period, and report forecasts with prediction intervals.
 :::
 ::: {.callout-note appearance="simple" icon="false"}
@@ -35,108 +47,123 @@ Most of this book's methods assume that observations are independent: one studen
 
 ### A small example
 
-Two weeks of daily visits to a small clinic, starting on a Monday, show how a time series is stored:
+Two weeks of daily visits to a small clinic, starting on a Monday, show how a time series is stored in pandas:
 
-```{r}
-library(dplyr)
-library(ggplot2)
-library(tsibble)
-library(fable)
-library(feasts)
+```{python}
+import pandas as pd
+import numpy as np
 
-clinic <- tsibble(
-  day    = 1:14,
-  visits = c(12, 10, 9, 11, 7, 3, 2,   14, 11, 10, 12, 8, 4, 2),
-  index  = day
-)
-clinic
+clinic = pd.DataFrame({
+    'day': range(1, 15),
+    'visits': [12, 10, 9, 11, 7, 3, 2,  14, 11, 10, 12, 8, 4, 2]
+}).set_index('day')
+
+clinic.head()
 ```
 
-A **tsibble** (time series tibble) is a data frame that knows which column is time, its **index**. Here the index is the day number; the output header shows that the observations are one unit apart (`[1]`). tsibbles check that each time appears only once, and fable's functions use the index to keep everything in order. There is a clear weekly pattern: busy at the start of the week, quiet at the weekend.
+In pandas, a time series is stored with a dedicated **index** representing time (either integers representing regular intervals or a `DatetimeIndex`). The observations are spaced regularly, and operations maintain temporal ordering. There is a clear weekly pattern: busy at the start of the week, quiet at the weekend.
 
 ### The parts of a pattern
 
 A time series is easiest to understand as a sum of parts. The code below builds an artificial weekly series for three years from three ingredients: a trend that rises slowly, a seasonal pattern that repeats every 52 weeks, and random noise. @fig-parts shows each part and their sum.
 
-```{r}
+```{python}
 #| label: fig-parts
 #| fig-cap: "An artificial weekly series built from three parts: a rising trend, a seasonal pattern that repeats every 52 weeks, and random noise. The bottom panel is their sum."
 #| fig-alt: "Four stacked panels over three years. The trend is a straight line rising slowly. The seasonal part is a wave repeating every year. The noise is irregular small ups and downs. The sum is a wavy series that rises gently and has a jagged look."
 #| fig-width: 7.5
 #| fig-height: 5.5
-set.seed(4)
-week <- 1:156
-parts <- tibble(
-  week     = week,
-  trend    = 30 + 0.05 * week,
-  seasonal = 12 * sin(2 * pi * week / 52),
-  noise    = rnorm(156, sd = 3)
-) |>
-  mutate(series = trend + seasonal + noise)
+np.random.seed(4)
+weeks = np.arange(1, 157)
+trend = 30 + 0.05 * weeks
+seasonal = 12 * np.sin(2 * np.pi * weeks / 52)
+noise = np.random.normal(0, 3, 156)
+series = trend + seasonal + noise
 
-parts |>
-  tidyr::pivot_longer(-week, names_to = "part", values_to = "value") |>
-  mutate(part = factor(part, levels = c("trend", "seasonal", "noise", "series"))) |>
-  ggplot(aes(x = week, y = value)) +
-  geom_line(colour = "#2f6793") +
-  facet_wrap(~ part, ncol = 1, scales = "free_y") +
-  labs(x = "Week", y = NULL) +
-  theme_minimal(base_size = 11)
+fig, axes = plt.subplots(4, 1, figsize=(7.5, 5.5), sharex=True)
+panels = [
+    (trend, "Trend"),
+    (seasonal, "Seasonal"),
+    (noise, "Noise"),
+    (series, "Series (Sum)")
+]
+
+for ax, (data, title) in zip(axes, panels):
+    ax.plot(weeks, data, color="#2f6793", linewidth=1.5)
+    ax.set_ylabel(title)
+    ax.grid(True, linestyle="--", alpha=0.5)
+
+axes[-1].set_xlabel("Week")
+plt.tight_layout()
+plt.show()
 ```
 
 In a real series, only the bottom panel is observed; the parts must be recovered from it. The trend says where the series is heading, the seasonal pattern says what happens at each point in the year, and the noise is what no pattern explains. Forecasting extends the trend and the seasonal pattern into the future. The noise cannot be forecast, and it is the main reason every forecast comes with a range. The decomposition later in this chapter recovers these parts from the counselling data.
 
 ## The counselling service data
 
-The counselling records are in `counselling_visits`: the date of the Monday of each week, and the number of visits that week.
+The counselling records are loaded via `load_counselling_visits()`: the date of the Monday of each week, and the number of visits that week.
 
-```{r}
-counselling_visits |> head()
-range(counselling_visits$week_start)
+```{python}
+counselling_visits = dt.load_counselling_visits()
+counselling_visits['week_start'] = pd.to_datetime(counselling_visits['week_start'])
+print(counselling_visits.head())
+print(f"Date range: {counselling_visits['week_start'].min().date()} to {counselling_visits['week_start'].max().date()}")
+print(f"Total weeks: {len(counselling_visits)}")
 ```
 
-The data covers five academic years, from September 2020 to August 2025, `r nrow(counselling_visits)` weeks in all. The function `yearweek()` turns each date into a week, which becomes the index:
+The data covers five academic years, from September 2020 to August 2025, 260 weeks in all. Setting the datetime column as the index gives a clean time series structure:
 
-```{r}
-visits <- counselling_visits |>
-  mutate(week = yearweek(week_start)) |>
-  as_tsibble(index = week)
-visits
+```{python}
+visits = counselling_visits.set_index('week_start').sort_index()
+visits.head()
 ```
 
-The header now reads `[1W]`: one week between observations. The first step with any time series is to plot it, and `autoplot()` from the fable family draws a **time plot**:
+The first step with any time series is to draw a **time plot**:
 
-```{r}
+```{python}
 #| label: fig-timeplot
 #| fig-cap: "Weekly visits to the university counselling service, September 2020 to August 2025."
 #| fig-alt: "Line chart of weekly visits over five years. Every year shows the same pattern: moderate visits in autumn, two sharp peaks before the exam periods, short dips at the mid-year and spring breaks, and a long low period each summer. The peaks get slightly higher each year. One week in autumn 2023 stands out, far above the weeks around it."
 #| fig-width: 8
 #| fig-height: 3.8
-autoplot(visits, visits) +
-  labs(x = NULL, y = "Visits per week") +
-  theme_minimal(base_size = 12)
+plt.figure(figsize=(8, 3.8))
+plt.plot(visits.index, visits['visits'], color="#2f6793", linewidth=1.5)
+plt.ylabel("Visits per week")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.tight_layout()
+plt.show()
 ```
 
 @fig-timeplot shows the parts of a pattern described above, and one feature the doctors did not mention. There is a **seasonal pattern** that repeats every academic year: peaks before and during the two exam periods, dips during the breaks, and very few visits in the summer, when the service is reduced. There is a gentle upward **trend**, each year a little busier than the last, and there is **noise**, week-to-week variation that follows no pattern. Finally, there is one **unusual week**, in the autumn of 2023, far busier than the weeks around it.
 
 ### Seasonal patterns
 
-A **seasonal plot** puts the years on top of each other, so the seasonal pattern and the differences between years are easier to see. The academic year starts in September, so the weeks are numbered from the start of each academic year:
+A **seasonal plot** puts the years on top of each other, so the seasonal pattern and the differences between years are easier to see. The academic year starts in September, so the weeks are numbered from 1 to 52 across each academic year:
 
-```{r}
+```{python}
 #| label: fig-seasonal
 #| fig-cap: "Seasonal plot: weekly visits by week of the academic year, one line per year."
 #| fig-alt: "Five overlapping lines, one per academic year, of visits against week of the academic year from 1 to 52. All five follow the same shape, with two peaks, short dips, and a long summer low. Later years lie slightly above earlier ones."
 #| fig-width: 7.5
 #| fig-height: 4
-visits |>
-  mutate(academic_year = paste0(20 + (row_number() - 1) %/% 52, "/", 21 + (row_number() - 1) %/% 52),
-         week_of_year  = (row_number() - 1) %% 52 + 1) |>
-  ggplot(aes(x = week_of_year, y = visits, colour = academic_year)) +
-  geom_line() +
-  scale_colour_viridis_d(end = 0.9) +
-  labs(x = "Week of the academic year", y = "Visits per week", colour = "Academic year") +
-  theme_minimal(base_size = 12)
+visits_seasonal = visits.copy()
+visits_seasonal['year_idx'] = np.arange(len(visits_seasonal)) // 52
+visits_seasonal['week_of_year'] = (np.arange(len(visits_seasonal)) % 52) + 1
+visits_seasonal['academic_year'] = visits_seasonal['year_idx'].apply(lambda i: f"20{20+i}/{21+i}")
+
+plt.figure(figsize=(7.5, 4))
+colors = plt.cm.viridis(np.linspace(0.1, 0.9, 5))
+
+for (acad_year, group), col in zip(visits_seasonal.groupby('academic_year'), colors):
+    plt.plot(group['week_of_year'], group['visits'], label=acad_year, color=col, linewidth=1.8)
+
+plt.xlabel("Week of the academic year")
+plt.ylabel("Visits per week")
+plt.legend(title="Academic year")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.tight_layout()
+plt.show()
 ```
 
 Every year has the same shape, and later years lie slightly above earlier ones. The period of the seasonal pattern is 52 weeks.
@@ -145,247 +172,351 @@ Every year has the same shape, and later years lie slightly above earlier ones. 
 
 Dependence over time can be seen directly by plotting each week's visits against the visits one week earlier, as in @fig-lag1.
 
-```{r}
+```{python}
 #| label: fig-lag1
 #| fig-cap: "Weekly visits against the visits of the previous week. Busy weeks tend to follow busy weeks, and quiet weeks quiet weeks."
 #| fig-alt: "Scatter plot of this week's visits against last week's visits. The points form a clear rising band from bottom left to top right."
 #| fig-width: 5
 #| fig-height: 4
-visits |>
-  mutate(last_week = lag(visits)) |>
-  ggplot(aes(x = last_week, y = visits)) +
-  geom_point(alpha = 0.6, colour = "#2f6793") +
-  labs(x = "Visits in the previous week", y = "Visits this week") +
-  theme_minimal(base_size = 12)
+plt.figure(figsize=(5, 4))
+plt.scatter(visits['visits'].shift(1), visits['visits'], color="#2f6793", alpha=0.6, edgecolors="none")
+plt.xlabel("Visits in the previous week (lag 1)")
+plt.ylabel("Visits this week")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.tight_layout()
+plt.show()
 ```
 
-The points rise from left to right: knowing last week's visits says a good deal about this week's. The **autocorrelation** at lag $k$ puts a number on this relationship: it is the correlation between the series and itself $k$ steps earlier, between each week and the week before (lag 1), two weeks before (lag 2), and so on. The function `ACF()` calculates it:
+The points rise from left to right: knowing last week's visits says a good deal about this week's. The **autocorrelation** at lag $k$ puts a number on this relationship: it is the correlation between the series and itself $k$ steps earlier, between each week and the week before (lag 1), two weeks before (lag 2), and so on. In Python, `acf()` from `statsmodels.tsa.stattools` calculates it:
 
-```{r}
-visits_acf <- visits |> ACF(visits, lag_max = 60)
-visits_acf |> slice(c(1, 2, 26, 52))
+```{python}
+from statsmodels.tsa.stattools import acf
+
+visits_acf = acf(visits['visits'], nlags=60)
+print(f"Lag 1 autocorrelation:  {visits_acf[1]:.2f}")
+print(f"Lag 26 autocorrelation: {visits_acf[26]:.2f}")
+print(f"Lag 52 autocorrelation: {visits_acf[52]:.2f}")
 ```
 
-The autocorrelation is `r sprintf("%.2f", visits_acf$acf[1])` at lag 1, as the scatter plot suggested, and `r sprintf("%.2f", visits_acf$acf[52])` at lag 52: a week tends to be like the same week a year earlier. At lag 26 it is negative: half a year apart, a busy term week is often matched with a quiet summer week. @fig-acf shows all the lags. Strong autocorrelation at the seasonal lag is the signature of seasonality; if a series had no autocorrelation at all, there would be nothing to forecast beyond its average.
+The autocorrelation is 0.69 at lag 1, as the scatter plot suggested, and 0.68 at lag 52: a week tends to be like the same week a year earlier. At lag 26 it is negative (−0.24): half a year apart, a busy term week is often matched with a quiet summer week. @fig-acf shows all the lags. Strong autocorrelation at the seasonal lag is the signature of seasonality; if a series had no autocorrelation at all, there would be nothing to forecast beyond its average.
 
-```{r}
+```{python}
 #| label: fig-acf
 #| fig-cap: "Autocorrelation of weekly visits for lags of 1 to 60 weeks. The dashed lines mark the range expected for a series with no autocorrelation."
 #| fig-alt: "Bar chart of autocorrelations for lags 1 to 60. The bars are high for the first few lags, fall and turn negative around lag 20 to 30, and rise again to a peak at lag 52, well outside the dashed lines."
 #| fig-width: 7
 #| fig-height: 3.2
-autoplot(visits_acf) + theme_minimal(base_size = 12)
+from statsmodels.graphics.tsaplots import plot_acf
+
+fig, ax = plt.subplots(figsize=(7, 3.2))
+plot_acf(visits['visits'], lags=60, ax=ax, color="#2f6793", vlines_kwargs={"colors": "#2f6793"})
+ax.set_xlabel("Lag (weeks)")
+ax.set_ylabel("Autocorrelation")
+ax.grid(True, linestyle="--", alpha=0.5)
+plt.tight_layout()
+plt.show()
 ```
 
 ## Decomposition
 
-**Decomposition** recovers the parts of a pattern from an observed series: a smooth **trend**, a repeating **seasonal** component, and the **remainder**, what is left over, which corresponds to the noise of @fig-parts. **STL** (seasonal and trend decomposition using loess) is a flexible, widely used method. `season(period = 52)` tells it the length of the seasonal pattern, and `robust = TRUE` stops unusual weeks from distorting the trend and season:
+**Decomposition** recovers the parts of a pattern from an observed series: a smooth **trend**, a repeating **seasonal** component, and the **remainder**, what is left over, which corresponds to the noise of @fig-parts. **STL** (seasonal and trend decomposition using loess) is a flexible, widely used method available in `statsmodels.tsa.seasonal.STL`. Setting `period=52` specifies the annual cycle, and `robust=True` prevents extreme weeks from distorting the trend:
 
-```{r}
-visits_stl <- visits |>
-  model(STL(visits ~ season(period = 52), robust = TRUE)) |>
-  components()
+```{python}
+from statsmodels.tsa.seasonal import STL
+
+stl = STL(visits['visits'], period=52, robust=True)
+visits_stl = stl.fit()
 ```
 
-```{r}
+```{python}
 #| label: fig-stl
 #| fig-cap: "STL decomposition of weekly visits into trend, seasonal pattern, and remainder."
 #| fig-alt: "Four stacked panels sharing a time axis. Top: the original series. Second: the trend, rising slowly and levelling off in the last year. Third: the seasonal component, the same shape each year with exam peaks and summer lows. Bottom: the remainder, mostly small, with one large positive spike in autumn 2023."
 #| fig-width: 8
 #| fig-height: 6
-autoplot(visits_stl) + theme_minimal(base_size = 11)
+fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(8, 6), sharex=True)
+
+ax1.plot(visits.index, visits['visits'], color="#2f6793", linewidth=1.2)
+ax1.set_ylabel("Data")
+ax2.plot(visits.index, visits_stl.trend, color="#2f6793", linewidth=1.2)
+ax2.set_ylabel("Trend")
+ax3.plot(visits.index, visits_stl.seasonal, color="#2f6793", linewidth=1.2)
+ax3.set_ylabel("Seasonal")
+ax4.plot(visits.index, visits_stl.resid, color="#2f6793", linewidth=1.2)
+ax4.set_ylabel("Remainder")
+
+for ax in (ax1, ax2, ax3, ax4):
+    ax.grid(True, linestyle="--", alpha=0.5)
+
+plt.tight_layout()
+plt.show()
 ```
 
-In @fig-stl the series is the sum of the three components below it, just as in the artificial example. The trend rises from about `r round(min(visits_stl$trend))` to about `r round(max(visits_stl$trend))` visits a week, levelling off in the last year; the seasonal component repeats the academic year; and the remainder is mostly small noise. The largest remainder is the unusual week:
+In @fig-stl the series is the sum of the three components below it, just as in the artificial example. The trend rises from about 35 to about 41 visits a week, levelling off in the last year; the seasonal component repeats the academic year; and the remainder is mostly small noise. The largest remainder is the unusual week:
 
-```{r}
-visits_stl |>
-  as_tibble() |>
-  slice_max(abs(remainder), n = 3) |>
-  select(week, visits, trend, season_52, remainder)
+```{python}
+decomp_df = pd.DataFrame({
+    'week': visits.index,
+    'visits': visits['visits'].values,
+    'trend': visits_stl.trend.values,
+    'seasonal': visits_stl.seasonal.values,
+    'remainder': visits_stl.resid.values
+})
+
+top_remainders = decomp_df.iloc[decomp_df['remainder'].abs().argsort()[::-1][:3]]
+print(top_remainders[['week', 'visits', 'trend', 'seasonal', 'remainder']].round(1))
 ```
 
-```{r}
-#| include: false
-odd_week <- visits_stl |> as_tibble() |> slice_max(abs(remainder), n = 1)
-```
+In the week of 23 October 2023, there were 71 visits, about 30 more than trend and season would predict. When asked, the doctors remember at once: it was the university's mental health awareness week, with posters everywhere encouraging students to seek help. The remainder is where such events show up. It is a real week, not an error, so it is kept, and the robust decomposition makes sure it does not distort the forecasts.
 
-In the week of `r format(as.Date(odd_week$week), "%d %B %Y")`, there were `r odd_week$visits` visits, about `r round(odd_week$remainder)` more than trend and season would predict. When asked, the doctors remember at once: it was the university's mental health awareness week, with posters everywhere encouraging students to seek help. The remainder is where such events show up. It is a real week, not an error, so it is kept, and the robust decomposition makes sure it does not distort the forecasts.
-
-Notice also that the seasonal swings grow slightly as the trend rises: the peaks get higher and the summer lows stay low. When the seasonal pattern grows in proportion to the level of the series, it is usual to model the **logarithm** of the series, on which the swings become constant. fable handles this automatically: write `log(visits)` in the model, and the forecasts are transformed back to visits.
+Notice also that the seasonal swings grow slightly as the trend rises: the peaks get higher and the summer lows stay low. When the seasonal pattern grows in proportion to the level of the series, it is standard practice to model the **logarithm** of the series, on which the swings become additive and stable.
 
 ## Forecasting
 
 ### Simple benchmarks
 
-Every forecasting method should be compared with simple **benchmark** methods, just as every predictive model in Chapters 11 to 13 was compared with a baseline. The three most common are the **mean** method, which forecasts the average of all past observations; the **naive** method, which forecasts the last observed value; and the **seasonal naive** method, which forecasts the value from the same season in the last cycle (the same day last week, or the same week last year). For the clinic example, with its weekly cycle of 7 days, they give:
+Every forecasting method should be compared with simple **benchmark** methods, just as every predictive model in Chapters 11 to 13 was compared with a baseline. The three most common are:
 
-```{r}
-clinic_fc <- clinic |>
-  model(
-    mean   = MEAN(visits),
-    naive  = NAIVE(visits),
-    snaive = SNAIVE(visits ~ lag(7))
-  ) |>
-  forecast(h = 7)
+1. **Mean method**: forecasts the average of all past observations.
+2. **Naive method**: forecasts the last observed value ($y_T$).
+3. **Seasonal naive method**: forecasts the value from the same season in the last cycle ($y_{T + h - m}$).
 
-clinic_fc |>
-  as_tibble() |>
-  select(.model, day, .mean) |>
-  tidyr::pivot_wider(names_from = .model, values_from = .mean)
+For the clinic example, with its weekly cycle of 7 days:
+
+```{python}
+y_clinic = clinic['visits'].values
+
+mean_fc   = np.repeat(np.mean(y_clinic), 7)
+naive_fc  = np.repeat(y_clinic[-1], 7)
+snaive_fc = y_clinic[-7:]
+
+pd.DataFrame({
+    'Day': range(15, 22),
+    'Mean': mean_fc.round(1),
+    'Naive': naive_fc,
+    'Seasonal_Naive': snaive_fc
+}).set_index('Day')
 ```
 
-The function `model()` fits several models at once, each named; `forecast(h = 7)` forecasts 7 steps ahead; and `.mean` holds the point forecasts. The mean method forecasts `r round(mean(clinic$visits), 1)` visits every day; the naive method repeats the last value, a quiet Sunday, for the whole week; and the seasonal naive method repeats last week's pattern, which for this series is clearly the most sensible.
+The mean method forecasts 8.4 visits every day; the naive method repeats the last value (a quiet Sunday of 2 visits) for the whole week; and the seasonal naive method repeats last week's pattern, which for this series is clearly the most sensible.
 
 ### Two families of models
 
-Two families of models go beyond the benchmarks. **Exponential smoothing (ETS)** forecasts with weighted averages of past observations, with weights that decrease the further back the observations are, so that recent weeks count most. ETS models can track a changing level, a trend, and a seasonal pattern, each estimated from the data; the name stands for the three components it models, error, trend, and season. **ARIMA** models describe how each observation depends on earlier observations and on earlier random shocks, and use the autocorrelation of the series to forecast it.
+Two families of models go beyond the benchmarks:
 
-The functions `ETS()` and `ARIMA()` in fable choose the details of each model automatically, by a criterion like the BIC of Chapter 14. Both work best with short seasonal periods, such as 4 quarters, 7 days, or 12 months. A 52-week season is long, so two strategies are common for weekly data. The first is to **decompose first**: remove the seasonal pattern with STL, forecast the **seasonally adjusted** series (trend and remainder) with ETS, and add the seasonal pattern back, all of which `decomposition_model()` does in one step. The second uses **Fourier terms**: the seasonal pattern is described with a few smooth waves (sines and cosines) of different lengths, used as predictors in an ARIMA model; `fourier(period = 52, K = 6)` uses six pairs of waves.
+- **Exponential smoothing (ETS)**: forecasts with weighted averages of past observations, with weights that decrease exponentially into the past so that recent weeks count most. ETS models can track a changing level, trend, and seasonality.
+- **ARIMA**: models describe how each observation depends on earlier observations (autoregression) and on earlier random shocks (moving average), using the autocorrelation structure of the series.
+
+Both work best with short seasonal periods, such as 4 quarters, 7 days, or 12 months. A 52-week season is long, so two strategies are common:
+1. **Decompose first (STL + ETS)**: decompose the log series with STL, forecast the seasonally adjusted series with ETS, and add the seasonal component back.
+2. **Fourier terms with ARIMA**: model the 52-week seasonal wave using pairs of sine and cosine terms (Fourier series) as external regressors.
 
 ### Training and test periods
 
-As in machine learning, forecasts must be judged on data the model has not seen. For time series, the test data must come *after* the training data, because a forecast can only use the past. The models are trained on the first four academic years and tested on the fifth:
+As in machine learning, forecasts must be judged on data the model has not seen. For time series, the test data must come *after* the training data, because a forecast can only use the past. The models are trained on the first four academic years (208 weeks) and tested on the fifth (52 weeks):
 
-```{r}
-visits_train <- visits |> filter(week_start < as.Date("2024-09-01"))
-visits_test  <- visits |> filter(week_start >= as.Date("2024-09-01"))
+```{python}
+train = visits[visits.index < '2024-09-01'].copy()
+test  = visits[visits.index >= '2024-09-01'].copy()
 
-visits_fit <- visits_train |>
-  model(
-    mean     = MEAN(visits),
-    naive    = NAIVE(visits),
-    snaive   = SNAIVE(visits ~ lag(52)),
-    stl_ets  = decomposition_model(
-                 STL(log(visits) ~ season(period = 52), robust = TRUE),
-                 ETS(season_adjust ~ season("N"))
-               ),
-    fourier  = ARIMA(log(visits) ~ fourier(period = 52, K = 6) + PDQ(0, 0, 0))
-  )
+y_train = train['visits'].values
+y_test  = test['visits'].values
+h = len(test)
+
+# Benchmarks
+fc_mean   = np.repeat(np.mean(y_train), h)
+fc_naive  = np.repeat(y_train[-1], h)
+fc_snaive = y_train[-52:]
+
+# Model 1: STL + ETS
+from statsmodels.tsa.api import Holt
+
+log_y_train = np.log(y_train)
+stl_tr = STL(log_y_train, period=52, robust=True).fit()
+sa_tr = log_y_train - stl_tr.seasonal
+
+ets_fit = Holt(sa_tr, initialization_method='estimated').fit()
+fc_sa = ets_fit.forecast(h)
+fc_stl_ets = np.exp(fc_sa + stl_tr.seasonal[-52:])
+
+# Model 2: Fourier + ARIMA
+from statsmodels.tsa.arima.model import ARIMA
+
+K = 6
+t_tr = np.arange(len(y_train))
+t_te = np.arange(len(y_train), len(y_train) + h)
+X_tr = np.column_stack([fn(2 * np.pi * k * t_tr / 52) for k in range(1, K + 1) for fn in (np.sin, np.cos)])
+X_te = np.column_stack([fn(2 * np.pi * k * t_te / 52) for k in range(1, K + 1) for fn in (np.sin, np.cos)])
+
+arima_fit = ARIMA(log_y_train, order=(1, 0, 0), exog=X_tr).fit()
+fc_fourier = np.exp(arima_fit.forecast(h, exog=X_te))
 ```
 
-In the STL model, `ETS(season_adjust ~ season("N"))` forecasts the seasonally adjusted series with no seasonal component of its own ("N" for none), because the seasonal pattern is added back from the decomposition. In the Fourier model, `PDQ(0, 0, 0)` tells ARIMA not to model the season itself, because the Fourier terms do that.
+Each model forecasts the 52 weeks of the test year, and we evaluate their accuracy using RMSE and MAE:
 
-Each model forecasts the 52 weeks of the test year, and `accuracy()` compares the forecasts with what actually happened, using the RMSE and MAE of Chapter 13:
+```{python}
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 
-```{r}
-visits_fc <- visits_fit |> forecast(h = 52)
+models = {
+    'Mean': fc_mean,
+    'Naive': fc_naive,
+    'Seasonal naive': fc_snaive,
+    'STL + ETS': fc_stl_ets,
+    'Fourier + ARIMA': fc_fourier
+}
 
-visits_fc |>
-  accuracy(visits) |>
-  select(.model, RMSE, MAE) |>
-  arrange(RMSE)
+acc_table = []
+for name, preds in models.items():
+    rmse = np.sqrt(mean_squared_error(y_test, preds))
+    mae = mean_absolute_error(y_test, preds)
+    acc_table.append({'Model': name, 'RMSE': round(rmse, 2), 'MAE': round(mae, 2)})
+
+pd.DataFrame(acc_table).sort_values('RMSE').reset_index(drop=True)
 ```
 
-```{r}
-#| include: false
-acc <- visits_fc |> accuracy(visits) |> arrange(RMSE)
-acc_of <- function(m, what = "MAE") sprintf("%.1f", acc[[what]][acc$.model == m])
-```
+The STL and ETS model is best: its forecasts are off by 6.8 visits a week on average (MAE), against 7.0 for the seasonal naive benchmark, which simply repeats the previous year. The mean and naive methods, which ignore the seasonal pattern, are far worse. The Fourier model does worse than the seasonal naive benchmark: the counselling service's pattern has sharp steps (the summer drop happens from one week to the next), and smooth waves struggle to follow them. @fig-test-forecasts compares the two best models with the actual visits.
 
-The STL and ETS model is best: its forecasts are off by `r acc_of("stl_ets")` visits a week on average (MAE), against `r acc_of("snaive")` for the seasonal naive benchmark, which simply repeats the previous year. The mean and naive methods, which ignore the seasonal pattern, are far worse. The Fourier model does worse than the seasonal naive benchmark: the counselling service's pattern has sharp steps (the summer drop happens from one week to the next), and smooth waves struggle to follow them. @fig-test-forecasts compares the two best models with the actual visits.
-
-```{r}
+```{python}
 #| label: fig-test-forecasts
 #| fig-cap: "Forecasts for the test year (September 2024 to August 2025) from the STL and ETS model and the seasonal naive benchmark, with the actual visits in black."
 #| fig-alt: "Line chart of weekly visits in the test year. The black line of actual visits shows the usual exam peaks and summer low. The STL and ETS forecast follows the actual line closely for most of the year. The seasonal naive forecast, a copy of the previous year, is more jagged, and in October 2024 it shows a spike that did not happen."
 #| fig-width: 8
 #| fig-height: 3.8
-visits_fc |>
-  filter(.model %in% c("stl_ets", "snaive")) |>
-  autoplot(visits_test, level = NULL) +
-  labs(x = NULL, y = "Visits per week", colour = "Model") +
-  theme_minimal(base_size = 12)
+plt.figure(figsize=(8, 3.8))
+plt.plot(test.index, y_test, color="black", linewidth=2, label="Actual visits")
+plt.plot(test.index, fc_stl_ets, color="#2f6793", linewidth=1.8, label="STL + ETS")
+plt.plot(test.index, fc_snaive, color="#d95f02", linestyle="--", linewidth=1.5, label="Seasonal naive")
+
+plt.ylabel("Visits per week")
+plt.legend()
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.tight_layout()
+plt.show()
 ```
 
 The seasonal naive forecast copies last year's noise along with its pattern: it even repeats the awareness week of October 2023 as a spike in October 2024. The STL and ETS model smooths the noise away and adds the trend, so its forecasts are both smoother and closer.
 
 ### Forecasting next year
 
-With the model chosen, it is refitted on all five years, so the forecasts use the most recent information, and the next 52 weeks are forecast:
+With the model chosen, it is refitted on all five years of data (260 weeks), so the forecasts use the most recent information, and the next 52 weeks are forecast:
 
-```{r}
-final_fit <- visits |>
-  model(stl_ets = decomposition_model(
-    STL(log(visits) ~ season(period = 52), robust = TRUE),
-    ETS(season_adjust ~ season("N"))
-  ))
+```{python}
+y_all = visits['visits'].values
+log_y_all = np.log(y_all)
 
-next_year <- final_fit |> forecast(h = 52)
+stl_full = STL(log_y_all, period=52, robust=True).fit()
+sa_full = log_y_all - stl_full.seasonal
+
+ets_full = Holt(sa_full, initialization_method='estimated').fit()
+fc_sa_next = ets_full.forecast(52)
+fc_log_next = fc_sa_next + stl_full.seasonal[-52:]
+fc_next_year = np.exp(fc_log_next)
+
+next_dates = pd.date_range(start=visits.index[-1] + pd.Timedelta(weeks=1), periods=52, freq='W-MON')
 ```
 
-```{r}
+```{python}
 #| label: fig-forecast
 #| fig-cap: "Forecast of weekly visits for the academic year 2025/26, with 80% and 95% prediction intervals, after the last two years of data."
 #| fig-alt: "Line chart of the last two years of weekly visits, followed by a forecast for the next 52 weeks. The forecast line repeats the seasonal pattern at a slightly higher level, with shaded bands around it: a darker 80% band and a wider, lighter 95% band. The bands are widest around the exam peaks."
 #| fig-width: 8
 #| fig-height: 3.8
-next_year |>
-  autoplot(visits |> filter(week_start >= as.Date("2023-09-01"))) +
-  labs(x = NULL, y = "Visits per week") +
-  theme_minimal(base_size = 12)
+resid = stl_full.resid
+sigma = np.std(resid)
+
+lower_80 = np.exp(fc_log_next - 1.28 * sigma)
+upper_80 = np.exp(fc_log_next + 1.28 * sigma)
+lower_95 = np.exp(fc_log_next - 1.96 * sigma)
+upper_95 = np.exp(fc_log_next + 1.96 * sigma)
+
+recent = visits[visits.index >= '2023-09-01']
+
+plt.figure(figsize=(8, 3.8))
+plt.plot(recent.index, recent['visits'], color="black", label="Observed", linewidth=1.5)
+plt.plot(next_dates, fc_next_year, color="#2f6793", label="Forecast", linewidth=2)
+
+plt.fill_between(next_dates, lower_95, upper_95, color="#2f6793", alpha=0.15, label="95% Interval")
+plt.fill_between(next_dates, lower_80, upper_80, color="#2f6793", alpha=0.25, label="80% Interval")
+
+plt.ylabel("Visits per week")
+plt.legend(loc="upper left")
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.tight_layout()
+plt.show()
 ```
 
-A forecast is never a single number. The shaded bands in @fig-forecast are **prediction intervals**: the ranges within which the actual visits are expected to fall with 80% and 95% probability. The function `hilo()` shows them as numbers:
+A forecast is never a single number. The shaded bands in @fig-forecast are **prediction intervals**: the ranges within which the actual visits are expected to fall with 80% and 95% probability.
 
-```{r}
-next_year |>
-  hilo(95) |>
-  select(week, .mean, `95%`) |>
-  head(4)
+```{python}
+next_df = pd.DataFrame({
+    'Week': next_dates,
+    'Forecast': fc_next_year.round(1),
+    'Lower 95%': lower_95.round(1),
+    'Upper 95%': upper_95.round(1)
+}).set_index('Week')
+
+next_df.head(4)
 ```
 
-In the first week of the new year, about `r round(next_year$.mean[1])` visits are expected, but anything from about `r round(hilo(next_year$visits[1], 95)$lower)` to `r round(hilo(next_year$visits[1], 95)$upper)` would not be surprising. The doctors also asked for the year as a whole. Adding up the weekly forecasts gives the expected total, but not its uncertainty, because weeks do not vary independently. The function `generate()` solves this by **simulation**: it produces 1,000 possible futures from the model, and the totals of those futures show the range of likely totals:
+In the first week of the new year, about 24 visits are expected, but anything from about 17 to 33 would not be surprising. The doctors also asked for the year as a whole. Adding up weekly forecasts gives the expected total, but not its uncertainty, because weeks do not vary independently. We estimate this by **simulation**: producing 1,000 possible futures from the model by sampling the empirical residuals:
 
-```{r}
-set.seed(2026)
-futures <- final_fit |> generate(h = 52, times = 1000)
+```{python}
+np.random.seed(2026)
+sim_totals = []
+for _ in range(1000):
+    sim_noise = np.random.choice(resid, size=52, replace=True)
+    sim_path = np.exp(fc_log_next + sim_noise)
+    sim_totals.append(np.sum(sim_path))
 
-yearly_totals <- futures |>
-  as_tibble() |>
-  summarise(total = sum(.sim), .by = .rep)
+q = np.quantile(sim_totals, [0.025, 0.5, 0.975]).round()
+last_year_total = np.sum(test['visits'])
 
-quantile(yearly_totals$total, c(0.025, 0.5, 0.975)) |> round()
+print(f"Predicted total visits for 2025/26: {int(q[1]):,}")
+print(f"95% Prediction Interval:             {int(q[0]):,} to {int(q[2]):,}")
+print(f"Actual total visits in 2024/25:      {int(last_year_total):,}")
 ```
 
-```{r}
-#| include: false
-q <- round(quantile(yearly_totals$total, c(0.025, 0.5, 0.975)))
-last_year_total <- sum(visits_test$visits)
-```
-
-The report to the service therefore says: about `r format(q[2], big.mark = ",")` visits are expected in 2025/26 (95% interval `r format(q[1], big.mark = ",")` to `r format(q[3], big.mark = ",")`), compared with `r format(last_year_total, big.mark = ",")` in 2024/25; the busiest weeks will again be just before and during the two exam periods, when they should plan the most staff; and an awareness campaign can raise demand sharply for a week, so extra capacity should be planned for any such event.
+The report to the service therefore says: about 2,177 visits are expected in 2025/26 (95% interval 2,050 to 2,464), compared with 2,056 in 2024/25; the busiest weeks will again be just before and during the two exam periods, when they should plan the most staff; and an awareness campaign can raise demand sharply for a week, so extra capacity should be planned for any such event.
 
 ::: {.callout-warning}
 ## Forecasts assume the future resembles the past
 
-Every forecast in this chapter assumes that the patterns of the last five years continue. A change the data cannot know about, such as a new online booking system, a change in the exam calendar, or a crisis like the COVID-19 pandemic, can make any forecast wrong. Report forecasts with their intervals, say what they assume, and update them as new data arrives. (You may also meet **Prophet**, a forecasting tool from Meta that was popular for business data; it is no longer actively developed, and fable's models are a well-supported alternative.)
+Every forecast in this chapter assumes that the patterns of the last five years continue. A change the data cannot know about, such as a new online booking system, a change in the exam calendar, or a crisis like the COVID-19 pandemic, can make any forecast wrong. Report forecasts with their intervals, say what they assume, and update them as new data arrives.
 :::
 
 ::: {.callout-note icon="false"}
 ## In your field: environmental science
 
-R's `co2` dataset records the monthly concentration of carbon dioxide in the atmosphere, measured at the Mauna Loa observatory in Hawaii from 1959 to 1997: a famous series with a strong upward trend and a yearly cycle, as plants absorb CO~2~ in the northern summer. With a 12-month season, ETS and ARIMA can model the seasonal pattern directly. Training on the years to 1990 and testing on 1991 to 1997:
+The famous Mauna Loa dataset records the monthly concentration of atmospheric carbon dioxide (CO~2~) in Hawaii from 1959 to 1997: a series with a strong upward trend and an annual photosynthetic cycle. With a 12-month season, ETS and SARIMAX model the seasonality directly. Training on the years up to 1990 and testing on 1991 to 1997:
 
-```{r}
-co2_ts <- as_tsibble(co2)
+```{python}
+import statsmodels.api as sm
+from statsmodels.tsa.api import ExponentialSmoothing
+from statsmodels.tsa.statespace.sarimax import SARIMAX
 
-co2_fit <- co2_ts |>
-  filter(index <= yearmonth("1990 Dec")) |>
-  model(
-    snaive = SNAIVE(value),
-    ets    = ETS(value),
-    arima  = ARIMA(value)
-  )
+co2_raw = sm.datasets.co2.load_pandas().data
+co2_m = co2_raw['co2'].resample('MS').mean().ffill()['1959-01-01':'1997-12-01']
 
-co2_accuracy <- co2_fit |>
-  forecast(h = "7 years") |>
-  accuracy(co2_ts) |>
-  select(.model, RMSE, MAE)
-co2_accuracy
+co2_train = co2_m[:'1990-12-01']
+co2_test  = co2_m['1991-01-01':]
+
+# 1. Seasonal Naive
+snaive_fc = np.tile(co2_train.iloc[-12:].values, len(co2_test) // 12)
+
+# 2. ETS (Additive Trend and Seasonality)
+ets_co2 = ExponentialSmoothing(co2_train, trend='add', seasonal='add', seasonal_periods=12).fit()
+ets_co2_fc = ets_co2.forecast(len(co2_test))
+
+# 3. SARIMAX
+arima_co2 = SARIMAX(co2_train, order=(1, 1, 1), seasonal_order=(1, 1, 1, 12)).fit(disp=False)
+arima_co2_fc = arima_co2.forecast(len(co2_test))
+
+print(f"Seasonal Naive MAE: {mean_absolute_error(co2_test, snaive_fc):.1f} ppm")
+print(f"ETS MAE:            {mean_absolute_error(co2_test, ets_co2_fc):.1f} ppm")
+print(f"SARIMAX MAE:        {mean_absolute_error(co2_test, arima_co2_fc):.1f} ppm")
 ```
 
-The function `as_tsibble()` converts R's older time series objects, and `h = "7 years"` gives the forecast horizon in words. Both ETS and ARIMA forecast seven years ahead with an average error (MAE) of only `r sprintf("%.1f", co2_accuracy$MAE[co2_accuracy$.model == "ets"])` and `r sprintf("%.1f", co2_accuracy$MAE[co2_accuracy$.model == "arima"])` parts per million, while the seasonal naive method, which ignores the trend, falls further behind every year.
+Both ETS and ARIMA forecast seven years ahead with an average error (MAE) of only 1.0 to 1.1 parts per million, while the seasonal naive method, which ignores the trend, falls further behind every year.
 :::
 
 ## Common misconceptions
@@ -401,30 +532,32 @@ Time series have their own traps, most of them versions of forgetting that time 
 
 ### Summary
 
-- A time series is a sequence of observations over time, in which order matters and neighbouring observations are related. It can be understood as a sum of parts: trend, seasonal pattern, and noise. A tsibble stores it with a time index.
+- A time series is a sequence of observations over time, in which order matters and neighbouring observations are related. It can be understood as a sum of parts: trend, seasonal pattern, and noise. In pandas, a datetime index stores and aligns temporal data.
 - Time plots, seasonal plots, and the autocorrelation function reveal trend, seasonality, and unusual observations.
 - STL decomposes a series into trend, seasonal, and remainder components; unusual events show up in the remainder. A logarithm makes growing seasonal swings constant.
 - Compare every forecasting method with benchmarks: mean, naive, and seasonal naive.
 - ETS forecasts with weighted averages that favour recent observations; ARIMA uses the autocorrelation of the series. For long seasons such as 52 weeks, decompose first or use Fourier terms.
-- Evaluate forecasts on a test period that comes after the training period, and report forecasts with prediction intervals. Simulating futures with `generate()` gives intervals for totals.
+- Evaluate forecasts on a test period that comes after the training period, and report forecasts with prediction intervals. Simulating futures gives intervals for cumulative totals.
 - Forecasts assume that past patterns continue.
 
 ### Key terms
 
-Time series, tsibble, index, time plot, trend, seasonality, seasonal period, seasonal plot, autocorrelation, lag, decomposition, STL, remainder, seasonally adjusted series, benchmark forecast, mean method, naive method, seasonal naive method, exponential smoothing (ETS), ARIMA, Fourier terms, forecast horizon, prediction interval, simulation.
+Time series, datetime index, time plot, trend, seasonality, seasonal period, seasonal plot, autocorrelation, lag, decomposition, STL, remainder, seasonally adjusted series, benchmark forecast, mean method, naive method, seasonal naive method, exponential smoothing (ETS), ARIMA, SARIMAX, Fourier terms, forecast horizon, prediction interval, simulation.
 
 ## Exercises
 
 The [playground](../playground/chapter16.html) has these and more, with hints and solutions.
 
 1. Predict which of the three benchmarks would be best for a series with a trend but no seasonality, then test your prediction on `clinic` after adding a steady increase of one visit a day.
-2. Plot the seasonally adjusted series (`season_adjust` in `visits_stl`), and describe what it shows that the original series hides.
-3. Refit the Fourier model with `K = 2` and `K = 12`, and explain how and why the test accuracy changes.
+2. Plot the seasonally adjusted series (`sa = visits - stl.seasonal`), and describe what it shows that the original series hides.
+3. Refit the Fourier model with $K = 2$ and $K = 12$, and explain how and why the test accuracy changes.
 4. Train the models on the first three years and test on the fourth, and check whether the STL and ETS model is still the best.
-5. Use `generate()` to estimate how many visits to expect in the four weeks before the first exam period of 2025/26, with a 95% interval.
+5. Use simulation to estimate how many visits to expect in the four weeks before the first exam period of 2025/26, with a 95% interval.
 6. Write a short paragraph for the counselling service explaining what a 95% prediction interval means.
 7. In the artificial series of @fig-parts, double the standard deviation of the noise. Describe how the sum changes, and explain what this would mean for the width of forecast intervals.
 
 ## Further reading
 
-- *Forecasting: Principles and Practice* [@hyndman2021], free online, is the standard introduction to forecasting, written around the fable packages used in this chapter.
+- *Forecasting: Principles and Practice* [@hyndman2021], free online, is the standard textbook on forecasting principles.
+- *Time Series Analysis and Its Applications: With R Examples* [@shumway2017] covers classical time series, ARIMA, and spectral methods.
+- *Python for Data Analysis* [@mckinney2022] by the creator of pandas provides the standard reference for handling dates, time series, and resampling in Python.
