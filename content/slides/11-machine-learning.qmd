@@ -1,93 +1,126 @@
 ---
-title: "Introduction to Machine Learning in R"
-description: "Chapter 11: prediction versus explanation, generalisation and overfitting, a fair test with tidymodels, recipes and workflows, evaluating classifiers, cross-validation, and tuning."
+title: "Introduction to Machine Learning in Python"
+description: "Chapter 11: prediction versus explanation, generalisation and overfitting, a fair test with scikit-learn, ColumnTransformer and pipelines, evaluating classifiers, cross-validation, and tuning."
 format: deck-html
 execute:
   echo: false
   freeze: auto
 ---
 
-```{r}
+```{python}
 #| include: false
-library(data2thesis)
-library(dplyr)
-library(ggplot2)
-library(tidymodels)
-tidymodels_prefer()
+import warnings
+warnings.filterwarnings("ignore")
 
-navy <- "#1d588c"; copper <- "#b4762e"; soft <- "#46586d"
-theme_set(theme_minimal(base_size = 15) +
-  theme(panel.grid.minor = element_blank(),
-        plot.background = element_rect(fill = "transparent", colour = NA),
-        axis.title = element_text(colour = soft),
-        strip.text = element_text(colour = navy, face = "bold", size = 14)))
-knitr::opts_chunk$set(dev = "svg", dev.args = list(bg = "transparent"),
-                      message = FALSE, warning = FALSE)
-f2 <- function(x) sprintf("%.2f", x)
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate, GridSearchCV
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, PolynomialFeatures
+from sklearn.impute import SimpleImputer
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, roc_auc_score, root_mean_squared_error, brier_score_loss
 
-true_curve  <- function(x) sin(2 * x)
-make_points <- function(n) { x <- runif(n, 0, 3); tibble(x = x, y = true_curve(x) + rnorm(n, sd = 0.3)) }
-set.seed(3)
-train_points <- make_points(15)
-new_points   <- make_points(300) |> filter(x >= min(train_points$x), x <= max(train_points$x))
-grid <- tibble(x = seq(min(train_points$x), max(train_points$x), length.out = 300))
-curves <- bind_rows(lapply(c(1, 3, 12), function(d) {
-  fit <- lm(y ~ poly(x, d), data = train_points)
-  tibble(grid, y = predict(fit, grid), model = paste("Degree", d))}))
-curves$model <- factor(curves$model, levels = paste("Degree", c(1, 3, 12)))
-rmse <- function(o, p) sqrt(mean((o - p)^2))
-errors <- bind_rows(lapply(1:12, function(d) {
-  fit <- lm(y ~ poly(x, d), data = train_points)
-  tibble(degree = d, training = rmse(train_points$y, predict(fit, train_points)),
-         new_data = rmse(new_points$y, predict(fit, new_points)))}))
+from data2thesis import students, semesters, questionnaire, credit_data
 
-scores <- questionnaire |>
-  mutate(stress_4 = 6 - stress_4,
-         stress = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-         burnout = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE),
-         support = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-         satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)) |>
-  select(student_id, stress, burnout, support, satisfaction)
-dropout_data <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1) |> select(-semester), join_by(student_id)) |>
-  mutate(considering_dropout = factor(considering_dropout, levels = c("Yes", "No"))) |>
-  select(-student_id, -supervisor_id, -workshop, -workshop_sessions)
-set.seed(2026)
-dropout_split <- initial_split(dropout_data, prop = 0.75, strata = considering_dropout)
-dropout_train <- training(dropout_split); dropout_test <- testing(dropout_split)
-dropout_recipe <- recipe(considering_dropout ~ ., data = dropout_train) |>
-  step_impute_median(all_numeric_predictors()) |>
-  step_dummy(all_nominal_predictors()) |>
-  step_normalize(all_numeric_predictors())
-logistic_wf <- workflow() |> add_recipe(dropout_recipe) |> add_model(logistic_reg())
-logistic_fit <- fit(logistic_wf, data = dropout_train)
-test_results <- augment(logistic_fit, new_data = dropout_test)
-acc <- accuracy(test_results, considering_dropout, .pred_class)$.estimate
-always_no <- mean(dropout_test$considering_dropout == "No")
-auc_test <- roc_auc(test_results, considering_dropout, .pred_Yes)$.estimate
-knn1_fit <- fit(workflow() |> add_recipe(dropout_recipe) |>
-                  add_model(nearest_neighbor(neighbors = 1) |> set_mode("classification")), dropout_train)
-knn_train <- roc_auc(augment(knn1_fit, new_data = dropout_train), considering_dropout, .pred_Yes)$.estimate
-knn_test  <- roc_auc(augment(knn1_fit, new_data = dropout_test), considering_dropout, .pred_Yes)$.estimate
-set.seed(2026)
-dropout_folds <- vfold_cv(dropout_train, v = 10, strata = considering_dropout)
-logistic_cv <- fit_resamples(logistic_wf, resamples = dropout_folds, metrics = metric_set(roc_auc, accuracy))
-cv_auc <- collect_metrics(logistic_cv) |> filter(.metric == "roc_auc")
-tree_wf <- workflow() |> add_recipe(dropout_recipe) |>
-  add_model(decision_tree(tree_depth = tune(), min_n = 10, cost_complexity = 0) |> set_mode("classification"))
-set.seed(2026)
-tree_tuning <- tune_grid(tree_wf, resamples = dropout_folds, grid = tibble(tree_depth = 1:10),
-                         metrics = metric_set(roc_auc))
-best_depth <- select_best(tree_tuning, metric = "roc_auc")
-final_tree <- tree_wf |> finalize_workflow(best_depth) |>
-  last_fit(dropout_split, metrics = metric_set(roc_auc, accuracy))
-final_logistic <- last_fit(logistic_wf, dropout_split, metrics = metric_set(roc_auc, accuracy))
-auc_tree <- collect_metrics(final_tree) |> filter(.metric == "roc_auc") |> pull(.estimate)
-auc_lr   <- collect_metrics(final_logistic) |> filter(.metric == "roc_auc") |> pull(.estimate)
+students["employment"] = students["employment"].fillna("None")
+
+navy = "#1d588c"
+copper = "#b4762e"
+soft = "#46586d"
+
+sns.set_theme(style="whitegrid", font="sans-serif")
+plt.rcParams["figure.dpi"] = 150
+plt.rcParams["axes.titlesize"] = 12
+plt.rcParams["axes.labelsize"] = 11
+plt.rcParams["figure.autolayout"] = True
+
+f2 = lambda x: f"{x:.2f}"
+
+true_curve = lambda x: np.sin(2 * x)
+def make_points(n, seed=3):
+    np.random.seed(seed)
+    x = np.random.uniform(0, 3, n)
+    return pd.DataFrame({"x": x, "y": true_curve(x) + np.random.normal(0, 0.3, n)})
+
+train_points = make_points(15, seed=3)
+new_points = make_points(1000, seed=4)
+new_points = new_points[(new_points["x"] >= train_points["x"].min()) & (new_points["x"] <= train_points["x"].max())].iloc[:300].reset_index(drop=True)
+
+x_grid = np.linspace(train_points["x"].min(), train_points["x"].max(), 300)
+curves_dict = {}
+for d in [1, 3, 12]:
+    m = make_pipeline(PolynomialFeatures(d), LinearRegression()).fit(train_points[["x"]], train_points["y"])
+    curves_dict[f"Degree {d}"] = m.predict(x_grid[:, None])
+
+errors = []
+for d in range(1, 13):
+    m = make_pipeline(PolynomialFeatures(d), LinearRegression()).fit(train_points[["x"]], train_points["y"])
+    errors.append({
+        "degree": d,
+        "training": root_mean_squared_error(train_points["y"], m.predict(train_points[["x"]])),
+        "new_data": root_mean_squared_error(new_points["y"], m.predict(new_points[["x"]]))
+    })
+errors_df = pd.DataFrame(errors)
+
+scores = pd.DataFrame({
+    "student_id": questionnaire["student_id"],
+    "stress": questionnaire[["stress_1", "stress_2", "stress_3", "stress_5", "stress_6"]].assign(stress_4=6 - questionnaire["stress_4"]).mean(axis=1),
+    "burnout": questionnaire.filter(like="burnout_").mean(axis=1),
+    "support": questionnaire.filter(like="support_").mean(axis=1),
+    "satisfaction": questionnaire.filter(like="satisfaction_").mean(axis=1),
+})
+sem1 = semesters[semesters["semester"] == 1].drop(columns=["semester"])
+dropout_data = students.merge(scores, on="student_id").merge(sem1, on="student_id").drop(columns=["student_id", "supervisor_id", "workshop", "workshop_sessions"])
+X = dropout_data.drop(columns=["considering_dropout"])
+y = (dropout_data["considering_dropout"] == "Yes").astype(int)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, stratify=y, random_state=2026)
+
+num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
+cat_cols = X.select_dtypes(exclude=[np.number]).columns.tolist()
+
+preprocessor = ColumnTransformer([
+    ("num", Pipeline([("imp", SimpleImputer(strategy="median")), ("scale", StandardScaler())]), num_cols),
+    ("cat", Pipeline([("imp", SimpleImputer(strategy="most_frequent")), ("ohe", OneHotEncoder(drop="first", sparse_output=False, handle_unknown="ignore"))]), cat_cols)
+])
+
+logistic_pipe = Pipeline([
+    ("preprocessor", preprocessor),
+    ("classifier", LogisticRegression(max_iter=1000, random_state=2026))
+])
+logistic_pipe.fit(X_train, y_train)
+
+y_pred_class = logistic_pipe.predict(X_test)
+y_pred_prob = logistic_pipe.predict_proba(X_test)[:, 1]
+
+acc = accuracy_score(y_test, y_pred_class)
+always_no = (y_test == 0).mean()
+auc_test = roc_auc_score(y_test, y_pred_prob)
+
+knn1_pipe = Pipeline([("preprocessor", preprocessor), ("classifier", KNeighborsClassifier(n_neighbors=1))]).fit(X_train, y_train)
+knn_train = roc_auc_score(y_train, knn1_pipe.predict_proba(X_train)[:, 1])
+knn_test = roc_auc_score(y_test, knn1_pipe.predict_proba(X_test)[:, 1])
+
+cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=2026)
+cv_res = cross_validate(logistic_pipe, X_train, y_train, cv=cv, scoring=["roc_auc", "accuracy"])
+cv_auc_mean = cv_res["test_roc_auc"].mean()
+cv_auc_se = cv_res["test_roc_auc"].std() / np.sqrt(10)
+
+tree_pipe = Pipeline([("preprocessor", preprocessor), ("classifier", DecisionTreeClassifier(random_state=2026, min_samples_leaf=10))])
+grid_search = GridSearchCV(tree_pipe, param_grid={"classifier__max_depth": list(range(1, 11))}, cv=cv, scoring="roc_auc")
+grid_search.fit(X_train, y_train)
+best_depth = grid_search.best_params_["classifier__max_depth"]
+auc_tree = roc_auc_score(y_test, grid_search.best_estimator_.predict_proba(X_test)[:, 1])
+auc_lr = auc_test
 ```
 
-# Introduction to Machine Learning in R
+# Introduction to Machine Learning in Python
 
 Judged by one thing: how well it works on new cases
 
@@ -102,9 +135,9 @@ Polla Fattah
 - tell supervised from unsupervised learning, and prediction from explanation;
 - explain generalisation, overfitting, and the bias-variance trade-off;
 - split data into training and test sets, and say why;
-- prepare data with a recipe, and combine it with a model in a workflow;
+- prepare data with `ColumnTransformer`, and combine it with a model in a `Pipeline`;
 - evaluate a classifier, and explain why accuracy can mislead;
-- use cross-validation, tune hyperparameters, and run a final test.
+- use cross-validation, tune hyperparameters with `GridSearchCV`, and run a final test.
 
 ---
 
@@ -156,16 +189,14 @@ A model that learns the pattern **generalises**. One that also learns the noise 
 
 ## Simulating overfitting
 
-```r
-true_curve  <- function(x) sin(2 * x)
-make_points <- function(n) {
-  x <- runif(n, 0, 3)
-  tibble(x = x, y = true_curve(x) + rnorm(n, sd = 0.3))
-}
-train_points <- make_points(15)
-new_points   <- make_points(300)
+```python
+true_curve = lambda x: np.sin(2 * x)
+# 15 noisy points from a wave
+train_points = make_points(15)
+new_points = make_points(300)
 
-lm(y ~ poly(x, d), data = train_points)   # d = 1, 3, 12
+# Polynomial models of degree 1, 3, and 12
+model_d = make_pipeline(PolynomialFeatures(d), LinearRegression())
 ```
 
 15 noisy points from a wave, and three polynomials of increasing flexibility.
@@ -174,14 +205,22 @@ lm(y ~ poly(x, d), data = train_points)   # d = 1, 3, 12
 
 ## Too simple, about right, too flexible
 
-```{r}
+```{python}
 #| fig-width: 9
 #| fig-height: 3.5
-ggplot() +
-  geom_point(data = new_points, aes(x, y), colour = "grey75", size = 0.8) +
-  geom_point(data = train_points, aes(x, y), size = 2.2, colour = navy) +
-  geom_line(data = curves, aes(x, y), colour = copper, linewidth = 1.1) +
-  facet_wrap(~ model) + coord_cartesian(ylim = c(-2, 2)) + labs(x = NULL, y = NULL)
+fig, axes = plt.subplots(1, 3, figsize=(9, 3.5), sharey=True)
+
+for ax, d in zip(axes, [1, 3, 12]):
+    ax.scatter(new_points["x"], new_points["y"], color="grey", alpha=0.35, s=8, label="New points")
+    ax.scatter(train_points["x"], train_points["y"], color=navy, s=25, zorder=4, label="Training points")
+    ax.plot(x_grid, curves_dict[f"Degree {d}"], color=copper, linewidth=1.5, label=f"Degree {d}")
+    ax.set_title(f"Degree {d}")
+    ax.set_ylim(-2, 2)
+    ax.set_xlabel("x")
+
+axes[0].set_ylabel("y")
+plt.tight_layout()
+plt.show()
 ```
 
 The line **underfits**. Degree 3 follows the pattern. Degree 12 threads every training point and swings away from the new ones.
@@ -190,20 +229,22 @@ The line **underfits**. Degree 3 follows the pattern. Degree 12 threads every tr
 
 ## The bias-variance trade-off
 
-```{r}
+```{python}
 #| fig-width: 8
 #| fig-height: 3.5
-errors |>
-  tidyr::pivot_longer(-degree, names_to = "data", values_to = "error") |>
-  ggplot(aes(x = degree, y = error, colour = data)) +
-  geom_line(linewidth = 1.2) + geom_point(size = 2) +
-  scale_x_continuous(breaks = 1:12) + scale_y_log10() +
-  scale_colour_manual(values = c(training = "grey55", new_data = copper),
-                      labels = c(training = "Training points", new_data = "New points")) +
-  labs(x = "Flexibility (degree)", y = "RMSE (log)", colour = NULL)
+fig, ax = plt.subplots(figsize=(8, 3.5))
+ax.plot(errors_df["degree"], errors_df["training"], marker="o", color="grey", linewidth=1.5, label="Training points")
+ax.plot(errors_df["degree"], errors_df["new_data"], marker="o", color=copper, linewidth=1.5, label="New points")
+ax.set_yscale("log")
+ax.set_xticks(range(1, 13))
+ax.set_xlabel("Flexibility (degree)")
+ax.set_ylabel("RMSE (log)")
+ax.legend()
+plt.tight_layout()
+plt.show()
 ```
 
-Training error keeps falling. Error on new data is lowest at degree `r errors$degree[which.min(errors$new_data)]`, then rises.
+Training error keeps falling. Error on new data is lowest at degree `{python} errors_df.loc[errors_df['new_data'].idxmin(), 'degree']`, then rises.
 
 ---
 
@@ -219,18 +260,16 @@ The only way to find the model in between is to measure performance on data it d
 
 ---
 
-## tidymodels designs a fair test
+## scikit-learn designs a fair test
 
-| Package | Job |
-|---|---|
-| rsample | split the data |
-| recipes | prepare it |
-| parsnip | specify models |
-| workflows | combine recipe and model |
-| tune | tune hyperparameters |
-| yardstick | measure performance |
-
-`library(tidymodels)`, then `tidymodels_prefer()` to settle name clashes.
+| Component | Module | Job |
+|---|---|---|
+| `train_test_split` | `sklearn.model_selection` | split the data |
+| `ColumnTransformer` | `sklearn.compose` | prepare features |
+| estimators (`LogisticRegression`) | `sklearn.linear_model` | specify models |
+| `Pipeline` | `sklearn.pipeline` | combine preparation & model |
+| `GridSearchCV` | `sklearn.model_selection` | tune hyperparameters |
+| metrics (`roc_auc_score`) | `sklearn.metrics` | measure performance |
 
 ---
 
@@ -238,10 +277,10 @@ The only way to find the model in between is to measure performance on data it d
 
 ```{mermaid}
 flowchart TB
-  A[All data] --> B[Split]
+  A[All data] --> B[train_test_split]
   B --> C[Training data]
   B --> T[Test data, set aside]
-  C --> D[Recipe] --> E[Fit and tune with<br>cross-validation] --> F[Final model]
+  C --> D[ColumnTransformer] --> E[Fit and tune with<br>cross-validation] --> F[Final model]
   T --> G[Evaluate once]
   F --> G
 ```
@@ -252,17 +291,16 @@ All choices use the training data. The test data is used once, at the end.
 
 ## Use only what is known at prediction time
 
-```r
-dropout_data <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1) |> select(-semester),
-            join_by(student_id)) |>
-  mutate(considering_dropout = factor(considering_dropout,
-                                      levels = c("Yes", "No"))) |>
-  select(-student_id, -supervisor_id, -workshop, -workshop_sessions)
+```python
+dropout_data = (
+    students
+    .merge(scores, on="student_id")
+    .merge(sem1, on="student_id")
+    .drop(columns=["student_id", "supervisor_id", "workshop", "workshop_sessions"])
+)
 ```
 
-The first factor level is the event to predict, so `"Yes"` comes first.
+The outcome is binary ($1$ for "Yes", $0$ for "No"), making "Yes" the positive event.
 
 The workshop came after semester 1: using it would be **data leakage**.
 
@@ -270,11 +308,11 @@ The workshop came after semester 1: using it would be **data leakage**.
 
 ## An imbalanced outcome
 
-```r
-dropout_data |> count(considering_dropout) |> mutate(share = n / sum(n))
+```python
+dropout_data["considering_dropout"].value_counts(normalize=True)
 ```
 
-Only about `r round(100 * mean(dropout_data$considering_dropout == "Yes"))`% of students answer "Yes".
+Only about `{python} f"{round(100 * (y == 1).mean())}%"` of students answer "Yes".
 
 Rare outcomes are common in real prediction, from disease to fraud, and they fool anyone who judges by accuracy alone.
 
@@ -282,47 +320,48 @@ Rare outcomes are common in real prediction, from disease to fraud, and they foo
 
 ## Never judge a model on the data it learned from
 
-```r
-set.seed(2026)
-dropout_split <- initial_split(dropout_data, prop = 0.75,
-                               strata = considering_dropout)
-dropout_train <- training(dropout_split)
-dropout_test  <- testing(dropout_split)
+```python
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, stratify=y, random_state=2026
+)
 ```
 
-`r nrow(dropout_train)` students to train, `r nrow(dropout_test)` locked away for the final test.
+`{python} len(X_train)` students to train, `{python} len(X_test)` locked away for the final test.
 
-`strata` keeps the same share of "Yes" in both.
+`stratify=y` keeps the same share of "Yes" in both partitions.
 
 ---
 
-## A recipe prepares the data
+## Preprocessing with ColumnTransformer
 
-```r
-dropout_recipe <- recipe(considering_dropout ~ ., data = dropout_train) |>
-  step_impute_median(all_numeric_predictors()) |>
-  step_dummy(all_nominal_predictors()) |>
-  step_normalize(all_numeric_predictors())
+```python
+preprocessor = ColumnTransformer([
+    ("num", Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler())
+    ]), num_cols),
+    ("cat", Pipeline([
+        ("imputer", SimpleImputer(strategy="most_frequent")),
+        ("ohe", OneHotEncoder(drop="first", sparse_output=False, handle_unknown="ignore"))
+    ]), cat_cols)
+])
 ```
 
-| Step | Does |
+| Pipeline Step | Job |
 |---|---|
-| `step_impute_median()` | fills missing numbers with the median |
-| `step_dummy()` | turns categories into 0/1 columns |
-| `step_normalize()` | turns numbers into z-scores |
+| `SimpleImputer(strategy='median')` | fills missing numbers with the median |
+| `OneHotEncoder(drop='first')` | turns categories into 0/1 dummy columns |
+| `StandardScaler()` | turns numbers into z-scores |
 
 ---
 
-## `prep()` and `bake()`
+## Transforming features
 
-```r
-dropout_recipe |>
-  prep() |>
-  bake(new_data = NULL) |>
-  glimpse()
+```python
+X_train_prep = preprocessor.fit_transform(X_train)
 ```
 
-`prep()` estimates medians, means, and SDs from the training data; `bake()` applies them.
+`fit()` estimates medians, means, and SDs from the training data; `transform()` applies them.
 
 `gender` becomes `gender_Male`; `faculty` becomes four dummy columns.
 
@@ -334,38 +373,37 @@ The medians, means, and SDs come from the **training** data only.
 
 They are applied unchanged to the test data.
 
-Calculated from all the data, they would leak test information into the model. Recipes and workflows prevent this automatically.
+Calculated from all the data, they would leak test information into the model. Packaging them in a `Pipeline` prevents this automatically.
 
 ---
 
-## Model and workflow
+## Model and pipeline
 
-```r
-logistic_spec <- logistic_reg()
+```python
+logistic_pipe = Pipeline([
+    ("preprocessor", preprocessor),
+    ("classifier", LogisticRegression(max_iter=1000, random_state=2026))
+])
 
-logistic_wf <- workflow() |>
-  add_recipe(dropout_recipe) |>
-  add_model(logistic_spec)
-
-logistic_fit <- fit(logistic_wf, data = dropout_train)
+logistic_pipe.fit(X_train, y_train)
 ```
 
-parsnip specifies models the same way whatever package does the work.
+scikit-learn specifies models with a consistent `.fit()` and `.predict()` API.
 
-A workflow keeps recipe and model together; `fit()` prepares and fits in one step.
+A `Pipeline` bundles preprocessing and estimation into a single atomic object.
 
 ---
 
 ## Predictions on the test students
 
-```r
-test_results <- augment(logistic_fit, new_data = dropout_test)
-test_results |> accuracy(truth = considering_dropout, estimate = .pred_class)
+```python
+y_pred_class = logistic_pipe.predict(X_test)
+y_pred_prob = logistic_pipe.predict_proba(X_test)[:, 1]
+
+accuracy_score(y_test, y_pred_class)
 ```
 
-`augment()` adds `.pred_class` and the probabilities `.pred_Yes`, `.pred_No`.
-
-Accuracy: `r round(100 * acc)`%. It sounds good.
+Accuracy: `{python} f"{acc:.1%}"`. It sounds good.
 
 ---
 
@@ -373,8 +411,8 @@ Accuracy: `r round(100 * acc)`%. It sounds good.
 
 | "Model" | Accuracy | At-risk students found |
 |---|---|---|
-| logistic regression | `r round(100 * acc)`% | some |
-| always say "No" | `r round(100 * always_no)`% | none |
+| logistic regression | `{python} f"{acc:.1%}"` | some |
+| always say "No" | `{python} f"{always_no:.1%}"` | none |
 
 A "model" that ignores every predictor scores as well or better, and helps no one.
 
@@ -384,30 +422,31 @@ A "model" that ignores every predictor scores as well or better, and helps no on
 
 The probability that, of one student who considered dropping out and one who did not, the model ranks the first higher.
 
-```r
-test_results |> roc_auc(truth = considering_dropout, .pred_Yes)
+```python
+roc_auc_score(y_test, y_pred_prob)
 ```
 
 | AUC | 0.5 | 1.0 | this model |
 |---|---|---|---|
-| meaning | coin toss | perfect | `r f2(auc_test)` |
+| meaning | coin toss | perfect | `{python} f2(auc_test)` |
 
-Not fooled by imbalance. Chapter 12 goes further, including thresholds.
+Not fooled by imbalance. Chapter 12 goes further, including decision thresholds.
 
 ---
 
 ## Overfitting in real data: 1-nearest neighbour
 
-```r
-knn1_wf <- workflow() |>
-  add_recipe(dropout_recipe) |>
-  add_model(nearest_neighbor(neighbors = 1) |> set_mode("classification"))
+```python
+knn1_pipe = Pipeline([
+    ("preprocessor", preprocessor),
+    ("classifier", KNeighborsClassifier(n_neighbors=1))
+])
 ```
 
 | Data | AUC |
 |---|---|
-| training | `r f2(knn_train)` |
-| test | `r f2(knn_test)` |
+| training | `{python} f2(knn_train)` |
+| test | `{python} f2(knn_test)` |
 
 On training data each student's nearest neighbour is themselves. The model memorised; it did not learn.
 
@@ -426,33 +465,36 @@ Models and settings need comparing during building.
 
 ## Cross-validation
 
-```{r}
+```{python}
 #| fig-width: 7
 #| fig-height: 3
-expand.grid(fold = 1:5, round = 1:5) |>
-  mutate(role = if_else(fold == round, "Evaluate", "Fit")) |>
-  ggplot(aes(x = fold, y = factor(round, levels = 5:1), fill = role)) +
-  geom_tile(colour = "white", linewidth = 1.5) +
-  scale_fill_manual(values = c(Evaluate = navy, Fit = "grey82")) +
-  labs(x = "Fold", y = "Round", fill = NULL) + theme(panel.grid = element_blank())
+grid_data = np.zeros((5, 5))
+for round_idx in range(5):
+    grid_data[round_idx, round_idx] = 1
+
+fig, ax = plt.subplots(figsize=(7, 3))
+cmap = sns.color_palette(["#d0d0d0", navy])
+sns.heatmap(grid_data, cmap=cmap, cbar=False, linewidths=2, linecolor="white", ax=ax)
+ax.set_xticklabels([f"Fold {i+1}" for i in range(5)])
+ax.set_yticklabels([f"Round {5-i}" for i in range(5)])
+ax.set_xlabel("Fold")
+ax.set_ylabel("Round")
+plt.tight_layout()
+plt.show()
 ```
 
 Fit on four folds, evaluate on the fifth, rotate, average. Every student is evaluated once, by a model that never saw them.
 
 ---
 
-## Cross-validation in tidymodels
+## Cross-validation with scikit-learn
 
-```r
-set.seed(2026)
-dropout_folds <- vfold_cv(dropout_train, v = 10, strata = considering_dropout)
-
-logistic_cv <- fit_resamples(logistic_wf, resamples = dropout_folds,
-                             metrics = metric_set(roc_auc, accuracy))
-collect_metrics(logistic_cv)
+```python
+cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=2026)
+cv_res = cross_validate(logistic_pipe, X_train, y_train, cv=cv, scoring=["roc_auc", "accuracy"])
 ```
 
-Cross-validated AUC ≈ `r f2(cv_auc$mean)` (standard error `r sprintf("%.3f", cv_auc$std_err)`): an honest estimate, without touching the test set.
+Cross-validated AUC ≈ `{python} f2(cv_auc_mean)` (standard error `{python} f"{cv_auc_se:.3f}"`): an honest estimate, without touching the test set.
 
 ---
 
@@ -469,48 +511,48 @@ Cross-validated AUC ≈ `r f2(cv_auc$mean)` (standard error `r sprintf("%.3f", c
 
 ## Tuning a decision tree's depth
 
-```r
-tree_spec <- decision_tree(tree_depth = tune(), min_n = 10,
-                           cost_complexity = 0) |>
-  set_mode("classification")
+```python
+tree_pipe = Pipeline([
+    ("preprocessor", preprocessor),
+    ("classifier", DecisionTreeClassifier(random_state=2026, min_samples_leaf=10))
+])
 
-tree_tuning <- tune_grid(tree_wf, resamples = dropout_folds,
-                         grid = tibble(tree_depth = 1:10),
-                         metrics = metric_set(roc_auc))
+grid = GridSearchCV(tree_pipe, param_grid={"classifier__max_depth": range(1, 11)}, cv=cv, scoring="roc_auc")
+grid.fit(X_train, y_train)
 ```
 
-A tree asks yes-or-no questions in a row. Its depth controls flexibility. `tune()` marks what to tune.
+A tree asks yes-or-no questions in a row. Its depth controls flexibility. `GridSearchCV` searches the parameter grid.
 
 ---
 
 ## Depth against AUC
 
-```{r}
+```{python}
 #| fig-width: 8
 #| fig-height: 3.4
-collect_metrics(tree_tuning) |>
-  ggplot(aes(tree_depth, mean)) +
-  geom_line(colour = navy, linewidth = 1.2) + geom_point(colour = navy, size = 2.5) +
-  scale_x_continuous(breaks = 1:10) +
-  labs(x = "Tree depth", y = "Cross-validated AUC")
+tuning_scores = grid_search.cv_results_["mean_test_score"]
+fig, ax = plt.subplots(figsize=(8, 3.4))
+ax.plot(range(1, 11), tuning_scores, marker="o", color=navy, linewidth=1.5)
+ax.set_xticks(range(1, 11))
+ax.set_xlabel("Tree depth (max_depth)")
+ax.set_ylabel("Cross-validated AUC")
+plt.tight_layout()
+plt.show()
 ```
 
-Depth 1 is chance; AUC rises, then levels off and dips as deep trees overfit. `select_best()` picks depth `r best_depth$tree_depth`.
+Depth 1 is chance; AUC rises, then levels off and dips as deep trees overfit. `best_params_` picks depth `{python} best_depth`.
 
 ---
 
 ## The final test
 
-```r
-final_tree <- tree_wf |>
-  finalize_workflow(best_depth) |>
-  last_fit(dropout_split, metrics = metric_set(roc_auc, accuracy))
-
-final_logistic <- last_fit(logistic_wf, dropout_split,
-                           metrics = metric_set(roc_auc, accuracy))
+```python
+best_tree = grid_search.best_estimator_
+tree_test_auc = roc_auc_score(y_test, best_tree.predict_proba(X_test)[:, 1])
+lr_test_auc = roc_auc_score(y_test, logistic_pipe.predict_proba(X_test)[:, 1])
 ```
 
-`last_fit()` fits on the whole training set and evaluates once on the test set.
+Evaluate once on the held-out test partition.
 
 ---
 
@@ -518,8 +560,8 @@ final_logistic <- last_fit(logistic_wf, dropout_split,
 
 | Model | Test AUC |
 |---|---|
-| tuned decision tree | `r f2(auc_tree)` |
-| logistic regression | `r f2(auc_lr)` |
+| tuned decision tree | `{python} f2(auc_tree)` |
+| logistic regression | `{python} f2(auc_lr)` |
 
 Dropout risk rises steadily with stress and falls with support: a smooth model captures that; a tree cuts it into boxes.
 
@@ -540,14 +582,12 @@ Check the model separately for women and men, part-time and full-time students.
 
 ## In your field: business and finance
 
-```r
-credit_wf <- workflow() |>
-  add_recipe(recipe(Status ~ ., data = training(credit_split)) |>
-               step_impute_median(all_numeric_predictors()) |>
-               step_impute_mode(all_nominal_predictors()) |>
-               step_dummy(all_nominal_predictors())) |>
-  add_model(logistic_reg())
-last_fit(credit_wf, credit_split) |> collect_metrics()
+```python
+credit_pipe = Pipeline([
+    ("preprocessor", credit_pre),
+    ("classifier", LogisticRegression(max_iter=1000, random_state=1))
+])
+credit_pipe.fit(X_train_c, y_train_c)
 ```
 
 Loan applications and whether they turned out well. Only the data changed.
@@ -560,7 +600,7 @@ The **Brier score** measures probability quality: 0 is perfect.
 
 Work through the playground exercises in your browser, with hints and solutions.
 
-The browser version uses base R for AUC and cross-validation; the download uses tidymodels.
+`scikit-learn` runs right inside your browser with Pyodide; every exercise also runs locally in VS Code or Jupyter.
 
 ---
 
@@ -574,7 +614,7 @@ The browser version uses base R for AUC and cross-validation; the download uses 
 
 ## Practical exercises 4–6: judgement
 
-4. What does `step_zv()` do, and when is it useful?
+4. What does `VarianceThreshold()` do, and when is it useful?
 5. Explain to an administrator why 85% accuracy may be useless.
 6. With 50 training points, how does the new-data error curve change?
 
@@ -598,7 +638,7 @@ Think of a prediction your own field needs.
 | a near-perfect training score | overfitting; judge on new data |
 | a model better than seems possible | data leakage from the future |
 | high accuracy, no cases found | an imbalanced outcome |
-| the event level is predicted backwards | the outcome factor's first level is not the event |
+| positive class reversed | check binary encoding (1 = positive event) |
 
 ---
 
@@ -607,8 +647,8 @@ Think of a prediction your own field needs.
 | Symptom | Likely cause |
 |---|---|
 | test set used to pick the model | it is no longer a test; use cross-validation |
-| preprocessing on all the data | test information leaked; use a recipe |
-| unequal "Yes" shares in train and test | split not stratified |
+| preprocessing on all the data | test information leaked; use a Pipeline |
+| unequal "Yes" shares in train and test | split not stratified (`stratify=y`) |
 | a complex model loses to a simple one | the pattern is smooth; that is fine |
 
 ---
@@ -616,11 +656,11 @@ Think of a prediction your own field needs.
 ## Completion checklist
 
 - [ ] predictors are known at prediction time;
-- [ ] the outcome's first level is the event;
+- [ ] the positive event is coded as 1;
 - [ ] the split is stratified and the test set locked away;
-- [ ] preparation lives in a recipe;
+- [ ] preparation lives in a `ColumnTransformer`;
 - [ ] models are compared by cross-validation;
-- [ ] hyperparameters are tuned, not guessed;
+- [ ] hyperparameters are tuned with `GridSearchCV`;
 - [ ] the test set is used once;
 - [ ] AUC, not only accuracy, is reported.
 

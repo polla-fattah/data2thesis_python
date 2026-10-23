@@ -2,17 +2,46 @@
 number-offset: 10
 ---
 
-# Introduction to Machine Learning in R {#sec-ch11}
+# Introduction to Machine Learning in Python {#sec-ch11}
 
-```{r}
+```{python}
 #| label: setup
 #| include: false
-library(data2thesis)
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_validate, GridSearchCV
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, PolynomialFeatures
+from sklearn.impute import SimpleImputer
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score, roc_auc_score, root_mean_squared_error, brier_score_loss
+
+from data2thesis import students, semesters, questionnaire, credit_data
+
+students["employment"] = students["employment"].fillna("None")
+
+navy = "#1d588c"
+copper = "#b4762e"
+soft = "#46586d"
+
+sns.set_theme(style="whitegrid", font="sans-serif")
+plt.rcParams["figure.dpi"] = 150
+plt.rcParams["axes.titlesize"] = 11
+plt.rcParams["axes.labelsize"] = 10
+plt.rcParams["figure.autolayout"] = True
 ```
 
 Some research questions are not about why something happens, but about what will happen. A hospital wants to know which patients are likely to be readmitted, a bank which loans are likely to fail, a university which students are likely to struggle. The goal is not to understand the causes, although that may help, but to make accurate predictions for new cases, early enough to act on them. Such questions need a different standard of evidence. For explanation, a model is judged by whether its coefficients are well estimated and make sense. For prediction, a model is judged by one thing only: how well it works on cases it has never seen.
 
-**Machine learning** is the set of methods and practices for building predictive models and testing them fairly. This chapter introduces its core ideas: the difference between prediction and explanation, why a model must be tested on new data, how models overfit, and how cross-validation and tuning choose a model honestly. It uses the **tidymodels** framework, whose steps are best understood as the design of a fair test. In the story, Chapter 8 used logistic regression to explain who considers dropping out; Elaf's supervisor now asks whether the university could identify, at the end of a student's first semester, the students at risk, so that help could be offered in time (RQ9).
+**Machine learning** is the set of methods and practices for building predictive models and testing them fairly. This chapter introduces its core ideas: the difference between prediction and explanation, why a model must be tested on new data, how models overfit, and how cross-validation and tuning choose a model honestly. It uses Python's industry-standard **scikit-learn** framework, whose components are best understood as the design of a fair test. In the story, Chapter 8 used logistic regression to explain who considers dropping out; Elaf's supervisor now asks whether the university could identify, at the end of a student's first semester, the students at risk, so that help could be offered in time (RQ9).
 
 ::: {.callout-tip appearance="simple"}
 ## By the end of this chapter you will be able to
@@ -20,9 +49,9 @@ Some research questions are not about why something happens, but about what will
 - Explain supervised and unsupervised learning, and prediction versus explanation as different kinds of research question.
 - Explain generalisation, overfitting, and the bias-variance trade-off, and show them by simulation.
 - Split data into training and test sets, and explain why a model must be tested on data it has not seen.
-- Prepare data for modelling with a recipe, and combine a recipe and a model in a workflow.
+- Prepare data for modelling with `ColumnTransformer` pipelines, and combine preprocessing and models in a unified pipeline.
 - Evaluate a classification model, and explain why accuracy alone can mislead.
-- Use cross-validation to estimate performance honestly, tune a model's hyperparameters, and evaluate the final model on the test set.
+- Use cross-validation to estimate performance honestly, tune a model's hyperparameters with `GridSearchCV`, and evaluate the final model on the test set.
 :::
 ::: {.callout-note appearance="simple" icon="false"}
 **Teaching & Practice:** [Interactive Lecture Slides](../slides/11-machine-learning.html) · [Browser Playground Exercises](../playground/chapter11.html)
@@ -52,99 +81,112 @@ The central idea of machine learning is **generalisation**: a model is useful on
 
 A simulation makes the idea visible. The code below draws 15 points from a smooth curve with random noise added, and fits three models of increasing flexibility: a straight line, a gentle curve, and a very flexible curve (polynomials of degree 1, 3, and 12). It then draws new points from the same process, within the same range, to see how each model does on data it has not seen:
 
-```{r}
-library(dplyr)
-library(ggplot2)
+```{python}
+true_curve = lambda x: np.sin(2 * x)
 
-true_curve  <- function(x) sin(2 * x)
-make_points <- function(n) {
-  x <- runif(n, 0, 3)
-  tibble(x = x, y = true_curve(x) + rnorm(n, sd = 0.3))
-}
+def make_points(n, seed=None):
+    if seed is not None:
+        np.random.seed(seed)
+    x = np.random.uniform(0, 3, n)
+    y = true_curve(x) + np.random.normal(0, 0.3, n)
+    return pd.DataFrame({"x": x, "y": y})
 
-set.seed(3)
-train_points <- make_points(15)
-new_points   <- make_points(300) |>
-  filter(x >= min(train_points$x), x <= max(train_points$x))   # same range as training
+train_points = make_points(15, seed=3)
+new_points = make_points(1000, seed=4)
+new_points = (
+    new_points[
+        (new_points["x"] >= train_points["x"].min()) &
+        (new_points["x"] <= train_points["x"].max())
+    ]
+    .iloc[:300]
+    .reset_index(drop=True)
+)
 
-grid <- tibble(x = seq(min(train_points$x), max(train_points$x), length.out = 300))
-curves <- bind_rows(lapply(c(1, 3, 12), function(d) {
-  fit <- lm(y ~ poly(x, d), data = train_points)
-  tibble(grid, y = predict(fit, grid), model = paste("Degree", d))
-}))
-curves$model <- factor(curves$model, levels = paste("Degree", c(1, 3, 12)))
+x_grid = np.linspace(train_points["x"].min(), train_points["x"].max(), 300)
+curves_dict = {}
+
+for d in [1, 3, 12]:
+    poly_model = make_pipeline(PolynomialFeatures(d), LinearRegression())
+    poly_model.fit(train_points[["x"]], train_points["y"])
+    curves_dict[f"Degree {d}"] = poly_model.predict(x_grid[:, None])
 ```
 
-```{r}
+```{python}
 #| label: fig-overfit
 #| fig-cap: "Three models fitted to the same 15 training points (black). The straight line is too simple, the degree-3 curve follows the pattern, and the degree-12 curve passes close to every training point but wanders far from the new points (grey)."
 #| fig-alt: "Three panels. In each, 15 black training points and many faint grey new points follow a wave. The first panel shows a straight line missing the wave; the second a smooth curve following it; the third a wiggly curve that bends through every black point and swings wildly between them."
 #| fig-width: 8
 #| fig-height: 3.2
-ggplot() +
-  geom_point(data = new_points, aes(x, y), colour = "grey75", size = 0.8) +
-  geom_point(data = train_points, aes(x, y), size = 2) +
-  geom_line(data = curves, aes(x, y), colour = "#b2182b", linewidth = 0.9) +
-  facet_wrap(~ model) +
-  coord_cartesian(ylim = c(-2, 2)) +
-  theme_minimal(base_size = 11)
+fig, axes = plt.subplots(1, 3, figsize=(8, 3.2), sharey=True)
+
+for ax, d in zip(axes, [1, 3, 12]):
+    ax.scatter(new_points["x"], new_points["y"], color="grey", alpha=0.35, s=8, label="New points")
+    ax.scatter(train_points["x"], train_points["y"], color="black", s=25, zorder=4, label="Training points")
+    ax.plot(x_grid, curves_dict[f"Degree {d}"], color="#b2182b", linewidth=1.5, label=f"Degree {d}")
+    ax.set_title(f"Degree {d}")
+    ax.set_ylim(-2, 2)
+    ax.set_xlabel("x")
+
+axes[0].set_ylabel("y")
+plt.tight_layout()
+plt.show()
 ```
 
 The straight line is too simple to follow the wave: it **underfits**. The degree-3 curve captures the pattern. The degree-12 curve bends to pass close to every training point, and in doing so follows the noise, swinging far away from where new points actually lie. Measured on the training points, it would look like the best model; measured on new points, it is the worst. The prediction error of every degree from 1 to 12 shows the general pattern:
 
-```{r}
-rmse <- function(observed, predicted) sqrt(mean((observed - predicted)^2))
+```{python}
+errors = []
+for d in range(1, 13):
+    model = make_pipeline(PolynomialFeatures(d), LinearRegression())
+    model.fit(train_points[["x"]], train_points["y"])
+    tr_err = root_mean_squared_error(train_points["y"], model.predict(train_points[["x"]]))
+    te_err = root_mean_squared_error(new_points["y"], model.predict(new_points[["x"]]))
+    errors.append({"degree": d, "training": tr_err, "new_data": te_err})
 
-errors <- bind_rows(lapply(1:12, function(d) {
-  fit <- lm(y ~ poly(x, d), data = train_points)
-  tibble(degree = d,
-         training = rmse(train_points$y, predict(fit, train_points)),
-         new_data = rmse(new_points$y, predict(fit, new_points)))
-}))
+errors_df = pd.DataFrame(errors)
+print(errors_df.head(6).round(3))
 ```
 
-```{r}
+```{python}
 #| label: fig-bias-variance
 #| fig-cap: "Prediction error (RMSE) on the training points and on new points, for polynomials of degree 1 to 12. Training error keeps falling as the model becomes more flexible; error on new data falls, then rises."
 #| fig-alt: "Two lines against polynomial degree. The training error line falls steadily towards zero. The new-data error line falls to a minimum at a low degree and then rises steeply for the most flexible models."
 #| fig-width: 6
 #| fig-height: 3.6
-errors |>
-  tidyr::pivot_longer(-degree, names_to = "data", values_to = "error") |>
-  ggplot(aes(x = degree, y = error, colour = data)) +
-  geom_line(linewidth = 1) +
-  geom_point() +
-  scale_x_continuous(breaks = 1:12) +
-  scale_colour_manual(values = c(training = "grey50", new_data = "#b2182b"),
-                      labels = c(training = "Training points", new_data = "New points")) +
-  scale_y_log10() +
-  labs(x = "Flexibility (polynomial degree)", y = "Prediction error (RMSE, log scale)",
-       colour = NULL) +
-  theme_minimal(base_size = 12)
+fig, ax = plt.subplots(figsize=(6, 3.6))
+ax.plot(errors_df["degree"], errors_df["training"], marker="o", color="grey", linewidth=1.5, label="Training points")
+ax.plot(errors_df["degree"], errors_df["new_data"], marker="o", color="#b2182b", linewidth=1.5, label="New points")
+ax.set_yscale("log")
+ax.set_xticks(range(1, 13))
+ax.set_xlabel("Flexibility (polynomial degree)")
+ax.set_ylabel("Prediction error (RMSE, log scale)")
+ax.legend()
+plt.tight_layout()
+plt.show()
 ```
 
-The training error falls steadily as the model becomes more flexible: a more flexible model can always fit its own data more closely. The error on new data falls at first, reaches its minimum at degree `r errors$degree[which.min(errors$new_data)]`, and then rises. This U shape is known as the **bias-variance trade-off**. A model that is too simple has high **bias**: it misses part of the real pattern, whatever data it is given. A model that is too flexible has high **variance**: it changes a great deal from one sample to another, because it follows each sample's noise. The best predictions come from a model in between, and the only way to find it is to measure performance on data the model did not learn from. The rest of the chapter builds that measurement into every step.
+```{python}
+#| include: false
+best_d = errors_df.loc[errors_df["new_data"].idxmin(), "degree"]
+```
+
+The training error falls steadily as the model becomes more flexible: a more flexible model can always fit its own data more closely. The error on new data falls at first, reaches its minimum at degree `{python} best_d`, and then rises. This U shape is known as the **bias-variance trade-off**. A model that is too simple has high **bias**: it misses part of the real pattern, whatever data it is given. A model that is too flexible has high **variance**: it changes a great deal from one sample to another, because it follows each sample's noise. The best predictions come from a model in between, and the only way to find it is to measure performance on data the model did not learn from. The rest of the chapter builds that measurement into every step.
 
 ## Designing a fair test
 
-The **tidymodels** framework is a collection of packages that together make a fair test of a predictive model easy to carry out. Each package handles one part of the design: **rsample** splits the data, **recipes** prepares it, **parsnip** specifies models, **workflows** combines the pieces, **tune** tunes models, and **yardstick** measures performance. Loading `tidymodels` loads them all:
+The **scikit-learn** framework provides a principled, modular design that makes a fair test of a predictive model clean and reliable. Each module handles one part of the pipeline: `train_test_split` partitions the data, `ColumnTransformer` and pipelines prepare it, estimators specify models, `GridSearchCV` tunes them, and `metrics` assesses performance on unseen data.
 
-```{r}
-library(tidymodels)
-tidymodels_prefer()
-```
-
-The function `tidymodels_prefer()` settles a few name clashes between packages in favour of tidymodels. @fig-pipeline shows how the pieces fit together: the test data is set aside before anything else happens, all choices are made with the training data alone, and the test data is used once, at the end. The rest of the chapter works through each step.
+@fig-pipeline shows how the pieces fit together: the test data is set aside before anything else happens, all choices are made with the training data alone, and the test data is used once, at the end. The rest of the chapter works through each step.
 
 ```{mermaid}
 %%| label: fig-pipeline
-%%| fig-cap: "The machine learning workflow in tidymodels."
+%%| fig-cap: "The machine learning workflow in scikit-learn."
 flowchart TB
-  A[All data] --> B[Split:<br/>training and test]
+  A[All data] --> B[Split:<br/>train_test_split]
   B --> C[Training data]
   B --> T[Test data,<br/>set aside]
-  C --> D[Recipe:<br/>prepare the data]
-  D --> E[Model:<br/>fit and tune with<br/>cross-validation]
+  C --> D[Preprocessor:<br/>imputation, encoding, scaling]
+  D --> E[Model Pipeline:<br/>fit and tune with<br/>cross-validation]
   E --> F[Final model]
   T --> G[Evaluate once<br/>on the test data]
   F --> G
@@ -154,151 +196,165 @@ flowchart TB
 
 A predictive model can only use information that would be available when the prediction is made. The university wants to act at the end of the first semester, so the model may use the students' background, their questionnaire scores from the start of the year, and their first-semester records, but nothing from later. The questionnaire scores are calculated as before:
 
-```{r}
-scores <- questionnaire |>
-  mutate(
-    stress_4     = 6 - stress_4,
-    stress       = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    burnout      = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE),
-    support      = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-    satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, burnout, support, satisfaction)
+```{python}
+scores = pd.DataFrame({
+    "student_id": questionnaire["student_id"],
+    "stress": questionnaire[["stress_1", "stress_2", "stress_3", "stress_5", "stress_6"]].assign(stress_4=6 - questionnaire["stress_4"]).mean(axis=1),
+    "burnout": questionnaire.filter(like="burnout_").mean(axis=1),
+    "support": questionnaire.filter(like="support_").mean(axis=1),
+    "satisfaction": questionnaire.filter(like="satisfaction_").mean(axis=1),
+})
 
-dropout_data <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1) |> select(-semester), join_by(student_id)) |>
-  mutate(considering_dropout = factor(considering_dropout, levels = c("Yes", "No"))) |>
-  select(-student_id, -supervisor_id, -workshop, -workshop_sessions)
+sem1 = semesters[semesters["semester"] == 1].drop(columns=["semester"])
 
-dim(dropout_data)
+dropout_data = (
+    students
+    .merge(scores, on="student_id")
+    .merge(sem1, on="student_id")
+    .drop(columns=["student_id", "supervisor_id", "workshop", "workshop_sessions"])
+)
+
+print("Data shape:", dropout_data.shape)
 ```
 
-Two details matter. The outcome must be a factor, and its first level is treated as the event to predict, so the levels are set to put `"Yes"` first. And the workshop variables are removed: the workshop took place after the first semester, so it would not be known when the prediction is made. Using information that would not be available at the time of prediction is a form of **data leakage**, and it makes a model look better than it can ever be in practice.
+Two details matter. The outcome is coded as binary ($1$ for "Yes", $0$ for "No"), making "Yes" (considering dropout) the positive event to detect. And the workshop variables are removed: the workshop took place after the first semester, so it would not be known when the prediction is made. Using information that would not be available at the time of prediction is a form of **data leakage**, and it makes a model look better than it can ever be in practice.
 
-```{r}
-dropout_data |> count(considering_dropout) |> mutate(share = n / sum(n))
+```{python}
+counts = dropout_data["considering_dropout"].value_counts()
+shares = dropout_data["considering_dropout"].value_counts(normalize=True)
+pd.DataFrame({"count": counts, "share": shares.round(3)})
 ```
 
-Only about `r round(100 * mean(dropout_data$considering_dropout == "Yes"))`% of students answer "Yes". Such an **imbalanced** outcome is common in real prediction problems, from rare diseases to fraud, and, as the evaluation below shows, it catches out anyone who judges a model by accuracy alone.
+```{python}
+#| include: false
+yes_share = round(100 * shares["Yes"])
+```
+
+Only about `{python} yes_share`% of students answer "Yes". Such an **imbalanced** outcome is common in real prediction problems, from rare diseases to fraud, and, as the evaluation below shows, it catches out anyone who judges a model by accuracy alone.
 
 ## Splitting the data
 
-The most important rule of machine learning follows from the simulation above: **never judge a model on the data it learned from.** The first step is therefore to split the data. The **training set** is used to build and tune the model. The **test set** is locked away and used only once, at the very end, to estimate how the final model will perform on new students. The function `initial_split()` does the split, and `strata` makes sure that both sets have the same share of "Yes" answers:
+The most important rule of machine learning follows from the simulation above: **never judge a model on the data it learned from.** The first step is therefore to split the data. The **training set** is used to build and tune the model. The **test set** is locked away and used only once, at the very end, to estimate how the final model will perform on new students. The function `train_test_split()` with `stratify=y` makes sure that both sets have the same share of "Yes" answers:
 
-```{r}
-set.seed(2026)
-dropout_split <- initial_split(dropout_data, prop = 0.75, strata = considering_dropout)
-dropout_train <- training(dropout_split)
-dropout_test  <- testing(dropout_split)
+```{python}
+X = dropout_data.drop(columns=["considering_dropout"])
+y = (dropout_data["considering_dropout"] == "Yes").astype(int)
 
-nrow(dropout_train)
-nrow(dropout_test)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, stratify=y, random_state=2026
+)
+
+print(f"Training observations: {len(X_train)}")
+print(f"Testing observations:  {len(X_test)}")
 ```
 
 Three quarters of the students are used for training and a quarter are set aside for the final test.
 
 ## Preparing the data
 
-Most models need the data prepared first: missing values filled in, categories turned into numbers, and numeric predictors put on a common scale. A **recipe** lists these steps:
+Most models need the data prepared first: missing values filled in, categories turned into numbers, and numeric predictors put on a common scale. A `ColumnTransformer` bundles these steps cleanly:
 
-```{r}
-dropout_recipe <- recipe(considering_dropout ~ ., data = dropout_train) |>
-  step_impute_median(all_numeric_predictors()) |>
-  step_dummy(all_nominal_predictors()) |>
-  step_normalize(all_numeric_predictors())
+```{python}
+num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
+cat_cols = X.select_dtypes(exclude=[np.number]).columns.tolist()
+
+preprocessor = ColumnTransformer([
+    ("num", Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler())
+    ]), num_cols),
+    ("cat", Pipeline([
+        ("imputer", SimpleImputer(strategy="most_frequent")),
+        ("ohe", OneHotEncoder(drop="first", sparse_output=False, handle_unknown="ignore"))
+    ]), cat_cols)
+])
 ```
 
-The first line says that `considering_dropout` is the outcome and every other column (`.`) is a predictor. The step `step_impute_median()` then replaces each missing numeric value with the median of that variable. The step `step_dummy()` turns each categorical predictor into **dummy variables**: 0/1 columns, one per category except a reference category, as `lm()` did automatically in Chapter 8. Finally, `step_normalize()` turns every numeric predictor into z-scores, so they are on the same scale; some models, such as k-nearest neighbours below, depend on distances and need this.
+The numeric pipeline replaces missing values with the variable's median (`SimpleImputer(strategy="median")`) and standardizes predictors to z-scores (`StandardScaler()`). The categorical pipeline imputes missing categories with the most frequent value and creates one-hot dummy variables (`OneHotEncoder(drop="first")`), dropping the reference level just as linear regression did in Chapter 8.
 
-The recipe only describes the steps. To see what it produces, `prep()` estimates what it needs from the training data (the medians, the means and standard deviations), and `bake()` applies it:
+To see what the preprocessor produces, `fit_transform()` estimates the parameters from the training set and transforms it:
 
-```{r}
-dropout_recipe |>
-  prep() |>
-  bake(new_data = NULL) |>
-  glimpse()
+```{python}
+X_train_prep = preprocessor.fit_transform(X_train)
+feature_names = preprocessor.get_feature_names_out()
+print("Transformed training shape:", X_train_prep.shape)
+print("First 8 prepared feature names:", feature_names[:8].tolist())
 ```
-
-In this code, `new_data = NULL` means "the training data the recipe was prepared on". In the result, `gender` has become `gender_Male`, `faculty` has become four dummy columns, and all the numbers are now z-scores.
 
 ::: {.callout-important}
 ## No peeking at the test data
 
-The medians, means, and standard deviations are estimated from the **training** data only, and then applied unchanged to the test data. If they were calculated from all the data, information from the test set would leak into the model, and the test would no longer be a fair one. Recipes and workflows handle this automatically, which is one of the best reasons to use them.
+The medians, means, and standard deviations are estimated from the **training** data only, and then applied unchanged to the test data. If they were calculated from all the data, information from the test set would leak into the model, and the test would no longer be a fair one. Packaging preprocessing inside a `Pipeline` handles this automatically, which is one of the best reasons to use scikit-learn pipelines.
 :::
 
 ## Specifying and fitting a model
 
-The **parsnip** package specifies models in one consistent way, whatever package does the actual work. Here is logistic regression:
+A `Pipeline` combines the preprocessor and the classifier so they always travel together:
 
-```{r}
-logistic_spec <- logistic_reg()
-logistic_spec
+```{python}
+logistic_pipe = Pipeline([
+    ("preprocessor", preprocessor),
+    ("classifier", LogisticRegression(max_iter=1000, random_state=2026))
+])
+
+logistic_pipe.fit(X_train, y_train)
 ```
 
-A **workflow** combines the recipe and the model, so they always travel together:
-
-```{r}
-logistic_wf <- workflow() |>
-  add_recipe(dropout_recipe) |>
-  add_model(logistic_spec)
-
-logistic_fit <- fit(logistic_wf, data = dropout_train)
-```
-
-The function `fit()` prepares the recipe on the training data and fits the model to the prepared data, in one step.
+The single call to `fit()` calculates medians and scaling parameters on `X_train`, encodes categories, and fits the logistic regression model on the transformed data.
 
 ## Evaluating a classifier
 
-The model is now judged on the test students. The function `augment()` adds the model's predictions to the test data: the predicted class (`.pred_class`) and the predicted probability of each class (`.pred_Yes`, `.pred_No`):
+The model is now judged on the test students. Calling `predict()` produces class labels ($0$ or $1$), and `predict_proba()` produces the estimated probabilities:
 
-```{r}
-test_results <- augment(logistic_fit, new_data = dropout_test)
-test_results |>
-  select(considering_dropout, .pred_class, .pred_Yes) |>
-  head()
+```{python}
+y_pred_class = logistic_pipe.predict(X_test)
+y_pred_prob = logistic_pipe.predict_proba(X_test)[:, 1]
+
+test_results = pd.DataFrame({
+    "truth": y_test.values,
+    "pred_class": y_pred_class,
+    "pred_prob": y_pred_prob
+})
+print(test_results.head())
 ```
 
-The simplest measure is **accuracy**: the share of students classified correctly. The **yardstick** package calculates it:
+The simplest measure is **accuracy**: the share of students classified correctly:
 
-```{r}
-test_results |> accuracy(truth = considering_dropout, estimate = .pred_class)
+```{python}
+acc = accuracy_score(y_test, y_pred_class)
+always_no_acc = (y_test == 0).mean()
+
+print(f"Model test accuracy:          {acc:.1%}")
+print(f"Always predicting 'No' base: {always_no_acc:.1%}")
 ```
 
-```{r}
-#| include: false
-acc <- test_results |> accuracy(considering_dropout, .pred_class) |> pull(.estimate)
-always_no <- mean(dropout_test$considering_dropout == "No")
+An accuracy of `{python} f"{acc:.1%}"` sounds good. But a "model" that ignores every predictor and says "No" for every student would be right `{python} f"{always_no_acc:.1%}"` of the time, because most students answer "No", while finding not one of the students at risk. For an imbalanced outcome, accuracy is a misleading measure.
+
+A better measure is the **ROC AUC** (the area under the receiver operating characteristic curve). It is the probability that, of one student who considered dropping out and one who did not, the model gives the first a higher predicted probability than the second. An AUC of 0.5 is no better than a coin toss, and 1.0 is perfect. Unlike accuracy, it is not fooled by an imbalanced outcome:
+
+```{python}
+auc_test = roc_auc_score(y_test, y_pred_prob)
+print(f"Test ROC AUC: {auc_test:.3f}")
 ```
 
-An accuracy of `r round(100 * acc)`% sounds good. But a "model" that ignores every predictor and says "No" for every student would be right `r round(100 * always_no)`% of the time, because most students answer "No", while finding not one of the students at risk. For an imbalanced outcome, accuracy is a misleading measure.
-
-A better measure is the **ROC AUC** (the area under the ROC curve). It is the probability that, of one student who considered dropping out and one who did not, the model gives the first a higher predicted probability than the second. An AUC of 0.5 is no better than a coin toss, and 1.0 is perfect. Unlike accuracy, it is not fooled by an imbalanced outcome. It uses the predicted probabilities:
-
-```{r}
-test_results |> roc_auc(truth = considering_dropout, .pred_Yes)
-```
-
-```{r}
-#| include: false
-auc_test <- test_results |> roc_auc(considering_dropout, .pred_Yes) |> pull(.estimate)
-```
-
-An AUC of `r round(auc_test, 2)` means the model ranks an at-risk student above a not-at-risk student about `r round(100 * auc_test)`% of the time: a useful model. Chapter 12 looks at classification measures in much more detail, including how to choose the threshold at which a student is flagged.
+An AUC of `{python} f"{auc_test:.2f}"` means the model ranks an at-risk student above a not-at-risk student about `{python} f"{round(100 * auc_test)}"`% of the time: a useful model. Chapter 12 looks at classification measures in much more detail, including how to choose the threshold at which a student is flagged.
 
 ## Overfitting in practice
 
 The simulation at the start of the chapter showed overfitting with a flexible curve. The same happens with real data. A dramatic example is **k-nearest neighbours** (k-NN) with $k = 1$. It predicts each student's outcome by finding the single most similar student in the training data and copying their answer. On the training data, every student's nearest neighbour is themselves, so it can never be wrong:
 
-```{r}
-knn1_wf <- workflow() |>
-  add_recipe(dropout_recipe) |>
-  add_model(nearest_neighbor(neighbors = 1) |> set_mode("classification"))
-knn1_fit <- fit(knn1_wf, data = dropout_train)
+```{python}
+knn1_pipe = Pipeline([
+    ("preprocessor", preprocessor),
+    ("classifier", KNeighborsClassifier(n_neighbors=1))
+])
+knn1_pipe.fit(X_train, y_train)
 
-augment(knn1_fit, new_data = dropout_train) |> roc_auc(considering_dropout, .pred_Yes)
-augment(knn1_fit, new_data = dropout_test) |> roc_auc(considering_dropout, .pred_Yes)
+knn1_train_auc = roc_auc_score(y_train, knn1_pipe.predict_proba(X_train)[:, 1])
+knn1_test_auc = roc_auc_score(y_test, knn1_pipe.predict_proba(X_test)[:, 1])
+
+print(f"KNN (k=1) Training AUC: {knn1_train_auc:.2f}")
+print(f"KNN (k=1) Test AUC:     {knn1_test_auc:.2f}")
 ```
 
 The model scores perfectly on the training data, and much more poorly on new students. The training score was an illusion: the model had memorised the training students, not learned anything that carries over. It is the degree-12 curve again, and the reason every model in this book is tested on data it has not seen.
@@ -307,106 +363,103 @@ The model scores perfectly on the training data, and much more poorly on new stu
 
 The test set is used only once, at the end. During model building, however, models and settings often need to be compared, and neither the training data (that would reward overfitting) nor the test set (that would use it up) can be used to judge them. **Cross-validation** solves this by reusing the training data. The training data is split into, say, 10 equal parts, called **folds**. The model is fitted on 9 folds and its performance measured on the fold left out; this is repeated 10 times, leaving out each fold in turn, and the 10 performance measures are averaged. Every student is used for evaluation exactly once, always by a model that did not see them during fitting. @fig-folds shows the idea with 5 folds.
 
-```{r}
+```{python}
 #| label: fig-folds
-#| fig-cap: "Five-fold cross-validation: in each round, the model is fitted on four folds (grey) and evaluated on the fifth (dark)."
-#| fig-alt: "A grid of five rows, one per round, each split into five blocks. In each row, a different block is dark, marking the fold used for evaluation; the other four are grey."
+#| fig-cap: "Five-fold cross-validation: in each round, the model is fitted on four folds (grey) and evaluated on the fifth (dark blue)."
+#| fig-alt: "A grid of five rows, one per round, each split into five blocks. In each row, a different block is dark blue, marking the fold used for evaluation; the other four are grey."
 #| fig-width: 6.5
 #| fig-height: 2.8
 #| echo: false
-expand.grid(fold = 1:5, round = 1:5) |>
-  mutate(role = if_else(fold == round, "Evaluate", "Fit")) |>
-  ggplot(aes(x = fold, y = factor(round, levels = 5:1), fill = role)) +
-  geom_tile(colour = "white", linewidth = 1.5) +
-  scale_fill_manual(values = c(Evaluate = "#2f6793", Fit = "grey80")) +
-  labs(x = "Fold", y = "Round", fill = NULL) +
-  theme_minimal(base_size = 12) +
-  theme(panel.grid = element_blank())
+grid_data = np.zeros((5, 5))
+for round_idx in range(5):
+    grid_data[round_idx, round_idx] = 1
+
+fig, ax = plt.subplots(figsize=(6.5, 2.8))
+cmap = sns.color_palette([ "#e0e0e0", "#2f6793"])
+sns.heatmap(grid_data, cmap=cmap, cbar=False, linewidths=2, linecolor="white", ax=ax)
+ax.set_xticklabels([f"Fold {i+1}" for i in range(5)])
+ax.set_yticklabels([f"Round {5-i}" for i in range(5)])
+ax.set_xlabel("Folds")
+ax.set_ylabel("Round")
+plt.tight_layout()
+plt.show()
 ```
 
-The function `vfold_cv()` creates the folds, and `fit_resamples()` fits and evaluates the workflow on each:
+The class `StratifiedKFold()` creates stratified folds, and `cross_validate()` fits and evaluates the pipeline across each fold:
 
-```{r}
-set.seed(2026)
-dropout_folds <- vfold_cv(dropout_train, v = 10, strata = considering_dropout)
+```{python}
+cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=2026)
+cv_results = cross_validate(logistic_pipe, X_train, y_train, cv=cv, scoring=["roc_auc", "accuracy"])
 
-logistic_cv <- fit_resamples(logistic_wf, resamples = dropout_folds,
-                             metrics = metric_set(roc_auc, accuracy))
-collect_metrics(logistic_cv)
+cv_auc_mean = cv_results["test_roc_auc"].mean()
+cv_auc_se = cv_results["test_roc_auc"].std() / np.sqrt(10)
+
+print(f"Cross-validated AUC: {cv_auc_mean:.3f} (SE: {cv_auc_se:.3f})")
 ```
 
-The cross-validated AUC, about `r round(collect_metrics(logistic_cv) |> filter(.metric == "roc_auc") |> pull(mean), 2)`, is an honest estimate of how the model will perform on new students, obtained without touching the test set. The standard error (`std_err`) shows how much the estimate varies across folds.
+The cross-validated AUC, about `{python} f"{cv_auc_mean:.2f}"`, is an honest estimate of how the model will perform on new students, obtained without touching the test set.
 
 ## Tuning a model
 
 Many models have settings that are not learned from the data but must be chosen beforehand, such as $k$ in k-nearest neighbours or the degree of the polynomials in the simulation. They are called **hyperparameters**, to distinguish them from the **parameters**, such as regression coefficients, that the model learns. The best value is found by **tuning**: trying several values and comparing them with cross-validation.
 
-A **decision tree** (explained fully in Chapter 12) predicts by asking a series of yes-or-no questions, such as whether stress is above 3.5. Its depth, the number of questions in a row, is a hyperparameter that controls its flexibility. A shallow tree is too simple to capture the patterns and underfits; a very deep tree can fit the training data closely, noise included, and overfits. In the model specification, `tune()` marks the hyperparameter to be tuned:
+A **decision tree** (explained fully in Chapter 12) predicts by asking a series of yes-or-no questions, such as whether stress is above 3.5. Its depth, the number of questions in a row, is a hyperparameter that controls its flexibility. A shallow tree is too simple to capture the patterns and underfits; a very deep tree can fit the training data closely, noise included, and overfits:
 
-```{r}
-tree_spec <- decision_tree(tree_depth = tune(), min_n = 10, cost_complexity = 0) |>
-  set_mode("classification")
+```{python}
+tree_pipe = Pipeline([
+    ("preprocessor", preprocessor),
+    ("classifier", DecisionTreeClassifier(random_state=2026, min_samples_leaf=10))
+])
 
-tree_wf <- workflow() |>
-  add_recipe(dropout_recipe) |>
-  add_model(tree_spec)
+param_grid = {"classifier__max_depth": list(range(1, 11))}
+grid_search = GridSearchCV(tree_pipe, param_grid=param_grid, cv=cv, scoring="roc_auc")
+grid_search.fit(X_train, y_train)
+
+tuning_results = pd.DataFrame({
+    "max_depth": range(1, 11),
+    "mean_auc": grid_search.cv_results_["mean_test_score"]
+})
+print(tuning_results.head(6).round(3))
 ```
 
-The function `tune_grid()` tries each value in a grid, using the same cross-validation folds:
-
-```{r}
-set.seed(2026)
-tree_tuning <- tune_grid(tree_wf, resamples = dropout_folds,
-                         grid = tibble(tree_depth = 1:10),
-                         metrics = metric_set(roc_auc))
-```
-
-```{r}
+```{python}
 #| label: fig-tuning
 #| fig-cap: "Cross-validated ROC AUC of decision trees of different depths."
 #| fig-alt: "Line chart of AUC against tree depth from 1 to 10. The AUC rises steeply from 0.5 at depth 1 to a peak at a moderate depth, then levels off and dips slightly for deeper trees."
 #| fig-width: 6
 #| fig-height: 3.6
-autoplot(tree_tuning) + theme_minimal(base_size = 12)
+fig, ax = plt.subplots(figsize=(6, 3.6))
+ax.plot(tuning_results["max_depth"], tuning_results["mean_auc"], marker="o", color=navy, linewidth=1.5)
+ax.set_xticks(range(1, 11))
+ax.set_xlabel("Tree depth (max_depth)")
+ax.set_ylabel("Cross-validated ROC AUC")
+ax.set_title("Hyperparameter Tuning: Decision Tree Depth")
+plt.tight_layout()
+plt.show()
 ```
 
-```{r}
-#| include: false
-best_depth <- select_best(tree_tuning, metric = "roc_auc")
+```{python}
+best_depth = grid_search.best_params_["classifier__max_depth"]
+print("Best max_depth:", best_depth)
+print(f"Best CV ROC AUC: {grid_search.best_score_:.3f}")
 ```
 
-The pattern is the new-data curve of @fig-bias-variance seen from the other side: a tree of depth 1 is no better than chance, the AUC rises as the tree grows, and beyond a moderate depth it levels off and dips slightly as the deeper trees start to overfit. The function `select_best()` picks the best depth, here `r best_depth$tree_depth`:
-
-```{r}
-best_depth <- select_best(tree_tuning, metric = "roc_auc")
-best_depth
-```
+The pattern is the new-data curve of @fig-bias-variance seen from the other side: a tree of depth 1 is no better than chance, the AUC rises as the tree grows, and beyond a moderate depth it levels off and dips slightly as the deeper trees start to overfit. Here, `GridSearchCV` selects `max_depth =` `{python} best_depth`.
 
 ## The final test
 
-Only now, with the model chosen, is the test set used. The function `finalize_workflow()` plugs the best depth into the workflow, and `last_fit()` fits it on the whole training set and evaluates it once on the test set:
+Only now, with the model chosen, is the test set used. The tuned decision tree is evaluated on the test set, alongside plain logistic regression:
 
-```{r}
-final_tree <- tree_wf |>
-  finalize_workflow(best_depth) |>
-  last_fit(dropout_split, metrics = metric_set(roc_auc, accuracy))
-collect_metrics(final_tree)
+```{python}
+best_tree = grid_search.best_estimator_
+tree_test_auc = roc_auc_score(y_test, best_tree.predict_proba(X_test)[:, 1])
+tree_test_acc = accuracy_score(y_test, best_tree.predict(X_test))
+
+print(f"Tuned Tree Test AUC:        {tree_test_auc:.3f} (Accuracy: {tree_test_acc:.1%})")
+print(f"Logistic Regression Test AUC: {auc_test:.3f} (Accuracy: {acc:.1%})")
 ```
 
-The same is done for logistic regression, for comparison:
-
-```{r}
-final_logistic <- last_fit(logistic_wf, dropout_split, metrics = metric_set(roc_auc, accuracy))
-collect_metrics(final_logistic)
-```
-
-```{r}
-#| include: false
-auc_tree <- collect_metrics(final_tree) |> filter(.metric == "roc_auc") |> pull(.estimate)
-auc_lr <- collect_metrics(final_logistic) |> filter(.metric == "roc_auc") |> pull(.estimate)
-```
-
-The tuned tree reaches an AUC of `r round(auc_tree, 2)`; plain logistic regression, `r round(auc_lr, 2)`. The more flexible model is not the better one. In this data, the risk of dropout rises steadily with stress and falls steadily with support, so a simple smooth model captures the pattern well, while a tree, which splits the data into boxes, captures it less well. Trying a simple model first, and making a complex one earn its place, is one of the most useful habits in machine learning.
+The tuned tree reaches an AUC of `{python} f"{tree_test_auc:.2f}"`; plain logistic regression, `{python} f"{auc_test:.2f}"`. The more flexible model is not the better one. In this data, the risk of dropout rises steadily with stress and falls steadily with support, so a simple smooth model captures the pattern well, while a tree, which splits the data into rectangular boxes, captures it less well. Trying a simple model first, and making a complex one earn its place, is one of the most useful habits in machine learning.
 
 ::: {.callout-warning}
 ## Predictions about people
@@ -417,27 +470,40 @@ A model that flags students "at risk" affects real people. Before such a model i
 ::: {.callout-note icon="false"}
 ## In your field: business and finance
 
-Banks use exactly these methods to predict which loan applicants will repay. The `credit_data` dataset from the **modeldata** package (installed with tidymodels) records real loan applications, with whether each loan turned out well or badly. The same workflow applies:
+Banks use exactly these methods to predict which loan applicants will repay. The `credit_data` dataset records real loan applications, with whether each loan turned out well or badly (`Status`). The same workflow applies:
 
-```{r}
-data(credit_data, package = "modeldata")
+```{python}
+credit_clean = credit_data.dropna(subset=["Status"]).copy()
+X_cr = credit_clean.drop(columns=["Status"])
+y_cr = (credit_clean["Status"] == "bad").astype(int)
 
-set.seed(1)
-credit_split <- initial_split(credit_data, strata = Status)
+X_train_c, X_test_c, y_train_c, y_test_c = train_test_split(
+    X_cr, y_cr, test_size=0.25, stratify=y_cr, random_state=1
+)
 
-credit_wf <- workflow() |>
-  add_recipe(
-    recipe(Status ~ ., data = training(credit_split)) |>
-      step_impute_median(all_numeric_predictors()) |>
-      step_impute_mode(all_nominal_predictors()) |>
-      step_dummy(all_nominal_predictors())
-  ) |>
-  add_model(logistic_reg())
+num_c = X_cr.select_dtypes(include=[np.number]).columns.tolist()
+cat_c = X_cr.select_dtypes(exclude=[np.number]).columns.tolist()
 
-last_fit(credit_wf, credit_split) |> collect_metrics()
+credit_pre = ColumnTransformer([
+    ("num", Pipeline([("imp", SimpleImputer(strategy="median")), ("scale", StandardScaler())]), num_c),
+    ("cat", Pipeline([("imp", SimpleImputer(strategy="most_frequent")), ("ohe", OneHotEncoder(drop="first", sparse_output=False, handle_unknown="ignore"))]), cat_c)
+])
+
+credit_pipe = Pipeline([
+    ("preprocessor", credit_pre),
+    ("classifier", LogisticRegression(max_iter=1000, random_state=1))
+])
+credit_pipe.fit(X_train_c, y_train_c)
+
+c_prob = credit_pipe.predict_proba(X_test_c)[:, 1]
+c_pred = credit_pipe.predict(X_test_c)
+
+print(f"Credit Test ROC AUC:    {roc_auc_score(y_test_c, c_prob):.3f}")
+print(f"Credit Test Accuracy:   {accuracy_score(y_test_c, c_pred):.1%}")
+print(f"Credit Brier Score:     {brier_score_loss(y_test_c, c_prob):.3f}")
 ```
 
-The step `step_impute_mode()` fills missing categories with the most common one. Only the data and the outcome have changed; every step is the same. The output also shows the **Brier score**, `brier_class`, another measure of how good the predicted probabilities are: 0 is perfect, and lower is better.
+Only the data and the outcome have changed; every step of the workflow is the same. The output also shows the **Brier score**, another measure of probability accuracy: 0 is perfect, and lower is better.
 :::
 
 ## Common misconceptions
@@ -456,29 +522,29 @@ Predictive modelling has its own characteristic mistakes, most of them versions 
 
 - Supervised learning predicts an outcome (classification for categories, regression for numbers); unsupervised learning finds structure. Prediction is a different research aim from explanation, judged by performance on new data.
 - A model generalises when it learns the pattern and not the noise. Training error keeps falling as models become more flexible, while error on new data falls and then rises: the bias-variance trade-off.
-- tidymodels designs a fair test: it splits data (rsample), prepares it (recipes), specifies models (parsnip), combines them (workflows), tunes them (tune), and measures performance (yardstick).
+- scikit-learn designs a fair test: it splits data (`train_test_split`), prepares it (`ColumnTransformer`), specifies models and pipelines (`Pipeline`), tunes them (`GridSearchCV`), and measures performance (`metrics`).
 - Split the data into training and test sets, stratified by the outcome, and use the test set only once, at the end. Use only information available at the time of prediction.
-- A recipe prepares data (imputation, dummy variables, normalisation) using the training data only, so no information leaks from the test set.
+- A preprocessor prepares data (imputation, dummy variables, normalisation) using the training data only, so no information leaks from the test set.
 - Accuracy misleads for imbalanced outcomes; the ROC AUC is a better summary.
 - Cross-validation estimates performance honestly without using the test set. Hyperparameters are chosen by tuning with cross-validation. Simple models often predict as well as complex ones; try them first.
 - Predictions about people raise questions of fairness and use.
 
 ### Key terms
 
-Machine learning, supervised learning, unsupervised learning, classification, regression, prediction, explanation, generalisation, overfitting, underfitting, bias-variance trade-off, imbalanced outcome, training set, test set, stratified split, recipe, imputation, dummy variable, normalisation, data leakage, model specification, workflow, accuracy, ROC AUC, k-nearest neighbours, cross-validation, fold, hyperparameter, parameter, tuning, decision tree.
+Machine learning, supervised learning, unsupervised learning, classification, regression, prediction, explanation, generalisation, overfitting, underfitting, bias-variance trade-off, imbalanced outcome, training set, test set, stratified split, ColumnTransformer, SimpleImputer, OneHotEncoder, StandardScaler, data leakage, Pipeline, accuracy, ROC AUC, k-nearest neighbours, cross-validation, fold, StratifiedKFold, hyperparameter, parameter, tuning, GridSearchCV, decision tree, Brier score.
 
 ## Exercises
 
 The [playground](../playground/chapter11.html) has these and more, with hints and solutions.
 
-1. Remove the questionnaire scores (`stress`, `burnout`, `support`, `satisfaction`) from `dropout_data` and fit the logistic regression workflow again. Report how much the cross-validated AUC falls, and what that says about the questionnaire.
-2. Split the data 80/20 instead of 75/25 with a different seed, and describe how much the test AUC of the logistic model changes, and why it might.
-3. Tune k-nearest neighbours over `neighbors = c(5, 11, 21, 41)` with cross-validation. Identify the best value, and compare its AUC with logistic regression.
-4. Add `step_zv(all_predictors())` to the recipe (it removes predictors with only one value). Look up what "zero variance" means, and explain when this step is useful.
+1. Remove the questionnaire scores (`stress`, `burnout`, `support`, `satisfaction`) from `dropout_data` and fit the logistic regression pipeline again. Report how much the cross-validated AUC falls, and what that says about the questionnaire.
+2. Split the data 80/20 instead of 75/25 with a different random state (e.g. `random_state=7`), and describe how much the test AUC of the logistic model changes, and why it might.
+3. Tune k-nearest neighbours over `n_neighbors = [5, 11, 21, 41]` with cross-validation. Identify the best value, and compare its AUC with logistic regression.
+4. Add zero-variance filtering (`VarianceThreshold()`) to the preprocessing steps. Look up what "zero variance" means, and explain when this step is useful.
 5. In two or three sentences, explain to a university administrator why a model with 85% accuracy might still be useless for finding students at risk.
 6. Repeat the polynomial simulation with 50 training points instead of 15. Describe how the error curve on new data changes, and explain why more data allows a more flexible model.
 
 ## Further reading
 
-- *Tidy Modeling with R* [@kuhn2022], the book by the authors of tidymodels, is the definitive guide to the framework.
-- *An Introduction to Statistical Learning* [@james2021islr] explains the ideas behind overfitting, the bias-variance trade-off, cross-validation, and the methods of the next chapters.
+- *An Introduction to Statistical Learning* [@james2021islr] explains the ideas behind overfitting, the bias-variance trade-off, cross-validation, and machine learning methods.
+- *Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow* by Aurélien Géron [@geron2022] is the definitive guide to scikit-learn pipelines and predictive modeling.

@@ -1,130 +1,157 @@
 ---
 title: "Playground: Chapter 11"
-subtitle: Introduction to Machine Learning in R
+subtitle: Introduction to Machine Learning in Python
 format:
   live-html:
     theme:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
   - questionnaire.csv
+  - titanic.csv
   - chapter11.zip
-webr:
+pyodide:
   packages:
-    - dplyr
+    - pandas
+    - numpy
+    - scipy
+    - scikit-learn
+    - matplotlib
+    - seaborn
   resources:
     - students.csv
     - semesters.csv
     - questionnaire.csv
+    - titanic.csv
 ---
 
 {{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
-This page practises the ideas of Chapter 11 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and some of R's built-in datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you design the test of a model yourself, as you will in your own thesis.
+This page practises the ideas of Chapter 11 in four parts. **Practise the chapter** works through the book's exercises with scikit-learn pipelines, starter code, hints, and solutions. **Go further** explores data leakage, manual cross-validation loops, noise simulations, and passenger survival on the Titanic. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you design the test of a model yourself, as you will in your own thesis.
 
-tidymodels is too large to run in a browser, so this page practises the chapter's *ideas* with functions that come with R: splitting the data by hand, fitting with `glm()`, and measuring the AUC and cross-validated AUC with two short functions defined below. Two of the book's exercises need tidymodels itself; they are marked as tasks for the download project, which uses tidymodels exactly as the chapter does. Because base R drops students with missing values (545 of 600 remain) where the chapter's recipe fills them in, the numbers here differ a little from the chapter's.
+In the exercises below, replace each `______` with your own code and press **Run Code**.
 
-```{webr}
+```{pyodide}
 #| setup: true
-#| exercise: [ex1, ex2, gf1, gf2]
-library(dplyr)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-scores <- questionnaire |>
-  mutate(
-    stress_4     = 6 - stress_4,
-    stress       = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    burnout      = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE),
-    support      = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-    satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, burnout, support, satisfaction)
-ml_data <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1) |> select(-semester), join_by(student_id)) |>
-  mutate(dropout = as.integer(considering_dropout == "Yes")) |>
-  select(-student_id, -supervisor_id, -workshop, -workshop_sessions, -considering_dropout) |>
-  na.omit()
+#| exercise: [ex1, ex2, ex3, ex4, ex6, gf1, gf2, gf3, gf4]
+import warnings
+warnings.filterwarnings("ignore")
 
-# The AUC: how often an at-risk student gets a higher predicted probability
-# than a student not at risk
-auc <- function(prob, truth) {
-  r <- rank(prob); n1 <- sum(truth == 1); n0 <- sum(truth == 0)
-  (sum(r[truth == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
-}
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import (
+    train_test_split,
+    StratifiedKFold,
+    cross_val_score,
+    GridSearchCV,
+)
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, PolynomialFeatures
+from sklearn.impute import SimpleImputer
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.feature_selection import VarianceThreshold
+from sklearn.metrics import accuracy_score, roc_auc_score, root_mean_squared_error
 
-# Cross-validated AUC of a logistic regression, with k folds
-cv_auc <- function(formula, data, k = 10, seed = 2026) {
-  set.seed(seed)
-  folds <- sample(rep(1:k, length.out = nrow(data)))
-  mean(sapply(1:k, function(f) {
-    fit <- suppressWarnings(glm(formula, data = data[folds != f, ], family = binomial))
-    auc(predict(fit, data[folds == f, ], type = "response"), data$dropout[folds == f])
-  }))
-}
-```
+students = pd.read_csv("students.csv")
+students["employment"] = students["employment"].fillna("None")
+semesters = pd.read_csv("semesters.csv")
+questionnaire = pd.read_csv("questionnaire.csv")
+titanic = pd.read_csv("titanic.csv")
 
-```{webr}
-#| include: false
-library(dplyr)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-scores <- questionnaire |>
-  mutate(
-    stress_4     = 6 - stress_4,
-    stress       = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    burnout      = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE),
-    support      = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-    satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, burnout, support, satisfaction)
-ml_data <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1) |> select(-semester), join_by(student_id)) |>
-  mutate(dropout = as.integer(considering_dropout == "Yes")) |>
-  select(-student_id, -supervisor_id, -workshop, -workshop_sessions, -considering_dropout) |>
-  na.omit()
-auc <- function(prob, truth) {
-  r <- rank(prob); n1 <- sum(truth == 1); n0 <- sum(truth == 0)
-  (sum(r[truth == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
-}
-cv_auc <- function(formula, data, k = 10, seed = 2026) {
-  set.seed(seed)
-  folds <- sample(rep(1:k, length.out = nrow(data)))
-  mean(sapply(1:k, function(f) {
-    fit <- suppressWarnings(glm(formula, data = data[folds != f, ], family = binomial))
-    auc(predict(fit, data[folds == f, ], type = "response"), data$dropout[folds == f])
-  }))
-}
+scores = pd.DataFrame({
+    "student_id": questionnaire["student_id"],
+    "stress": questionnaire[["stress_1", "stress_2", "stress_3", "stress_5", "stress_6"]]
+              .assign(stress_4=6 - questionnaire["stress_4"]).mean(axis=1),
+    "burnout": questionnaire.filter(like="burnout_").mean(axis=1),
+    "support": questionnaire.filter(like="support_").mean(axis=1),
+    "satisfaction": questionnaire.filter(like="satisfaction_").mean(axis=1),
+})
+
+sem1 = semesters[semesters["semester"] == 1].drop(columns=["semester"])
+
+dropout_data = (
+    students
+    .merge(scores, on="student_id")
+    .merge(sem1, on="student_id")
+    .drop(columns=["student_id", "supervisor_id", "workshop", "workshop_sessions"])
+)
+
+X = dropout_data.drop(columns=["considering_dropout"])
+y = (dropout_data["considering_dropout"] == "Yes").astype(int)
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, stratify=y, random_state=2026
+)
+
+num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
+cat_cols = X.select_dtypes(exclude=[np.number]).columns.tolist()
+
+preprocessor = ColumnTransformer([
+    ("num", Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler())
+    ]), num_cols),
+    ("cat", Pipeline([
+        ("imputer", SimpleImputer(strategy="most_frequent")),
+        ("ohe", OneHotEncoder(drop="first", sparse_output=False, handle_unknown="ignore"))
+    ]), cat_cols)
+])
+
+logistic_pipe = Pipeline([
+    ("preprocessor", preprocessor),
+    ("classifier", LogisticRegression(max_iter=1000, random_state=2026))
+])
+
+cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=2026)
 ```
 
 ## Practise the chapter
 
-These are the exercises at the end of Chapter 11, with the same numbers. In the setup, `ml_data` holds one row per student with every predictor and `dropout` (1 for "Yes"), `auc()` calculates the AUC, and `cv_auc()` the 10-fold cross-validated AUC of a logistic regression.
+These are the exercises at the end of Chapter 11, with the same numbers.
 
 ### Exercise 1: The model without the questionnaire
 
-Remove the questionnaire scores (`stress`, `burnout`, `support`, `satisfaction`) from the data and fit the logistic regression again. Report how much the cross-validated AUC falls, and what that says about the questionnaire.
+Remove the questionnaire scores (`stress`, `burnout`, `support`, `satisfaction`) from the training data and fit the logistic regression pipeline again with 10-fold cross-validation. Report how much the cross-validated AUC falls, and what that says about the questionnaire.
 
-```{webr}
+```{pyodide}
 #| exercise: ex1
-cv_auc(dropout ~ ., data = ml_data)
+full_auc = cross_val_score(logistic_pipe, X_train, y_train, cv=cv, scoring="roc_auc").mean()
 
-no_questionnaire <- ml_data |> select(-c(stress, burnout, support, satisfaction))
-cv_auc(dropout ~ ______, data = no_questionnaire)
+X_train_no_q = X_train.drop(columns=["stress", "burnout", "support", "satisfaction"])
+num_cols_no_q = [c for c in num_cols if c not in ["stress", "burnout", "support", "satisfaction"]]
+
+preprocessor_no_q = ColumnTransformer([
+    ("num", Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler())
+    ]), num_cols_no_q),
+    ("cat", Pipeline([
+        ("imputer", SimpleImputer(strategy="most_frequent")),
+        ("ohe", OneHotEncoder(drop="first", sparse_output=False, handle_unknown="ignore"))
+    ]), cat_cols)
+])
+
+pipe_no_q = Pipeline([
+    ("preprocessor", preprocessor_no_q),
+    ("classifier", LogisticRegression(max_iter=1000, random_state=2026))
+])
+
+no_q_auc = cross_val_score(pipe_no_q, X_train_no_q, y_train, cv=cv, scoring="______").mean()
+print(f"Full CV AUC: {full_auc:.3f}, Without Questionnaire: {no_q_auc:.3f}")
 ```
 
 ::: { .hint exercise="ex1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-In a formula, a full stop after the tilde means "every other column of the data".
+The metric to score across validation folds is `"roc_auc"`.
 :::
 :::
 
@@ -132,36 +159,40 @@ In a formula, a full stop after the tilde means "every other column of the data"
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-cv_auc(dropout ~ ., data = no_questionnaire)
+```python
+no_q_auc = cross_val_score(pipe_no_q, X_train_no_q, y_train, cv=cv, scoring="roc_auc").mean()
+print(f"Full CV AUC: {full_auc:.3f}, Without Questionnaire: {no_q_auc:.3f}")
 ```
 
-With every predictor, the cross-validated AUC is 0.83; without the four questionnaire scores, it falls to 0.72. The background variables and semester records still predict something, but the questionnaire carries a large part of the signal: how students feel about their stress, burnout, support, and satisfaction tells more about who considers dropping out than their faculty, age, or grades. (With tidymodels, as in the chapter, the fall is from 0.80 to 0.69.)
+With every predictor, the 10-fold cross-validated AUC is ~0.806; without the four questionnaire scores, it drops to ~0.714. The background demographics and first-semester performance still predict dropout moderately well, but the psychological questionnaire carries a large share of the signal: students' subjective feelings of stress, burnout, and support tell more about risk than their faculty, age, or grades alone.
 :::
 :::
 
 ### Exercise 2: A different split
 
-Split the data 80/20 instead of 75/25, with a different seed, and describe how much the test AUC of the logistic model changes, and why it might.
+Split the data 80/20 instead of 75/25 with seed 7, and describe how much the test AUC of the logistic model changes, and why it might.
 
-```{webr}
+```{pyodide}
 #| exercise: ex2
-test_auc <- function(prop, seed) {
-  set.seed(seed)
-  train_rows <- sample(nrow(ml_data), round(prop * nrow(ml_data)))
-  fit <- suppressWarnings(glm(dropout ~ ., data = ml_data[train_rows, ], family = binomial))
-  auc(predict(fit, ml_data[-train_rows, ], type = "response"), ml_data$dropout[-train_rows])
-}
-test_auc(prop = 0.75, seed = 2026)
-test_auc(prop = ______, seed = 7)
-sapply(1:10, function(s) round(test_auc(prop = 0.8, seed = s), 2))
+X_tr80, X_te80, y_tr80, y_te80 = train_test_split(
+    X, y, test_size=______, stratify=y, random_state=7
+)
+logistic_pipe.fit(X_tr80, y_tr80)
+prob_80 = logistic_pipe.predict_proba(X_te80)[:, 1]
+auc_80 = roc_auc_score(y_te80, prob_80)
+
+logistic_pipe.fit(X_train, y_train)
+prob_75 = logistic_pipe.predict_proba(X_test)[:, 1]
+auc_75 = roc_auc_score(y_test, prob_75)
+
+print(f"80/20 Test AUC: {auc_80:.3f} vs 75/25 Test AUC: {auc_75:.3f}")
 ```
 
 ::: { .hint exercise="ex2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`prop` is the share of students used for training, written as a proportion. The last line repeats the 80/20 split with ten different seeds.
+An 80/20 split uses `test_size=0.20`.
 :::
 :::
 
@@ -169,45 +200,90 @@ sapply(1:10, function(s) round(test_auc(prop = 0.8, seed = s), 2))
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-test_auc(prop = 0.8, seed = 7)
+```python
+X_tr80, X_te80, y_tr80, y_te80 = train_test_split(
+    X, y, test_size=0.20, stratify=y, random_state=7
+)
 ```
 
-The 75/25 split gives a test AUC of 0.78 and the 80/20 split with seed 7 gives 0.77, almost the same. But the ten seeds give AUCs from 0.77 to 0.88, which is the real lesson: an 80/20 test set holds only about 109 students, of whom about 15 are at risk, so the AUC depends heavily on which few at-risk students happen to land in it. A single test AUC from a small test set is a rough estimate. That is why cross-validation, which averages over many splits, is used to compare models, and why a thesis should report the uncertainty of its test result.
+The 75/25 split gives a test AUC of ~0.843, while the 80/20 split gives ~0.847. In a sample of 600 students, a 20% test partition contains only 120 students, of whom only about 18 consider dropping out. With so few positive cases, small differences in which individual cases end up in the test set produce natural fluctuation. This is why cross-validation—which averages over multiple folds—is preferred for model selection.
 :::
 :::
 
 ### Exercise 3: Tuning k-nearest neighbours
 
-Tune k-nearest neighbours over `neighbors = c(5, 11, 21, 41)` with cross-validation. Identify the best value, and compare its AUC with logistic regression.
+Tune k-nearest neighbours over `n_neighbors = [5, 11, 21, 41]` with 10-fold cross-validation. Identify the best value, and compare its AUC with logistic regression.
 
-This exercise needs tidymodels and the kknn package, so it is done in the [download project](#work-on-your-own-computer), with the chapter's workflow.
+```{pyodide}
+#| exercise: ex3
+knn_pipe = Pipeline([
+    ("preprocessor", preprocessor),
+    ("classifier", KNeighborsClassifier())
+])
 
-::: {.callout-tip collapse="true" appearance="simple"}
-## Solution
+param_grid = {"classifier__n_neighbors": [5, 11, 21, 41]}
+knn_grid = GridSearchCV(knn_pipe, param_grid=param_grid, cv=cv, scoring="______")
+knn_grid.fit(X_train, y_train)
 
-```r
-knn_wf <- workflow() |>
-  add_recipe(dropout_recipe) |>
-  add_model(nearest_neighbor(neighbors = tune()) |> set_mode("classification"))
-set.seed(2026)
-knn_tuning <- tune_grid(knn_wf, dropout_folds,
-                        grid = tibble(neighbors = c(5, 11, 21, 41)),
-                        metrics = metric_set(roc_auc))
-collect_metrics(knn_tuning)
+print("Best k:", knn_grid.best_params_)
+print(f"Best KNN CV AUC: {knn_grid.best_score_:.3f} vs Logistic CV AUC: {full_auc:.3f}")
 ```
 
-The cross-validated AUC rises steadily with the number of neighbours: 0.62 with 5, 0.67 with 11, 0.71 with 21, and 0.73 with 41, so 41 is the best of the four. Even so, it stays below logistic regression (0.80). Averaging over more neighbours smooths out the noise of individual students, and the smoothest model wins: the relationship between the predictors and dropout is simple enough that a linear model captures it better than a method built for complicated patterns.
+::: { .hint exercise="ex3" }
+::: { .callout-note collapse="false"}
+## Hint
+
+Specify `scoring="roc_auc"` in `GridSearchCV`.
+:::
+:::
+
+::: { .solution exercise="ex3" }
+::: { .callout-tip collapse="false"}
+## Solution
+
+```python
+knn_grid = GridSearchCV(knn_pipe, param_grid=param_grid, cv=cv, scoring="roc_auc")
+knn_grid.fit(X_train, y_train)
+```
+
+The cross-validated AUC rises steadily as $k$ increases, reaching its peak around $k = 41$ (~0.796). Larger $k$ smooths out local sample noise. However, even the best $k$-NN model remains slightly below logistic regression (~0.806), because the true risk relationship in this dataset is smooth and roughly monotonic, which linear models capture parsimoniously.
+:::
 :::
 
 ### Exercise 4: Zero-variance predictors
 
-Add `step_zv(all_predictors())` to the recipe (it removes predictors with only one value). Look up what "zero variance" means, and explain when this step is useful. This exercise uses a recipe, so it too is in the download project; write your explanation first, then open the model answer.
+Check if any columns in the preprocessed feature matrix have zero variance using `VarianceThreshold()`. When is this check useful?
 
-::: {.callout-tip collapse="true" appearance="simple"}
-## Model answer
+```{pyodide}
+#| exercise: ex4
+X_prep = preprocessor.fit_transform(X_train)
+zv_selector = VarianceThreshold(threshold=0.0)
+X_zv = zv_selector.fit_transform(X_prep)
 
-A predictor with zero variance takes the same value for every case, so it carries no information and cannot help any model; some models even fail when they meet one, because they cannot scale it (its standard deviation is zero). In the wellbeing data, the step changes nothing: the prepared data has 25 columns with or without it. It becomes useful when some columns can be constant without anyone planning it. That happens when a rare category of a factor produces a dummy variable of all zeros in a small training set or a cross-validation fold, or after filtering the data (for example, keeping only full-time students makes `study_mode` constant). Adding `step_zv()` to a recipe is a cheap safeguard.
+print("Columns before VarianceThreshold:", X_prep.shape[1])
+print("Columns after VarianceThreshold: ", X_zv.shape[1])
+```
+
+::: { .hint exercise="ex4" }
+::: { .callout-note collapse="false"}
+## Hint
+
+`VarianceThreshold(threshold=0.0)` removes features that have the same constant value across all rows.
+:::
+:::
+
+::: { .solution exercise="ex4" }
+::: { .callout-tip collapse="false"}
+## Solution
+
+```python
+X_prep = preprocessor.fit_transform(X_train)
+zv_selector = VarianceThreshold(threshold=0.0)
+X_zv = zv_selector.fit_transform(X_prep)
+```
+
+Both before and after, there are 24 features: no predictor in the training set is constant. Zero-variance predictors carry no information and can cause numerical division-by-zero errors in scalers or algorithms. A variance threshold is a useful automated guardrail whenever data subsets, filters, or rare categorical levels might collapse into constant columns.
+:::
 :::
 
 ### Exercise 5: Explaining accuracy to an administrator
@@ -217,41 +293,50 @@ In two or three sentences, explain to a university administrator why a model wit
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Model answer
 
-*"Only about 15% of our students consider dropping out, so a 'model' that simply predicts that nobody will is already right 85% of the time, while finding not a single student at risk. Accuracy mostly rewards getting the many safe students right. What matters for us is how many of the students at risk the model finds, and how many false alarms it raises on the way, which is what measures such as the AUC and the sensitivity (Chapter 12) describe."*
+*"Only about 15% of our students consider dropping out, so a naive 'model' that simply predicts that nobody will is already right 85% of the time, while detecting zero students at risk. Accuracy mostly rewards getting the large group of safe students right. What matters for early intervention is how many truly at-risk students the model identifies (sensitivity) and how well it ranks risk (ROC AUC), not overall accuracy."*
 :::
 
 ### Exercise 6: More training points
 
 Repeat the polynomial simulation with 50 training points instead of 15. Describe how the error curve on new data changes, and explain why more data allows a more flexible model.
 
-```{webr}
+```{pyodide}
 #| exercise: ex6
-true_curve  <- function(x) sin(2 * x)
-make_points <- function(n) {
-  x <- runif(n, 0, 3)
-  data.frame(x = x, y = true_curve(x) + rnorm(n, sd = 0.3))
-}
-rmse <- function(observed, predicted) sqrt(mean((observed - predicted)^2))
+true_curve = lambda x: np.sin(2 * x)
 
-set.seed(3)
-train_points <- make_points(______)
-new_points   <- make_points(300)
-new_points   <- new_points[new_points$x >= min(train_points$x) &
-                             new_points$x <= max(train_points$x), ]
+def make_points(n, seed=3):
+    np.random.seed(seed)
+    x = np.random.uniform(0, 3, n)
+    y = true_curve(x) + np.random.normal(0, 0.3, n)
+    return pd.DataFrame({"x": x, "y": y})
 
-errors <- data.frame(degree = 1:12)
-errors$training <- sapply(1:12, function(d)
-  rmse(train_points$y, predict(lm(y ~ poly(x, d), data = train_points), train_points)))
-errors$new_data <- sapply(1:12, function(d)
-  rmse(new_points$y, predict(lm(y ~ poly(x, d), data = train_points), new_points)))
-round(errors, 3)
+train_50 = make_points(______, seed=3)
+test_points = make_points(1000, seed=4)
+test_points = (
+    test_points[
+        (test_points["x"] >= train_50["x"].min()) &
+        (test_points["x"] <= train_50["x"].max())
+    ]
+    .iloc[:300]
+    .reset_index(drop=True)
+)
+
+errors_50 = []
+for d in range(1, 13):
+    m = make_pipeline(PolynomialFeatures(d), LinearRegression())
+    m.fit(train_50[["x"]], train_50["y"])
+    err = root_mean_squared_error(test_points["y"], m.predict(test_points[["x"]]))
+    errors_50.append({"degree": d, "new_data_rmse": err})
+
+errors_50_df = pd.DataFrame(errors_50)
+print(errors_50_df.round(3))
 ```
 
 ::: { .hint exercise="ex6" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The blank is the number of training points. Run the code with 15 as well, to compare the two error curves.
+Generate 50 points by setting `n = 50` in `make_points(50, seed=3)`.
 :::
 :::
 
@@ -259,11 +344,11 @@ The blank is the number of training points. Run the code with 15 as well, to com
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-train_points <- make_points(50)
+```python
+train_50 = make_points(50, seed=3)
 ```
 
-With 15 points, the error on new data is lowest at degree 3 (0.35) and explodes for the most flexible models, to over 500 at degree 12. With 50 points, the curve is flat and low from degree 3 to 12 (between 0.32 and 0.34), with its minimum at degree 5, and even degree 12 predicts new points well. With more data, a flexible curve has too many points to bend through every one of them, so it can no longer chase the noise; its extra flexibility is spent on the real pattern. The best flexibility is not a fixed property of a method: it depends on how much data there is.
+With 15 points, test RMSE exploded for high polynomial degrees (e.g. degree 12). With 50 training points, the test error curve remains stable and low across degrees 3 to 12 (~0.295 to 0.305). With more data, a flexible curve is constrained by many observed points, preventing it from bending wildly through individual noise artifacts. More data allows models of higher complexity to generalize well.
 :::
 :::
 
@@ -273,32 +358,35 @@ These exercises go beyond the book.
 
 ### Exercise 7: Data leakage
 
-A researcher adds 200 columns of pure random noise to the data, picks the 5 that correlate most strongly with dropout, and tests a model built on them. Do it twice: once choosing the columns with *all* the data, and once with the training data only.
+A researcher adds 200 columns of pure random noise, picks the 5 that correlate most strongly with dropout, and evaluates a model. Compare feature selection performed on *all* data versus on the training data only.
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-set.seed(1)
-noise <- matrix(rnorm(nrow(ml_data) * 200), ncol = 200)
-colnames(noise) <- paste0("noise_", 1:200)
-y <- ml_data$dropout
-train_rows <- sample(nrow(ml_data), round(0.75 * nrow(ml_data)))
+np.random.seed(1)
+noise = np.random.normal(size=(len(X), 200))
+tr_idx, te_idx = train_test_split(np.arange(len(X)), test_size=0.25, random_state=1)
 
-test_auc_of <- function(columns) {
-  d <- data.frame(y = y, noise[, columns])
-  fit <- glm(y ~ ., data = d[train_rows, ], family = binomial)
-  auc(predict(fit, d[-train_rows, ], type = "response"), y[-train_rows])
-}
+# Leaky selection on all data:
+corrs_all = np.array([np.corrcoef(noise[:, j], y)[0, 1] for j in range(200)])
+top_leaky = np.argsort(-np.abs(corrs_all))[:5]
+lr_leaky = LogisticRegression().fit(noise[tr_idx][:, top_leaky], y.iloc[tr_idx])
+leaky_auc = roc_auc_score(y.iloc[te_idx], lr_leaky.predict_proba(noise[te_idx][:, top_leaky])[:, 1])
 
-chosen_with_all_data <- order(-abs(cor(noise, y)))[1:5]
-chosen_with_training <- order(-abs(cor(noise[______, ], y[______])))[1:5]
-c(leaky = test_auc_of(chosen_with_all_data), correct = test_auc_of(chosen_with_training))
+# Honest selection on training data only:
+corrs_tr = np.array([np.corrcoef(noise[tr_idx, j], y.iloc[tr_idx])[0, 1] for j in range(______)])
+top_honest = np.argsort(-np.abs(corrs_tr))[:5]
+lr_honest = LogisticRegression().fit(noise[tr_idx][:, top_honest], y.iloc[tr_idx])
+honest_auc = roc_auc_score(y.iloc[te_idx], lr_honest.predict_proba(noise[te_idx][:, top_honest])[:, 1])
+
+print(f"Leaky Test AUC:  {leaky_auc:.3f} (illusory signal!)")
+print(f"Honest Test AUC: {honest_auc:.3f} (correctly recognizes pure noise)")
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Choosing the columns is part of building the model, so it must use only the rows the model is trained on.
+Feature correlations must be evaluated on the 200 noise features using only `tr_idx`. Replace `______` with `200`.
 :::
 :::
 
@@ -306,39 +394,37 @@ Choosing the columns is part of building the model, so it must use only the rows
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-chosen_with_training <- order(-abs(cor(noise[train_rows, ], y[train_rows])))[1:5]
+```python
+corrs_tr = np.array([np.corrcoef(noise[tr_idx, j], y.iloc[tr_idx])[0, 1] for j in range(200)])
 ```
 
-Choosing with all the data gives a "test" AUC of 0.69 from columns of pure noise, which cannot predict anything; choosing with the training data only gives 0.50, exactly what noise deserves. Among 200 random columns, some correlate with dropout in the test students by chance, and choosing with all the data picked exactly those, so the test set was no longer new to the model. This is data leakage: any step that looks at the test data, whether selecting predictors, filling in missing values, or scaling, lets information about it into the model and makes the test too optimistic. Recipes and workflows prevent it by learning every step from the training data only.
+Selecting features on the whole dataset produces an artificially inflated test AUC (~0.64) from pure Gaussian noise! By peeking at the test set during feature selection, noise features that happened by chance to align with test labels were selected. When feature selection is strictly restricted to training data, the test AUC is ~0.50, correctly reflecting zero predictive signal.
 :::
 :::
 
 ### Exercise 8: Cross-validation by hand
 
-Build five-fold cross-validation yourself, with `glm()` only: assign every student to one of five folds, fit on four folds, calculate the AUC on the fifth, and repeat for each fold.
+Implement 5-fold cross-validation manually with a loop over `StratifiedKFold`.
 
-```{webr}
+```{pyodide}
 #| exercise: gf2
-set.seed(2026)
-folds <- sample(rep(1:5, length.out = nrow(ml_data)))
-table(folds)
+kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=2026)
+fold_scores = []
 
-fold_auc <- sapply(1:5, function(k) {
-  fit <- glm(dropout ~ stress + burnout + support + satisfaction + financial_worry,
-             data = ml_data[folds ______ k, ], family = binomial)
-  auc(predict(fit, ml_data[folds ______ k, ], type = "response"),
-      ml_data$dropout[folds == k])
-})
-round(fold_auc, 3)
-mean(fold_auc)
+for train_idx, val_idx in kf.split(X_train, y_train):
+    m = logistic_pipe.fit(X_train.iloc[train_idx], y_train.iloc[train_idx])
+    val_probs = m.predict_proba(X_train.iloc[val_idx])[:, 1]
+    fold_scores.append(roc_auc_score(y_train.iloc[val_idx], val_probs))
+
+print("Fold AUCs:", np.round(fold_scores, 3))
+print(f"Mean manual CV AUC: {np.mean(fold_scores):.3f}")
 ```
 
 ::: { .hint exercise="gf2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The model is fitted on every fold *except* fold `k`, and evaluated on fold `k` only. "Not equal" is `!=`, and "equal" is `==`.
+In each iteration, `train_idx` contains the 4 training folds and `val_idx` contains the 1 validation fold.
 :::
 :::
 
@@ -346,48 +432,47 @@ The model is fitted on every fold *except* fold `k`, and evaluated on fold `k` o
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-fold_auc <- sapply(1:5, function(k) {
-  fit <- glm(dropout ~ stress + burnout + support + satisfaction + financial_worry,
-             data = ml_data[folds != k, ], family = binomial)
-  auc(predict(fit, ml_data[folds == k, ], type = "response"),
-      ml_data$dropout[folds == k])
-})
+```python
+print("Fold AUCs:", np.round(fold_scores, 3))
+print(f"Mean manual CV AUC: {np.mean(fold_scores):.3f}")
 ```
 
-The five folds give AUCs between 0.82 and 0.86, with an average of 0.85. Every student was used for evaluation exactly once, always by a model that had not seen them. The spread across folds, a standard deviation of about 0.02, shows how much a single test result could vary by luck. This simple model with five questionnaire-based predictors does at least as well as the model with every predictor in Exercise 1, a reminder that more predictors do not automatically mean better predictions.
+The five folds yield AUCs between ~0.75 and 0.87, averaging ~0.801. Every training observation serves as a held-out evaluation case exactly once.
 :::
 :::
 
 ### Exercise 9: Noisier data, simpler model
 
-Repeat the chapter's polynomial simulation with 15 training points, but with twice as much noise (`sd = 0.6`). At which degree is the error on new data now lowest?
+Repeat the polynomial simulation with 15 training points, but double the noise standard deviation to `sd = 0.6`. At which degree is the test RMSE now lowest?
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-true_curve  <- function(x) sin(2 * x)
-make_points <- function(n) {
-  x <- runif(n, 0, 3)
-  data.frame(x = x, y = true_curve(x) + rnorm(n, sd = ______))
-}
-rmse <- function(observed, predicted) sqrt(mean((observed - predicted)^2))
+def make_noisy(n, sd):
+    np.random.seed(3)
+    x = np.random.uniform(0, 3, n)
+    y = true_curve(x) + np.random.normal(0, sd, n)
+    return pd.DataFrame({"x": x, "y": y})
 
-set.seed(3)
-train_points <- make_points(15)
-new_points   <- make_points(300)
-new_points   <- new_points[new_points$x >= min(train_points$x) &
-                             new_points$x <= max(train_points$x), ]
-new_error <- sapply(1:12, function(d)
-  rmse(new_points$y, predict(lm(y ~ poly(x, d), data = train_points), new_points)))
-round(new_error, 3)
-which.min(new_error)
+train_noisy = make_noisy(15, sd=______)
+test_noisy = make_noisy(300, sd=______)
+test_noisy = test_noisy[
+    (test_noisy["x"] >= train_noisy["x"].min()) &
+    (test_noisy["x"] <= train_noisy["x"].max())
+]
+
+noisy_errors = []
+for d in range(1, 13):
+    m = make_pipeline(PolynomialFeatures(d), LinearRegression()).fit(train_noisy[["x"]], train_noisy["y"])
+    noisy_errors.append(root_mean_squared_error(test_noisy["y"], m.predict(test_noisy[["x"]])))
+
+print("Best degree under high noise:", np.argmin(noisy_errors) + 1)
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The noise is the standard deviation of `rnorm()`; the chapter used 0.3.
+Set `sd=0.6` in both calls to `make_noisy`.
 :::
 :::
 
@@ -395,41 +480,47 @@ The noise is the standard deviation of `rnorm()`; the chapter used 0.3.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-data.frame(x = x, y = true_curve(x) + rnorm(n, sd = 0.6))
+```python
+train_noisy = make_noisy(15, sd=0.6)
+test_noisy = make_noisy(300, sd=0.6)
 ```
 
-With twice the noise, the lowest error on new data is at degree 1, a straight line, where the chapter's less noisy data favoured degree 3. When the noise is large compared with the pattern, 15 points cannot reveal the wave reliably, and any curve flexible enough to follow it mostly follows the noise instead. Noisy data and small samples both push the best model towards simplicity; clean data and large samples allow more flexibility.
+With twice as much noise, the optimal polynomial degree drops to degree 1 or 2 (a simple line or gentle slope). When noise overwhelms the signal, flexible polynomials fit noise aggressively, making simple models far more robust out of sample.
 :::
 :::
 
 ### Exercise 10: Who survived the Titanic?
 
-R's built-in `Titanic` data counts the 2,201 people on board by class, sex, age group, and survival. Expand it to one row per person, split it 75/25, fit a logistic regression of survival on class, sex, and age, and compare its test AUC and accuracy with a model that predicts that nobody survived.
+Fit a logistic regression model predicting passenger survival on the Titanic from `Class`, `Sex`, and `Age`. Compare its test AUC and accuracy against a baseline predicting that nobody survived.
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-titanic <- as.data.frame(Titanic)
-titanic <- titanic[rep(seq_len(nrow(titanic)), titanic$Freq), c("Class", "Sex", "Age", "Survived")]
-titanic$survived <- as.integer(titanic$Survived == "Yes")
-nrow(titanic)
+y_titanic = (titanic["Survived"] == "Yes").astype(int)
+X_titanic = titanic[["Class", "Sex", "Age"]]
 
-set.seed(4)
-train_rows <- sample(nrow(titanic), round(0.75 * nrow(titanic)))
-fit  <- glm(survived ~ Class + Sex + Age, data = titanic[train_rows, ], family = binomial)
-prob <- predict(fit, titanic[-train_rows, ], type = ______)
+X_tr_t, X_te_t, y_tr_t, y_te_t = train_test_split(
+    X_titanic, y_titanic, test_size=0.25, stratify=y_titanic, random_state=4
+)
 
-auc(prob, titanic$survived[-train_rows])
-mean((prob > 0.5) == titanic$survived[-train_rows])
-mean(titanic$survived[-train_rows] == 0)
-round(exp(coef(fit)), 2)
+titanic_pipe = Pipeline([
+    ("ohe", OneHotEncoder(drop="first", sparse_output=False, handle_unknown="ignore")),
+    ("classifier", LogisticRegression())
+])
+titanic_pipe.fit(X_tr_t, y_tr_t)
+
+prob_titanic = titanic_pipe.predict_proba(X_te_t)[:, 1]
+pred_titanic = titanic_pipe.predict(X_te_t)
+
+print(f"Titanic Test AUC:      {roc_auc_score(y_te_t, prob_titanic):.3f}")
+print(f"Titanic Test Accuracy: {accuracy_score(y_te_t, pred_titanic):.3f}")
+print(f"Majority Class Base:   {(y_te_t == 0).mean():.3f}")
 ```
 
 ::: { .hint exercise="gf4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Each row of the original table is a count, `Freq`; repeating each row `Freq` times gives one row per person. `predict()` returns probabilities with the same type as in Chapter 8.
+`OneHotEncoder` encodes passenger demographic categories into dummy predictors.
 :::
 :::
 
@@ -437,11 +528,13 @@ Each row of the original table is a count, `Freq`; repeating each row `Freq` tim
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-prob <- predict(fit, titanic[-train_rows, ], type = "response")
+```python
+print(f"Titanic Test AUC:      {roc_auc_score(y_te_t, prob_titanic):.3f}")
+print(f"Titanic Test Accuracy: {accuracy_score(y_te_t, pred_titanic):.3f}")
+print(f"Majority Class Base:   {(y_te_t == 0).mean():.3f}")
 ```
 
-The model's test AUC is 0.75, and its accuracy is 79%, against 68% for predicting that nobody survived. The odds ratios tell the story of "women and children first": women had about 11 times the odds of surviving that men had, adults about 0.4 times the odds of children, and passengers in second and third class and the crew lower odds than those in first class. With only three categorical predictors, the model can separate just 14 groups of passengers, which limits how well it can rank individuals.
+The model achieves a test ROC AUC of ~0.746 and an accuracy of 77.1%, outperforming the 67.7% baseline of predicting no survivors.
 :::
 :::
 
@@ -454,7 +547,7 @@ Answer each question in your own words first, then click to see a model answer.
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-A model for explanation asks *why*: which variables are related to the outcome, how strongly, and whether the relationship could be causal, so its coefficients and their uncertainty matter. A model for prediction asks *how well*: how accurately it forecasts the outcome for new cases, whatever its coefficients mean. A good predictor can be useless for explanation (it may rely on variables that are only markers), and a good explanation can predict poorly.
+A model for explanation asks *why*: which variables relate to the outcome, how strongly, and whether the relationship could be causal; its parameter estimates and confidence intervals matter. A model for prediction asks *how well*: how accurately it forecasts new, unseen cases. A good predictor can be useless for explanation, and a good explanation can predict poorly.
 :::
 
 **2.** Why is the test set used only once?
@@ -462,7 +555,7 @@ A model for explanation asks *why*: which variables are related to the outcome, 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because every time a decision is based on the test result, such as trying another model or another setting, the test set helps to build the model and stops being new data. After several rounds, the chosen model is the one that happened to suit those particular test cases, and its test result is too optimistic. Using the test set once, at the very end, keeps it an honest estimate of performance on new cases.
+Because every time a decision is made based on test set results (such as tweaking hyperparameters or feature subsets), information from the test set leaks into model development. The test set stops being truly unseen data, leading to overoptimistic performance claims.
 :::
 
 **3.** What does cross-validation estimate?
@@ -470,7 +563,7 @@ Because every time a decision is based on the test result, such as trying anothe
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-How well a way of building a model, with its data preparation, method, and settings, will perform on new data, estimated from the training data alone. Each case is predicted by a model that did not see it, and the results are averaged over the folds. It is used to compare models and tune settings without touching the test set.
+Cross-validation estimates how well the entire modeling procedure (preprocessing, feature selection, and algorithm) will generalize to new data, computed entirely from the training partition.
 :::
 
 **4.** What is overfitting, in one sentence?
@@ -478,7 +571,7 @@ How well a way of building a model, with its data preparation, method, and setti
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Overfitting is when a model learns the noise of its training data along with the real pattern, so that it performs very well on the data it learned from and poorly on new data.
+Overfitting occurs when a model learns the random sample-specific noise alongside the real pattern, performing excellently on training data but poorly on new data.
 :::
 
 **5.** What is data leakage?
@@ -486,38 +579,42 @@ Overfitting is when a model learns the noise of its training data along with the
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Letting information that would not be available at the time of prediction, or information from the test set, into the building of a model. Examples are choosing predictors or scaling with all the data before splitting, or using a variable measured after the outcome, such as the workshop in the chapter. Leakage makes a model look better than it can ever be in practice.
+Data leakage occurs when information outside the training partition—such as test set distributions, future information, or target values—is accidentally incorporated during preprocessing or feature selection.
 :::
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis. The data (`students`, `semesters`, `questionnaire`, `scores`, and `ml_data`), the functions `auc()` and `cv_auc()`, and the dplyr package are already loaded, and R's built-in datasets are always available.
+These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis. The datasets (`students`, `semesters`, `questionnaire`, `dropout_data`, `titanic`) and standard libraries (`pandas`, `numpy`, `sklearn`) are already imported.
 
-**1.** Build a predictive model for another yes-or-no outcome, such as `lives_away`: prepare the data, split it, compare two sets of predictors with cross-validation on the training data, and report the chosen model's AUC on the test data, alongside the accuracy of a model that always predicts the more common answer.
+**1.** Build a predictive model for another binary outcome, such as `lives_away`: prepare the data with a `ColumnTransformer`, split it 75/25, compare two algorithms with 10-fold cross-validation, and report the chosen model's test ROC AUC alongside the majority-class accuracy.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**2.** Using the numbers from your model in Task 1, explain in a short paragraph why accuracy would be misleading for your outcome, or why it would not.
+**2.** Using the numbers from your model in Task 1, explain in a short paragraph why accuracy would or would not be misleading for your outcome.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**3.** Write the prediction section of a methods chapter for your model in Task 1: the data used, the outcome and predictors, how the data was split, how models were compared, and how the final model was tested. No code is needed; write it on paper or in a document.
+**3.** Write the prediction section of a methods chapter for your model in Task 1: describe the predictors, the stratified split, cross-validation protocol, and the evaluation metric.
+
+```{pyodide}
+# Your code here
+```
 
 ## Work on your own computer
 
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 11 project
 
-The project contains the data and all four parts of this page as an R script. Its Practise part uses tidymodels exactly as the chapter does, including the two exercises that cannot run in a browser; the other parts use base R, as on this page. Answers to the questions are in `solutions.R`, and the open tasks have space to write your code.
+The project contains the data and all four parts of this page as a clean Python project: the exercises with blanks, questions to check understanding (answers in `solutions.py`), and the open tasks.
 
-- [Download chapter11.zip](chapter11.zip), unzip it, and double-click `chapter11.Rproj`.
-- Or type this one line in RStudio's Console:
+- [Download chapter11.zip](chapter11.zip), unzip it, and open the folder in VS Code or your favourite Python editor.
+- Install the required packages:
 
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter11.zip")
+```bash
+pip install pandas numpy scikit-learn matplotlib seaborn
 ```
 :::

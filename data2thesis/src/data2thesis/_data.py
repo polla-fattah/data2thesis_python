@@ -27,6 +27,8 @@ DATASET_NAMES = [
     "usarrests",
     "sleepstudy",
     "chickweight",
+    "credit_data",
+    "titanic",
 ]
 
 EXAMPLE_FILES = [
@@ -45,6 +47,8 @@ EXAMPLE_FILES = [
     "usarrests.csv",
     "sleepstudy.csv",
     "chickweight.csv",
+    "credit_data.csv",
+    "titanic.csv",
     "wellbeing_raw.xlsx",
     "wellbeing.sav",
 ]
@@ -377,6 +381,20 @@ def load_chickweight(copy: bool = True) -> pd.DataFrame:
     return _DATA_CACHE["chickweight"].copy() if copy else _DATA_CACHE["chickweight"]
 
 
+def load_credit_data(copy: bool = True) -> pd.DataFrame:
+    """Load the loan application credit risk dataset from modeldata."""
+    if "credit_data" not in _DATA_CACHE:
+        _DATA_CACHE["credit_data"] = _load_csv("credit_data.csv")
+    return _DATA_CACHE["credit_data"].copy() if copy else _DATA_CACHE["credit_data"]
+
+
+def load_titanic(copy: bool = True) -> pd.DataFrame:
+    """Load the Titanic passenger survival dataset."""
+    if "titanic" not in _DATA_CACHE:
+        _DATA_CACHE["titanic"] = _load_csv("titanic.csv")
+    return _DATA_CACHE["titanic"].copy() if copy else _DATA_CACHE["titanic"]
+
+
 def load(name: str, **kwargs: Any) -> pd.DataFrame:
     """Load a dataset by its string name.
 
@@ -386,7 +404,8 @@ def load(name: str, **kwargs: Any) -> pd.DataFrame:
         Name of dataset: 'students', 'questionnaire', 'semesters',
         'supervisors', 'open_responses', 'open_responses_coded',
         'counselling_visits', 'toothgrowth', 'faithful', 'sleep',
-        'trees', 'ucbadmissions', 'usarrests', 'sleepstudy', or 'chickweight'.
+        'trees', 'ucbadmissions', 'usarrests', 'sleepstudy', 'chickweight',
+        'credit_data', or 'titanic'.
     **kwargs : Any
         Passed to the underlying loader function.
 
@@ -410,6 +429,8 @@ def load(name: str, **kwargs: Any) -> pd.DataFrame:
         "usarrests": load_usarrests,
         "sleepstudy": load_sleepstudy,
         "chickweight": load_chickweight,
+        "credit_data": load_credit_data,
+        "titanic": load_titanic,
     }
     cleaned = name.strip().lower()
     if cleaned not in loaders:
