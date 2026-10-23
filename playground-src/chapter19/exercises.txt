@@ -1,37 +1,36 @@
-FROM DATA TO THESIS: Using R for Non-Technical
+FROM DATA TO THESIS: Using Python for Non-Technical
 Playground, Chapter 19: Putting It All Together - project tasks
 
-The R parts of the playground page are in exercises.R, with answers in
-solutions.R.
+The Python parts of the playground page are in exercises.py, with answers in
+solutions.py.
 
-1. Run the whole project: R/01-clean-data.R, then R/02-analysis.R, then render
-   results.qmd. Delete the data and output folders and run everything again:
-   you get exactly the same results.
+1. Run the whole project: python scripts/01_clean_data.py, then python scripts/02_analysis.py,
+   then render results.qmd (quarto render results.qmd). Delete the data/ and output/
+   folders and run everything again: you recreate the identical tables, figures, and report.
 
-2. Change one cleaning rule in R/01-clean-data.R: treat ages above 70 as
-   impossible (set them to NA). Run all three steps again. Which numbers in the
+2. Change one cleaning rule in scripts/01_clean_data.py: treat ages above 70 as
+   impossible (set them to np.nan). Run all three steps again. Which numbers in the
    results chapter change?
 
 3. Add a row to the sample table in results.qmd: the share of students with
    children (has_children == "Yes").
 
 4. Add a sentence to results.qmd, with inline numbers, reporting the effect of
-   support on GPA (term "support" in results$gpa_table).
+   support on GPA (parameter 'support' in results['gpa_table']).
 
-5. Add a third panel to the figure in R/02-analysis.R: wellbeing in semester 1
-   by faculty, as a box plot (geom_boxplot). Use panel_a + panel_b + panel_c.
+5. Add a third panel to the figure in scripts/02_analysis.py: wellbeing in semester 1
+   by faculty, as a box plot (sns.boxplot). Add ax3 to fig, (ax1, ax2, ax3).
 
-6. Start your own project with the same folders: data-raw, R, data, output, and
+6. Start your own project with the same folders: data-raw, scripts, data, output, and
    a results.qmd. Put one of your own datasets in data-raw and write
-   01-clean-data.R for it.
+   01_clean_data.py for it.
 
 Hints and answers
 2. Only numbers that involve age change, here the mean age in the sample
    table; the models do not use age, so their results stay the same.
-3. Add "Has children" to Characteristic and percent(study$has_children == "Yes")
+3. Add "Has children" to Characteristic and percent(study["has_children"] == "Yes")
    to Value, in the same position.
-4. For example: support_gpa <- results$gpa_table |> filter(term == "support"),
-   then "Each one-point increase in support was associated with a GPA
-   `r sprintf("%.2f", support_gpa$estimate)` points higher."
-5. panel_c <- study |> ggplot(aes(x = faculty, y = wellbeing)) + geom_boxplot()
-   and figure_1 <- (panel_a + panel_b + panel_c) + plot_annotation(...).
+4. For example: support_row = gpa_table.loc["support"], then
+   f"Each one-point increase in supervisor support was associated with a GPA {support_row['estimate']:.2f} points higher."
+5. Use fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(13, 4)), and on ax3 plot
+   sns.boxplot(data=study, x="faculty", y="wellbeing", ax=ax3, color=soft).

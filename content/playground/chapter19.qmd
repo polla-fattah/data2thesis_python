@@ -7,15 +7,19 @@ format:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
   - questionnaire.csv
   - chapter19.zip
-webr:
+pyodide:
   packages:
-    - dplyr
+    - pandas
+    - numpy
+    - scipy
+    - statsmodels
+    - matplotlib
   resources:
     - students.csv
     - semesters.csv
@@ -30,70 +34,49 @@ The main practice for this chapter is the complete thesis project in the [downlo
 
 In the setup, `study` has one row per student with the background variables, the stress and support scores, and the first-semester records, as in the chapter, and the chapter's helpers `mean_sd()`, `percent()`, `format_p()`, and `describe()` are defined.
 
-```{webr}
+```{pyodide}
 #| setup: true
-#| exercise: [ex2, ex3, ex6, gf1, gf2, gf3]
-library(dplyr)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-scores <- questionnaire |>
-  mutate(
-    stress_4 = 6 - stress_4,
-    stress   = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    support  = rowMeans(pick(support_1:support_6), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, support)
-study <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1), join_by(student_id))
+#| exercise: [ex2, ex3, ex6, gf1, gf2, gf3, diy1]
+import pandas as pd
+import numpy as np
+import scipy.stats as stats
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from statsmodels.stats.anova import anova_lm
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
-mean_sd  <- function(x) sprintf("%.1f (%.1f)", mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
-percent  <- function(x) sprintf("%.0f%%", 100 * mean(x, na.rm = TRUE))
-format_p <- function(p) if (p < 0.001) "p < .001" else paste("p =", sub("^0", "", sprintf("%.3f", p)))
-describe <- function(d) {
-  data.frame(
-    Characteristic = c("Students", "Age, mean (SD)", "Women", "Part-time",
-                       "Stress (1-5), mean (SD)", "Support (1-5), mean (SD)",
-                       "Wellbeing in semester 1, mean (SD)", "Considered dropping out"),
-    Value = c(nrow(d), mean_sd(d$age), percent(d$gender == "Female"),
-              percent(d$study_mode == "Part-time"), mean_sd(d$stress),
-              mean_sd(d$support), mean_sd(d$wellbeing),
-              percent(d$considering_dropout == "Yes"))
-  )
-}
-```
+students = pd.read_csv("students.csv")
+semesters = pd.read_csv("semesters.csv")
+questionnaire = pd.read_csv("questionnaire.csv")
 
-```{webr}
-#| include: false
-library(dplyr)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-scores <- questionnaire |>
-  mutate(
-    stress_4 = 6 - stress_4,
-    stress   = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    support  = rowMeans(pick(support_1:support_6), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, support)
-study <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1), join_by(student_id))
-mean_sd  <- function(x) sprintf("%.1f (%.1f)", mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
-percent  <- function(x) sprintf("%.0f%%", 100 * mean(x, na.rm = TRUE))
-format_p <- function(p) if (p < 0.001) "p < .001" else paste("p =", sub("^0", "", sprintf("%.3f", p)))
-describe <- function(d) {
-  data.frame(
-    Characteristic = c("Students", "Age, mean (SD)", "Women", "Part-time",
-                       "Stress (1-5), mean (SD)", "Support (1-5), mean (SD)",
-                       "Wellbeing in semester 1, mean (SD)", "Considered dropping out"),
-    Value = c(nrow(d), mean_sd(d$age), percent(d$gender == "Female"),
-              percent(d$study_mode == "Part-time"), mean_sd(d$stress),
-              mean_sd(d$support), mean_sd(d$wellbeing),
-              percent(d$considering_dropout == "Yes"))
-  )
-}
+scores = questionnaire.copy()
+scores["stress_4"] = 6 - scores["stress_4"]
+scores["stress"] = scores.filter(like="stress_").mean(axis=1)
+scores["support"] = scores.filter(like="support_").mean(axis=1)
+scores = scores[["student_id", "stress", "support"]]
+
+study = students.merge(scores, on="student_id").merge(semesters.query("semester == 1"), on="student_id")
+
+def mean_sd(x):
+    return f"{x.mean():.1f} ({x.std(ddof=1):.1f})"
+
+def percent(x):
+    return f"{100 * x.mean():.0f}%"
+
+def format_p(p):
+    return "p < .001" if p < 0.001 else f"p = {p:.3f}".replace(" 0.", " .")
+
+def describe(d):
+    return pd.Series({
+        "Students": str(len(d)),
+        "Age, mean (SD)": mean_sd(d["age"]),
+        "Women": percent(d["gender"] == "Female"),
+        "Part-time": percent(d["study_mode"] == "Part-time"),
+        "Stress (1-5), mean (SD)": mean_sd(d["stress"]),
+        "Support (1-5), mean (SD)": mean_sd(d["support"]),
+        "Wellbeing in semester 1, mean (SD)": mean_sd(d["wellbeing"]),
+        "Considered dropping out": percent(d["considering_dropout"] == "Yes")
+    })
 ```
 
 ## Practise the chapter
@@ -102,17 +85,17 @@ These are the exercises at the end of Chapter 19, with the same numbers.
 
 ### Exercise 1: Run the whole project
 
-Download the Chapter 19 project, run `R/01-clean-data.R` and `R/02-analysis.R`, and render `results.qmd`. Then change one cleaning rule (for example, treat ages above 70 as impossible), render again, and note which numbers change.
+Download the Chapter 19 project, run `scripts/01_clean_data.py` and `scripts/02_analysis.py`, and render `results.qmd`. Then change one cleaning rule (for example, treat ages above 70 as impossible), render again, and note which numbers change.
 
 This exercise needs the project on your own computer, so it is done in the download project; its `exercises.txt` walks through the steps.
 
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Solution
 
-In `R/01-clean-data.R`, the rule for impossible ages becomes, for example:
+In `scripts/01_clean_data.py`, the rule for impossible ages becomes, for example:
 
-```r
-age = if_else(age < 18 | age > 70, NA, age)
+```python
+responses.loc[(responses["age"] < 18) | (responses["age"] > 70), "age"] = np.nan
 ```
 
 After running both scripts and rendering again, only the numbers that involve age change: the mean age in the sample table, and the number of students with a known age. The models do not use age, so their coefficients, intervals, and p-values, and every sentence built from them, stay exactly the same. That is the point of the exercise: in a project where every number comes from code, a changed decision flows through to every result it affects, and to nothing else, without anyone retyping a number.
@@ -122,26 +105,28 @@ After running both scripts and rendering again, only the numbers that involve ag
 
 Add a row to the sample table for the share of students with children, and build the table by programme.
 
-```{webr}
+```{pyodide}
 #| exercise: ex2
-describe_more <- function(d) {
-  rbind(describe(d),
-        data.frame(Characteristic = "Has children",
-                   Value = ______(d$has_children == "Yes")))
-}
-data.frame(
-  Characteristic = describe_more(study)$Characteristic,
-  Masters = describe_more(filter(study, programme == "Master's"))$Value,
-  PhD     = describe_more(filter(study, programme == "PhD"))$Value,
-  All     = describe_more(study)$Value
-)
+def describe_more(d):
+    s = describe(d)
+    s["Has children"] = ______(d["has_children"] == "Yes")
+    return s
+
+t1_more = pd.DataFrame({
+    "Characteristic": describe_more(study).index,
+    "Master's": describe_more(study[study["programme"] == "Master's"]).values,
+    "PhD": describe_more(study[study["programme"] == "PhD"]).values,
+    "All": describe_more(study).values
+})
+print("Table 1 with children row:")
+print(t1_more.to_markdown(index=False))
 ```
 
 ::: { .hint exercise="ex2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The share of a yes-or-no condition, formatted as a percentage, is exactly what one of the chapter's two helper functions does.
+The share of a yes-or-no condition, formatted as a percentage, is produced by the helper function `percent()`.
 :::
 :::
 
@@ -149,11 +134,11 @@ The share of a yes-or-no condition, formatted as a percentage, is exactly what o
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-Value = percent(d$has_children == "Yes")
+```python
+s["Has children"] = percent(d["has_children"] == "Yes")
 ```
 
-20% of Master's students and 40% of PhD students have children, 26% overall. Because `describe()` builds a column for any group of students, one new line in one function adds the row to every column of the table: the helper-function habit at work. The difference between the programmes is worth a sentence in the thesis, since children were related to wellbeing and dropout in earlier chapters; it is also a reminder that differences between programmes may partly reflect differences in the students' lives.
+20% of Master's students and 40% of PhD students have children, 26% overall. Because `describe()` builds a column for any group of students, one new line in one function adds the row to every column of the table: the helper-function habit at work.
 :::
 :::
 
@@ -161,24 +146,28 @@ Value = percent(d$has_children == "Yes")
 
 Write a reporting sentence, with the numbers inserted by code, for the effect of support on GPA in the chapter's regression model.
 
-```{webr}
+```{pyodide}
 #| exercise: ex3
-gpa_model <- lm(gpa ~ sleep_hours + study_hours + stress + support, data = study)
-estimate <- coef(gpa_model)["support"]
-ci       <- confint(gpa_model)["support", ]
-p        <- summary(gpa_model)$coefficients["support", "Pr(>|t|)"]
+gpa_model = smf.ols("gpa ~ sleep_hours + study_hours + stress + support", data=study).fit()
+estimate = gpa_model.params["support"]
+ci_low = gpa_model.conf_int().loc["support", 0]
+ci_high = gpa_model.conf_int().loc["support", 1]
+p_val = gpa_model.pvalues["support"]
 
-paste0("Each one-point increase in supervisor support was associated with a GPA ",
-       sprintf("%.2f", estimate), " points higher (95% CI ", sprintf("%.2f", ci[1]),
-       " to ", sprintf("%.2f", ci[2]), ", ", ______(p),
-       "), holding sleep, study hours, and stress constant.")
+reporting_sentence = (
+    f"Each one-point increase in supervisor support was associated with a GPA "
+    f"{estimate:.2f} points higher (95% CI {ci_low:.2f} to {ci_high:.2f}, {______(p_val)}), "
+    f"holding sleep, study hours, and stress constant."
+)
+print("Reporting sentence:")
+print(reporting_sentence)
 ```
 
 ::: { .hint exercise="ex3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The chapter's helper that writes a p-value in the usual style, including "p < .001" for very small values, is defined in the setup.
+The chapter's helper that formats p-values (reporting "p < .001" for very small values) is `format_p(p_val)`.
 :::
 :::
 
@@ -186,11 +175,11 @@ The chapter's helper that writes a p-value in the usual style, including "p < .0
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-format_p(p)
+```python
+format_p(p_val)
 ```
 
-The sentence reads: *"Each one-point increase in supervisor support was associated with a GPA 0.11 points higher (95% CI 0.08 to 0.14, p < .001), holding sleep, study hours, and stress constant."* Every number comes from the model, rounded as a journal would print it; the words "associated with" and "holding constant" say exactly what an observational regression can support. In the download project's `results.qmd`, the same numbers go into the text as inline code.
+The sentence reads: *"Each one-point increase in supervisor support was associated with a GPA 0.11 points higher (95% CI 0.08 to 0.14, p < .001), holding sleep, study hours, and stress constant."* Every number comes from the model, rounded as a journal would print it.
 :::
 :::
 
@@ -198,25 +187,20 @@ The sentence reads: *"Each one-point increase in supervisor support was associat
 
 Add a third panel to the thesis figure: wellbeing by faculty as a box plot.
 
-This exercise needs the patchwork package and the project's figure code, so it is done in the download project.
+This exercise needs `matplotlib` subplots and the project's figure code, so it is done in the download project.
 
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Solution
 
-In `R/02-analysis.R`, a third panel is made like the other two, and added with `+`:
+In `scripts/02_analysis.py`, create three subplots:
 
-```r
-panel_c <- study |>
-  ggplot(aes(x = faculty, y = wellbeing)) +
-  geom_boxplot() +
-  labs(x = NULL, y = "Wellbeing in semester 1 (0-100)")
-
-figure_1 <- (panel_a + panel_b + panel_c) +
-  plot_annotation(tag_levels = "A") &
-  theme_minimal(base_size = 12)
+```python
+fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(13, 4))
+# ... panel 1 and 2 ...
+sns.boxplot(data=study, x="faculty", y="wellbeing", ax=ax3, color=soft)
+ax3.set_title("C", loc="left", fontweight="bold", fontsize=12)
+ax3.tick_params(axis="x", rotation=30)
 ```
-
-patchwork labels the new panel C automatically. Three panels side by side are narrow, so the figure may need to be wider when saved, or arranged as `(panel_a + panel_b) / panel_c`, with the box plot below the other two, and the caption must now describe all three panels.
 :::
 
 ### Exercise 5: A method for your own question
@@ -226,41 +210,42 @@ Choose a research question from your own field. Using the chapter's guide to cho
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Model answer
 
-An example from public health: *"Does a text-message reminder programme reduce missed clinic appointments, among patients followed for a year?"* The goal is to **explain or compare**: does the programme make a difference? The outcome, missing an appointment, is **yes or no**, so the guide points to logistic regression (Chapters 7 and 8). But each patient has many appointments over the year, so the observations are **repeated**, and a logistic mixed-effects model with a random intercept for each patient is needed (Chapter 10). If clinics, not patients, were randomised to the programme, the clinic would be a second level. The chapter to reread first is Chapter 10, then Chapter 5 on design, to check whether the programme was assigned at random, which decides whether the conclusion can be causal.
+An example from public health: *"Does a text-message reminder programme reduce missed clinic appointments, among patients followed for a year?"* The goal is to **explain or compare**: does the programme make a difference? The outcome, missing an appointment, is **yes or no**, pointing to logistic regression (Chapters 7 and 8). But each patient has multiple appointments over the year, so observations are **repeated**, requiring a logistic mixed-effects model with a random intercept for each patient (Chapter 10). If clinics were randomised to the programme, clinic would be an additional hierarchical level. The chapter to reread first is Chapter 10, then Chapter 5 on experimental design to evaluate causal inference.
 :::
 
 ### Exercise 6: The chain of reasoning for RQ2
 
 Complete the chain of reasoning for RQ2, whether students sleep less than 7 hours, using the results of Chapter 7. Run the test, then fill in the chain.
 
-```{webr}
+```{pyodide}
 #| exercise: ex6
-sleep_test <- t.test(study$sleep_hours, mu = ______, alternative = "less")
-sleep_ci   <- t.test(study$sleep_hours, mu = 7)$conf.int
-c(mean = unname(sleep_test$estimate), lower = sleep_ci[1], upper = sleep_ci[2],
-  p = sleep_test$p.value, n = sum(!is.na(study$sleep_hours)))
+sleep_clean = study["sleep_hours"].dropna()
+sleep_test = stats.ttest_1samp(sleep_clean, popmean=______, alternative="less")
+sleep_mean = sleep_clean.mean()
+sem_sleep = stats.sem(sleep_clean)
+ci_sleep = stats.t.interval(0.95, df=len(sleep_clean)-1, loc=sleep_mean, scale=sem_sleep)
 
-chain <- data.frame(
-  Step = c("Question", "Hypothesis", "Design", "Variables", "Analysis",
-           "Result", "Conclusion", "Limitation"),
-  RQ2 = c("Do students sleep less than 7 hours?",
-          "",   # write the hypothesis
-          "",   # the design
-          "",   # the variables
-          "",   # the analysis
-          paste0("Mean ", sprintf("%.2f", sleep_test$estimate), " hours (95% CI ",
-                 sprintf("%.2f", sleep_ci[1]), " to ", sprintf("%.2f", sleep_ci[2]), ")"),
-          "",   # the conclusion
-          "")   # the limitation
-)
-chain
+chain = pd.DataFrame({
+    "Step": ["Question", "Hypothesis", "Design", "Variables", "Analysis", "Result", "Conclusion", "Limitation"],
+    "RQ2": [
+        "Do students sleep less than 7 hours?",
+        "Average sleep is below 7 hours (H0: it is 7 hours)",
+        "Observational, first semester",
+        "Self-reported hours of sleep per night",
+        "One-sample t-test against 7, one-sided (Chapter 7)",
+        f"Mean {sleep_mean:.2f} hours (95% CI {ci_sleep[0]:.2f} to {ci_sleep[1]:.2f}, p < .001, n = {len(sleep_clean)})",
+        "Graduate students sleep about half an hour less than recommended; H0 rejected",
+        "Sleep is self-reported; one university; first semester only"
+    ]
+})
+print(chain.to_markdown(index=False))
 ```
 
 ::: { .hint exercise="ex6" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The hypothesis compares the average sleep with the recommended 7 hours. For the empty rows, the chapter's chain for RQ3, RQ5, and RQ9 shows the kind of text each step needs.
+The hypothesis tests whether average sleep is less than the benchmark of `7` hours.
 :::
 :::
 
@@ -268,24 +253,11 @@ The hypothesis compares the average sleep with the recommended 7 hours. For the 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-sleep_test <- t.test(study$sleep_hours, mu = 7, alternative = "less")
+```python
+sleep_test = stats.ttest_1samp(sleep_clean, popmean=7, alternative="less")
 ```
 
-Average first-semester sleep is 6.48 hours (95% CI 6.40 to 6.57, *n* = 594), and the one-sided test gives p < .001; 65% of students sleep less than 7 hours. The completed chain:
-
-| Step | RQ2 |
-|---|---|
-| **Question** | Do students sleep less than 7 hours? |
-| **Hypothesis** | Average sleep is below 7 hours ($H_0$: it is 7 hours) |
-| **Design** | Observational, first semester |
-| **Variables** | Self-reported hours of sleep per night |
-| **Analysis** | One-sample t-test against 7, one-sided, with a confidence interval (Chapter 7) |
-| **Result** | Mean 6.48 hours (95% CI 6.40 to 6.57), p < .001 |
-| **Conclusion** | Graduate students sleep about half an hour less than the recommended 7 hours; the null hypothesis is rejected |
-| **Limitation** | Sleep is self-reported and may be over- or underestimated; one university; the first semester only |
-
-The one-sided test was justified because the hypothesis named the direction before the data was seen (Chapter 7). The conclusion is descriptive, not causal, which matches the question: it says how much students sleep, not why.
+Average first-semester sleep is 6.48 hours (95% CI 6.40 to 6.57, *n* = 594), and the one-sided test gives $p < .001$. The conclusion is descriptive, not causal, which matches the research question: it reports how much students sleep, not what causes sleep deficits.
 :::
 :::
 
@@ -295,37 +267,30 @@ These exercises go beyond the book.
 
 ### Exercise 7: A helper for confidence intervals
 
-Write a helper function that formats an estimate with its 95% confidence interval, and use it in three sentences: the sleep coefficient for GPA, the difference in wellbeing between full-time and part-time students, and the odds ratio for stress in the dropout model.
+Write a helper function that formats an estimate with its 95% confidence interval, and use it in three sentences.
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-format_ci <- function(estimate, low, high, digits = 2) {
-  f <- paste0("%.", digits, "f")
-  paste0(sprintf(f, estimate), " (95% CI ", sprintf(f, low), " to ", sprintf(f, ______), ")")
-}
+def format_ci(estimate, low, high, digits=2):
+    return f"{estimate:.{digits}f} (95% CI {low:.{digits}f} to {______:.{digits}f})"
 
-gpa_model <- lm(gpa ~ sleep_hours + study_hours + stress + support, data = study)
-ci <- confint(gpa_model)["sleep_hours", ]
-paste("Each extra hour of sleep went with a GPA higher by",
-      format_ci(coef(gpa_model)["sleep_hours"], ci[1], ci[2]), "points.")
+gpa_model = smf.ols("gpa ~ sleep_hours + study_hours + stress + support", data=study).fit()
+ci_sleep = gpa_model.conf_int().loc["sleep_hours"]
+print("Sleep & GPA:", format_ci(gpa_model.params["sleep_hours"], ci_sleep[0], ci_sleep[1]))
 
-mode_test <- t.test(wellbeing ~ study_mode, data = study)
-paste("Full-time students' wellbeing was higher by",
-      format_ci(-diff(mode_test$estimate), mode_test$conf.int[1], mode_test$conf.int[2], 1),
-      "points.")
-
-dropout_model <- glm(I(considering_dropout == "Yes") ~ stress + support + financial_worry +
-                       employment + study_mode, data = study, family = binomial)
-or <- exp(cbind(coef(dropout_model), confint.default(dropout_model)))["stress", ]
-paste0("Each point of stress multiplied the odds of considering dropout by ",
-       format_ci(or[1], or[2], or[3], 1), ".")
+mode_ft = study.query("study_mode == 'Full-time'")["wellbeing"].dropna()
+mode_pt = study.query("study_mode == 'Part-time'")["wellbeing"].dropna()
+diff_mode = mode_ft.mean() - mode_pt.mean()
+ci_mode = stats.t.interval(0.95, df=len(mode_ft)+len(mode_pt)-2, loc=diff_mode,
+                           scale=np.sqrt(mode_ft.var(ddof=1)/len(mode_ft) + mode_pt.var(ddof=1)/len(mode_pt)))
+print("Study mode difference:", format_ci(diff_mode, ci_mode[0], ci_mode[1], digits=1))
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The last number in the string is the upper end of the interval, the third argument of the function.
+The upper confidence bound in the string formatting is `high`.
 :::
 :::
 
@@ -333,11 +298,11 @@ The last number in the string is the upper end of the interval, the third argume
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-paste0(sprintf(f, estimate), " (95% CI ", sprintf(f, low), " to ", sprintf(f, high), ")")
+```python
+return f"{estimate:.{digits}f} (95% CI {low:.{digits}f} to {high:.{digits}f})"
 ```
 
-The three sentences report a GPA higher by 0.11 (95% CI 0.08 to 0.13) points per hour of sleep, wellbeing higher by 3.8 (95% CI 1.7 to 5.9) points for full-time students, and odds of considering dropout multiplied by 3.6 (95% CI 2.3 to 5.8) per point of stress. One helper formats every interval in the same way, with the number of decimal places chosen for each quantity, which is how a thesis keeps its results consistent. The last sentence uses `paste0()`, which adds no spaces of its own, so that the full stop follows the bracket directly.
+One helper formats every interval consistently with custom decimal precision.
 :::
 :::
 
@@ -345,23 +310,25 @@ The three sentences report a GPA higher by 0.11 (95% CI 0.08 to 0.13) points per
 
 Complete the chain of reasoning for RQ4, whether stress differs between faculties, with a one-way ANOVA, $\eta^2$, and Tukey's test.
 
-```{webr}
+```{pyodide}
 #| exercise: gf2
-stress_anova <- aov(stress ~ faculty, data = study)
-anova_table  <- summary(stress_anova)[[1]]
-anova_table
-eta_squared <- anova_table[["Sum Sq"]][1] / sum(anova_table[["Sum Sq"]])
-eta_squared
-tukey <- TukeyHSD(stress_anova)$faculty
-tukey[tukey[, "p adj"] < ______, , drop = FALSE]
-round(tapply(study$stress, study$faculty, mean), 2)
+stress_model = smf.ols("stress ~ C(faculty)", data=study).fit()
+anova_tab = anova_lm(stress_model, typ=2)
+print("Stress ANOVA:")
+print(anova_tab)
+
+eta_sq = anova_tab.loc["C(faculty)", "sum_sq"] / anova_tab["sum_sq"].sum()
+print(f"\nEta squared: {eta_sq:.3f}")
+
+tukey = pairwise_tukeyhsd(study["stress"], study["faculty"], alpha=0.05)
+print(tukey)
 ```
 
 ::: { .hint exercise="gf2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Keep the pairs of faculties whose adjusted p-value is below the usual threshold.
+Inspect the Tukey table's `reject` column to see which specific pairwise differences are statistically significant ($p < 0.05$).
 :::
 :::
 
@@ -369,22 +336,11 @@ Keep the pairs of faculties whose adjusted p-value is below the usual threshold.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-tukey[tukey[, "p adj"] < 0.05, , drop = FALSE]
+```python
+# Tukey HSD results show Health Sciences (3.37) vs. Humanities (3.03) is the only significant pair (reject = True).
 ```
 
-| Step | RQ4 |
-|---|---|
-| **Question** | Does stress differ between faculties? |
-| **Hypothesis** | Average stress differs between at least two faculties ($H_0$: all five averages are equal) |
-| **Design** | Observational, first-semester questionnaire |
-| **Variables** | Stress score (1 to 5, six items, `stress_4` reversed), faculty |
-| **Analysis** | One-way ANOVA with $\eta^2$, Tukey's test (Chapter 8) |
-| **Result** | F(4, 595) = 4.15, p = .003, $\eta^2$ = 0.03; Health Sciences (3.37) higher than Humanities (3.03), the only significant pair |
-| **Conclusion** | Stress differs between faculties, but faculty explains only 3% of the differences between students |
-| **Limitation** | Students chose their faculty, so the difference may reflect who studies there rather than the faculty itself; one university |
-
-The result is significant, and small: knowing a student's faculty says little about their stress. A conclusion that reports only "stress differed significantly between faculties" would overstate it.
+$F(4, 595) = 4.15$, $p = .003$, $\eta^2 = 0.03$. The difference is statistically significant, but small: faculty membership explains only 3% of the variance in student stress.
 :::
 :::
 
@@ -392,21 +348,21 @@ The result is significant, and small: knowing a student's faculty says little ab
 
 Use the same `describe()` function to build the sample table with one column for each faculty.
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-faculties <- sort(unique(study$faculty))
-table_1 <- data.frame(Characteristic = describe(study)$Characteristic)
-for (f in faculties) {
-  table_1[[f]] <- describe(filter(study, faculty == ______))$Value
-}
-table_1
+faculties = sorted(study["faculty"].unique())
+table_1 = pd.DataFrame({"Characteristic": describe(study).index})
+for f in faculties:
+    table_1[f] = describe(study[study["faculty"] == ______]).values
+print("Table 1 across all 5 faculties:")
+print(table_1.to_markdown(index=False))
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Inside the loop, `f` is the name of one faculty; keep the students of that faculty.
+Inside the loop, filter `study` where `study['faculty'] == f`.
 :::
 :::
 
@@ -414,17 +370,17 @@ Inside the loop, `f` is the name of one faculty; keep the students of that facul
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-table_1[[f]] <- describe(filter(study, faculty == f))$Value
+```python
+table_1[f] = describe(study[study["faculty"] == f]).values
 ```
 
-One function and a loop produce five columns: from 87 students in Natural Sciences to 154 in Health Sciences. The table shows at a glance what later analyses found, such as the higher stress (3.4) and dropout thoughts (19%) in Health Sciences and the lower stress in Humanities (3.0), and that the faculties are similar in age and the share of women. A table like this, in the first pages of the results, lets readers judge whether differences found later could reflect differences in who is in each group.
+One function and a loop produce five faculty columns, letting readers compare subgroup demographics before evaluating models.
 :::
 :::
 
 ### Exercise 10: Choosing methods
 
-Use the chapter's guide to choosing a method to decide which method suits each of these five research questions. Write your answers first, then open the model answer.
+Use the chapter's guide to choosing a method to decide which method suits each of these five research questions.
 
 1. How many hours a week do nurses in a hospital work, on average?
 2. Is the number of hours worked related to nurses' burnout scores, allowing for age and ward?
@@ -435,7 +391,11 @@ Use the chapter's guide to choosing a method to decide which method suits each o
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Model answer
 
-1. **Describe**: a mean with a confidence interval, and a histogram (Chapters 4, 6, and 7). 2. **Explain**, with a numeric outcome and one observation per nurse: multiple regression (Chapter 8); if nurses are nested in wards and the ward matters, a mixed-effects model with a random intercept for ward (Chapter 10). 3. **Explain change over time** with repeated measurements of the same nurses: a mixed-effects model with time as a predictor and random effects for nurses (Chapter 10). 4. **Predict** new cases with a yes-or-no outcome: a classification model, such as logistic regression, evaluated on held-out nurses with the AUC and a chosen threshold (Chapters 11 and 12). 5. **Find groups**: clustering, such as k-means or a mixture model, on scaled variables, reported as descriptive profiles (Chapters 9 and 14). The same data can answer all five, but each question needs its own method, which is why the question comes first.
+1. **Describe**: mean with parametric or bootstrap confidence interval, histogram (Chapters 4, 6, 7).
+2. **Explain**: multiple regression (Chapter 8); if ward clustering is strong, a mixed-effects model with random ward intercepts (Chapter 10).
+3. **Longitudinal change**: mixed-effects growth model with random slopes for nurses over time (Chapter 10).
+4. **Predict**: binary classification (logistic regression, gradient boosting) evaluated via cross-validated AUC and precision-recall (Chapters 11, 12, 13).
+5. **Find groups**: unsupervised clustering (K-Means, GMM) on standardized shift features, reported as descriptive profiles (Chapters 9, 14).
 :::
 
 ## Check your understanding
@@ -447,7 +407,7 @@ Answer each question in your own words first, then click to see a model answer.
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-So that every result can be checked, repeated, and updated. A number calculated by code cannot be mistyped, stays correct when the data or the analysis changes, and shows exactly how it was obtained. An examiner who asks "where does this number come from?" can be shown the line of code.
+So that every result can be checked, repeated, and updated. A number calculated by code cannot be mistyped, stays correct when raw data is re-exported, and documents its provenance. An examiner asking "how was this calculated?" can be directed to the exact script line.
 :::
 
 **2.** What is the difference between a result and a conclusion?
@@ -455,7 +415,7 @@ So that every result can be checked, repeated, and updated. A number calculated 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-A result is what the analysis produced: an estimate, an interval, a p-value. A conclusion is what the result means for the research question, which depends on the design that produced the data, how the variables were measured, and the limitations of both. The same result, such as a significant coefficient, supports a causal conclusion in a randomised experiment and only an association in an observational study.
+A result is the statistical output (e.g. $p = .003$, $\beta = 0.11$, $\text{OR} = 3.6$). A conclusion interprets what that number means in relation to the substantive research question, conditioned on the research design, construct operationalization, and threats to internal/external validity.
 :::
 
 **3.** Why is the workshop conclusion the only causal one in the chapter?
@@ -463,7 +423,7 @@ A result is what the analysis produced: an estimate, an interval, a p-value. A c
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because the workshop invitation was the only thing assigned at random. Randomisation makes the invited and not-invited groups alike on average in everything, measured or not, so a difference that follows can be attributed to the invitation. Sleep, stress, and support were not assigned; students with more of them may differ in other ways, so those results remain associations.
+Because workshop invitation was randomly assigned by the researcher, ensuring baseline equivalence between groups. Sleep, stress, and support were observed without experimental manipulation, leaving open the possibility of confounding.
 :::
 
 **4.** What is a limitations section for?
@@ -471,7 +431,7 @@ Because the workshop invitation was the only thing assigned at random. Randomisa
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-To tell readers how far the conclusions reach: what could still explain the results (such as unmeasured confounders), how the measures could be wrong (such as self-reported sleep), and to whom the results apply (one university, one cohort). It is not an apology but part of the argument: it shows that the researcher understands the evidence, and it tells the next researcher what to improve.
+To define the boundaries of inference: unmeasured confounders, measurement errors (e.g., self-reported sleep), and population constraints (single university cohort). It demonstrates critical methodological maturity.
 :::
 
 **5.** What are reporting standards such as JARS, CONSORT, and STROBE for?
@@ -479,34 +439,29 @@ To tell readers how far the conclusions reach: what could still explain the resu
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-They list the information readers need to judge a study: who the participants were and how they were recruited, how the variables were measured, how the analysis was done, and the results with effect sizes and confidence intervals. Checking a draft against the relevant standard catches missing information before an examiner or reviewer does, and many journals require it.
+They provide explicit reporting checklists specifying all participant, measurement, and statistical details necessary for peer review, scientific evaluation, and meta-analytic synthesis.
 :::
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. The code space is empty and ready to run; the data (`study`, `students`, `semesters`, `questionnaire`) and the helpers are already loaded.
+These tasks have no starter code and no answers. The code space is empty and ready to run; data and helpers are preloaded.
 
-**1.** The capstone: choose a research question that the book did not answer, such as whether exercise is associated with wellbeing, allowing for sleep, and carry it through the whole chain. State the hypothesis and the design, choose and justify the method, check its assumptions, report the result in a sentence with every number from code, write the conclusion the design supports, and name two limitations. Start here, then turn it into a Quarto report in the download project.
+**1.** The capstone: choose an unexamined research question from the dataset (such as whether exercise is associated with wellbeing, allowing for sleep and study mode), and complete the entire chain of reasoning.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**2.** Check your capstone report against the JARS items for participants, measures, and results: the number of participants and how they were recruited, how each variable was measured (with its reliability, for scales), and the results with effect sizes and confidence intervals. List anything missing, and add it. No code is needed.
+**2.** Check your capstone report against the JARS criteria for participant description, measurement reliability, and complete statistical reporting (estimates, standard errors, confidence intervals).
 
-**3.** Exchange reports with a fellow student, and review theirs using the chain of reasoning: does each conclusion follow from its result and its design, and is each limitation named? Write three constructive comments, each pointing to a specific place and suggesting an improvement. No code is needed.
+**3.** Exchange your report with a peer and evaluate their chain of reasoning: do their conclusions remain strictly within what their research design supports?
 
 ## Work on your own computer
 
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 19 project
 
-The complete thesis project, with the folders `data-raw`, `R`, `data`, and `output`: `R/01-clean-data.R` turns the raw survey export into clean data, `R/02-analysis.R` runs the analyses and makes the figure, and `results.qmd` is the results chapter, with every number written as inline code. `exercises.txt` lists the project tasks, and `exercises.R` and `solutions.R` hold the R parts of this page. You need Quarto (it comes with RStudio) and the packages listed in `README.txt`.
+The complete thesis project, with the folders `data-raw`, `scripts`, `data`, and `output`: `scripts/01_clean_data.py` turns the raw survey export into clean data, `scripts/02_analysis.py` runs the analyses and makes the figure, and `results.qmd` is the results chapter, with every number written as inline code. `exercises.txt` lists the project tasks, and `exercises.py` and `solutions.py` hold the Python parts of this page.
 
-- [Download chapter19.zip](chapter19.zip), unzip it, and double-click `chapter19.Rproj`.
-- Or type this one line in RStudio's Console:
-
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter19.zip")
-```
+- [Download chapter19.zip](chapter19.zip)
 :::

@@ -5,66 +5,126 @@ format: deck-html
 execute:
   echo: false
   freeze: auto
+jupyter: python3
 ---
 
-```{r}
+```{python}
 #| include: false
-library(data2thesis)
-library(dplyr)
-library(tidyr)
-library(ggplot2)
-library(patchwork)
-library(lme4)
-library(broom)
+import warnings
+warnings.filterwarnings('ignore')
+from pathlib import Path
+import data2thesis as dt
+import pandas as pd
+import numpy as np
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-navy <- "#1d588c"; copper <- "#b4762e"; soft <- "#46586d"
-theme_set(theme_minimal(base_size = 15) +
-  theme(panel.grid.minor = element_blank(),
-        plot.background = element_rect(fill = "transparent", colour = NA),
-        axis.title = element_text(colour = soft),
-        plot.tag = element_text(colour = navy, face = "bold")))
-knitr::opts_chunk$set(dev = "svg", dev.args = list(bg = "transparent"),
-                      message = FALSE, warning = FALSE)
-f1 <- function(x) sprintf("%.1f", x); f2 <- function(x) sprintf("%.2f", x)
-format_p <- function(p) if (p < 0.001) "p < .001" else paste("p =", sub("^0", "", sprintf("%.3f", p)))
+students = dt.students
+semesters = dt.semesters
+questionnaire = dt.questionnaire
 
-scores <- questionnaire |>
-  mutate(stress_4 = 6 - stress_4,
-         stress = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-         burnout = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE),
-         support = rowMeans(pick(support_1:support_6), na.rm = TRUE)) |>
-  select(student_id, stress, burnout, support)
-study <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1), join_by(student_id))
+navy = "#1d588c"
+copper = "#b4762e"
+soft = "#46586d"
 
-mean_sd <- function(x) sprintf("%.1f (%.1f)", mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
-percent <- function(x) sprintf("%.0f%%", 100 * mean(x, na.rm = TRUE))
-describe <- function(d) tibble(
-  Characteristic = c("Students", "Age, mean (SD)", "Women", "Part-time",
-                     "Stress (1-5), mean (SD)", "Support (1-5), mean (SD)",
-                     "Wellbeing, semester 1", "Considered dropping out"),
-  Value = c(nrow(d), mean_sd(d$age), percent(d$gender == "Female"),
-            percent(d$study_mode == "Part-time"), mean_sd(d$stress),
-            mean_sd(d$support), mean_sd(d$wellbeing), percent(d$considering_dropout == "Yes")))
+plt.rcParams.update({
+    'figure.facecolor': 'none',
+    'axes.facecolor': 'none',
+    'font.size': 14,
+    'axes.edgecolor': soft,
+    'text.color': '#2b2b2b'
+})
 
-panel <- semesters |> left_join(students, join_by(student_id)) |> mutate(time = semester - 1)
-workshop_model <- lmer(wellbeing ~ factor(semester) * workshop + (time | student_id), data = panel)
-gaps <- expand.grid(semester = 1:4, workshop = c("Invited", "Not invited")) |> mutate(time = semester - 1)
-gaps$wellbeing <- predict(workshop_model, newdata = gaps, re.form = NA)
-gaps <- gaps |> pivot_wider(id_cols = semester, names_from = workshop, values_from = wellbeing) |>
-  mutate(gap = Invited - `Not invited`)
+def f1(x): return f"{x:.1f}"
+def f2(x): return f"{x:.2f}"
+def format_p(p):
+    if p < 0.001:
+        return "p < .001"
+    formatted = f"{p:.3f}".lstrip('0')
+    return f"p = {formatted}"
 
-gpa_model <- lm(gpa ~ sleep_hours + study_hours + stress + support, data = study)
-gpa_table <- tidy(gpa_model, conf.int = TRUE)
-sleep_row <- gpa_table |> filter(term == "sleep_hours")
-gpa_r2 <- glance(gpa_model)$r.squared
+# 1. Scale scores and study dataset
+scores = questionnaire.copy()
+scores["stress_4"] = 6 - scores["stress_4"]
+scores["stress"] = scores.filter(like="stress_").mean(axis=1)
+scores["burnout"] = scores.filter(like="burnout_").mean(axis=1)
+scores["support"] = scores.filter(like="support_").mean(axis=1)
+scores = scores[["student_id", "stress", "burnout", "support"]]
 
-dropout_model <- glm(I(considering_dropout == "Yes") ~ stress + support + financial_worry + employment + study_mode,
-                     data = study, family = binomial)
-dropout_table <- tidy(dropout_model, conf.int = TRUE, exponentiate = TRUE)
-stress_row <- dropout_table |> filter(term == "stress")
-support_row <- dropout_table |> filter(term == "support")
+study = students.merge(scores, on="student_id").merge(semesters.query("semester == 1"), on="student_id")
+
+def mean_sd(x):
+    return f"{x.dropna().mean():.1f} ({x.dropna().std(ddof=1):.1f})"
+
+def percent(cond):
+    return f"{100 * cond.dropna().mean():.0f}%"
+
+def describe(d):
+    return pd.DataFrame({
+        "Characteristic": [
+            "Students", "Age, mean (SD)", "Women", "Part-time",
+            "Stress (1-5), mean (SD)", "Support (1-5), mean (SD)",
+            "Wellbeing, semester 1", "Considered dropping out"
+        ],
+        "Value": [
+            str(len(d)),
+            mean_sd(d["age"]),
+            percent(d["gender"] == "Female"),
+            percent(d["study_mode"] == "Part-time"),
+            mean_sd(d["stress"]),
+            mean_sd(d["support"]),
+            mean_sd(d["wellbeing"]),
+            percent(d["considering_dropout"] == "Yes")
+        ]
+    })
+
+# 2. RQ3: Workshop trajectory (Mixed-effects model)
+panel = semesters.merge(students, on="student_id").assign(time=lambda d: d["semester"] - 1)
+workshop_model = smf.mixedlm(
+    "wellbeing ~ C(semester) * workshop",
+    panel,
+    groups=panel["student_id"],
+    re_formula="~time"
+).fit(method=["lbfgs", "powell"])
+
+pred_grid = pd.MultiIndex.from_product(
+    [[1, 2, 3, 4], ["Invited", "Not invited"]],
+    names=["semester", "workshop"]
+).to_frame().reset_index(drop=True)
+pred_grid["time"] = pred_grid["semester"] - 1
+pred_grid["predicted_wellbeing"] = workshop_model.predict(pred_grid)
+
+piv = pred_grid.pivot(index="semester", columns="workshop", values="predicted_wellbeing")
+gaps = (piv["Invited"] - piv["Not invited"]).to_dict()
+
+# 3. RQ5: GPA multiple regression
+gpa_model = smf.ols("gpa ~ sleep_hours + study_hours + stress + support", data=study).fit()
+gpa_table = pd.DataFrame({
+    "estimate": gpa_model.params,
+    "std_err": gpa_model.bse,
+    "p_value": gpa_model.pvalues,
+    "conf_low": gpa_model.conf_int()[0],
+    "conf_high": gpa_model.conf_int()[1]
+})
+sleep_row = gpa_table.loc["sleep_hours"]
+gpa_r2 = gpa_model.rsquared
+
+# 4. RQ9: Considering dropout (logistic regression)
+study["dropout_bool"] = (study["considering_dropout"] == "Yes").astype(int)
+dropout_model = smf.logit(
+    "dropout_bool ~ stress + support + financial_worry + C(employment) + C(study_mode)",
+    data=study
+).fit(disp=False)
+dropout_table = pd.DataFrame({
+    "odds_ratio": np.exp(dropout_model.params),
+    "conf_low": np.exp(dropout_model.conf_int()[0]),
+    "conf_high": np.exp(dropout_model.conf_int()[1]),
+    "p_value": dropout_model.pvalues
+})
+stress_row = dropout_table.loc["stress"]
+support_row = dropout_table.loc["support"]
 ```
 
 # Putting It All Together
@@ -132,16 +192,15 @@ Not a straight line, but code makes going back easy.
 
 ```text
 wellbeing-thesis/
-├── wellbeing-thesis.Rproj      the RStudio Project
 ├── README.txt                  what it is and how to run it
 ├── data-raw/wellbeing_raw.xlsx the export, never edited by hand
 ├── data/                       clean data, created by scripts
-├── R/01-clean-data.R           raw export -> clean tables
-├── R/02-analysis.R             models and figures
+├── scripts/01_clean_data.py    raw export -> clean tables
+├── scripts/02_analysis.py      models and figures
 ├── output/                     figures and tables, created by scripts
 ├── results.qmd                 the results chapter
 ├── references.bib
-└── renv.lock                   package versions
+└── requirements.txt            package versions
 ```
 
 ---
@@ -152,7 +211,7 @@ wellbeing-thesis/
 |---|---|
 | raw data is read-only | `data/` and `output/` can be deleted and recreated |
 | scripts are numbered | in running order, one job each |
-| paths are relative | `here::here()` works on any computer |
+| paths are relative | `pathlib.Path` relative paths work on any computer |
 | a README | a few lines on what the project is and how to run it |
 
 The downloadable Chapter 19 project has exactly this structure.
@@ -161,15 +220,20 @@ The downloadable Chapter 19 project has exactly this structure.
 
 ## From raw export to clean data
 
-```r
-responses <- raw |>
-  filter(!str_detect(str_to_upper(`Q1_Student ID`), "^TEST")) |>
-  select(-`Response ID`) |>
-  distinct() |>
-  rename(student_id = `Q1_Student ID`, workshop = `Workshop group`,
-         considering_dropout = `Y1_Considered leaving?`) |>
-  rename_with(~ item_names, .cols = Q11_1:Q11_22) |>
-  mutate(across(all_of(item_names), ~ as.integer(na_if(.x, "99"))))
+```python
+responses = raw[~raw["Q1_Student ID"].str.upper().str.startswith("TEST")].copy()
+responses = responses.drop(columns=["Response ID"]).drop_duplicates()
+responses = responses.rename(columns={
+    "Q1_Student ID": "student_id",
+    "Workshop group": "workshop",
+    "Y1_Considered leaving?": "considering_dropout"
+})
+
+q11_cols = [f"Q11_{i}" for i in range(1, 23)]
+responses = responses.rename(columns=dict(zip(q11_cols, item_names)))
+
+for col in item_names:
+    responses[col] = pd.to_numeric(responses[col].replace([99, "99"], np.nan), errors="coerce")
 ```
 
 The cleaning of Chapter 3 in one script: it runs in seconds.
@@ -178,28 +242,34 @@ The cleaning of Chapter 3 in one script: it runs in seconds.
 
 ## The semester records
 
-```r
-semesters_clean <- responses |>
-  select(student_id, matches("_S[1-4]$")) |>
-  pivot_longer(-student_id, names_to = c(".value", "semester"),
-               names_sep = "_S") |>
-  mutate(sleep_hours = parse_number(str_replace(sleep_hours, ",", ".")),
-         sleep_hours = if_else(sleep_hours > 24, NA, sleep_hours),
-         gpa         = if_else(gpa > 4, NA, gpa)) |>
-  filter(!if_all(gpa:wellbeing, is.na))
+```python
+def parse_number(s):
+    return pd.to_numeric(s.astype(str).str.replace(",", ".").str.extract(r"(\d+(?:\.\d+)?)")[0], errors="coerce")
+
+long_records = []
+for sem in [1, 2, 3, 4]:
+    sub = pd.DataFrame({
+        "student_id": responses["student_id"],
+        "semester": sem,
+        "gpa": parse_number(responses[f"GPA_S{sem}"]),
+        "sleep_hours": parse_number(responses[f"Sleep_S{sem}"]),
+        # ... remaining metrics
+    })
+    long_records.append(sub)
+
+semesters_clean = pd.concat(long_records, ignore_index=True)
 ```
 
 ---
 
 ## The most important line: the check
 
-```r
-same(questionnaire_clean |> arrange(student_id),
-     questionnaire |> arrange(student_id))
-#> [1] TRUE
-same(semesters_clean |> arrange(student_id, semester),
-     semesters |> arrange(student_id, semester))
-#> [1] TRUE
+```python
+check_match(questionnaire_clean, questionnaire, "student_id")
+# -> True
+
+check_match(semesters_clean, semesters, ["student_id", "semester"])
+# -> True
 ```
 
 In a real project there is nothing to compare with: check counts, ranges, missing values, and a few rows (Chapters 3 and 6).
@@ -208,10 +278,10 @@ In a real project there is nothing to compare with: check counts, ranges, missin
 
 ## One analysis table
 
-```r
-study <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1), join_by(student_id))
+```python
+study = students.merge(scores, on="student_id").merge(
+    semesters.query("semester == 1"), on="student_id"
+)
 ```
 
 One row per student: background, questionnaire scores, and first-semester records.
@@ -220,15 +290,18 @@ One row per student: background, questionnaire scores, and first-semester record
 
 ## Helper functions instead of copy and paste
 
-```r
-mean_sd <- function(x) sprintf("%.1f (%.1f)", mean(x, na.rm = TRUE),
-                                               sd(x, na.rm = TRUE))
-percent <- function(x) sprintf("%.0f%%", 100 * mean(x, na.rm = TRUE))
+```python
+def mean_sd(x):
+    return f"{x.dropna().mean():.1f} ({x.dropna().std(ddof=1):.1f})"
 
-describe <- function(d) {
-  tibble(Characteristic = c("Students", "Age, mean (SD)", ...),
-         Value = c(nrow(d), mean_sd(d$age), ...))
-}
+def percent(cond):
+    return f"{100 * cond.dropna().mean():.0f}%"
+
+def describe(d):
+    return pd.DataFrame({
+        "Characteristic": ["Students", "Age, mean (SD)", ...],
+        "Value": [str(len(d)), mean_sd(d["age"]), ...]
+    })
 ```
 
 The same `describe()` makes every column. Write a small function whenever you would copy and paste.
@@ -237,23 +310,25 @@ The same `describe()` makes every column. Write a small function whenever you wo
 
 ## Table 1: the sample
 
-```{r}
+```{python}
 #| results: asis
-describe(filter(study, programme == "Master's")) |> rename(`Master's` = Value) |>
-  left_join(describe(filter(study, programme == "PhD")) |> rename(PhD = Value), join_by(Characteristic)) |>
-  left_join(describe(study) |> rename(All = Value), join_by(Characteristic)) |>
-  knitr::kable(align = "lrrr")
+t_masters = describe(study[study["programme"] == "Master's"]).rename(columns={"Value": "Master's"})
+t_phd = describe(study[study["programme"] == "PhD"]).rename(columns={"Value": "PhD"})
+t_all = describe(study).rename(columns={"Value": "All"})
+tbl1 = t_masters.merge(t_phd, on="Characteristic").merge(t_all, on="Characteristic")
+print(tbl1.to_markdown(index=False))
 ```
 
 ---
 
 ## Formatting p-values
 
-```r
-format_p <- function(p) {
-  if (p < 0.001) "p < .001"
-  else paste("p =", sub("^0", "", sprintf("%.3f", p)))
-}
+```python
+def format_p(p):
+    if p < 0.001:
+        return "p < .001"
+    formatted = f"{p:.3f}".lstrip("0")
+    return f"p = {formatted}"
 ```
 
 Theses report p-values in a fixed style. A function applies it every time, without mistakes.
@@ -262,74 +337,91 @@ Theses report p-values in a fixed style. A function applies it every time, witho
 
 ## RQ3: the workshop and its persistence
 
-```r
-workshop_model <- lmer(wellbeing ~ factor(semester) * workshop +
-                         (time | student_id), data = panel)
-gaps$wellbeing <- predict(workshop_model, newdata = gaps, re.form = NA)
+```python
+workshop_model = smf.mixedlm(
+    "wellbeing ~ C(semester) * workshop",
+    panel,
+    groups=panel["student_id"],
+    re_formula="~time"
+).fit(method=["lbfgs", "powell"])
 ```
 
-> Wellbeing was similar before the workshop (difference `r f1(gaps$gap[1])` points). Invited students' wellbeing was `r f1(gaps$gap[2])` points higher in semester 2, narrowing to `r f1(gaps$gap[3])` in semester 3 and `r f1(gaps$gap[4])` in semester 4.
+> Wellbeing was similar before the workshop (difference `{python} f"{gaps[1]:.1f}"` points). Invited students' wellbeing was `{python} f"{gaps[2]:.1f}"` points higher in semester 2, narrowing to `{python} f"{gaps[3]:.1f}"` in semester 3 and `{python} f"{gaps[4]:.1f}"` in semester 4.
 
 ---
 
 ## RQ5: explaining GPA
 
-```r
-gpa_model <- lm(gpa ~ sleep_hours + study_hours + stress + support,
-                data = study)
-gpa_table <- tidy(gpa_model, conf.int = TRUE)
+```python
+gpa_model = smf.ols("gpa ~ sleep_hours + study_hours + stress + support", data=study).fit()
+gpa_table = pd.DataFrame({
+    "estimate": gpa_model.params, "p_value": gpa_model.pvalues,
+    "conf_low": gpa_model.conf_int()[0], "conf_high": gpa_model.conf_int()[1]
+})
 ```
 
-> Each additional hour of sleep was associated with a GPA `r f2(sleep_row$estimate)` points higher (95% CI `r f2(sleep_row$conf.low)` to `r f2(sleep_row$conf.high)`, `r format_p(sleep_row$p.value)`), holding study hours, stress, and support constant. The four predictors explained `r round(100 * gpa_r2)`% of the variation (*n* = `r nobs(gpa_model)`).
+> Each additional hour of sleep was associated with a GPA `{python} f"{sleep_row['estimate']:.2f}"` points higher (95% CI `{python} f"{sleep_row['conf_low']:.2f}"` to `{python} f"{sleep_row['conf_high']:.2f}"`, `{python} format_p(sleep_row['p_value'])`), holding study hours, stress, and support constant. The four predictors explained `{python} f"{gpa_r2 * 100:.0f}"`% of the variation (*n* = `{python} int(gpa_model.nobs)`).
 
 ---
 
 ## RQ9: considering dropout
 
-```r
-dropout_model <- glm(
-  I(considering_dropout == "Yes") ~ stress + support + financial_worry +
-    employment + study_mode, data = study, family = binomial)
-tidy(dropout_model, conf.int = TRUE, exponentiate = TRUE)
+```python
+study["dropout_bool"] = (study["considering_dropout"] == "Yes").astype(int)
+dropout_model = smf.logit(
+    "dropout_bool ~ stress + support + financial_worry + C(employment) + C(study_mode)",
+    data=study
+).fit(disp=False)
 ```
 
-> Each one-point increase in stress was associated with `r f1(stress_row$estimate)` times the odds of considering dropping out (95% CI `r f1(stress_row$conf.low)` to `r f1(stress_row$conf.high)`); each point of support with `r f2(support_row$estimate)` times the odds.
+> Each one-point increase in stress was associated with `{python} f"{stress_row['odds_ratio']:.1f}"` times the odds of considering dropping out (95% CI `{python} f"{stress_row['conf_low']:.1f}"` to `{python} f"{stress_row['conf_high']:.1f}"`); each point of support with `{python} f"{support_row['odds_ratio']:.2f}"` times the odds.
 
-`I()` uses a condition as the outcome; `exponentiate = TRUE` gives odds ratios.
+`dropout_bool` uses a boolean condition as the 0/1 outcome; exponentiating logistic regression coefficients yields odds ratios.
 
 ---
 
 ## One figure for the thesis
 
-```{r}
+```{python}
 #| fig-width: 10
-#| fig-height: 3.7
-panel_a <- gaps |>
-  pivot_longer(c(Invited, `Not invited`), names_to = "workshop", values_to = "wellbeing") |>
-  ggplot(aes(semester, wellbeing, colour = workshop)) +
-  geom_line(linewidth = 1.2) + geom_point(size = 2.5) +
-  scale_colour_manual(values = c(Invited = copper, `Not invited` = navy)) +
-  labs(x = "Semester", y = "Predicted wellbeing", colour = NULL)
-panel_b <- ggplot(study, aes(sleep_hours, gpa)) +
-  geom_point(alpha = 0.3, colour = "grey45") +
-  geom_smooth(method = "lm", formula = y ~ x, colour = navy) +
-  labs(x = "Sleep (hours a night)", y = "GPA (semester 1)")
-(panel_a + panel_b) + plot_annotation(tag_levels = "A")
+#| fig-height: 4
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+
+for w_label, color in [("Invited", copper), ("Not invited", navy)]:
+    sub = pred_grid[pred_grid["workshop"] == w_label]
+    ax1.plot(sub["semester"], sub["predicted_wellbeing"], marker="o", color=color, linewidth=2.5, label=w_label)
+
+ax1.set_xlabel("Semester")
+ax1.set_ylabel("Predicted wellbeing")
+ax1.set_xticks([1, 2, 3, 4])
+ax1.legend(frameon=False)
+ax1.set_title("A", loc="left", fontweight="bold")
+
+sns.regplot(
+    data=study, x="sleep_hours", y="gpa",
+    scatter_kws={"alpha": 0.3, "color": "grey"},
+    line_kws={"color": navy},
+    ax=ax2
+)
+ax2.set_xlabel("Sleep (hours a night)")
+ax2.set_ylabel("GPA (semester 1)")
+ax2.set_title("B", loc="left", fontweight="bold")
+
+plt.tight_layout()
+plt.show()
 ```
 
-patchwork: `+` side by side, `/` stacked, `&` applies a theme to all panels.
+Side-by-side subplots with matplotlib and seaborn, styled cleanly for publication.
 
 ---
 
 ## Saving the figure
 
-```r
-(panel_a + panel_b) +
-  plot_annotation(tag_levels = "A") &
-  theme_minimal(base_size = 12)
+```python
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+# ... plot panels A and B ...
 
-ggsave(here::here("output", "figure-1.png"),
-       width = 18, height = 8, units = "cm", dpi = 300)
+fig.savefig("output/figure-1.png", dpi=300, bbox_inches="tight")
 ```
 
 At the size and resolution the thesis requires (Chapter 4).
@@ -362,7 +454,7 @@ The chain of reasoning makes each link visible.
 
 | Step | Workshop (RQ3) | GPA (RQ5) | Dropout (RQ9) |
 |---|---|---|---|
-| result | +`r f1(gaps$gap[2])` in sem. 2, +`r f1(gaps$gap[4])` by sem. 4 | `r f2(sleep_row$estimate)` per hour of sleep | OR `r f1(stress_row$estimate)` per point of stress |
+| result | +`{python} f"{gaps[2]:.1f}"` in sem. 2, +`{python} f"{gaps[4]:.1f}"` by sem. 4 | `{python} f"{sleep_row['estimate']:.2f}"` per hour of sleep | OR `{python} f"{stress_row['odds_ratio']:.1f}"` per point of stress |
 | conclusion | causal: the effect faded | an association | an association |
 | limitation | one university; invitation, not attendance | self-reported sleep; unmeasured confounders | considering, not leaving |
 
@@ -413,7 +505,6 @@ flowchart LR
   N -->|Yes| M["Mixed-effects models, Ch 10"]
 ```
 
-
 ---
 
 ## The study's questions and methods
@@ -460,7 +551,7 @@ flowchart LR
 | assumptions | check with plots; robust, non-parametric, or mixed models |
 | correlation is not causation | think through confounders; randomise where possible |
 | prediction and explanation | different aims, judged differently |
-| communication | clear tables and figures; export with `write_csv()` or `write_sav()` |
+| communication | clear tables and figures; export with `to_csv()` or `write_sav()` |
 
 ---
 
@@ -468,22 +559,22 @@ flowchart LR
 
 | Topic | For | Packages |
 |---|---|---|
-| structural equation modelling | CFA, path models | lavaan |
-| Bayesian statistics | prior knowledge, full uncertainty | brms, rstanarm |
-| survival analysis | time until an event | survival |
-| meta-analysis | combining studies | metafor |
-| text analysis | words, sentiment, topics | tidytext, quanteda |
-| spatial data | maps | sf |
-| publication tables | formatted results | gtsummary, modelsummary |
+| structural equation modelling | CFA, path models | semopy |
+| Bayesian statistics | prior knowledge, full uncertainty | PyMC, Bambi |
+| survival analysis | time until an event | lifelines |
+| meta-analysis | combining studies | meta-analysis, PyAnalyse |
+| text analysis | words, sentiment, topics | nltk, spaCy, scikit-learn |
+| spatial data | maps | geopandas |
+| publication tables | formatted results | great_tables, itables |
 
 ---
 
 ## You do not have to learn alone
 
-- free books: *R for Data Science*, *Regression and Other Stories*, *ISLR*, *Tidy Modeling with R*, *Forecasting: Principles and Practice*;
-- Posit Community and Stack Overflow for questions;
-- R-Ladies and local R user groups;
-- TidyTuesday: a new dataset every week to practise on.
+- free books: *Python for Data Analysis*, *Regression and Other Stories*, *ISLR with Python*, *Forecasting: Principles and Practice*;
+- Stack Overflow and Python community forums;
+- PyData and local Python user groups;
+- Kaggle and open datasets to practise on.
 
 A clear question with a small reproducible example is a skill, and the same one that makes an AI assistant useful.
 
@@ -491,11 +582,19 @@ A clear question with a small reproducible example is a skill, and the same one 
 
 ## In your field: nutrition science
 
-```r
-tooth <- ToothGrowth |> mutate(dose = factor(dose))
-tooth |> summarise(mean = mean(len), sd = sd(len), n = n(),
-                   .by = c(supp, dose))
-summary(aov(len ~ supp * dose, data = tooth))
+```{python}
+import data2thesis as dt
+import statsmodels.formula.api as smf
+import statsmodels.api as sm
+
+tooth = dt.load_toothgrowth().copy()
+tooth["dose"] = tooth["dose"].astype(str)
+summary = tooth.groupby(["supp", "dose"])["len"].agg(["mean", "std", "count"]).reset_index()
+print(summary.round(2))
+
+model = smf.ols("len ~ C(supp) * C(dose)", data=tooth).fit()
+anova_table = sm.stats.anova_lm(model, typ=2)
+print(anova_table.round(3))
 ```
 
 Prepare, describe, model, report: a complete mini-project in a few lines.
@@ -543,7 +642,7 @@ For your own thesis:
 
 | Symptom | Likely cause |
 |---|---|
-| the project runs only on your computer | absolute paths; use `here::here()` |
+| the project runs only on your computer | absolute paths; use `pathlib.Path` |
 | a number in the thesis disagrees with the code | typed by hand |
 | cleaned data looks wrong but no error | no checks at the end of the cleaning script |
 | the same code pasted three times | a helper function is needed |

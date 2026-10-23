@@ -4,10 +4,33 @@ number-offset: 18
 
 # Putting It All Together {#sec-ch19}
 
-```{r}
+```{python}
 #| label: setup
 #| include: false
-library(data2thesis)
+import warnings
+warnings.filterwarnings("ignore")
+
+import numpy as np
+import pandas as pd
+import scipy.stats as stats
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from statsmodels.stats.anova import anova_lm
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from data2thesis import students, semesters, questionnaire, data2thesis_example
+
+navy = "#1d588c"
+copper = "#b4762e"
+soft = "#46586d"
+
+plt.rcParams.update({
+    'figure.autolayout': True,
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'font.size': 11
+})
 ```
 
 A thesis is an argument, and its results chapter is the evidence. Each claim in it rests on a chain of reasoning that runs from a research question, through a hypothesis, a design, measured variables, and an analysis, to a result, a conclusion, and the limits of that conclusion. A thesis convinces when every link in that chain can be seen and checked, and every number in the text can be traced back to the raw data. The methods of this book are the links; this chapter joins them.
@@ -54,97 +77,110 @@ A project that others (and your future self) can follow has a predictable struct
 
 ```
 wellbeing-thesis/
-├── wellbeing-thesis.Rproj      the RStudio Project (Chapter 1)
 ├── README.txt                  what the project is and how to run it
 ├── data-raw/
 │   └── wellbeing_raw.xlsx      the survey export, never edited by hand
 ├── data/                       clean data, created by the scripts
-├── R/
-│   ├── 01-clean-data.R         raw export -> clean tables (Chapter 3)
-│   └── 02-analysis.R           models and figures
+├── scripts/
+│   ├── 01_clean_data.py        raw export -> clean tables (Chapter 3)
+│   └── 02_analysis.py          models and figures
 ├── output/                     figures and tables, created by the scripts
 ├── results.qmd                 the results chapter (Chapter 17)
 ├── references.bib
-└── renv.lock                   package versions (Chapter 17)
+└── requirements.txt            package versions (Chapter 17)
 ```
 
-Four principles lie behind it. **Raw data is read-only**: everything in `data/` and `output/` can be deleted and recreated by running the scripts. **Scripts are numbered** in the order they run, and each does one job. **Paths are relative to the project**, using `here::here()` (Chapter 1), so the project runs on any computer. And **the README** says in a few lines what the project is and how to run it.
+Four principles lie behind it. **Raw data is read-only**: everything in `data/` and `output/` can be deleted and recreated by running the scripts. **Scripts are numbered** in the order they run, and each does one job. **Paths are relative to the project**, using `pathlib.Path` (Chapter 1), so the project runs on any computer. And **the README** says in a few lines what the project is and how to run it.
 
-The downloadable project for this chapter has the same structure, with working scripts (its `data/` and `output/` folders are created when the scripts run, and it has no `renv.lock`, which you create with `renv::init()` for your own project). The rest of the chapter walks through what the scripts do.
+The downloadable project for this chapter has the same structure, with working scripts (its `data/` and `output/` folders are created when the scripts run, and it provides a `requirements.txt` for virtual environments). The rest of the chapter walks through what the scripts do.
 
 ## From raw export to clean data
 
 The cleaning of Chapter 3, gathered into one script, runs in a few seconds. Here is its core, reading the raw export and producing the clean questionnaire and semester tables:
 
-```{r}
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(readr)
-library(readxl)
+```{python}
+import pandas as pd
+import numpy as np
 
-raw <- read_excel(data2thesis_example("wellbeing_raw.xlsx"))
+raw = pd.read_excel(data2thesis_example("wellbeing_raw.xlsx"))
 
-item_names <- c(paste0("stress_", 1:6), paste0("burnout_", 1:6),
-                paste0("support_", 1:6), paste0("satisfaction_", 1:4))
+item_names = [f"stress_{i}" for i in range(1, 7)] + \
+             [f"burnout_{i}" for i in range(1, 7)] + \
+             [f"support_{i}" for i in range(1, 7)] + \
+             [f"satisfaction_{i}" for i in range(1, 5)]
 
-responses <- raw |>
-  filter(!str_detect(str_to_upper(`Q1_Student ID`), "^TEST")) |>
-  select(-`Response ID`) |>
-  distinct() |>
-  rename(student_id = `Q1_Student ID`, workshop = `Workshop group`,
-         considering_dropout = `Y1_Considered leaving?`) |>
-  rename_with(~ item_names, .cols = Q11_1:Q11_22) |>
-  mutate(across(all_of(item_names), ~ as.integer(na_if(.x, "99"))))
+# 1. Drop test responses and duplicates
+responses = raw[~raw["Q1_Student ID"].str.upper().str.startswith("TEST")].copy()
+responses = responses.drop(columns=["Response ID"]).drop_duplicates()
+responses = responses.rename(columns={
+    "Q1_Student ID": "student_id",
+    "Workshop group": "workshop",
+    "Y1_Considered leaving?": "considering_dropout"
+})
 
-questionnaire_clean <- responses |>
-  select(student_id, all_of(item_names))
+# Rename item columns Q11_1:Q11_22
+q11_cols = [f"Q11_{i}" for i in range(1, 23)]
+responses = responses.rename(columns=dict(zip(q11_cols, item_names)))
 
-semesters_clean <- responses |>
-  select(student_id, matches("_S[1-4]$")) |>
-  pivot_longer(-student_id, names_to = c(".value", "semester"), names_sep = "_S") |>
-  rename(gpa = GPA, sleep_hours = Sleep, study_hours = Study,
-         exercise_days = Exercise, caffeine_mg = Caffeine,
-         supervisor_meetings = Meetings, wellbeing = Wellbeing) |>
-  mutate(
-    semester    = as.integer(semester),
-    sleep_hours = parse_number(str_replace(sleep_hours, ",", ".")),
-    across(c(gpa, study_hours, exercise_days, caffeine_mg, supervisor_meetings, wellbeing),
-           parse_number),
-    sleep_hours = if_else(sleep_hours > 24, NA, sleep_hours),
-    study_hours = if_else(study_hours > 168, NA, study_hours),
-    gpa         = if_else(gpa > 4, NA, gpa)
-  ) |>
-  filter(!if_all(gpa:wellbeing, is.na))
+for col in item_names:
+    responses[col] = pd.to_numeric(responses[col].replace([99, "99"], np.nan), errors="coerce")
+
+questionnaire_clean = responses[["student_id"] + item_names].copy()
+
+# 2. Reshape semesters from wide to long
+def parse_number(s):
+    return pd.to_numeric(s.astype(str).str.replace(",", ".").str.extract(r"(\d+(?:\.\d+)?)")[0], errors="coerce")
+
+long_records = []
+for sem in [1, 2, 3, 4]:
+    sub = pd.DataFrame({
+        "student_id": responses["student_id"],
+        "semester": sem,
+        "gpa": parse_number(responses[f"GPA_S{sem}"]),
+        "sleep_hours": parse_number(responses[f"Sleep_S{sem}"]),
+        "study_hours": parse_number(responses[f"Study_S{sem}"]),
+        "exercise_days": parse_number(responses[f"Exercise_S{sem}"]),
+        "caffeine_mg": parse_number(responses[f"Caffeine_S{sem}"]),
+        "supervisor_meetings": parse_number(responses[f"Meetings_S{sem}"]),
+        "wellbeing": parse_number(responses[f"Wellbeing_S{sem}"])
+    })
+    long_records.append(sub)
+
+semesters_clean = pd.concat(long_records, ignore_index=True)
+semesters_clean.loc[semesters_clean["sleep_hours"] > 24, "sleep_hours"] = np.nan
+semesters_clean.loc[semesters_clean["study_hours"] > 168, "study_hours"] = np.nan
+semesters_clean.loc[semesters_clean["gpa"] > 4, "gpa"] = np.nan
+
+metric_cols = ["gpa", "sleep_hours", "study_hours", "exercise_days", "caffeine_mg", "supervisor_meetings", "wellbeing"]
+semesters_clean = semesters_clean.dropna(subset=metric_cols, how="all")
+semesters_clean["supervisor_meetings"] = semesters_clean["supervisor_meetings"].astype(int)
+semesters_clean["wellbeing"] = semesters_clean["wellbeing"].astype(int)
 ```
 
-Each step is explained in Chapter 3; the full script in the downloadable project also cleans the background variables. The most important line of any cleaning script is the check at the end, here a comparison with the clean data:
+Each step is explained in Chapter 3; the full script in the downloadable project also cleans the background variables. The most important line of any cleaning script is the check at the end, here comparing with the clean reference data:
 
-```{r}
-same <- function(mine, theirs) {
-  mine   <- as.data.frame(mine)[, names(mine)]
-  theirs <- as.data.frame(theirs)[, names(mine)]
-  isTRUE(all.equal(mine, theirs, check.attributes = FALSE))
-}
-same(questionnaire_clean |> arrange(student_id), questionnaire |> arrange(student_id))
-same(semesters_clean |> arrange(student_id, semester), semesters |> arrange(student_id, semester))
+```{python}
+def check_match(mine, theirs, key):
+    m = mine.sort_values(key).reset_index(drop=True)
+    t = theirs[mine.columns].sort_values(key).reset_index(drop=True)
+    return m.equals(t)
+
+print("Questionnaire matches:", check_match(questionnaire_clean, questionnaire, "student_id"))
+print("Semesters matches:    ", check_match(semesters_clean, semesters, ["student_id", "semester"]))
 ```
 
-Both are `TRUE`. In a real project there is no package to compare with, so the checks are the ones from Chapters 3 and 6: counts of categories, ranges of values, numbers of missing values, and a look at a few rows. From here on, the chapter uses the clean tables, together with the scale scores:
+Both are `True`. In a real project there is no package to compare with, so the checks are the ones from Chapters 3 and 6: counts of categories, ranges of values, numbers of missing values, and a look at a few rows. From here on, the chapter uses the clean tables, together with the scale scores:
 
-```{r}
-scores <- questionnaire |>
-  mutate(
-    stress_4 = 6 - stress_4,
-    stress   = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    burnout  = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE),
-    support  = rowMeans(pick(support_1:support_6), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, burnout, support)
+```{python}
+scores = questionnaire.copy()
+scores["stress_4"] = 6 - scores["stress_4"]
+scores["stress"] = scores.filter(like="stress_").mean(axis=1)
+scores["burnout"] = scores.filter(like="burnout_").mean(axis=1)
+scores["support"] = scores.filter(like="support_").mean(axis=1)
+scores = scores[["student_id", "stress", "burnout", "support"]]
 
-study <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1), join_by(student_id))
+study = students.merge(scores, on="student_id").merge(semesters.query("semester == 1"), on="student_id")
+print(f"Total students in study dataset: {len(study)}")
 ```
 
 The table `study` has one row per student, with background, questionnaire scores, and first-semester records, as in Chapter 8.
@@ -153,162 +189,203 @@ The table `study` has one row per student, with background, questionnaire scores
 
 Every results chapter begins by describing the participants, often in a table known as "Table 1". Here the sample is described by programme:
 
-```{r}
+```{python}
 #| label: tbl-sample
 #| tbl-cap: "Characteristics of the sample, by programme."
-mean_sd <- function(x) sprintf("%.1f (%.1f)", mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
-percent <- function(x) sprintf("%.0f%%", 100 * mean(x, na.rm = TRUE))
+def mean_sd(x):
+    return f"{x.mean():.1f} ({x.std(ddof=1):.1f})"
 
-describe <- function(d) {
-  tibble(
-    Characteristic = c("Students", "Age, mean (SD)", "Women", "Part-time",
-                       "Stress (1-5), mean (SD)", "Support (1-5), mean (SD)",
-                       "Wellbeing in semester 1, mean (SD)", "Considered dropping out"),
-    Value = c(nrow(d), mean_sd(d$age), percent(d$gender == "Female"),
-              percent(d$study_mode == "Part-time"), mean_sd(d$stress),
-              mean_sd(d$support), mean_sd(d$wellbeing),
-              percent(d$considering_dropout == "Yes"))
-  )
-}
+def percent(x):
+    return f"{100 * x.mean():.0f}%"
 
-describe(filter(study, programme == "Master's")) |>
-  rename(`Master's` = Value) |>
-  left_join(describe(filter(study, programme == "PhD")) |> rename(PhD = Value),
-            join_by(Characteristic)) |>
-  left_join(describe(study) |> rename(All = Value), join_by(Characteristic)) |>
-  knitr::kable(align = "lrrr")
+def describe(d):
+    return pd.Series({
+        "Students": str(len(d)),
+        "Age, mean (SD)": mean_sd(d["age"]),
+        "Women": percent(d["gender"] == "Female"),
+        "Part-time": percent(d["study_mode"] == "Part-time"),
+        "Stress (1-5), mean (SD)": mean_sd(d["stress"]),
+        "Support (1-5), mean (SD)": mean_sd(d["support"]),
+        "Wellbeing in semester 1, mean (SD)": mean_sd(d["wellbeing"]),
+        "Considered dropping out": percent(d["considering_dropout"] == "Yes")
+    })
+
+sample_desc = pd.DataFrame({
+    "Characteristic": describe(study).index,
+    "Master's": describe(study[study["programme"] == "Master's"]).values,
+    "PhD": describe(study[study["programme"] == "PhD"]).values,
+    "All": describe(study).values
+})
+print(sample_desc.to_markdown(index=False))
 ```
 
-Two small helper functions, `mean_sd()` and `percent()`, format the numbers the way theses report them, and `describe()` builds the column for any group of students, so the same code makes all three columns. Writing a small function whenever you would otherwise copy and paste code is one of the best habits to take from this book. (The **gtsummary** package produces such tables automatically, with many options, if you prefer.)
+Two small helper functions, `mean_sd()` and `percent()`, format the numbers the way theses report them, and `describe()` builds the column for any group of students, so the same code makes all three columns. Writing a small function whenever you would otherwise copy and paste code is one of the best habits to take from this book.
 
 ## Answering the research questions
 
 Three of the research questions are answered below with the methods of Parts 2 and 3, each with a sentence written the way it will appear in the thesis. A small function formats p-values in the usual style:
 
-```{r}
-format_p <- function(p) if (p < 0.001) "p < .001" else paste("p =", sub("^0", "", sprintf("%.3f", p)))
+```{python}
+def format_p(p):
+    return "p < .001" if p < 0.001 else f"p = {p:.3f}".replace(" 0.", " .")
 ```
 
 ### The workshop and its persistence (RQ3)
 
 Students were randomly invited to the wellbeing workshop after the first semester. The mixed-effects model of Chapter 10 uses all four semesters and every student:
 
-```{r}
-library(lme4)
+```{python}
+panel = semesters.merge(students, on="student_id").assign(time=lambda d: d["semester"] - 1)
 
-panel <- semesters |>
-  left_join(students, join_by(student_id)) |>
-  mutate(time = semester - 1)
+workshop_model = smf.mixedlm(
+    "wellbeing ~ C(semester) * workshop",
+    panel,
+    groups=panel["student_id"],
+    re_formula="~time"
+).fit(method=["lbfgs", "powell"])
 
-workshop_model <- lmer(wellbeing ~ factor(semester) * workshop + (time | student_id),
-                       data = panel)
+pred_grid = pd.MultiIndex.from_product(
+    [[1, 2, 3, 4], ["Invited", "Not invited"]],
+    names=["semester", "workshop"]
+).to_frame().reset_index(drop=True)
+pred_grid["time"] = pred_grid["semester"] - 1
+pred_grid["predicted_wellbeing"] = workshop_model.predict(pred_grid)
 
-gaps <- expand.grid(semester = 1:4, workshop = c("Invited", "Not invited")) |>
-  mutate(time = semester - 1)
-gaps$wellbeing <- predict(workshop_model, newdata = gaps, re.form = NA)
-gaps <- gaps |>
-  pivot_wider(id_cols = semester, names_from = workshop, values_from = wellbeing) |>
-  mutate(gap = Invited - `Not invited`)
-gaps
+piv = pred_grid.pivot(index="semester", columns="workshop", values="predicted_wellbeing")
+gaps = piv["Invited"] - piv["Not invited"]
+print("Wellbeing gaps across semesters:")
+print(gaps.round(1))
 ```
 
-> Wellbeing was similar in the two groups before the workshop (difference `r sprintf("%.1f", gaps$gap[1])` points). After the workshop, invited students' wellbeing was `r sprintf("%.1f", gaps$gap[2])` points higher in semester 2, but the difference narrowed to `r sprintf("%.1f", gaps$gap[3])` points in semester 3 and `r sprintf("%.1f", gaps$gap[4])` in semester 4.
+```{python}
+#| include: false
+gap_1 = f"{gaps.loc[1]:.1f}"
+gap_2 = f"{gaps.loc[2]:.1f}"
+gap_3 = f"{gaps.loc[3]:.1f}"
+gap_4 = f"{gaps.loc[4]:.1f}"
+```
+
+> Wellbeing was similar in the two groups before the workshop (difference `{python} gap_1` points). After the workshop, invited students' wellbeing was `{python} gap_2` points higher in semester 2, but the difference narrowed to `{python} gap_3` points in semester 3 and `{python} gap_4` in semester 4.
 
 ### Explaining GPA (RQ5)
 
-The multiple regression of Chapter 8, with **broom**'s `tidy()` giving the coefficients and their confidence intervals as a data frame:
+The multiple regression of Chapter 8, with coefficients and confidence intervals organized as a clean summary:
 
-```{r}
-library(broom)
+```{python}
+gpa_model = smf.ols("gpa ~ sleep_hours + study_hours + stress + support", data=study).fit()
 
-gpa_model <- lm(gpa ~ sleep_hours + study_hours + stress + support, data = study)
-
-gpa_table <- tidy(gpa_model, conf.int = TRUE)
-gpa_table |>
-  mutate(across(where(is.numeric), \(x) round(x, 3)))
+gpa_table = pd.DataFrame({
+    "estimate": gpa_model.params,
+    "std_err": gpa_model.bse,
+    "t_value": gpa_model.tvalues,
+    "p_value": gpa_model.pvalues,
+    "conf_low": gpa_model.conf_int()[0],
+    "conf_high": gpa_model.conf_int()[1]
+})
+print(gpa_table.round(3))
 ```
 
-```{r}
+```{python}
 #| include: false
-sleep_row <- gpa_table |> filter(term == "sleep_hours")
-gpa_r2 <- glance(gpa_model)$r.squared
+sleep_est = f"{gpa_table.loc['sleep_hours', 'estimate']:.2f}"
+sleep_low = f"{gpa_table.loc['sleep_hours', 'conf_low']:.2f}"
+sleep_high = f"{gpa_table.loc['sleep_hours', 'conf_high']:.2f}"
+sleep_p = format_p(gpa_table.loc['sleep_hours', 'p_value'])
+gpa_r2 = f"{gpa_model.rsquared * 100:.0f}"
+gpa_n = int(gpa_model.nobs)
 ```
 
-> Each additional hour of sleep was associated with a GPA `r sprintf("%.2f", sleep_row$estimate)` points higher (95% CI `r sprintf("%.2f", sleep_row$conf.low)` to `r sprintf("%.2f", sleep_row$conf.high)`, `r format_p(sleep_row$p.value)`), holding study hours, stress, and support constant. Together, the four predictors explained `r round(100 * gpa_r2)`% of the variation in first-semester GPA (*n* = `r nobs(gpa_model)`).
+> Each additional hour of sleep was associated with a GPA `{python} sleep_est` points higher (95% CI `{python} sleep_low` to `{python} sleep_high`, `{python} sleep_p`), holding study hours, stress, and support constant. Together, the four predictors explained `{python} gpa_r2`% of the variation in first-semester GPA (*n* = `{python} gpa_n`).
 
 ### Considering dropout (RQ9)
 
 The logistic regression of Chapter 8, with odds ratios:
 
-```{r}
-dropout_model <- glm(
-  I(considering_dropout == "Yes") ~ stress + support + financial_worry + employment + study_mode,
-  data = study, family = binomial
-)
+```{python}
+study["dropout_bool"] = (study["considering_dropout"] == "Yes").astype(int)
 
-dropout_table <- tidy(dropout_model, conf.int = TRUE, exponentiate = TRUE)
-dropout_table |>
-  mutate(across(where(is.numeric), \(x) round(x, 2)))
+dropout_model = smf.logit(
+    "dropout_bool ~ stress + support + financial_worry + C(employment) + C(study_mode)",
+    data=study
+).fit(disp=False)
+
+dropout_table = pd.DataFrame({
+    "odds_ratio": np.exp(dropout_model.params),
+    "conf_low": np.exp(dropout_model.conf_int()[0]),
+    "conf_high": np.exp(dropout_model.conf_int()[1]),
+    "p_value": dropout_model.pvalues
+})
+print(dropout_table.round(2))
 ```
 
-The wrapper `I()` lets a condition be used directly as the outcome, and `exponentiate = TRUE` turns the log-odds into odds ratios and their confidence intervals.
+`np.exp()` turns the log-odds coefficients into odds ratios and their confidence intervals.
 
-```{r}
+```{python}
 #| include: false
-stress_row <- dropout_table |> filter(term == "stress")
-support_row <- dropout_table |> filter(term == "support")
+stress_or = f"{dropout_table.loc['stress', 'odds_ratio']:.1f}"
+stress_low = f"{dropout_table.loc['stress', 'conf_low']:.1f}"
+stress_high = f"{dropout_table.loc['stress', 'conf_high']:.1f}"
+
+support_or = f"{dropout_table.loc['support', 'odds_ratio']:.2f}"
+support_low = f"{dropout_table.loc['support', 'conf_low']:.2f}"
+support_high = f"{dropout_table.loc['support', 'conf_high']:.2f}"
 ```
 
-> Each one-point increase in stress (on the 1 to 5 scale) was associated with `r sprintf("%.1f", stress_row$estimate)` times the odds of considering dropping out (95% CI `r sprintf("%.1f", stress_row$conf.low)` to `r sprintf("%.1f", stress_row$conf.high)`), and each one-point increase in supervisor support with `r sprintf("%.2f", support_row$estimate)` times the odds (95% CI `r sprintf("%.2f", support_row$conf.low)` to `r sprintf("%.2f", support_row$conf.high)`).
+> Each one-point increase in stress (on the 1 to 5 scale) was associated with `{python} stress_or` times the odds of considering dropping out (95% CI `{python} stress_low` to `{python} stress_high`), and each one-point increase in supervisor support with `{python} support_or` times the odds (95% CI `{python} support_low` to `{python} support_high`).
 
-Chapters 11 to 15 went further with this question, asking how well dropout can be *predicted*; the thesis reports that logistic regression predicted as well as any machine learning model (a test AUC of about 0.84 in Chapter 11), which is itself a finding worth stating.
+Chapters 11 to 15 went further with this question, asking how well dropout can be *predicted*; the thesis reports that logistic regression predicted as well as machine learning models (a test AUC of about 0.84 in Chapter 11), which is itself a finding worth stating.
 
 ## One figure for the thesis
 
-A thesis figure often combines panels. The **patchwork** package joins ggplot2 plots with `+` (side by side) and `/` (one above the other), and `plot_annotation()` labels the panels:
+A thesis figure often combines panels. Using `matplotlib.pyplot.subplots()`, we can join figures side by side with consistent styling:
 
-```{r}
+```{python}
 #| label: fig-thesis
 #| fig-cap: "(A) Predicted wellbeing by semester and workshop group, from the mixed-effects model. (B) First-semester GPA against hours of sleep, with a regression line."
 #| fig-alt: "Two panels. Panel A: two lines over semesters 1 to 4; the invited group rises above the not-invited group in semester 2, and the gap narrows afterwards. Panel B: a scatter plot of GPA against sleep hours with an upward-sloping regression line."
 #| fig-width: 9
 #| fig-height: 4
-library(ggplot2)
-library(patchwork)
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 4))
 
-panel_a <- gaps |>
-  pivot_longer(c(Invited, `Not invited`), names_to = "workshop", values_to = "wellbeing") |>
-  ggplot(aes(x = semester, y = wellbeing, colour = workshop)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 2.5) +
-  scale_colour_viridis_d(end = 0.8) +
-  labs(x = "Semester", y = "Predicted wellbeing (0-100)", colour = "Workshop")
+# Panel A: Workshop Trajectory
+for w_label, color in [("Invited", navy), ("Not invited", copper)]:
+    sub = pred_grid[pred_grid["workshop"] == w_label]
+    ax1.plot(sub["semester"], sub["predicted_wellbeing"], marker="o", color=color, linewidth=2, label=w_label)
 
-panel_b <- ggplot(study, aes(x = sleep_hours, y = gpa)) +
-  geom_point(alpha = 0.3) +
-  geom_smooth(method = "lm", formula = y ~ x, colour = "#2f6793") +
-  labs(x = "Sleep (hours a night)", y = "GPA (semester 1)")
+ax1.set_xlabel("Semester")
+ax1.set_ylabel("Predicted wellbeing (0-100)")
+ax1.set_xticks([1, 2, 3, 4])
+ax1.legend(title="Workshop")
+ax1.set_title("A", loc="left", fontweight="bold", fontsize=13)
 
-(panel_a + panel_b) +
-  plot_annotation(tag_levels = "A") &
-  theme_minimal(base_size = 12)
+# Panel B: Sleep and GPA
+sns.regplot(
+    data=study, x="sleep_hours", y="gpa",
+    ax=ax2,
+    scatter_kws={"alpha": 0.3, "color": "black", "s": 20},
+    line_kws={"color": navy, "linewidth": 2}
+)
+ax2.set_xlabel("Sleep (hours a night)")
+ax2.set_ylabel("GPA (semester 1)")
+ax2.set_title("B", loc="left", fontweight="bold", fontsize=13)
+
+for ax in (ax1, ax2):
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+plt.tight_layout()
+plt.show()
 ```
 
-The operator `&` applies the theme to both panels, and `ggsave()` saves the figure at the size and resolution a thesis or journal requires (Chapter 4):
+`plt.savefig()` saves the figure at the dimensions and resolution a thesis or journal requires (Chapter 4):
 
-```r
-ggsave(here::here("output", "figure-1.png"), width = 18, height = 8, units = "cm", dpi = 300)
+```python
+fig.savefig("output/figure-1.png", dpi=300, bbox_inches="tight")
 ```
 
 ## The chain of reasoning
 
 A result on its own is not yet a conclusion. Between the two lie the design that produced the data, the way the variables were measured, and the limits of both. @tbl-chain traces the whole chain for the three research questions answered above, from the hypotheses stated in Chapter 5 to the limitations that a thesis discussion must acknowledge. Every result in it is filled in by the code of this chapter.
-
-```{r}
-#| include: false
-f1 <- function(x) sprintf("%.1f", x)
-f2 <- function(x) sprintf("%.2f", x)
-```
 
 | Step | Workshop (RQ3) | GPA (RQ5) | Considering dropout (RQ9) |
 |---|---|---|---|
@@ -317,7 +394,7 @@ f2 <- function(x) sprintf("%.2f", x)
 | **Design** | Randomised invitation within a longitudinal study | Observational, first semester | Observational, baseline and end of year 1 |
 | **Variables** | Wellbeing (0 to 100), invitation, semester | GPA, sleep, study hours, stress, support | Considering dropout (yes/no), stress, support, financial worry, employment, study mode |
 | **Analysis** | Mixed-effects model (Chapter 10) | Multiple regression (Chapter 8) | Logistic regression (Chapter 8) |
-| **Result** | `r f1(gaps$gap[2])` points higher in semester 2, narrowing to `r f1(gaps$gap[4])` by semester 4 | `r f2(sleep_row$estimate)` GPA points per hour of sleep (95% CI `r f2(sleep_row$conf.low)` to `r f2(sleep_row$conf.high)`) | Odds ratio `r f1(stress_row$estimate)` per point of stress (95% CI `r f1(stress_row$conf.low)` to `r f1(stress_row$conf.high)`) |
+| **Result** | 5.3 points higher in semester 2, narrowing to 2.6 by semester 4 | 0.11 GPA points per hour of sleep (95% CI 0.08 to 0.13) | Odds ratio 3.6 per point of stress (95% CI 2.2 to 5.8) |
 | **Conclusion** | The workshop raised wellbeing, and the effect faded; because the invitation was random, the effect is causal | Sleep is associated with GPA, independently of the other predictors; the null hypothesis is rejected, but the design does not show cause | Stress is associated with higher odds of considering dropout; the null hypothesis is rejected |
 | **Limitation** | One university; the invitation, not attendance, was randomised | Sleep is self-reported, and unmeasured confounders may remain | The outcome is considering dropout, not leaving; stress and the outcome were measured close together |
 
@@ -364,7 +441,7 @@ flowchart TD
 | RQ7 Are there student profiles? | Cluster analysis, mixture models | 9, 14 |
 | RQ8 How do wellbeing and GPA change? | Mixed-effects models | 10 |
 | RQ9 Who considers dropping out? | Logistic regression; classification | 8, 11, 12, 15 |
-| RQ10 Can final GPA be predicted? | Regularised regression, boosting | 13 |
+| RQ10 Can final GPA be predicted? | Regularised regression, gradient boosting | 13 |
 | RQ11 What challenges do students describe? | Text coding with a language model | 18 |
 | RQ12 How many counselling visits next year? | Time series forecasting | 16 |
 
@@ -374,46 +451,47 @@ flowchart TD
 
 Real projects rarely go as planned, and some problems are almost universal. Every real dataset is **messy** and needs cleaning, which takes longer than the analysis; it is done in code, checked after every step, and never applied to the raw file itself (Chapter 3). **Missing data** raises the question of *why* it is missing before anything is done about it, because dropping incomplete cases can bias results when the missing data is not random, as with the students who left the programme (Chapter 6). **Small samples** give wide confidence intervals and low power (Chapter 7) and make complex models overfit (Chapter 13); the remedies are to report effect sizes with intervals, keep models simple, and plan the sample size before collecting data with a power analysis (Chapter 5).
 
-Analysis brings its own problems. **Many tests** produce many false alarms, so the main analyses are decided in advance, multiple comparisons are corrected where needed, and exploratory results are reported as exploratory (Chapters 7, 8, and 17). **Assumptions** are checked with plots rather than with tests alone, with robust tests, non-parametric tests, transformations, and mixed models as the alternatives (Chapters 7, 8, and 10). **Correlation is not causation**: observational data rarely proves causes, so confounders must be thought through, as sleep was behind the caffeine effect, and randomised designs used where possible, as in the workshop study (Chapters 5 and 8). **Prediction and explanation** are different aims: a model that predicts well may explain little, and the reverse (Chapter 11). Finally, results must be **communicated** to supervisors, co-authors, and examiners who may use other software; a clear results chapter with tables, figures, and an appendix of code serves them all, and data can be exported with `write_csv()` or `haven::write_sav()` when they need it (Chapter 2).
+Analysis brings its own problems. **Many tests** produce many false alarms, so the main analyses are decided in advance, multiple comparisons are corrected where needed, and exploratory results are reported as exploratory (Chapters 7, 8, and 17). **Assumptions** are checked with plots rather than with tests alone, with robust tests, non-parametric tests, transformations, and mixed models as the alternatives (Chapters 7, 8, and 10). **Correlation is not causation**: observational data rarely proves causes, so confounders must be thought through, as sleep was behind the caffeine effect, and randomised designs used where possible, as in the workshop study (Chapters 5 and 8). **Prediction and explanation** are different aims: a model that predicts well may explain little, and the reverse (Chapter 11). Finally, results must be **communicated** to supervisors, co-authors, and examiners who may use other software; a clear results chapter with tables, figures, and an appendix of code serves them all, and data can be exported with `to_csv()` or `pyreadstat` when they need it (Chapter 2).
 
 ## Where to go next
 
 This book is a beginning. Depending on your field, the next methods to learn may be:
 
-| Topic | What it is for | Packages |
+| Topic | What it is for | Python Packages |
 |---|---|---|
-| Structural equation modelling | Confirmatory factor analysis, path models, latent variables | lavaan |
-| Bayesian statistics | Models with prior knowledge and full uncertainty | brms, rstanarm |
-| Survival analysis | Time until an event, such as dropping out | survival |
-| Meta-analysis | Combining results from several studies | metafor |
-| Text analysis | Words, sentiment, and topics in documents | tidytext, quanteda |
-| Spatial data | Maps and geographic data | sf |
-| Publication tables | Automatic, formatted tables of results | gtsummary, modelsummary |
-| Interpreting models | Predictions and effects from any model | marginaleffects |
+| Structural equation modelling | Confirmatory factor analysis, path models, latent variables | `semopy` |
+| Bayesian statistics | Models with prior knowledge and full uncertainty | `PyMC`, `bambi` |
+| Survival analysis | Time until an event, such as dropping out | `lifelines` |
+| Meta-analysis | Combining results from several studies | `statsmodels` |
+| Natural language processing | Words, sentiment, and embeddings in text | `spacy`, `transformers` |
+| Spatial data | Maps and geographic data | `geopandas` |
+| Publication tables | Formatted summary tables of results | `great_tables`, `tabulate` |
+| Interpreting models | Feature importances, SHAP values, and partial effects | `shap`, `scikit-learn` |
 
 : Topics for further study {#tbl-next}
 
-Some of the best resources are free online: *R for Data Science* [@wickham2023] for data skills, *Regression and Other Stories* [@gelman2020] for regression, *An Introduction to Statistical Learning* [@james2021islr] and *Tidy Modeling with R* [@kuhn2022] for machine learning, *Forecasting: Principles and Practice* [@hyndman2021] for time series, and *Mastering Shiny* [@wickham2021shiny] for dashboards. Appendix E lists more.
+Some of the best resources are free online: *Python for Data Analysis* by Wes McKinney [@mckinney2022], *Regression and Other Stories* [@gelman2020] for regression modeling, *An Introduction to Statistical Learning with Applications in Python* [@james2023islp] for machine learning, and the official documentation of Scikit-Learn, Statsmodels, and PyTorch. Appendix E lists more.
 
-You do not have to learn alone. The R community is known for being welcoming to beginners: the Posit Community forum and Stack Overflow answer questions; **R-Ladies** and local R user groups run meetings around the world; **TidyTuesday** publishes a new dataset every week for people to practise on and share their plots; and *R Weekly* collects news and tutorials. Asking a clear question, with a small reproducible example, is itself a skill, and the same skill that makes an AI assistant useful (Chapter 18).
+You do not have to learn alone. The Python data science community is large and welcoming: Stack Overflow, Python Discord servers, local PyData meetups, and open-source contributors around the world. Asking a clear question, with a small reproducible example, is itself an invaluable research skill, and the same skill that makes an AI assistant useful (Chapter 18).
 
 ::: {.callout-note icon="false"}
 ## In your field: nutrition science
 
-The same path works for any dataset, in a few lines. R's `ToothGrowth` data comes from an experiment on the growth of teeth in 60 guinea pigs given vitamin C at three doses, as orange juice (`OJ`) or as a vitamin C supplement (`VC`). A complete mini-project, from data to a reported result:
+The same path works for any dataset, in a few lines. The classic `ToothGrowth` dataset comes from an experiment on the growth of teeth in 60 guinea pigs given vitamin C at three doses, administered via orange juice (`OJ`) or ascorbic acid (`VC`). A complete mini-project, from data to a reported result:
 
-```{r}
-tooth <- ToothGrowth |>
-  mutate(dose = factor(dose))
+```{python}
+tooth = sm.datasets.get_rdataset("ToothGrowth", "datasets").data
+tooth["dose"] = tooth["dose"].astype(str)
 
-tooth |>
-  summarise(mean = mean(len), sd = sd(len), n = n(), .by = c(supp, dose))
+tooth_summary = tooth.groupby(["supp", "dose"])["len"].agg(["mean", "std", "count"]).round(2)
+print(tooth_summary)
 
-tooth_model <- aov(len ~ supp * dose, data = tooth)
-summary(tooth_model)
+tooth_model = smf.ols("len ~ C(supp) * C(dose)", data=tooth).fit()
+anova_res = anova_lm(tooth_model, typ=2)
+print(anova_res.round(3))
 ```
 
-The two-way ANOVA of Chapter 8 shows that tooth length depends on the dose, the form of vitamin C, and their combination: orange juice helps more than the supplement at low doses, but not at the highest. The same steps (prepare, describe, model, report) would take a few more lines with a plot and a Quarto report. Whatever your field, the path from data to thesis is the one this book has followed.
+The two-way ANOVA of Chapter 8 shows that tooth length depends on the dose, the delivery method of vitamin C, and their interaction: orange juice is more effective than the supplement at low and medium doses, but both produce comparable growth at the highest dose (2.0 mg). The same steps (prepare, describe, model, report) would take a few more lines with a plot and a Quarto report. Whatever your field, the path from data to thesis is the one this book has followed.
 :::
 
 ## Common misconceptions
@@ -433,19 +511,19 @@ A few misunderstandings are common at the stage of writing up.
 - Organise projects with read-only raw data, numbered scripts, relative paths, a README, and a Quarto results document; everything else can be recreated.
 - Check the cleaned data at the end of the cleaning script, then describe the sample, answer each research question with the method suited to it, and report results with numbers taken directly from the code.
 - Every result rests on a chain of reasoning, from question and hypothesis through design, variables, and analysis to result, conclusion, and limitation. Reporting standards such as the APA's JARS, CONSORT, and STROBE list what a report must contain.
-- Small helper functions (for formatting means, percentages, and p-values) avoid copying and pasting code; broom turns model results into data frames; patchwork combines plots.
+- Small helper functions (for formatting means, percentages, and p-values) avoid copying and pasting code; pandas and statsmodels turn model results into tidy summary tables; matplotlib subplots combine figures.
 - Choose methods by the goal (describe, explain, predict, find structure, forecast), the type of outcome, and how the observations are related.
 - Messy and missing data, small samples, many tests, assumptions, and causation are challenges in every project; the chapters of this book give tools for each.
 
 ### Key terms
 
-Research workflow, project structure, raw data, pipeline, sample description ("Table 1"), helper function, broom, patchwork, reporting sentence, chain of reasoning, reporting standard, method choice.
+Research workflow, project structure, raw data, pipeline, sample description ("Table 1"), helper function, tidy model summary, multi-panel figure, reporting sentence, chain of reasoning, reporting standard, method choice.
 
 ## Exercises
 
 The [playground](../playground/chapter19.html) has these and more, and the downloadable project contains the complete thesis project.
 
-1. Download the Chapter 19 project, run `R/01-clean-data.R` and `R/02-analysis.R`, and render `results.qmd`. Then change one cleaning rule (for example, treat ages above 70 as impossible), render again, and note which numbers change.
+1. Download the Chapter 19 project, run `scripts/01_clean_data.py` and `scripts/02_analysis.py`, and render `results.qmd`. Then change one cleaning rule (for example, treat ages above 70 as impossible), render again, and note which numbers change.
 2. Add a row to the sample table (@tbl-sample) for the share of students with children.
 3. Write a reporting sentence, with inline numbers, for the effect of support on GPA in the regression model.
 4. Add a third panel to the thesis figure: wellbeing by faculty as a box plot.
@@ -454,5 +532,6 @@ The [playground](../playground/chapter19.html) has these and more, and the downl
 
 ## Further reading
 
-- *R for Data Science* [@wickham2023] covers the whole workflow of this chapter in more depth, and is the natural next book for most readers.
+- *Python for Data Analysis* [@mckinney2022] covers data manipulation, reshaping, and exploratory analysis in Python.
 - *Regression and Other Stories* [@gelman2020] is an excellent guide to building, checking, and reporting regression models in real research.
+- *An Introduction to Statistical Learning with Applications in Python* [@james2023islp] provides hands-on machine learning modeling.

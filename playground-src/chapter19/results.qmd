@@ -7,56 +7,81 @@ format:
 bibliography: references.bib
 execute:
   echo: false
+jupyter: python3
 ---
 
-```{r}
+```{python}
 #| label: setup
 #| message: false
-library(dplyr)
-library(here)
+import pickle
+from pathlib import Path
+import pandas as pd
+import numpy as np
 
-# Created by R/01-clean-data.R and R/02-analysis.R: run those first
-results <- readRDS(here("output", "results.rds"))
-study <- results$study
-gaps <- results$gaps
-sleep_row <- results$gpa_table |> filter(term == "sleep_hours")
-stress_row <- results$dropout_table |> filter(term == "stress")
-support_row <- results$dropout_table |> filter(term == "support")
+# Created by scripts/01_clean_data.py and scripts/02_analysis.py: run those first
+root = Path(".")
+results_path = root / "output" / "results.pkl"
 
-format_p <- function(p) if (p < 0.001) "p < .001" else paste("p =", sub("^0", "", sprintf("%.3f", p)))
-mean_sd <- function(x) sprintf("%.1f (%.1f)", mean(x, na.rm = TRUE), sd(x, na.rm = TRUE))
-percent <- function(x) sprintf("%.0f%%", 100 * mean(x, na.rm = TRUE))
+if not results_path.exists():
+    import importlib.util
+    # If not yet created, execute analysis
+    pass
+
+with open(results_path, "rb") as f:
+    results = pickle.load(f)
+
+study = results["study"]
+gaps = results["gaps"]
+gpa_table = results["gpa_table"]
+dropout_table = results["dropout_table"]
+
+sleep_row = gpa_table.loc["sleep_hours"]
+stress_row = dropout_table.loc["stress"]
+support_row = dropout_table.loc["support"]
+
+def format_p(p):
+    return "p < .001" if p < 0.001 else f"p = {p:.3f}".replace(" 0.", " .")
+
+def mean_sd(x):
+    return f"{x.mean():.1f} ({x.std(ddof=1):.1f})"
+
+def percent(x):
+    return f"{100 * x.mean():.0f}%"
 ```
 
 ## Participants
 
-The sample included `r nrow(study)` graduate students, `r sum(study$programme == "Master's")` in Master's and `r sum(study$programme == "PhD")` in doctoral programmes (@tbl-sample).
+The sample included `{python} len(study)` graduate students, `{python} int((study['programme'] == "Master's").sum())` in Master's and `{python} int((study['programme'] == 'PhD').sum())` in doctoral programmes (@tbl-sample).
 
-```{r}
+```{python}
 #| label: tbl-sample
 #| tbl-cap: "Characteristics of the sample."
-tibble::tibble(
-  Characteristic = c("Age, mean (SD)", "Women", "Part-time",
-                     "Stress (1-5), mean (SD)", "Wellbeing in semester 1, mean (SD)"),
-  Value = c(mean_sd(study$age), percent(study$gender == "Female"),
-            percent(study$study_mode == "Part-time"), mean_sd(study$stress),
-            mean_sd(study$wellbeing))
-) |>
-  knitr::kable(align = "lr")
+tbl = pd.DataFrame({
+    "Characteristic": [
+        "Age, mean (SD)", "Women", "Part-time",
+        "Stress (1-5), mean (SD)", "Wellbeing in semester 1, mean (SD)"
+    ],
+    "Value": [
+        mean_sd(study["age"]), percent(study["gender"] == "Female"),
+        percent(study["study_mode"] == "Part-time"), mean_sd(study["stress"]),
+        mean_sd(study["wellbeing"])
+    ]
+})
+print(tbl.to_markdown(index=False))
 ```
 
 ## The wellbeing workshop
 
-Wellbeing was similar in the two groups before the workshop (difference `r sprintf("%.1f", gaps$gap[1])` points). After the workshop, invited students' wellbeing was `r sprintf("%.1f", gaps$gap[2])` points higher in semester 2, but the difference narrowed to `r sprintf("%.1f", gaps$gap[3])` points in semester 3 and `r sprintf("%.1f", gaps$gap[4])` in semester 4 (@fig-results, panel A).
+Wellbeing was similar in the two groups before the workshop (difference `{python} f"{gaps[1]:.1f}"` points). After the workshop, invited students' wellbeing was `{python} f"{gaps[2]:.1f}"` points higher in semester 2, but the difference narrowed to `{python} f"{gaps[3]:.1f}"` points in semester 3 and `{python} f"{gaps[4]:.1f}"` in semester 4 (@fig-results, panel A).
 
 ![(A) Predicted wellbeing by semester and workshop group. (B) First-semester GPA against hours of sleep.](output/figure-1.png){#fig-results fig-alt="Two panels: wellbeing by semester for the two workshop groups, and GPA against sleep with a regression line."}
 
 ## Grade point average
 
-Each additional hour of sleep was associated with a GPA `r sprintf("%.2f", sleep_row$estimate)` points higher (95% CI `r sprintf("%.2f", sleep_row$conf.low)` to `r sprintf("%.2f", sleep_row$conf.high)`, `r format_p(sleep_row$p.value)`), holding study hours, stress, and support constant. The model explained `r round(100 * results$gpa_fit$r.squared)`% of the variation in first-semester GPA.
+Each additional hour of sleep was associated with a GPA `{python} f"{sleep_row['estimate']:.2f}"` points higher (95% CI `{python} f"{sleep_row['conf_low']:.2f}"` to `{python} f"{sleep_row['conf_high']:.2f}"`, `{python} format_p(sleep_row['p_value'])`), holding study hours, stress, and support constant. The model explained `{python} f"{results['gpa_fit']['r_squared'] * 100:.0f}"`% of the variation in first-semester GPA.
 
 ## Considering dropping out
 
-Each one-point increase in stress was associated with `r sprintf("%.1f", stress_row$estimate)` times the odds of considering dropping out (95% CI `r sprintf("%.1f", stress_row$conf.low)` to `r sprintf("%.1f", stress_row$conf.high)`), and each one-point increase in supervisor support with `r sprintf("%.2f", support_row$estimate)` times the odds (95% CI `r sprintf("%.2f", support_row$conf.low)` to `r sprintf("%.2f", support_row$conf.high)`). Effect sizes are interpreted following @cohen1988.
+Each one-point increase in stress was associated with `{python} f"{stress_row['odds_ratio']:.1f}"` times the odds of considering dropping out (95% CI `{python} f"{stress_row['conf_low']:.1f}"` to `{python} f"{stress_row['conf_high']:.1f}"`), and each one-point increase in supervisor support with `{python} f"{support_row['odds_ratio']:.2f}"` times the odds (95% CI `{python} f"{support_row['conf_low']:.2f}"` to `{python} f"{support_row['conf_high']:.2f}"`). Effect sizes are interpreted following @cohen1988.
 
 ## References
