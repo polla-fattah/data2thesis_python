@@ -31,6 +31,7 @@ DATASET_NAMES = [
     "titanic",
     "penguins",
     "concrete",
+    "quakes",
 ]
 
 EXAMPLE_FILES = [
@@ -53,6 +54,7 @@ EXAMPLE_FILES = [
     "titanic.csv",
     "penguins.csv",
     "concrete.csv",
+    "quakes.csv",
     "wellbeing_raw.xlsx",
     "wellbeing.sav",
 ]
@@ -413,6 +415,13 @@ def load_concrete(copy: bool = True) -> pd.DataFrame:
     return _DATA_CACHE["concrete"].copy() if copy else _DATA_CACHE["concrete"]
 
 
+def load_quakes(copy: bool = True) -> pd.DataFrame:
+    """Load the locations of 1,000 earthquakes near Fiji since 1964."""
+    if "quakes" not in _DATA_CACHE:
+        _DATA_CACHE["quakes"] = _load_csv("quakes.csv")
+    return _DATA_CACHE["quakes"].copy() if copy else _DATA_CACHE["quakes"]
+
+
 def load(name: str, **kwargs: Any) -> pd.DataFrame:
     """Load a dataset by its string name.
 
@@ -423,7 +432,7 @@ def load(name: str, **kwargs: Any) -> pd.DataFrame:
         'supervisors', 'open_responses', 'open_responses_coded',
         'counselling_visits', 'toothgrowth', 'faithful', 'sleep',
         'trees', 'ucbadmissions', 'usarrests', 'sleepstudy', 'chickweight',
-        'credit_data', 'titanic', 'penguins', or 'concrete'.
+        'credit_data', 'titanic', 'penguins', 'concrete', or 'quakes'.
     **kwargs : Any
         Passed to the underlying loader function.
 
@@ -451,6 +460,7 @@ def load(name: str, **kwargs: Any) -> pd.DataFrame:
         "titanic": load_titanic,
         "penguins": load_penguins,
         "concrete": load_concrete,
+        "quakes": load_quakes,
     }
     cleaned = name.strip().lower()
     if cleaned not in loaders:

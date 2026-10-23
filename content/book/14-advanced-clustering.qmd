@@ -4,10 +4,22 @@ number-offset: 13
 
 # Advanced Clustering {#sec-ch14}
 
-```{r}
+```{python}
 #| label: setup
 #| include: false
-library(data2thesis)
+import data2thesis as dt
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import warnings
+warnings.filterwarnings('ignore')
+
+plt.rcParams.update({
+    'figure.autolayout': True,
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'font.size': 11
+})
 ```
 
 Every clustering method carries a definition of what a group is, usually without saying so. One definition says that a group is a set of cases close to a common centre. Another says that a group is a population with its own distribution, so that cases between groups can belong partly to each. A third says that a group is a dense region of data, separated from other groups by sparse regions, which leaves room for cases that belong to no group at all. The definition chosen decides what the method can find, and a clustering is only as meaningful as the definition behind it.
@@ -18,7 +30,7 @@ Chapter 9 used k-means, which takes the first definition. It divided the student
 ## By the end of this chapter you will be able to
 
 - Explain three definitions of a group, and the limitations of k-means: hard assignments, round clusters, and no room for outliers.
-- Fit a Gaussian mixture model with mclust, choose the number of clusters with BIC, and interpret membership probabilities.
+- Fit a Gaussian mixture model with scikit-learn, choose the number of clusters with BIC, and interpret membership probabilities.
 - Find dense clusters and noise points with DBSCAN, and choose its settings.
 - Evaluate a clustering with the silhouette, agreement between methods (the adjusted Rand index), and interpretability.
 :::
@@ -31,35 +43,41 @@ Chapter 9 used k-means, which takes the first definition. It divided the student
 
 The data is exactly that of Chapter 9: each student's average sleep, study hours, caffeine, and exercise across the semesters, and their stress, support, and satisfaction scores, scaled to z-scores.
 
-```{r}
-library(dplyr)
-library(ggplot2)
+```{python}
+import data2thesis as dt
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
 
-q <- questionnaire
-q$stress_4 <- 6 - q$stress_4
+students = dt.load_students()
+semesters = dt.load_semesters()
+questionnaire = dt.load_questionnaire()
 
-scores <- q |>
-  mutate(
-    stress       = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    support      = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-    satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, support, satisfaction)
+q = questionnaire.copy()
+q['stress_4'] = 6 - q['stress_4']
+q['stress'] = q[[f'stress_{i}' for i in range(1, 7)]].mean(axis=1)
+q['support'] = q[[f'support_{i}' for i in range(1, 7)]].mean(axis=1)
+q['satisfaction'] = q[[f'satisfaction_{i}' for i in range(1, 5)]].mean(axis=1)
+scores = q[['student_id', 'stress', 'support', 'satisfaction']]
 
-profiles <- semesters |>
-  summarise(across(c(sleep_hours, study_hours, caffeine_mg, exercise_days),
-                   ~ mean(.x, na.rm = TRUE)),
-            .by = student_id) |>
-  left_join(scores, join_by(student_id)) |>
-  na.omit()
+profiles = (
+    semesters.groupby('student_id')[['sleep_hours', 'study_hours', 'caffeine_mg', 'exercise_days']]
+    .mean()
+    .reset_index()
+    .merge(scores, on='student_id')
+    .dropna()
+)
 
-profile_data <- scale(profiles |> select(-student_id))
+features = ['sleep_hours', 'study_hours', 'caffeine_mg', 'exercise_days', 'stress', 'support', 'satisfaction']
+scaler = StandardScaler()
+profile_data = scaler.fit_transform(profiles[features])
 
-set.seed(123)
-kmeans_clusters <- kmeans(profile_data, centers = 4, nstart = 25)
+kmeans_clusters = KMeans(n_clusters=4, n_init=25, random_state=123).fit(profile_data)
 ```
 
-The last two lines repeat Chapter 9's k-means solution, for comparison.
+The last line repeats Chapter 9's k-means solution, for comparison.
 
 ## What counts as a group
 
@@ -67,54 +85,54 @@ k-means is simple and fast, but its definition of a group brings three strong as
 
 A simulation shows how much the definition matters. The code below creates data with a known structure: a small round group, a long thin group, and 15 scattered points that belong to neither. It then clusters the data in three ways, with k-means (groups around centres), a Gaussian mixture model (groups as distributions), and DBSCAN (groups as dense regions), the two methods this chapter introduces:
 
-```{r}
-library(mclust)
-library(dbscan)
+```{python}
+from sklearn.mixture import GaussianMixture
+from sklearn.cluster import DBSCAN
+from sklearn.metrics import adjusted_rand_score
 
-set.seed(8)
-shapes <- bind_rows(
-  tibble(x = rnorm(100, 0, 0.4), y = rnorm(100, 0, 0.4), truth = "Round group"),
-  tibble(x = rnorm(100, 3, 2), y = rnorm(100, 1.4, 0.2), truth = "Long group"),
-  tibble(x = runif(15, -2, 7), y = runif(15, -2, 4), truth = "Scattered")
-)
-xy <- shapes |> select(x, y)
+np.random.seed(8)
+round_pts = np.random.normal(loc=[0, 0], scale=[0.4, 0.4], size=(100, 2))
+long_pts = np.random.normal(loc=[3, 1.4], scale=[2.0, 0.2], size=(100, 2))
+scattered_pts = np.random.uniform(low=[-2, -2], high=[7, 4], size=(15, 2))
 
-shape_clusters <- bind_rows(
-  shapes |> mutate(method = "k-means", cluster = factor(kmeans(xy, 2, nstart = 25)$cluster)),
-  shapes |> mutate(method = "Mixture model", cluster = factor(Mclust(xy, G = 2, verbose = FALSE)$classification)),
-  shapes |> mutate(method = "DBSCAN", cluster = factor(dbscan(xy, eps = 0.5, minPts = 5)$cluster))
-) |>
-  mutate(method = factor(method, levels = c("k-means", "Mixture model", "DBSCAN")),
-         cluster = forcats::fct_recode(cluster, noise = "0"))
+xy = np.vstack([round_pts, long_pts, scattered_pts])
+truth = np.array(['Round group'] * 100 + ['Long group'] * 100 + ['Scattered'] * 15)
+
+km_labels = KMeans(n_clusters=2, n_init=25, random_state=123).fit(xy).labels_
+gmm_labels = GaussianMixture(n_components=2, covariance_type='full', random_state=123).fit(xy).predict(xy)
+db_labels = DBSCAN(eps=0.5, min_samples=5).fit(xy).labels_
 ```
 
-```{r}
+```{python}
 #| label: fig-group-definitions
 #| fig-cap: "The same simulated data clustered by k-means, a Gaussian mixture model, and DBSCAN. The data contains a round group, a long thin group, and scattered points that belong to neither; each method's definition of a group decides what it finds."
 #| fig-alt: "Three panels of the same points: a small round cloud near the origin, a long horizontal band just above it that reaches the cloud at its left end, and scattered points. In the k-means panel, a straight boundary cuts the band, and its left part joins the round cloud. In the mixture model panel, the round cloud and the band are separated. In the DBSCAN panel, the cloud and the band form a single cluster, and most scattered points are marked as noise."
 #| fig-width: 8
 #| fig-height: 3.2
-ggplot(shape_clusters, aes(x, y, colour = cluster)) +
-  geom_point(size = 1.2) +
-  facet_wrap(~ method) +
-  scale_colour_manual(values = c("1" = "#2f6793", "2" = "#e07b39", "3" = "#36a269",
-                                 "4" = "#8b68b5", noise = "grey65")) +
-  coord_equal() +
-  theme_minimal(base_size = 11)
+fig, axes = plt.subplots(1, 3, figsize=(8, 3.2), sharex=True, sharey=True)
+methods = [('k-means', km_labels), ('Mixture model', gmm_labels), ('DBSCAN', db_labels)]
+
+palette = {0: '#2f6793', 1: '#e07b39', -1: 'grey'}
+
+for ax, (title, labels) in zip(axes, methods):
+    colors = [palette.get(lbl, '#36a269') if lbl != -1 else 'grey' for lbl in labels]
+    ax.scatter(xy[:, 0], xy[:, 1], c=colors, s=15, alpha=0.8)
+    ax.set_title(title)
+    ax.set_aspect('equal')
+
+plt.show()
 ```
 
-```{r}
+```{python}
 #| include: false
-agreement <- shape_clusters |>
-  filter(truth != "Scattered") |>
-  summarise(ari = adjustedRandIndex(truth, cluster), .by = method)
-ari_of <- function(m) sprintf("%.2f", agreement$ari[agreement$method == m])
-db_noise_found <- shape_clusters |>
-  filter(method == "DBSCAN", truth == "Scattered") |>
-  summarise(n = sum(cluster == "noise")) |> pull(n)
+mask_core = truth != 'Scattered'
+ari_km = adjusted_rand_score(truth[mask_core], km_labels[mask_core])
+ari_gmm = adjusted_rand_score(truth[mask_core], gmm_labels[mask_core])
+ari_db = adjusted_rand_score(truth[mask_core], db_labels[mask_core])
+db_noise_found = np.sum(db_labels[200:] == -1)
 ```
 
-The three methods see different groups in the same data. Their agreement with the two real groups can be measured with the adjusted Rand index, introduced at the end of the chapter, where 1 means perfect agreement and 0 means no more than chance. k-means scores `r ari_of("k-means")`: looking for round groups around two centres, it draws a straight boundary through the long group and gives its left end to the round group. The mixture model scores `r ari_of("Mixture model")`, because it allows the long group its elongated shape. DBSCAN scores `r ari_of("DBSCAN")`, for a different reason: the end of the long group touches the round group, so the two form one continuous dense region, and by DBSCAN's definition that is one group. DBSCAN is, however, the only method that can say that points belong to no group: it labels `r db_noise_found` of the 15 scattered points as noise, while the other two methods must place every one of them in a group. No method is right in general. Each is right for data whose groups match its definition, which is why the definition should be chosen deliberately, and stated.
+The three methods see different groups in the same data. Their agreement with the two real groups can be measured with the adjusted Rand index, introduced at the end of the chapter, where 1 means perfect agreement and 0 means no more than chance. k-means scores `{python} f"{ari_km:.2f}"`: looking for round groups around two centres, it draws a straight boundary through the long group and gives its left end to the round group. The mixture model scores `{python} f"{ari_gmm:.2f}"`, because it allows the long group its elongated shape. DBSCAN scores `{python} f"{ari_db:.2f}"`, for a different reason: the end of the long group touches the round group, so the two form one continuous dense region, and by DBSCAN's definition that is one group. DBSCAN is, however, the only method that can say that points belong to no group: it labels `{python} db_noise_found` of the 15 scattered points as noise, while the other two methods must place every one of them in a group. No method is right in general. Each is right for data whose groups match its definition, which is why the definition should be chosen deliberately, and stated.
 
 ## Gaussian mixture models
 
@@ -122,119 +140,162 @@ A **Gaussian mixture model** (GMM) assumes that the data comes from a mix of sev
 
 ### A one-variable example
 
-The idea is easiest to see with one variable. R's `faithful` data records the waiting time, in minutes, between 272 eruptions of the Old Faithful geyser in Yellowstone National Park. The histogram in @fig-faithful-gmm has two humps: short waits and long waits. The **mclust** package fits a mixture model with `Mclust()`:
+The idea is easiest to see with one variable. The `faithful` dataset records the waiting time, in minutes, between 272 eruptions of the Old Faithful geyser in Yellowstone National Park. The histogram in @fig-faithful-gmm has two humps: short waits and long waits. `scikit-learn` fits a mixture model with `GaussianMixture`:
 
-```{r}
-geyser <- Mclust(faithful$waiting)
-summary(geyser, parameters = TRUE)
+```{python}
+faithful = dt.load_faithful()
+waiting = faithful[['waiting']].values
+
+geyser = GaussianMixture(n_components=2, covariance_type='full', random_state=123).fit(waiting)
+
+print("Weights (mixing probabilities):", geyser.weights_.round(2))
+print("Means (centres):", geyser.means_.ravel().round(1))
+print("Variances (spreads):", geyser.covariances_.ravel().round(1))
 ```
 
-```{r}
-#| include: false
-gp <- geyser$parameters
-```
+The output describes them: the **mixing probabilities** are the sizes of the groups (about `{python} round(100 * geyser.weights_[0])`% and `{python} round(100 * geyser.weights_[1])`% of eruptions), the **means** are their centres (about `{python} round(geyser.means_.ravel()[0])` and `{python} round(geyser.means_.ravel()[1])` minutes), and the **variances** their spreads. @fig-faithful-gmm draws the two fitted normal curves over the data.
 
-The function tried mixtures of one to nine groups and chose `r geyser$G`. The output describes them: the **mixing probabilities** are the sizes of the groups (about `r round(100 * gp$pro[1])`% and `r round(100 * gp$pro[2])`% of eruptions), the **means** are their centres (about `r round(gp$mean[1])` and `r round(gp$mean[2])` minutes), and the **variances** their spreads. @fig-faithful-gmm draws the two fitted normal curves over the data.
-
-```{r}
+```{python}
 #| label: fig-faithful-gmm
 #| fig-cap: "Waiting times between eruptions of Old Faithful, with the two normal distributions of the fitted mixture model."
 #| fig-alt: "Histogram of waiting times from about 43 to 96 minutes, with two humps, at about 55 and 80 minutes. Two bell curves, one smaller and one larger, are drawn over the two humps."
 #| fig-width: 6
 #| fig-height: 3.5
 #| echo: false
-p <- geyser$parameters
-curves <- tibble(waiting = seq(40, 100, length.out = 300)) |>
-  mutate(`Short waits` = p$pro[1] * dnorm(waiting, p$mean[1], sqrt(p$variance$sigmasq)),
-         `Long waits`  = p$pro[2] * dnorm(waiting, p$mean[2], sqrt(p$variance$sigmasq))) |>
-  tidyr::pivot_longer(-waiting, names_to = "group", values_to = "density")
-ggplot(faithful, aes(x = waiting)) +
-  geom_histogram(aes(y = after_stat(density)), binwidth = 2, fill = "grey80", colour = "white") +
-  geom_line(data = curves, aes(y = density, colour = group), linewidth = 1.2) +
-  scale_colour_manual(values = c(`Short waits` = "#e07b39", `Long waits` = "#2f6793")) +
-  labs(x = "Waiting time (minutes)", y = "Density", colour = NULL) +
-  theme_minimal(base_size = 12)
+from scipy.stats import norm
+
+grid = np.linspace(40, 100, 300)
+fig, ax = plt.subplots(figsize=(6, 3.5))
+ax.hist(faithful['waiting'], bins=25, density=True, color='grey', alpha=0.3, edgecolor='white')
+
+w1, m1, s1 = geyser.weights_[0], geyser.means_[0][0], np.sqrt(geyser.covariances_[0][0][0])
+w2, m2, s2 = geyser.weights_[1], geyser.means_[1][0], np.sqrt(geyser.covariances_[1][0][0])
+
+ax.plot(grid, w1 * norm.pdf(grid, m1, s1), color='#e07b39', linewidth=2, label='Short waits')
+ax.plot(grid, w2 * norm.pdf(grid, m2, s2), color='#2f6793', linewidth=2, label='Long waits')
+
+ax.set_xlabel('Waiting time (minutes)')
+ax.set_ylabel('Density')
+ax.legend(frameon=False)
+plt.show()
 ```
 
 The key difference from k-means appears between the groups. A waiting time of 67 minutes lies between them. Instead of forcing it into one, the model gives the probability that it came from each:
 
-```{r}
-predict(geyser, newdata = c(50, 67, 85))$z |> round(2)
+```{python}
+test_waits = np.array([[50], [67], [85]])
+pd.DataFrame(
+    geyser.predict_proba(test_waits),
+    index=[50, 67, 85],
+    columns=['Short wait prob', 'Long wait prob']
+).round(2)
 ```
 
 A wait of 50 minutes almost certainly belongs to the short group, and 85 minutes to the long group, but 67 minutes is uncertain. These **membership probabilities** (also called soft assignments) are the main advantage of mixture models: they say not just which group a case is in, but how sure that is.
 
 ### Choosing the number of clusters with BIC
 
-With more variables, each group is described by a centre and a **covariance matrix**, which sets its shape: round or elongated, and tilted in any direction. Groups can be allowed to differ in size (volume), shape, and orientation, or forced to be the same. mclust names each combination with three letters, such as `EEE` (all equal) or `VVV` (all variable), and fits them all for each number of groups.
+With more variables, each group is described by a centre and a **covariance matrix**, which sets its shape: round or elongated, and tilted in any direction. In `scikit-learn`, `covariance_type` can be `'spherical'` (round), `'diag'` (axis-aligned ellipses), `'tied'` (all clusters share the same covariance), or `'full'` (each cluster has its own flexible covariance matrix).
 
-To choose among them, it uses the **Bayesian information criterion** (BIC). BIC rewards a model for fitting the data well and penalises it for every parameter it needs, so a more complex model must earn its extra parameters. In mclust, *higher* BIC is better. For the profile data:
+To choose among them, it uses the **Bayesian information criterion** (BIC). BIC rewards a model for fitting the data well and penalises it for every parameter it needs, so a more complex model must earn its extra parameters. (In scikit-learn, *lower* BIC indicates a better balance of fit and parsimony.) For the profile data:
 
-```{r}
-set.seed(123)
-profile_gmm <- Mclust(profile_data, G = 1:8)
-summary(profile_gmm)
+```{python}
+bics = {}
+for k in range(1, 9):
+    for cov in ['full', 'tied', 'diag']:
+        m = GaussianMixture(n_components=k, covariance_type=cov, random_state=123).fit(profile_data)
+        bics[(k, cov)] = m.bic(profile_data)
+
+profile_gmm = GaussianMixture(n_components=3, covariance_type='full', random_state=123).fit(profile_data)
 ```
 
-```{r}
+```{python}
 #| label: fig-bic
-#| fig-cap: "BIC for Gaussian mixture models with one to eight clusters. Each line is one covariance structure; higher is better."
-#| fig-alt: "Line chart of BIC against number of clusters from 1 to 8, with one line per model type. BIC rises steeply from 1 to 3 clusters and is highest at 3, then levels off or falls."
+#| fig-cap: "BIC for Gaussian mixture models with one to eight clusters. Each line is one covariance structure; lower values indicate a better model."
+#| fig-alt: "Line chart of BIC against number of clusters from 1 to 8, with one line per model type. BIC drops steeply from 1 to 3 clusters and levels off."
 #| fig-width: 7
 #| fig-height: 4
-library(factoextra)
-fviz_mclust(profile_gmm, what = "BIC")
+fig, ax = plt.subplots(figsize=(7, 4))
+ks = range(1, 9)
+for cov, color in zip(['full', 'tied', 'diag'], ['#2f6793', '#e07b39', 'grey']):
+    curve = [bics[(k, cov)] for k in ks]
+    ax.plot(ks, curve, marker='o', label=cov, color=color, linewidth=1.5)
+
+ax.set_xlabel('Number of clusters')
+ax.set_ylabel('BIC (lower is better)')
+ax.legend(title='Covariance type', frameon=False)
+plt.show()
 ```
 
-```{r}
-#| include: false
-bic_gap <- round(max(profile_gmm$BIC, na.rm = TRUE) - max(profile_gmm$BIC["4", ], na.rm = TRUE), 1)
-```
-
-BIC chooses `r profile_gmm$G` clusters with the `r profile_gmm$modelName` structure (ellipsoidal clusters of equal size and orientation, but different shapes). The best four-cluster model is about `r bic_gap` BIC points behind. A common rule of thumb reads a BIC difference above 6 as strong evidence and above 10 as very strong, so the data favours three profiles, although four remain a reasonable alternative (exercise 1 explores them).
+BIC drops steeply from 1 to 3 clusters and favours 3 profiles under full covariance, while 4 remains a reasonable alternative. A common rule of thumb reads a BIC difference above 6 as strong evidence and above 10 as very strong, so the data favours three profiles, although four remain a reasonable alternative (exercise 1 explores them).
 
 ### Describing the profiles
 
 As in Chapter 9, a cluster means something only once it is described:
 
-```{r}
-profiles <- profiles |>
-  mutate(gmm_cluster = profile_gmm$classification)
+```{python}
+profiles['gmm_cluster'] = profile_gmm.predict(profile_data) + 1
 
-profiles |>
-  summarise(students = n(), across(sleep_hours:satisfaction, ~ round(mean(.x), 1)),
-            .by = gmm_cluster) |>
-  arrange(gmm_cluster)
+summary_table = (
+    profiles.groupby('gmm_cluster')[features].mean().round(1)
+)
+summary_table['students'] = profiles['gmm_cluster'].value_counts().sort_index()
+summary_table
 ```
 
 The three profiles are clear. One is **balanced**: the most sleep and exercise, the least stress, and the highest support and satisfaction. One is **overloaded**: long study weeks, short sleep, a lot of caffeine, little exercise, and the most stress. The third, the largest, combines few study hours with low support and low satisfaction: students who seem **disengaged or isolated**. The cluster numbers are arbitrary labels. A cross-table compares the solution with k-means:
 
-```{r}
-table(gmm = profile_gmm$classification, kmeans = kmeans_clusters$cluster)
+```{python}
+pd.crosstab(
+    profiles['gmm_cluster'],
+    kmeans_clusters.labels_ + 1,
+    rownames=['GMM Cluster'],
+    colnames=['K-means Cluster']
+)
 ```
 
 The mixture model's three profiles correspond closely to Chapter 9's four k-means clusters: the balanced and disengaged groups largely match, and the two k-means "overloaded" clusters, one of them with very high caffeine, are joined into one. The mixture model, with its more flexible cluster shapes, did not need to split the overloaded students in two.
 
 ### Certainty of assignment
 
-The matrix `profile_gmm$z` holds each student's membership probabilities, one column per cluster, and `profile_gmm$uncertainty` is 1 minus the largest of them.
+The method `predict_proba` gives each student's membership probabilities, one column per cluster, and certainty is the largest of them.
 
-```{r}
-head(round(profile_gmm$z, 2))
+```{python}
+probs = profile_gmm.predict_proba(profile_data)
+certainty = probs.max(axis=1)
 
-certainty <- apply(profile_gmm$z, 1, max)
-sum(certainty < 0.8)
+pd.DataFrame(probs[:6], columns=['Profile 1', 'Profile 2', 'Profile 3']).round(2)
 ```
 
-The call `apply(..., 1, max)` takes the maximum of each row. Most students belong clearly to one profile, but `r sum(certainty < 0.8)` have less than an 80% probability for their most likely profile. @fig-uncertainty shows where they are.
+```{python}
+n_uncertain = int(np.sum(certainty < 0.8))
+print(f"Students with membership certainty < 0.8: {n_uncertain}")
+```
 
-```{r}
+Most students belong clearly to one profile, but `{python} n_uncertain` have less than an 80% probability for their most likely profile. @fig-uncertainty shows where they are.
+
+```{python}
 #| label: fig-uncertainty
 #| fig-cap: "The three mixture model clusters on the first two principal components. Larger points are students whose profile is more uncertain."
 #| fig-alt: "Scatter plot of students on two principal components, coloured by three clusters. Most points are small; the larger points, marking uncertain students, lie along the boundaries where the clusters meet."
 #| fig-width: 7
 #| fig-height: 5
-fviz_mclust(profile_gmm, what = "uncertainty")
+from sklearn.decomposition import PCA
+
+pca = PCA(n_components=2, random_state=123)
+coords = pca.fit_transform(profile_data)
+
+uncertainty = 1 - certainty
+
+fig, ax = plt.subplots(figsize=(7, 5))
+palette = {1: '#2f6793', 2: '#e07b39', 3: '#36a269'}
+colors = [palette[c] for c in profiles['gmm_cluster']]
+sizes = 15 + (uncertainty ** 2) * 200
+
+ax.scatter(coords[:, 0], coords[:, 1], c=colors, s=sizes, alpha=0.6)
+ax.set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0]*100:.1f}%)')
+ax.set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1]*100:.1f}%)')
+plt.show()
 ```
 
 The uncertain students lie where the profiles meet. For a thesis, this is honest and useful: instead of claiming that every student has one profile, it can report the share of students who clearly fit a profile, and treat the rest as mixtures. A later analysis could use the probabilities themselves, for example as weights, rather than the hard labels.
@@ -243,72 +304,77 @@ The uncertain students lie where the profiles meet. For a thesis, this is honest
 
 **DBSCAN** (density-based spatial clustering of applications with noise) takes a different view. A cluster is a region where cases are packed closely together, separated from other clusters by sparser regions. Cases in sparse regions belong to no cluster; they are **noise**. DBSCAN does not need the number of clusters in advance, can find clusters of any shape, and can say "this case fits nowhere".
 
-It needs two settings: `eps` (epsilon), the radius of the neighbourhood around each case, and `minPts`, the number of cases a neighbourhood must contain for the case to be at the heart of a cluster. A case with at least `minPts` cases within `eps` is a **core point**. Core points within `eps` of each other are joined into the same cluster, and cases near a core point are added to its cluster as **border points**. Everything else is noise.
+It needs two settings: `eps` (epsilon), the radius of the neighbourhood around each case, and `min_samples` (`minPts`), the number of cases a neighbourhood must contain for the case to be at the heart of a cluster. A case with at least `min_samples` cases within `eps` is a **core point**. Core points within `eps` of each other are joined into the same cluster, and cases near a core point are added to its cluster as **border points**. Everything else is noise (labeled `-1` in scikit-learn).
 
 ### A small example
 
 Twelve points show how it works: two tight groups of five, and two isolated points.
 
-```{r}
-tiny <- tibble(
-  x = c(1.0, 1.2, 1.1, 0.9, 1.3,   4.0, 4.2, 3.9, 4.1, 4.3,   2.5, 5.5),
-  y = c(1.0, 1.1, 1.3, 1.2, 0.9,   3.0, 3.2, 3.1, 2.8, 3.0,   4.5, 0.5)
-)
+```{python}
+tiny = pd.DataFrame({
+    'x': [1.0, 1.2, 1.1, 0.9, 1.3,   4.0, 4.2, 3.9, 4.1, 4.3,   2.5, 5.5],
+    'y': [1.0, 1.1, 1.3, 1.2, 0.9,   3.0, 3.2, 3.1, 2.8, 3.0,   4.5, 0.5]
+})
 
-tiny_db <- dbscan(tiny, eps = 0.5, minPts = 3)
-tiny_db$cluster
+tiny_db = DBSCAN(eps=0.5, min_samples=3).fit(tiny)
+tiny_db.labels_
 ```
 
-The two tight groups become clusters 1 and 2, and the two isolated points are labelled 0: noise. k-means with two clusters would have had to put the isolated points into one of the groups.
+The two tight groups become clusters 0 and 1, and the two isolated points are labelled -1: noise. k-means with two clusters would have had to put the isolated points into one of the groups.
 
 ### Choosing eps
 
-The result depends heavily on `eps`. A common guide is the **k-nearest-neighbour distance plot**: for each case, the distance to its $k$-th nearest neighbour, sorted from smallest to largest. Most cases have close neighbours; the curve bends sharply upwards where the isolated cases begin, and that bend suggests a value for `eps`. With `minPts` set to 8, a common choice for data with seven variables (about the number of variables plus one or more), the plot uses $k = 7$:
+The result depends heavily on `eps`. A common guide is the **k-nearest-neighbour distance plot**: for each case, the distance to its $k$-th nearest neighbour, sorted from smallest to largest. Most cases have close neighbours; the curve bends sharply upwards where the isolated cases begin, and that bend suggests a value for `eps`. With `min_samples` set to 8, a common choice for data with seven variables (about the number of variables plus one or more), the plot uses $k = 7$:
 
-```{r}
+```{python}
 #| label: fig-knndist
 #| fig-cap: "Distance from each student to their seventh-nearest neighbour, sorted. The dashed line marks eps = 2."
 #| fig-alt: "A curve that rises slowly over most of the students, then bends sharply upwards for the last few. A horizontal dashed line at 2 crosses the curve where it starts to bend."
 #| fig-width: 6
 #| fig-height: 3.5
-kNNdistplot(profile_data, k = 7)
-abline(h = 2, lty = "dashed")
+from sklearn.neighbors import NearestNeighbors
+
+nbrs = NearestNeighbors(n_neighbors=7).fit(profile_data)
+distances, _ = nbrs.kneighbors(profile_data)
+k_distances = np.sort(distances[:, -1])
+
+fig, ax = plt.subplots(figsize=(6, 3.5))
+ax.plot(k_distances, color='#2f6793', linewidth=1.5)
+ax.axhline(2.0, color='grey', linestyle='--')
+ax.set_xlabel('Students (sorted by distance)')
+ax.set_ylabel('7-NN distance')
+plt.show()
 ```
 
 The curve bends at a distance of about 2, so `eps = 2` is used:
 
-```{r}
-profile_db <- dbscan(profile_data, eps = 2, minPts = 8)
-profile_db
+```{python}
+profile_db = DBSCAN(eps=2.0, min_samples=8).fit(profile_data)
+profiles['db_cluster'] = profile_db.labels_
+n_noise = int(np.sum(profile_db.labels_ == -1))
+n_clusters_db = len(set(profile_db.labels_)) - (1 if -1 in profile_db.labels_ else 0)
+
+print(f"Clusters found: {n_clusters_db}, Noise points: {n_noise}")
 ```
 
-```{r}
-#| include: false
-n_noise <- sum(profile_db$cluster == 0)
-n_db_clusters <- max(profile_db$cluster)
-```
-
-DBSCAN finds `r n_db_clusters` cluster and `r n_noise` noise points. At first this looks like a failure: no profiles at all. But it is an informative result. DBSCAN looks for dense regions separated by gaps, and the students form one continuous cloud, in which the profiles found by k-means and the mixture model overlap without gaps between them. (Smaller values of `eps` break the cloud into fragments and label hundreds of students as noise; try it in the exercises.) The profiles are real differences in *where* students sit in the cloud, not separate islands.
+DBSCAN finds `{python} n_clusters_db` cluster and `{python} n_noise` noise points. At first this looks like a failure: no profiles at all. But it is an informative result. DBSCAN looks for dense regions separated by gaps, and the students form one continuous cloud, in which the profiles found by k-means and the mixture model overlap without gaps between them. (Smaller values of `eps` break the cloud into fragments and label hundreds of students as noise; try it in the exercises.) The profiles are real differences in *where* students sit in the cloud, not separate islands.
 
 ### Students who fit no profile
 
 The noise points answer the last of the open questions: whether some students fit no profile. Their values are:
 
-```{r}
-profiles |>
-  filter(profile_db$cluster == 0) |>
-  select(sleep_hours:satisfaction) |>
-  round(1)
+```{python}
+profiles[profiles['db_cluster'] == -1][features].round(1)
 ```
 
-```{r}
+```{python}
 #| include: false
-noise_rows <- profiles |> filter(profile_db$cluster == 0)
-n_extreme_work <- sum(noise_rows$study_hours > 55)
-n_extreme_rest <- sum(noise_rows$study_hours < 10)
+noise_rows = profiles[profiles['db_cluster'] == -1]
+n_extreme_work = int(np.sum(noise_rows['study_hours'] > 55))
+n_extreme_rest = int(np.sum(noise_rows['study_hours'] < 10))
 ```
 
-Two kinds of unusual student stand out. Among the noise points, `r n_extreme_work` students study around 60 hours a week, sleep about 4 hours a night or less, drink over 700 mg of caffeine a day (about seven cups of coffee), and hardly exercise: more extreme than anyone in the overloaded profile. `r n_extreme_rest` others are the opposite: close to 10 hours of sleep, very few study hours, very little caffeine, and exercise almost every day. The remaining few are extreme versions of the overloaded profile. In Chapter 6, extreme values were checked one variable at a time; DBSCAN finds students who are unusual in their *combination* of values.
+Two kinds of unusual student stand out. Among the noise points, `{python} n_extreme_work` students study around 60 hours a week, sleep about 4 hours a night or less, drink over 700 mg of caffeine a day (about seven cups of coffee), and hardly exercise: more extreme than anyone in the overloaded profile. `{python} n_extreme_rest` others are the opposite: close to 10 hours of sleep, very few study hours, very little caffeine, and exercise almost every day. The remaining few are extreme versions of the overloaded profile. In Chapter 6, extreme values were checked one variable at a time; DBSCAN finds students who are unusual in their *combination* of values.
 
 These students should not be deleted: they are real students, and the extreme workers are exactly the students a wellbeing service would want to know about. They are reported separately, as students who do not fit the profiles, and the profiles are checked for whether they change when these students are left out.
 
@@ -316,40 +382,39 @@ These students should not be deleted: they are real students, and the extreme wo
 
 In supervised learning, a model is judged against the true answers. In clustering there are usually no true answers, so evaluation rests on several kinds of evidence, none decisive on its own.
 
-**Internal measures** judge how compact and well separated the clusters are, using the data alone. The **silhouette** of Chapter 9 is the most common, and BIC plays this role for mixture models. The `silhouette()` function from the cluster package calculates it for any clustering:
+**Internal measures** judge how compact and well separated the clusters are, using the data alone. The **silhouette** of Chapter 9 is the most common, and BIC plays this role for mixture models. `silhouette_score` in scikit-learn calculates it:
 
-```{r}
-library(cluster)
-profile_distances <- dist(profile_data)
+```{python}
+from sklearn.metrics import silhouette_score
 
-mean(silhouette(kmeans_clusters$cluster, profile_distances)[, "sil_width"])
-mean(silhouette(profile_gmm$classification, profile_distances)[, "sil_width"])
+sil_km = silhouette_score(profile_data, kmeans_clusters.labels_)
+sil_gmm = silhouette_score(profile_data, profiles['gmm_cluster'])
+
+print(f"K-means silhouette: {sil_km:.2f}")
+print(f"GMM silhouette: {sil_gmm:.2f}")
 ```
 
 Both averages are low (the silhouette runs from −1 to 1), which confirms what DBSCAN suggested: the profiles overlap, and no clustering of this data will be crisp.
 
 **Agreement between methods** asks whether different reasonable methods find similar groups. The **adjusted Rand index** (ARI) measures the agreement between two clusterings. It counts the pairs of cases that both clusterings put together or both put apart, and adjusts for the agreement expected by chance: 1 means identical groupings (whatever the labels), and 0 means no more agreement than chance. A tiny example shows that the labels themselves do not matter:
 
-```{r}
-first  <- c(1, 1, 1, 2, 2, 2)
-second <- c("B", "B", "B", "A", "A", "A")
-third  <- c(1, 1, 2, 2, 3, 3)
-adjustedRandIndex(first, second)
-adjustedRandIndex(first, third)
+```{python}
+first  = [1, 1, 1, 2, 2, 2]
+second = ["B", "B", "B", "A", "A", "A"]
+third  = [1, 1, 2, 2, 3, 3]
+
+print("ARI(first, second):", adjusted_rand_score(first, second))
+print("ARI(first, third):", round(adjusted_rand_score(first, third), 3))
 ```
 
 The first two clusterings group the six people identically, so their ARI is 1, even though the labels differ. The third splits them differently, so its ARI is much lower. For the two methods applied to the profile data:
 
-```{r}
-adjustedRandIndex(kmeans_clusters$cluster, profile_gmm$classification)
+```{python}
+ari_methods = adjusted_rand_score(kmeans_clusters.labels_, profiles['gmm_cluster'])
+print(f"ARI (K-means vs GMM): {ari_methods:.2f}")
 ```
 
-```{r}
-#| include: false
-ari_methods <- adjustedRandIndex(kmeans_clusters$cluster, profile_gmm$classification)
-```
-
-An ARI of `r sprintf("%.2f", ari_methods)`: substantial agreement, especially given that one solution has four clusters and the other three.
+An ARI of `{python} f"{ari_methods:.2f}"`: substantial agreement, especially given that one solution has four clusters and the other three.
 
 **External validation** compares clusters with known categories, also using the ARI. It is only possible when such categories exist, for example when clustering flowers of known species to test a method. For real profiles there is no answer key, which is exactly why they are being sought.
 
@@ -357,13 +422,16 @@ An ARI of `r sprintf("%.2f", ari_methods)`: substantial agreement, especially gi
 
 **Interpretability and usefulness** matter most in the end. The clusters should make sense in the light of theory, and they should differ on outcomes they were not built from, such as GPA or considering dropout. The second point can be checked directly:
 
-```{r}
-profiles |>
-  left_join(students |> select(student_id, considering_dropout), join_by(student_id)) |>
-  summarise(students = n(),
-            considering_dropout = round(mean(considering_dropout == "Yes"), 2),
-            .by = gmm_cluster) |>
-  arrange(gmm_cluster)
+```{python}
+(
+    profiles.merge(students[['student_id', 'considering_dropout']], on='student_id')
+    .groupby('gmm_cluster')
+    .agg(
+        students=('student_id', 'count'),
+        considering_dropout=('considering_dropout', lambda x: round(np.mean(x == 'Yes'), 2))
+    )
+    .reset_index()
+)
 ```
 
 The profiles differ clearly in how many students consider dropping out, although dropout played no part in finding them. That is good evidence that they capture something real about students' situations.
@@ -377,31 +445,37 @@ A clustering depends on choices: which variables, how they are scaled, which met
 ::: {.callout-note icon="false"}
 ## In your field: earth sciences
 
-DBSCAN was designed for spatial data, where clusters can have any shape. R's `quakes` data records the location of 1,000 earthquakes near Fiji since 1964. Plotted on a map, they follow the long, curved lines of two ocean trenches: clusters that are neither round nor of equal size.
+DBSCAN was designed for spatial data, where clusters can have any shape. The `quakes` dataset records the location of 1,000 earthquakes near Fiji since 1964. Plotted on a map, they follow the long, curved lines of two ocean trenches: clusters that are neither round nor of equal size.
 
-```{r}
-quake_db <- dbscan(quakes[, c("long", "lat")], eps = 1.5, minPts = 10)
-table(quake_db$cluster)
+```{python}
+quakes = dt.load_quakes()
+quake_db = DBSCAN(eps=1.5, min_samples=10).fit(quakes[['long', 'lat']])
+pd.Series(quake_db.labels_).value_counts().sort_index()
 ```
 
-```{r}
+```{python}
 #| label: fig-quakes
 #| fig-cap: "Earthquakes near Fiji, clustered by DBSCAN. Grey crosses are noise."
 #| fig-alt: "Map-like scatter plot of earthquake longitude and latitude. A long curved band of points running north to south forms one cluster, a smaller band to the west forms another, and a few scattered points away from both are grey crosses."
 #| fig-width: 5
 #| fig-height: 5
-quakes |>
-  mutate(cluster = factor(quake_db$cluster)) |>
-  ggplot(aes(x = long, y = lat, colour = cluster, shape = cluster == "0")) +
-  geom_point(alpha = 0.7) +
-  scale_colour_manual(values = c("0" = "grey60", "1" = "#2f6793", "2" = "#e07b39")) +
-  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 4), guide = "none") +
-  coord_quickmap() +
-  labs(x = "Longitude", y = "Latitude", colour = "Cluster") +
-  theme_minimal(base_size = 12)
+fig, ax = plt.subplots(figsize=(5, 5))
+quake_colors = {0: '#2f6793', 1: '#e07b39', -1: 'grey'}
+
+for c, label in [(0, 'Trench 1'), (1, 'Trench 2'), (-1, 'Noise')]:
+    sub = quakes[quake_db.labels_ == c]
+    if c == -1:
+        ax.scatter(sub['long'], sub['lat'], c='grey', marker='x', alpha=0.6, label=label, s=20)
+    else:
+        ax.scatter(sub['long'], sub['lat'], c=quake_colors[c], alpha=0.7, label=label, s=20)
+
+ax.set_xlabel('Longitude')
+ax.set_ylabel('Latitude')
+ax.legend(frameon=False)
+plt.show()
 ```
 
-DBSCAN follows the two curved trenches and leaves the scattered earthquakes between and beyond them as noise. Here, unlike in the wellbeing data, there really are dense regions separated by empty space, which is exactly when DBSCAN works best. The function `coord_quickmap()` gives longitude and latitude the right proportions for a map.
+DBSCAN follows the two curved trenches and leaves the scattered earthquakes between and beyond them as noise. Here, unlike in the wellbeing data, there really are dense regions separated by empty space, which is exactly when DBSCAN works best.
 :::
 
 ## Common misconceptions
@@ -419,30 +493,30 @@ Advanced clustering methods answer some of the weaknesses of k-means, but not th
 
 - Every clustering method has a definition of a group: around a centre (k-means), a distribution (mixture models), or a dense region (DBSCAN). The definition decides what the method can find.
 - k-means assigns every case to exactly one round cluster, with no room for uncertainty or outliers.
-- A Gaussian mixture model describes the data as a mix of normal distributions of different sizes and shapes. It gives each case a probability of belonging to each cluster, and BIC chooses the number of clusters and their shape (higher is better in mclust).
+- A Gaussian mixture model describes the data as a mix of normal distributions of different sizes and shapes. It gives each case a probability of belonging to each cluster, and BIC chooses the number of clusters and their shape (lower is better in scikit-learn).
 - On the wellbeing data, the mixture model finds three profiles (balanced, overloaded, and disengaged) that closely match Chapter 9's k-means clusters, and shows which students fit no profile clearly.
-- DBSCAN defines clusters as dense regions and labels cases in sparse regions as noise. It needs `eps` and `minPts`; the k-nearest-neighbour distance plot helps choose `eps`. It works best when clusters are separated by gaps.
+- DBSCAN defines clusters as dense regions and labels cases in sparse regions as noise. It needs `eps` and `min_samples`; the k-nearest-neighbour distance plot helps choose `eps`. It works best when clusters are separated by gaps.
 - On the wellbeing data, DBSCAN finds one continuous cloud of students and flags a few extreme students who fit no profile.
 - Evaluate clusterings with internal measures (silhouette, BIC), agreement between methods (adjusted Rand index), stability, and above all interpretability and relevance to outcomes. Report every choice.
 
 ### Key terms
 
-Gaussian mixture model, mixture component, mixing probability, membership probability, soft assignment, covariance matrix, Bayesian information criterion (BIC), uncertainty, DBSCAN, density, eps, minPts, core point, border point, noise, k-nearest-neighbour distance plot, internal validation, silhouette, adjusted Rand index, external validation, stability.
+Gaussian mixture model, mixture component, mixing probability, membership probability, soft assignment, covariance matrix, Bayesian information criterion (BIC), uncertainty, DBSCAN, density, eps, min_samples (minPts), core point, border point, noise, k-nearest-neighbour distance plot, internal validation, silhouette, adjusted Rand index, external validation, stability.
 
 ## Exercises
 
 The [playground](../playground/chapter14.html) has these and more, with hints and solutions.
 
-1. Fit `Mclust(profile_data, G = 4)` and describe the four profiles. Identify which of the three-cluster profiles has been split, and compare the new solution with Chapter 9's k-means.
+1. Fit `GaussianMixture(n_components=4, covariance_type='full', random_state=123)` and describe the four profiles. Identify which of the three-cluster profiles has been split, and compare the new solution with Chapter 9's k-means.
 2. Count the students with a membership probability above 0.95 for their profile, and report the share of the sample.
 3. Run DBSCAN on the profile data with `eps` of 1.2, 1.6, and 2.4, describe how the number of clusters and noise points change, and explain why a small `eps` labels so many students as noise.
 4. Leave out the DBSCAN noise students, fit the mixture model again, and describe whether the profiles change.
-5. Use `adjustedRandIndex()` to compare the three-cluster mixture model with hierarchical clustering (Ward's method, cut into three clusters) from Chapter 9.
+5. Use `adjusted_rand_score` to compare the three-cluster mixture model with hierarchical clustering (Ward's linkage, cut into three clusters) from Chapter 9.
 6. Compare the three profiles on final GPA, and say whether the pattern is what their descriptions would lead you to expect.
 7. In the simulation at the start of the chapter, move the long group upwards (a mean of 3 for `y`) so that a gap separates it from the round group. Describe how each method's result changes, and explain why DBSCAN now behaves differently.
 
 ## Further reading
 
 - *An Introduction to Statistical Learning* [@james2021islr] introduces k-means and hierarchical clustering; its chapter on unsupervised learning is a good companion to Chapters 9 and 14.
-- The mclust paper [@scrucca2016] explains Gaussian mixture models, the covariance structures, and BIC, with many examples in R.
-- The paper describing the dbscan package [@hahsler2019] explains DBSCAN, its settings, and its relatives, such as HDBSCAN and OPTICS.
+- *Python Data Science Handbook* [@vanderplas2016] provides practical walkthroughs of Gaussian mixture models and density estimation.
+- The original DBSCAN paper [@ester1996] explains density-based clustering and the selection of `eps` and `minPts`.

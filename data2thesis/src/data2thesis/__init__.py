@@ -62,6 +62,7 @@ from data2thesis._data import (
     load_titanic,
     load_penguins,
     load_concrete,
+    load_quakes,
 )
 
 __version__ = "1.1.0"
@@ -88,6 +89,7 @@ __all__ = [
     "load_titanic",
     "load_penguins",
     "load_concrete",
+    "load_quakes",
     "load",
     "load_case_study",
     "load_all",
@@ -117,6 +119,7 @@ __all__ = [
     "titanic",
     "penguins",
     "concrete",
+    "quakes",
 ]
 
 

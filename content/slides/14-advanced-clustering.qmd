@@ -7,77 +7,123 @@ execute:
   freeze: auto
 ---
 
-```{r}
+```{python}
 #| include: false
-library(data2thesis)
-library(dplyr)
-library(ggplot2)
-library(mclust)
-library(dbscan)
-library(cluster)
+import warnings
+warnings.filterwarnings("ignore")
 
-navy <- "#1d588c"; copper <- "#b4762e"; soft <- "#46586d"; green <- "#5b8c5a"; purple <- "#8a5a9c"
-theme_set(theme_minimal(base_size = 15) +
-  theme(panel.grid.minor = element_blank(),
-        plot.background = element_rect(fill = "transparent", colour = NA),
-        axis.title = element_text(colour = soft),
-        strip.text = element_text(colour = navy, face = "bold", size = 13)))
-knitr::opts_chunk$set(dev = "svg", dev.args = list(bg = "transparent"),
-                      message = FALSE, warning = FALSE)
-f2 <- function(x) sprintf("%.2f", x)
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from scipy.stats import norm
 
-q <- questionnaire; q$stress_4 <- 6 - q$stress_4
-scores <- q |>
-  mutate(stress = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-         support = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-         satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)) |>
-  select(student_id, stress, support, satisfaction)
-profiles <- semesters |>
-  summarise(across(c(sleep_hours, study_hours, caffeine_mg, exercise_days), ~ mean(.x, na.rm = TRUE)),
-            .by = student_id) |>
-  left_join(scores, join_by(student_id)) |> na.omit()
-profile_data <- scale(profiles |> select(-student_id))
-set.seed(123)
-kmeans_clusters <- kmeans(profile_data, centers = 4, nstart = 25)
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans, DBSCAN
+from sklearn.mixture import GaussianMixture
+from sklearn.metrics import silhouette_score, adjusted_rand_score
+from sklearn.neighbors import NearestNeighbors
+from sklearn.decomposition import PCA
 
-set.seed(8)
-shapes <- bind_rows(
-  tibble(x = rnorm(100, 0, 0.4), y = rnorm(100, 0, 0.4), truth = "Round group"),
-  tibble(x = rnorm(100, 3, 2), y = rnorm(100, 1.4, 0.2), truth = "Long group"),
-  tibble(x = runif(15, -2, 7), y = runif(15, -2, 4), truth = "Scattered"))
-xy <- shapes |> select(x, y)
-shape_clusters <- bind_rows(
-  shapes |> mutate(method = "k-means", cluster = factor(kmeans(xy, 2, nstart = 25)$cluster)),
-  shapes |> mutate(method = "Mixture model", cluster = factor(Mclust(xy, G = 2, verbose = FALSE)$classification)),
-  shapes |> mutate(method = "DBSCAN", cluster = factor(dbscan(xy, eps = 0.5, minPts = 5)$cluster))) |>
-  mutate(method = factor(method, levels = c("k-means", "Mixture model", "DBSCAN")),
-         cluster = forcats::fct_recode(cluster, noise = "0"))
-agreement <- shape_clusters |> filter(truth != "Scattered") |>
-  summarise(ari = adjustedRandIndex(truth, cluster), .by = method)
-ari_of <- function(m) f2(agreement$ari[agreement$method == m])
-db_noise_found <- shape_clusters |> filter(method == "DBSCAN", truth == "Scattered") |>
-  summarise(n = sum(cluster == "noise")) |> pull(n)
+import data2thesis as dt
 
-geyser <- Mclust(faithful$waiting, verbose = FALSE)
-gp <- geyser$parameters
-geyser_z <- round(predict(geyser, newdata = c(50, 67, 85))$z, 2)
+navy = "#1d588c"
+copper = "#b4762e"
+soft = "#46586d"
+green = "#5b8c5a"
+purple = "#8a5a9c"
 
-set.seed(123)
-profile_gmm <- Mclust(profile_data, G = 1:8, verbose = FALSE)
-bic_gap <- round(max(profile_gmm$BIC, na.rm = TRUE) - max(profile_gmm$BIC["4", ], na.rm = TRUE), 1)
-profiles <- profiles |> mutate(gmm_cluster = profile_gmm$classification)
-certainty <- apply(profile_gmm$z, 1, max)
+plt.rcParams.update({
+    'figure.autolayout': True,
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'font.size': 13
+})
 
-profile_db <- dbscan(profile_data, eps = 2, minPts = 8)
-n_noise <- sum(profile_db$cluster == 0); n_db_clusters <- max(profile_db$cluster)
-noise_rows <- profiles |> filter(profile_db$cluster == 0)
-n_extreme_work <- sum(noise_rows$study_hours > 55); n_extreme_rest <- sum(noise_rows$study_hours < 10)
+def f2(x): return f"{x:.2f}"
 
-profile_distances <- dist(profile_data)
-sil_km  <- mean(silhouette(kmeans_clusters$cluster, profile_distances)[, "sil_width"])
-sil_gmm <- mean(silhouette(profile_gmm$classification, profile_distances)[, "sil_width"])
-ari_methods <- adjustedRandIndex(kmeans_clusters$cluster, profile_gmm$classification)
-quake_db <- dbscan(quakes[, c("long", "lat")], eps = 1.5, minPts = 10)
+# Load and prepare profile data
+students = dt.load_students()
+semesters = dt.load_semesters()
+questionnaire = dt.load_questionnaire()
+
+q = questionnaire.copy()
+q['stress_4'] = 6 - q['stress_4']
+q['stress'] = q[[f'stress_{i}' for i in range(1, 7)]].mean(axis=1)
+q['support'] = q[[f'support_{i}' for i in range(1, 7)]].mean(axis=1)
+q['satisfaction'] = q[[f'satisfaction_{i}' for i in range(1, 5)]].mean(axis=1)
+scores = q[['student_id', 'stress', 'support', 'satisfaction']]
+
+profiles = (
+    semesters.groupby('student_id')[['sleep_hours', 'study_hours', 'caffeine_mg', 'exercise_days']]
+    .mean()
+    .reset_index()
+    .merge(scores, on='student_id')
+    .dropna()
+)
+
+features = ['sleep_hours', 'study_hours', 'caffeine_mg', 'exercise_days', 'stress', 'support', 'satisfaction']
+scaler = StandardScaler()
+profile_data = scaler.fit_transform(profiles[features])
+
+kmeans_clusters = KMeans(n_clusters=4, n_init=25, random_state=123).fit(profile_data)
+
+# Simulation
+np.random.seed(8)
+round_pts = np.random.normal(loc=[0, 0], scale=[0.4, 0.4], size=(100, 2))
+long_pts = np.random.normal(loc=[3, 1.4], scale=[2.0, 0.2], size=(100, 2))
+scattered_pts = np.random.uniform(low=[-2, -2], high=[7, 4], size=(15, 2))
+xy = np.vstack([round_pts, long_pts, scattered_pts])
+truth = np.array(['Round group'] * 100 + ['Long group'] * 100 + ['Scattered'] * 15)
+
+km_labels = KMeans(n_clusters=2, n_init=25, random_state=123).fit(xy).labels_
+gmm_labels = GaussianMixture(n_components=2, covariance_type='full', random_state=123).fit(xy).predict(xy)
+db_labels = DBSCAN(eps=0.5, min_samples=5).fit(xy).labels_
+
+mask_core = truth != 'Scattered'
+ari_km = adjusted_rand_score(truth[mask_core], km_labels[mask_core])
+ari_gmm = adjusted_rand_score(truth[mask_core], gmm_labels[mask_core])
+ari_db = adjusted_rand_score(truth[mask_core], db_labels[mask_core])
+db_noise_found = int(np.sum(db_labels[200:] == -1))
+
+# Old Faithful
+faithful = dt.load_faithful()
+geyser = GaussianMixture(n_components=2, covariance_type='full', random_state=123).fit(faithful[['waiting']])
+gp_weights = geyser.weights_
+gp_means = geyser.means_.ravel()
+geyser_z = geyser.predict_proba([[50], [67], [85]]).round(2)
+
+# Profile GMM
+bics = {}
+for k in range(1, 9):
+    for cov in ['full', 'tied', 'diag']:
+        m = GaussianMixture(n_components=k, covariance_type=cov, random_state=123).fit(profile_data)
+        bics[(k, cov)] = m.bic(profile_data)
+
+profile_gmm = GaussianMixture(n_components=3, covariance_type='full', random_state=123).fit(profile_data)
+profiles['gmm_cluster'] = profile_gmm.predict(profile_data) + 1
+probs = profile_gmm.predict_proba(profile_data)
+certainty = probs.max(axis=1)
+uncertainty = 1 - certainty
+n_uncertain = int(np.sum(certainty < 0.8))
+
+# DBSCAN
+profile_db = DBSCAN(eps=2.0, min_samples=8).fit(profile_data)
+profiles['db_cluster'] = profile_db.labels_
+n_noise = int(np.sum(profile_db.labels_ == -1))
+n_db_clusters = len(set(profile_db.labels_)) - (1 if -1 in profile_db.labels_ else 0)
+
+noise_rows = profiles[profiles['db_cluster'] == -1]
+n_extreme_work = int(np.sum(noise_rows['study_hours'] > 55))
+n_extreme_rest = int(np.sum(noise_rows['study_hours'] < 10))
+
+# Evaluation
+sil_km = silhouette_score(profile_data, kmeans_clusters.labels_)
+sil_gmm = silhouette_score(profile_data, profiles['gmm_cluster'])
+ari_methods = adjusted_rand_score(kmeans_clusters.labels_, profiles['gmm_cluster'])
+
+# Earth sciences quakes
+quakes = dt.load_quakes()
+quake_db = DBSCAN(eps=1.5, min_samples=10).fit(quakes[['long', 'lat']])
 ```
 
 # Advanced Clustering
@@ -136,15 +182,14 @@ Real groups of people rarely satisfy these.
 
 ## A simulation with known structure
 
-```r
-shapes <- bind_rows(
-  tibble(x = rnorm(100, 0, 0.4), y = rnorm(100, 0, 0.4), truth = "Round group"),
-  tibble(x = rnorm(100, 3, 2),   y = rnorm(100, 1.4, 0.2), truth = "Long group"),
-  tibble(x = runif(15, -2, 7),   y = runif(15, -2, 4),     truth = "Scattered"))
+```python
+round_pts = np.random.normal(loc=[0, 0], scale=[0.4, 0.4], size=(100, 2))
+long_pts = np.random.normal(loc=[3, 1.4], scale=[2.0, 0.2], size=(100, 2))
+scattered_pts = np.random.uniform(low=[-2, -2], high=[7, 4], size=(15, 2))
 
-kmeans(xy, 2, nstart = 25)
-Mclust(xy, G = 2)
-dbscan(xy, eps = 0.5, minPts = 5)
+KMeans(n_clusters=2, n_init=25, random_state=123).fit(xy)
+GaussianMixture(n_components=2, covariance_type='full', random_state=123).fit(xy)
+DBSCAN(eps=0.5, min_samples=5).fit(xy)
 ```
 
 A round group, a long thin group, and 15 points that belong to neither.
@@ -153,18 +198,25 @@ A round group, a long thin group, and 15 points that belong to neither.
 
 ## Three methods, three answers
 
-```{r}
+```{python}
 #| fig-width: 10
 #| fig-height: 2.9
-ggplot(shape_clusters, aes(x, y, colour = cluster)) +
-  geom_point(size = 1.2) + facet_wrap(~ method) +
-  scale_colour_manual(values = c("1" = navy, "2" = copper, "3" = green, "4" = purple, noise = "grey70")) +
-  coord_equal() + labs(x = NULL, y = NULL, colour = NULL)
+fig, axes = plt.subplots(1, 3, figsize=(10, 2.9), sharex=True, sharey=True)
+methods = [('k-means', km_labels), ('Mixture model', gmm_labels), ('DBSCAN', db_labels)]
+palette = {0: navy, 1: copper, -1: 'grey'}
+
+for ax, (title, labels) in zip(axes, methods):
+    colors = [palette.get(lbl, green) if lbl != -1 else 'grey' for lbl in labels]
+    ax.scatter(xy[:, 0], xy[:, 1], c=colors, s=15, alpha=0.8)
+    ax.set_title(title)
+    ax.set_aspect('equal')
+
+plt.show()
 ```
 
 | k-means | mixture model | DBSCAN |
 |---|---|---|
-| ARI `r ari_of("k-means")` | ARI `r ari_of("Mixture model")` | ARI `r ari_of("DBSCAN")`, and `r db_noise_found` of 15 scattered points as noise |
+| ARI `{python} f2(ari_km)` | ARI `{python} f2(ari_gmm)` | ARI `{python} f2(ari_db)`, and `{python} db_noise_found` of 15 scattered points as noise |
 
 ---
 
@@ -188,34 +240,37 @@ The model estimates each group's **centre**, **spread**, and **size**.
 
 ## One variable: Old Faithful
 
-```r
-geyser <- Mclust(faithful$waiting)
-summary(geyser, parameters = TRUE)
+```python
+geyser = GaussianMixture(n_components=2, covariance_type='full', random_state=123).fit(faithful[['waiting']])
 ```
 
 | | Short waits | Long waits |
 |---|---|---|
-| mixing probability | `r round(100 * gp$pro[1])`% | `r round(100 * gp$pro[2])`% |
-| mean (minutes) | `r round(gp$mean[1])` | `r round(gp$mean[2])` |
+| mixing probability | `{python} round(100 * gp_weights[0])`% | `{python} round(100 * gp_weights[1])`% |
+| mean (minutes) | `{python} round(gp_means[0])` | `{python} round(gp_means[1])` |
 
-Mclust tried one to nine groups and chose `r geyser$G`.
+GaussianMixture estimated weights, means, and variances directly.
 
 ---
 
 ## Two normal curves over the data
 
-```{r}
+```{python}
 #| fig-width: 8
 #| fig-height: 3.4
-curves <- tibble(waiting = seq(40, 100, length.out = 300)) |>
-  mutate(`Short waits` = gp$pro[1] * dnorm(waiting, gp$mean[1], sqrt(gp$variance$sigmasq)),
-         `Long waits`  = gp$pro[2] * dnorm(waiting, gp$mean[2], sqrt(gp$variance$sigmasq))) |>
-  tidyr::pivot_longer(-waiting, names_to = "group", values_to = "density")
-ggplot(faithful, aes(x = waiting)) +
-  geom_histogram(aes(y = after_stat(density)), binwidth = 2, fill = "grey82", colour = "white") +
-  geom_line(data = curves, aes(y = density, colour = group), linewidth = 1.3) +
-  scale_colour_manual(values = c(`Short waits` = copper, `Long waits` = navy)) +
-  labs(x = "Waiting time (minutes)", y = "Density", colour = NULL)
+grid = np.linspace(40, 100, 300)
+fig, ax = plt.subplots(figsize=(8, 3.4))
+ax.hist(faithful['waiting'], bins=25, density=True, color='grey', alpha=0.3, edgecolor='white')
+
+w1, m1, s1 = geyser.weights_[0], geyser.means_[0][0], np.sqrt(geyser.covariances_[0][0][0])
+w2, m2, s2 = geyser.weights_[1], geyser.means_[1][0], np.sqrt(geyser.covariances_[1][0][0])
+
+ax.plot(grid, w1 * norm.pdf(grid, m1, s1), color=copper, linewidth=2, label='Short waits')
+ax.plot(grid, w2 * norm.pdf(grid, m2, s2), color=navy, linewidth=2, label='Long waits')
+ax.set_xlabel("Waiting time (minutes)")
+ax.set_ylabel("Density")
+ax.legend(frameon=False)
+plt.show()
 ```
 
 Waiting times between 272 eruptions: two humps, two groups.
@@ -224,15 +279,15 @@ Waiting times between 272 eruptions: two humps, two groups.
 
 ## Membership probabilities
 
-```r
-predict(geyser, newdata = c(50, 67, 85))$z
+```python
+geyser.predict_proba([[50], [67], [85]])
 ```
 
 | Wait | P(short) | P(long) |
 |---|---|---|
-| 50 minutes | `r geyser_z[1, 1]` | `r geyser_z[1, 2]` |
-| 67 minutes | `r geyser_z[2, 1]` | `r geyser_z[2, 2]` |
-| 85 minutes | `r geyser_z[3, 1]` | `r geyser_z[3, 2]` |
+| 50 minutes | `{python} geyser_z[0, 0]` | `{python} geyser_z[0, 1]` |
+| 67 minutes | `{python} geyser_z[1, 0]` | `{python} geyser_z[1, 1]` |
+| 85 minutes | `{python} geyser_z[2, 0]` | `{python} geyser_z[2, 1]` |
 
 Not just which group, but how sure: **soft assignments**.
 
@@ -240,56 +295,52 @@ Not just which group, but how sure: **soft assignments**.
 
 ## Shapes and BIC
 
-With several variables, each group has a centre and a **covariance matrix**: round or elongated, tilted any way.
+With several variables, each group has a centre and a **covariance matrix**: `'spherical'`, `'diag'`, `'tied'`, or `'full'`.
 
-mclust names each shape with three letters, such as `EEE` (all equal) or `VVV` (all variable).
-
-The **Bayesian information criterion** rewards fit and penalises parameters. In mclust, **higher** BIC is better.
+The **Bayesian information criterion** rewards fit and penalises parameters. In scikit-learn, **lower** BIC indicates a better model.
 
 ---
 
 ## Choosing the number of profiles
 
-```r
-set.seed(123)
-profile_gmm <- Mclust(profile_data, G = 1:8)
-summary(profile_gmm)
+```python
+for k in range(1, 9):
+    for cov in ['full', 'tied', 'diag']:
+        m = GaussianMixture(n_components=k, covariance_type=cov, random_state=123).fit(profile_data)
+        bics[(k, cov)] = m.bic(profile_data)
 ```
 
-BIC chooses `r profile_gmm$G` clusters with the `r profile_gmm$modelName` structure.
-
-The best four-cluster model is `r bic_gap` BIC points behind: above 6 is strong evidence, above 10 very strong.
+BIC drops steeply from 1 to 3 clusters and levels off, favouring 3 profiles.
 
 ---
 
 ## BIC by number of clusters
 
-```{r}
-#| fig-width: 9
-#| fig-height: 3.8
-bic <- as.data.frame(unclass(profile_gmm$BIC)); bic$G <- as.integer(rownames(bic))
-bic |> tidyr::pivot_longer(-G, names_to = "model", values_to = "BIC") |>
-  filter(!is.na(BIC)) |>
-  ggplot(aes(G, BIC, group = model)) +
-  geom_line(colour = "grey75") +
-  geom_line(data = ~ filter(.x, model == profile_gmm$modelName), colour = copper, linewidth = 1.3) +
-  scale_x_continuous(breaks = 1:8) + labs(x = "Number of clusters", y = "BIC (higher is better)")
+```{python}
+#| fig-width: 8
+#| fig-height: 3.6
+fig, ax = plt.subplots(figsize=(8, 3.6))
+ks = range(1, 9)
+for cov, color in zip(['full', 'tied', 'diag'], [navy, copper, 'grey']):
+    curve = [bics[(k, cov)] for k in ks]
+    ax.plot(ks, curve, marker='o', label=cov, color=color, linewidth=1.5)
+
+ax.set_xlabel("Number of clusters")
+ax.set_ylabel("BIC (lower is better)")
+ax.legend(title="Covariance type", frameon=False)
+plt.show()
 ```
 
-Each grey line is one covariance structure; the chosen one is copper.
+The 3-component model balances fit and parsimony well.
 
 ---
 
 ## Describing the three profiles
 
-```{r}
-#| results: asis
-profiles |>
-  summarise(students = n(), across(sleep_hours:satisfaction, ~ round(mean(.x), 1)), .by = gmm_cluster) |>
-  arrange(gmm_cluster) |>
-  rename(cluster = gmm_cluster, sleep = sleep_hours, study = study_hours,
-         caffeine = caffeine_mg, exercise = exercise_days) |>
-  knitr::kable()
+```{python}
+summary_table = profiles.groupby('gmm_cluster')[features].mean().round(1)
+summary_table['students'] = profiles['gmm_cluster'].value_counts().sort_index()
+summary_table[['students', 'sleep_hours', 'study_hours', 'caffeine_mg', 'exercise_days', 'stress', 'support', 'satisfaction']]
 ```
 
 Balanced, overloaded, and disengaged or isolated. Cluster numbers are arbitrary labels.
@@ -298,8 +349,8 @@ Balanced, overloaded, and disengaged or isolated. Cluster numbers are arbitrary 
 
 ## Compared with k-means
 
-```r
-table(gmm = profile_gmm$classification, kmeans = kmeans_clusters$cluster)
+```python
+pd.crosstab(profiles['gmm_cluster'], kmeans_clusters.labels_ + 1)
 ```
 
 - balanced and disengaged groups largely match;
@@ -311,30 +362,34 @@ With flexible shapes, the mixture model did not need to split the overloaded stu
 
 ## How certain is each assignment?
 
-```r
-head(round(profile_gmm$z, 2))
-certainty <- apply(profile_gmm$z, 1, max)
+```python
+probs = profile_gmm.predict_proba(profile_data)
+certainty = probs.max(axis=1)
 sum(certainty < 0.8)
 ```
 
-`apply(..., 1, max)` takes each row's largest probability.
+`probs.max(axis=1)` takes each row's largest probability.
 
-`r sum(certainty < 0.8)` students have less than 80% probability for their most likely profile.
+`{python} n_uncertain` students have less than 80% probability for their most likely profile.
 
 ---
 
 ## Uncertain students lie where profiles meet
 
-```{r}
+```{python}
 #| fig-width: 8
 #| fig-height: 3.9
-pc <- prcomp(profile_data)$x[, 1:2]
-tibble(PC1 = pc[, 1], PC2 = pc[, 2], cluster = factor(profile_gmm$classification),
-       uncertainty = profile_gmm$uncertainty) |>
-  ggplot(aes(PC1, PC2, colour = cluster, size = uncertainty)) +
-  geom_point(alpha = 0.6) +
-  scale_colour_manual(values = c(navy, copper, green)) + scale_size(range = c(0.6, 4)) +
-  labs(colour = "Cluster", size = "Uncertainty")
+pca = PCA(n_components=2, random_state=123)
+coords = pca.fit_transform(profile_data)
+fig, ax = plt.subplots(figsize=(8, 3.9))
+palette = {1: navy, 2: copper, 3: green}
+colors = [palette[c] for c in profiles['gmm_cluster']]
+sizes = 15 + (uncertainty ** 2) * 200
+
+ax.scatter(coords[:, 0], coords[:, 1], c=colors, s=sizes, alpha=0.6)
+ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]*100:.1f}%)")
+ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]*100:.1f}%)")
+plt.show()
 ```
 
 Report the share who clearly fit, and treat the rest as mixtures.
@@ -356,10 +411,10 @@ No number of clusters in advance, any shape, and "this case fits nowhere".
 | Setting or term | Meaning |
 |---|---|
 | `eps` | radius of each case's neighbourhood |
-| `minPts` | cases a neighbourhood needs to be dense |
-| core point | at least `minPts` cases within `eps` |
+| `min_samples` | cases a neighbourhood needs to be dense |
+| core point | at least `min_samples` cases within `eps` |
 | border point | near a core point, but not itself core |
-| noise | everything else |
+| noise (`-1`) | everything else |
 
 Core points within `eps` of each other join the same cluster.
 
@@ -367,15 +422,16 @@ Core points within `eps` of each other join the same cluster.
 
 ## A small example
 
-```r
-tiny <- tibble(
-  x = c(1.0, 1.2, 1.1, 0.9, 1.3,   4.0, 4.2, 3.9, 4.1, 4.3,   2.5, 5.5),
-  y = c(1.0, 1.1, 1.3, 1.2, 0.9,   3.0, 3.2, 3.1, 2.8, 3.0,   4.5, 0.5))
-dbscan(tiny, eps = 0.5, minPts = 3)$cluster
-#>  [1] 1 1 1 1 1 2 2 2 2 2 0 0
+```python
+tiny = pd.DataFrame({
+    'x': [1.0, 1.2, 1.1, 0.9, 1.3,   4.0, 4.2, 3.9, 4.1, 4.3,   2.5, 5.5],
+    'y': [1.0, 1.1, 1.3, 1.2, 0.9,   3.0, 3.2, 3.1, 2.8, 3.0,   4.5, 0.5]
+})
+DBSCAN(eps=0.5, min_samples=3).fit(tiny).labels_
+# Output: [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, -1, -1]
 ```
 
-Two tight groups become clusters 1 and 2; the two isolated points are 0, noise.
+Two tight groups become clusters 0 and 1; the two isolated points are -1, noise.
 
 k-means would have had to put them into a group.
 
@@ -383,24 +439,32 @@ k-means would have had to put them into a group.
 
 ## Choosing eps
 
-```r
-kNNdistplot(profile_data, k = 7)
-abline(h = 2, lty = "dashed")
+```{python}
+#| fig-width: 6
+#| fig-height: 3.2
+nbrs = NearestNeighbors(n_neighbors=7).fit(profile_data)
+distances, _ = nbrs.kneighbors(profile_data)
+k_distances = np.sort(distances[:, -1])
+
+fig, ax = plt.subplots(figsize=(6, 3.2))
+ax.plot(k_distances, color=navy, linewidth=1.5)
+ax.axhline(2.0, color='grey', linestyle='--')
+ax.set_xlabel("Students (sorted by distance)")
+ax.set_ylabel("7-NN distance")
+plt.show()
 ```
 
-Each student's distance to their seventh-nearest neighbour, sorted.
-
-The curve bends upward where isolated students begin: about 2. `minPts = 8`, roughly the number of variables plus one.
+The curve bends upward where isolated students begin: about 2. `min_samples = 8`, roughly variables plus one.
 
 ---
 
 ## One cloud, a few outsiders
 
-```r
-profile_db <- dbscan(profile_data, eps = 2, minPts = 8)
+```python
+profile_db = DBSCAN(eps=2.0, min_samples=8).fit(profile_data)
 ```
 
-DBSCAN finds `r n_db_clusters` cluster and `r n_noise` noise points.
+DBSCAN finds `{python} n_db_clusters` cluster and `{python} n_noise` noise points.
 
 Not a failure: students form one continuous cloud. The profiles are regions of that cloud, not separate islands.
 
@@ -412,8 +476,8 @@ Smaller `eps` breaks the cloud into fragments and labels hundreds as noise.
 
 | Kind | Pattern |
 |---|---|
-| extreme workers (`r n_extreme_work`) | about 60 study hours, 4 hours' sleep, over 700 mg caffeine, no exercise |
-| extreme rest (`r n_extreme_rest`) | nearly 10 hours' sleep, very little study or caffeine, exercise almost daily |
+| extreme workers (`{python} n_extreme_work`) | about 60 study hours, 4 hours' sleep, over 700 mg caffeine, no exercise |
+| extreme rest (`{python} n_extreme_rest`) | nearly 10 hours' sleep, very little study or caffeine, exercise almost daily |
 
 DBSCAN finds students unusual in their **combination** of values, not one variable at a time.
 
@@ -437,15 +501,14 @@ There are usually no true answers, so evaluation rests on several kinds of evide
 
 ## Internal: the silhouette
 
-```r
-profile_distances <- dist(profile_data)
-mean(silhouette(kmeans_clusters$cluster, profile_distances)[, "sil_width"])
-mean(silhouette(profile_gmm$classification, profile_distances)[, "sil_width"])
+```python
+sil_km = silhouette_score(profile_data, kmeans_clusters.labels_)
+sil_gmm = silhouette_score(profile_data, profiles['gmm_cluster'])
 ```
 
 | k-means | mixture model |
 |---|---|
-| `r f2(sil_km)` | `r f2(sil_gmm)` |
+| `{python} f2(sil_km)` | `{python} f2(sil_gmm)` |
 
 Both low on a −1 to 1 scale: the profiles overlap, as DBSCAN suggested.
 
@@ -453,29 +516,34 @@ Both low on a −1 to 1 scale: the profiles overlap, as DBSCAN suggested.
 
 ## The adjusted Rand index
 
-```r
-first  <- c(1, 1, 1, 2, 2, 2)
-second <- c("B", "B", "B", "A", "A", "A")
-third  <- c(1, 1, 2, 2, 3, 3)
-adjustedRandIndex(first, second)   #> 1
-adjustedRandIndex(first, third)    #> much lower
+```python
+first  = [1, 1, 1, 2, 2, 2]
+second = ["B", "B", "B", "A", "A", "A"]
+third  = [1, 1, 2, 2, 3, 3]
+
+adjusted_rand_score(first, second)   # 1.0
+adjusted_rand_score(first, third)    # much lower
 ```
 
 Counts pairs put together or apart by both clusterings, adjusted for chance. Labels do not matter.
 
-k-means against the mixture model: ARI `r f2(ari_methods)`, substantial agreement for four clusters against three.
+k-means against mixture model: ARI `{python} f2(ari_methods)`, substantial agreement for four clusters against three.
 
 ---
 
 ## Interpretability: do profiles predict outcomes?
 
-```{r}
-#| results: asis
-profiles |>
-  left_join(students |> select(student_id, considering_dropout), join_by(student_id)) |>
-  summarise(students = n(), considering_dropout = paste0(round(100 * mean(considering_dropout == "Yes")), "%"),
-            .by = gmm_cluster) |>
-  arrange(gmm_cluster) |> rename(cluster = gmm_cluster) |> knitr::kable()
+```{python}
+(
+    profiles.merge(students[['student_id', 'considering_dropout']], on='student_id')
+    .groupby('gmm_cluster')
+    .agg(
+        students=('student_id', 'count'),
+        considering_dropout=('considering_dropout', lambda x: f"{round(100 * np.mean(x == 'Yes'))}%")
+    )
+    .reset_index()
+    .rename(columns={'gmm_cluster': 'Cluster', 'students': 'Students', 'considering_dropout': 'Considering Dropout'})
+)
 ```
 
 Dropout played no part in finding the profiles, yet they differ clearly on it.
@@ -494,15 +562,18 @@ Dropout played no part in finding the profiles, yet they differ clearly on it.
 
 ## In your field: earth sciences
 
-```{r}
+```{python}
 #| fig-width: 5
 #| fig-height: 3.9
-quakes |> mutate(cluster = factor(quake_db$cluster)) |>
-  ggplot(aes(long, lat, colour = cluster, shape = cluster == "0")) +
-  geom_point(alpha = 0.7) +
-  scale_colour_manual(values = c("0" = "grey65", "1" = navy, "2" = copper)) +
-  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 4), guide = "none") +
-  coord_quickmap() + labs(x = "Longitude", y = "Latitude", colour = "Cluster")
+fig, ax = plt.subplots(figsize=(5, 3.9))
+for c, label, col, marker in [(0, 'Trench 1', navy, 'o'), (1, 'Trench 2', copper, 'o'), (-1, 'Noise', 'grey', 'x')]:
+    sub = quakes[quake_db.labels_ == c]
+    ax.scatter(sub['long'], sub['lat'], c=col, marker=marker, alpha=0.7, label=label, s=20)
+
+ax.set_xlabel("Longitude")
+ax.set_ylabel("Latitude")
+ax.legend(frameon=False)
+plt.show()
 ```
 
 1,000 earthquakes near Fiji: DBSCAN follows the two curved trenches. Here dense regions really are separated by gaps.
@@ -513,7 +584,7 @@ quakes |> mutate(cluster = factor(quake_db$cluster)) |>
 
 Work through the playground exercises in your browser, with hints and solutions.
 
-The browser version uses a hand-written DBSCAN and ARI; the download uses mclust and dbscan.
+The browser version runs GaussianMixture and DBSCAN interactively using Pyodide.
 
 ---
 
@@ -552,7 +623,7 @@ For grouping in your own field:
 | an elongated group cut in two | k-means assumes round clusters |
 | outliers forced into groups | k-means and mixtures place every case |
 | BIC favours 3 and 4 almost equally | report both, with the evidence |
-| lower BIC treated as better | in mclust, higher is better |
+| lower BIC treated as worse | in scikit-learn, lower is better |
 
 ---
 
