@@ -435,7 +435,7 @@
   title: [FROM DATA TO THESIS],
   subtitle: [Using Python for Non-Technical],
   author: "Polla Fattah and Collection of LLMs",
-  date: "2026-10-23",
+  date: "2026-10-24",
   main-color: brand-color.at("primary", default: blue),
   logo: {
     let logo-info = brand-logo.at("medium", default: none)
@@ -18556,60 +18556,60 @@ When you filter a DataFrame with #NormalTok("sub = df[df['faculty'] == 'Educatio
 [#NormalTok("sub[");#StringTok("\"new_col\"");#NormalTok("] ");#OperatorTok("=");#NormalTok(" ");#DecValTok("1");],));
 = Appendix E: Further Learning Resources
 <sec-app-resources>
-This book is a starting point. This appendix suggests where to go next: books, courses, and communities, almost all of them free. The books cited in the chapters are listed first, by topic; the rest are chosen because they suit researchers who are not programmers.
+This book is a starting point. This appendix suggests where to go next: books, courses, documentation, and communities---almost all of them freely available. The resources cited across the chapters are listed first by topic; the remainder are chosen because they suit researchers who are not computer scientists.
 
 == Books
 <books>
-=== Getting started and data skills
-<getting-started-and-data-skills>
-- #emph[R for Data Science] @wickham2023, free at #link("https://r4ds.hadley.nz")[r4ds.hadley.nz]: the standard introduction to importing, cleaning, transforming, and visualising data with the tidyverse. The natural next book after Part 1 of this one.
-- #emph[R for Researchers: An Introduction] by Tyson Barrett, free at #link("https://tysonbarrett.com/Rstats/")[tysonbarrett.com/Rstats]: a short, friendly introduction written for researchers in the social and health sciences, and a good companion to Chapters 1 to 8.
-- #emph[ggplot2: Elegant Graphics for Data Analysis] @wickham2016ggplot2, free at #link("https://ggplot2-book.org")[ggplot2-book.org]: everything about ggplot2, for when Chapter 4 leaves you wanting more.
-- #emph[Happy Git and GitHub for the useR] by Jenny Bryan, free at #link("https://happygitwithr.com")[happygitwithr.com]: a gentle, practical guide to git and GitHub with RStudio (Chapter 17).
+=== Getting started and data handling
+<getting-started-and-data-handling>
+- #emph[Python for Data Analysis] (3rd ed.) by Wes McKinney @mckinney2022, free to read at #link("https://wesmckinney.com/book/")[wesmckinney.com/book]: the definitive introduction to importing, cleaning, manipulating, and exploring data with pandas and NumPy, written by the creator of pandas. The natural next book after Part 1.
+- #emph[Python Data Science Handbook] by Jake VanderPlas, free at #link("https://jakevdp.github.io/PythonDataScienceHandbook/")[jakevdp.github.io/PythonDataScienceHandbook]: a thorough, hands-on introduction to the core scientific Python stack (NumPy, pandas, Matplotlib, and Scikit-Learn).
+- #emph[Effective Pandas] by Matt Harrison: a focused, modern guide to idiomatic method chaining and performance in pandas.
+- #emph[Pro Git] by Scott Chacon and Ben Straub, free at #link("https://git-scm.com/book/en/v2")[git-scm.com/book]: the comprehensive, accessible guide to version control with Git and GitHub.
 
-=== Statistics
-<statistics>
-- #emph[Introduction to Modern Statistics] @cetinkaya2024ims, free at #link("https://openintro-ims.netlify.app")[openintro-ims.netlify.app]: a modern introductory statistics textbook built around simulation and real data, like Chapters 6 and 7.
-- #emph[Learning Statistics with R] by Danielle Navarro, free at #link("https://learningstatisticswithr.com")[learningstatisticswithr.com]: a thorough, readable introduction to statistics for psychology and the social sciences, using R.
-- #emph[Statistical Inference via Data Science (ModernDive)] by Chester Ismay and Albert Kim, free at #link("https://moderndive.com")[moderndive.com]: regression and inference with the tidyverse.
-- #emph[Regression and Other Stories] @gelman2020: an excellent guide to building, checking, and interpreting regression models in real research, with a free PDF from the authors.
-- #emph[Statistical Power Analysis for the Behavioral Sciences] @cohen1988: the classic reference on effect sizes and power.
+=== Statistics and inference
+<statistics-and-inference>
+- #emph[Introduction to Modern Statistics] @cetinkaya2024ims, free at #link("https://openintro-ims.netlify.app")[openintro-ims.netlify.app]: a modern introductory textbook built around simulation, real data, and statistical inference, matching the philosophy of Chapters 6 and 7.
+- #emph[Regression and Other Stories] @gelman2020: an outstanding guide to building, diagnosing, and interpreting regression models in real research, with a free PDF available from the authors.
+- #emph[Statistical Power Analysis for the Behavioral Sciences] @cohen1988: the classic, foundational reference on effect sizes and statistical power.
+- #emph[Think Stats: Exploratory Data Analysis in Python] by Allen Downey, free at #link("https://greenteapress.com/thinkstats2/")[greenteapress.com/thinkstats2]: probability and statistics through computation rather than abstract mathematics.
 
 === Mixed models, machine learning, and forecasting
 <mixed-models-machine-learning-and-forecasting>
-- #emph[Data Analysis Using Regression and Multilevel/Hierarchical Models] @gelman2007: multilevel models from the ground up (Chapter 10).
-- #emph[An Introduction to Statistical Learning] @james2021islr, free at #link("https://www.statlearning.com")[statlearning.com]: the clearest introduction to the ideas of machine learning (Chapters 11 to 15).
-- #emph[Tidy Modeling with R] @kuhn2022, free at #link("https://www.tmwr.org")[tmwr.org]: the tidymodels framework in depth.
-- #emph[Forecasting: Principles and Practice] @hyndman2021, free at #link("https://otexts.com/fpp3/")[otexts.com/fpp3]: the standard introduction to forecasting with fable (Chapter 16).
-- #emph[Deep Learning with R] @chollet2022: for readers who want to go further with neural networks (Chapter 15).
+- #emph[An Introduction to Statistical Learning with Applications in Python] @james2023islp, free at #link("https://www.statlearning.com")[statlearning.com]: the gold standard introduction to statistical machine learning with Scikit-Learn, covering regression, classification, resampling, tree-based models, and clustering (Chapters 11 to 15).
+- #emph[Data Analysis Using Regression and Multilevel/Hierarchical Models] @gelman2007: multilevel models from the ground up, providing background for the mixed-effects models in Chapter 10.
+- #emph[Deep Learning with Python] (2nd ed.) by François Chollet: the clearest guide to understanding and building neural networks with modern Python frameworks (Chapter 15).
+- #emph[Forecasting: Principles and Practice] @hyndman2021, free at #link("https://otexts.com/fpp3/")[otexts.com/fpp3]: the standard reference for time series forecasting principles and evaluation (Chapter 16).
 
 === Reporting and dashboards
 <reporting-and-dashboards>
-- The Quarto guide at #link("https://quarto.org")[quarto.org]: documentation and examples for every kind of document (Chapter 17).
-- #emph[Mastering Shiny] @wickham2021shiny, free at #link("https://mastering-shiny.org")[mastering-shiny.org]: the definitive guide to Shiny apps.
+- The Quarto guide at #link("https://quarto.org")[quarto.org]: comprehensive documentation, guides, and templates for scientific documents, presentations, books, and interactive dashboards (Chapter 17).
+- The Streamlit documentation at #link("https://docs.streamlit.io")[docs.streamlit.io]: guides and tutorials for building shareable research web applications and interactive dashboards in pure Python.
 
-The #strong[Big Book of R] (#link("https://www.bigbookofr.com")[bigbookofr.com]) indexes hundreds of free R books by topic, from psychology and ecology to economics and text analysis: a good way to find a book for your own field.
+== Documentation and Cheatsheets
+<documentation-and-cheatsheets>
+- #strong[pandas documentation] (#link("https://pandas.pydata.org")[pandas.pydata.org]): includes the "10 Minutes to pandas" tutorial and official printable cheatsheets covering filtering, grouping, and reshaping.
+- #strong[Seaborn and Matplotlib galleries] (#link("https://seaborn.pydata.org")[seaborn.pydata.org] and #link("https://matplotlib.org")[matplotlib.org]): visual galleries with reproducible source code for every standard scientific visualization.
+- #strong[Scikit-Learn documentation] (#link("https://scikit-learn.org")[scikit-learn.org]): widely considered the benchmark for scientific software documentation, with in-depth narrative guides explaining the mathematical theory behind every algorithm alongside clear Python examples.
+- #strong[Statsmodels documentation] (#link("https://www.statsmodels.org")[statsmodels.org]): documentation and tutorial notebooks for linear regression, GLMs, ANOVA, mixed-effects models, and time series analysis.
 
 == Courses and practice
 <courses-and-practice>
-- #strong[Posit Cheatsheets] (#link("https://posit.co/resources/cheatsheets/")[posit.co/resources/cheatsheets]): one- or two-page summaries of dplyr, ggplot2, tidyr, Quarto, Shiny, and more, worth keeping next to you while you work. Several have been translated into other languages by volunteers.
-- #strong[The Carpentries] (#link("https://carpentries.org")[carpentries.org]): free, hands-on lessons for researchers, including #emph[R for Social Scientists] and #emph[R for Ecologists], and two-day workshops held at universities around the world.
-- #strong[swirl] (#link("https://swirlstats.com")[swirlstats.com]): interactive lessons that run inside R itself: #NormalTok("install.packages(\"swirl\")");, then #NormalTok("library(swirl)"); and #NormalTok("swirl()");.
-- #strong[TidyTuesday] (#link("https://github.com/rfordatascience/tidytuesday")[github.com/rfordatascience/tidytuesday]): a new real dataset every week to practise on, with thousands of shared solutions to learn from.
-- This book's #link("../playground/index.html")[playground]: exercises for every chapter, in the browser and as downloadable projects.
+- #strong[The Carpentries] (#link("https://carpentries.org")[carpentries.org]): free, open-source computational lessons for researchers, including #emph[Plotting and Programming in Python], taught at universities worldwide.
+- #strong[Project Euler] (#link("https://projecteuler.net")[projecteuler.net]) and #strong[LeetCode] (#link("https://leetcode.com")[leetcode.com]): computational and algorithmic challenges for sharpening programming skills.
+- #strong[Kaggle] (#link("https://kaggle.com")[kaggle.com]): free datasets, exploratory data analysis notebooks, and machine learning competitions with active community discussions.
+- This book's #link("../playground/index.html")[interactive playground]: interactive browser exercises and downloadable chapter projects for hands-on practice.
 
 == Communities
 <communities>
-You do not have to learn alone, and the R community is known for welcoming beginners.
+You do not have to learn alone; the Python scientific computing community is renowned for welcoming newcomers.
 
-- #strong[Posit Community] (#link("https://forum.posit.co")[forum.posit.co]): a friendly forum for questions about R, RStudio, the tidyverse, Quarto, and Shiny.
-- #strong[Stack Overflow] (#link("https://stackoverflow.com/questions/tagged/r")[stackoverflow.com/questions/tagged/r]): the largest archive of answered R questions; search it before asking, and include a small reproducible example when you ask (Appendix D).
-- #strong[R-Ladies] (#link("https://rladies.org")[rladies.org]): a worldwide organisation promoting gender diversity in the R community, with local chapters that run meetings and workshops open to learners.
-- #strong[R user groups] meet in many cities and universities; the R Consortium lists them at #link("https://r-consortium.org")[r-consortium.org].
-- #strong[R Weekly] (#link("https://rweekly.org")[rweekly.org]): a weekly digest of R news, tutorials, and new packages.
-- #strong[useR!], the annual international R conference, posts its talks online.
+- #strong[Stack Overflow] (#link("https://stackoverflow.com/questions/tagged/python")[stackoverflow.com/questions/tagged/python]): the largest archive of programming solutions. Search with package tags (e.g.~#NormalTok("[pandas]");, #NormalTok("[matplotlib]");, #NormalTok("[scikit-learn]");), and formulate questions with a minimal reproducible example (MRE; Appendix D).
+- #strong[PyData] (#link("https://pydata.org")[pydata.org]): an international community of researchers and practitioners who use Python for data analysis, with regional conferences, recorded talks on YouTube, and local meetups in cities worldwide.
+- #strong[Python Discord & Forums] (#link("https://www.pythondiscord.com")[pythondiscord.com]): active, friendly real-time help channels for beginners and intermediate scientific programmers.
+- #strong[Local Python User Groups (PUGs)]: meet in many universities and cities to share research workflows and new libraries.
 
-Whatever you learn from, the most effective way to learn R is to use it on your own data, a little every day, one question at a time, as Elaf did.
+Whatever you learn from, the most effective way to learn Python is to use it on your own research data---a little every day, one question at a time, just as Elaf did.
 
 #bibliography(("references.bib"))
 
