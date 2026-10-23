@@ -1,28 +1,28 @@
-FROM DATA TO THESIS: Using R for Non-Technical
+FROM DATA TO THESIS: Using Python for Non-Technical
 Playground, Chapter 17: Reproducible Research
 
 How to use this project
-1. Double-click chapter17.Rproj. RStudio opens with this folder as the working directory.
-2. Open results.qmd and click Render. Then open exercises.txt and work through the
-   Quarto and Shiny tasks.
-3. exercises.R holds the R parts of the playground page, in four parts
-   (practise, go further, check your understanding, do it yourself); run a line
-   with Ctrl+Enter. Answers are in solutions.R.
-4. Finished versions of the Quarto and Shiny files are in the solutions folder,
+1. Open this folder in VS Code, Cursor, Positron, or PyCharm.
+2. Activate your virtual environment and install dependencies:
+     pip install -r requirements.txt   (or install pandas, scipy, statsmodels, shiny, matplotlib, seaborn)
+3. Open results.qmd and click Render (or run `quarto render results.qmd`). Then open exercises.txt
+   and work through the Quarto and Shiny tasks.
+4. Run the interactive dashboard:
+     shiny run --reload app.py
+5. exercises.py holds the Python exercises of the playground page, in four parts
+   (practise, go further, check your understanding, do it yourself); run lines
+   interactively. Answers are in solutions.py.
+6. Finished versions of the Quarto and Shiny files are in the solutions folder,
    for after you have tried.
-
-You need Quarto, which is installed with RStudio, and these packages (install once):
-install.packages(c("dplyr", "ggplot2", "knitr", "rmarkdown", "shiny", "bslib"))
-For PDF output you also need LaTeX: run  quarto install tinytex  in the Terminal.
 
 Files
 - results.qmd          a results chapter: inline numbers, a table, a figure
 - faculty-report.qmd   a one-page report with a faculty parameter
-- app.R                the wellbeing dashboard (click Run App)
+- app.py               the wellbeing dashboard (run with `shiny run app.py`)
 - references.bib       references for results.qmd
 - exercises.txt        the Quarto and Shiny tasks
-- exercises.R          the R parts of the playground page
-- solutions.R          answers to exercises.R
+- exercises.py         the Python exercises of the playground page
+- solutions.py         answers to exercises.py
 - solutions/           finished versions of the Quarto and Shiny files,
                        and programme-report.qmd for Exercise 8
 - students.csv         one row per student in the wellbeing study (600 students)
@@ -34,4 +34,4 @@ author. It describes no real people and is not evidence about real students;
 do not cite or use it as research findings.
 
 Browser exercises for this chapter are at:
-https://polla-fattah.github.io/data2thesis_r/playground/chapter17.html
+https://polla-fattah.github.io/data2thesis_python/playground/chapter17.html

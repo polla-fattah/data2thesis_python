@@ -1,38 +1,43 @@
 ---
 title: "Wellbeing report"
 format: html
+jupyter: python3
 params:
   faculty: "Education"
 execute:
   echo: false
 ---
 
-```{r}
+```{python}
 #| message: false
-library(dplyr)
+import os
+import pandas as pd
 
-# The solutions folder is one level below the data
-students  <- read.csv("../students.csv")
-semesters <- read.csv("../semesters.csv")
+data_dir = ".." if os.path.exists("../students.csv") else "."
+students = pd.read_csv(os.path.join(data_dir, "students.csv"))
+semesters = pd.read_csv(os.path.join(data_dir, "semesters.csv"))
 
-faculty_semesters <- semesters |>
-  left_join(students, join_by(student_id)) |>
-  filter(faculty == params$faculty)
-
-first_sleep <- faculty_semesters |>
-  filter(semester == 1) |>
-  pull(sleep_hours) |>
-  mean(na.rm = TRUE)
+faculty_name = params['faculty']
+merged = semesters.merge(students, on='student_id')
+faculty_semesters = merged[merged['faculty'] == faculty_name]
+n_students = faculty_semesters['student_id'].nunique()
+first_sleep = round(faculty_semesters.loc[faculty_semesters['semester'] == 1, 'sleep_hours'].mean(), 1)
 ```
 
-This report describes the `r n_distinct(faculty_semesters$student_id)` students
-of the Faculty of `r params$faculty`. In their first semester, they slept
-`r sprintf("%.1f", first_sleep)` hours a night on average.
+This report describes the `{python} n_students` students
+of the Faculty of `{python} faculty_name`. In their first semester, they slept
+`{python} first_sleep` hours a night on average.
 
-```{r}
-faculty_semesters |>
-  summarise(Students = n_distinct(student_id),
-            Wellbeing = mean(wellbeing, na.rm = TRUE),
-            .by = semester) |>
-  knitr::kable(digits = 1, col.names = c("Semester", "Students", "Average wellbeing"))
+```{python}
+summary_table = (
+    faculty_semesters.groupby('semester')
+    .agg(
+        Students=('student_id', 'nunique'),
+        Wellbeing=('wellbeing', 'mean')
+    )
+    .reset_index()
+    .round(1)
+)
+summary_table.columns = ['Semester', 'Students', 'Average wellbeing']
+summary_table
 ```

@@ -7,14 +7,19 @@ format:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
   - chapter17.zip
-webr:
+pyodide:
   packages:
-    - dplyr
+    - pandas
+    - numpy
+    - scipy
+    - statsmodels
+    - scikit-learn
+    - matplotlib
   resources:
     - students.csv
     - semesters.csv
@@ -24,21 +29,22 @@ webr:
 
 This page practises the ideas of Chapter 17 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and simulations. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with no answers: you make your own work reproducible, as you will in your thesis.
 
-Quarto documents and Shiny apps run on your own computer, so the [download project](#work-on-your-own-computer) is the main practice for this chapter: a small Quarto project with a results chapter, a parameterised faculty report, and the wellbeing dashboard, with tasks and finished versions. This page practises the parts that run in the browser: numbers that write themselves into sentences, protecting participants before sharing data, the garden of forking paths, and recording versions. In the exercises, replace each `______` with your own code and press **Run Code**.
+Quarto documents and Shiny for Python apps run on your own computer, so the [download project](#work-on-your-own-computer) is the main practice for this chapter: a complete Quarto project with a results chapter, a parameterised faculty report, and the wellbeing dashboard, with tasks and finished versions. This page practises the parts that run in the browser: numbers that write themselves into sentences, protecting participants before sharing data, the garden of forking paths, and recording software versions. In the exercises, replace each `______` with your own code and press **Run Code**.
 
-```{webr}
+```{pyodide}
 #| setup: true
 #| exercise: [ex1, ex5, ex6, gf1, gf3, gf4]
-library(dplyr)
-students  <- read.csv("students.csv")
-semesters <- read.csv("semesters.csv")
-```
+import warnings
+warnings.filterwarnings("ignore")
 
-```{webr}
-#| include: false
-library(dplyr)
-students  <- read.csv("students.csv")
-semesters <- read.csv("semesters.csv")
+import numpy as np
+import pandas as pd
+import scipy.stats as stats
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+
+students = pd.read_csv("students.csv")
+semesters = pd.read_csv("semesters.csv")
 ```
 
 ## Practise the chapter
@@ -47,22 +53,22 @@ These are the exercises at the end of Chapter 17, with the same numbers.
 
 ### Exercise 1: A sentence that writes itself
 
-The chapter's tiny Quarto document writes the average sleep of three friends into a sentence with inline code. Quarto runs on your own computer, but the idea can be tried here: build the sentence with `paste0()`, as inline code would, round the mean to one decimal place, then change one friend's sleep and build it again.
+The chapter's tiny Quarto document writes the average sleep of three friends into a sentence with inline code. Quarto runs on your own computer, but the idea can be tried here: build the sentence with a Python f-string, as inline code would, round the mean to one decimal place, then change one friend's sleep and build it again.
 
-```{webr}
+```{pyodide}
 #| exercise: ex1
-sleep <- c(6.5, 7, 5.5)
-paste0("My three friends slept ", round(mean(sleep), ______), " hours on average last night.")
+sleep = [6.5, 7.0, 5.5]
+print(f"My three friends slept {np.mean(sleep):.______} hours on average last night.")
 
-sleep[2] <- 8
-paste0("My three friends slept ", round(mean(sleep), ______), " hours on average last night.")
+sleep[1] = 8.0
+print(f"My three friends slept {np.mean(sleep):.______} hours on average last night.")
 ```
 
 ::: { .hint exercise="ex1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The second argument of `round()` is the number of decimal places. In the Quarto document, the same expression goes between backticks after `r`: `` `r knitr::inline_expr("round(mean(sleep), 1)")` ``.
+In Python f-strings, format specifier `:.1f` formats a floating-point number to one decimal place.
 :::
 :::
 
@@ -70,11 +76,11 @@ The second argument of `round()` is the number of decimal places. In the Quarto 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-paste0("My three friends slept ", round(mean(sleep), 1), " hours on average last night.")
+```python
+print(f"My three friends slept {np.mean(sleep):.1f} hours on average last night.")
 ```
 
-The first sentence says 6.3 hours, and after the change, 6.7: the sentence followed the data without anyone retyping a number. Without rounding, it would say 6.333333, which no reader needs. In the download project, the file `results.qmd` and its first task do the same in a real Quarto document; render it, change the data, and render again.
+The first sentence says 6.3 hours, and after the change, 6.7: the sentence followed the data without anyone retyping a number. Without rounding, it would say 6.333333333333333, which no reader needs. In the download project, the file `results.qmd` does the same in a real Quarto document; render it, change the data, and render again.
 :::
 :::
 
@@ -95,22 +101,34 @@ title: "Wellbeing by study mode"
 format:
   html: default
   docx: default
+jupyter: python3
 ---
 
-```{{r}}
+```{{python}}
 #| label: tbl-mode
 #| tbl-cap: "First-semester wellbeing by study mode."
-knitr::kable(mode_summary, digits = 1)
+mode_summary = (
+    first_sem.groupby("study_mode")["wellbeing"]
+    .agg(Mean="mean", SD="std", Students="count")
+    .reset_index()
+    .round(1)
+)
+mode_summary
 ```
 
-```{{r}}
+```{{python}}
 #| label: fig-mode
 #| fig-cap: "Wellbeing by study mode."
-ggplot(first_sem, aes(study_mode, wellbeing)) + geom_boxplot()
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(6, 3.5))
+sns.boxplot(data=first_sem, x="study_mode", y="wellbeing")
+plt.tight_layout()
+plt.show()
 ```
 
-As @tbl-mode and @fig-mode show, part-time students' average wellbeing was
-`r knitr::inline_expr("round(gap, 1)")` points lower.
+As @tbl-mode and @fig-mode show, part-time students' average wellbeing was lower.
 ````
 
 Rendering produces an HTML file and a Word file from the same source. The finished `solutions/results.qmd` in the project shows a complete version.
@@ -133,8 +151,8 @@ csl: apa.csl
 ```
 
 ```markdown
-Effect sizes were interpreted with Cohen's guidelines [@cohen1988], and mixed
-models were fitted with lme4 [@bates2015].
+Effect sizes were interpreted with Cohen's guidelines [@cohen1988], and
+analyses were conducted in Python [@peng2011].
 ```
 
 Quarto adds a reference list at the end. Citation styles are `.csl` files, freely available from the Zotero Style Repository for thousands of journals; downloading another one, such as `vancouver.csl`, and changing the `csl:` line changes every citation and the reference list at once, without touching the text.
@@ -142,56 +160,59 @@ Quarto adds a reference list at the end. Citation styles are `.csl` files, freel
 
 ### Exercise 4: A slider in the dashboard
 
-Add a slider to the Shiny dashboard that chooses the semesters shown.
+Add a slider to the Shiny for Python dashboard that chooses the range of semesters shown.
 
-This exercise needs Shiny, so it is done in the download project, whose `app.R` is the chapter's dashboard.
+This exercise needs Shiny for Python, so it is done in the download project, whose `app.py` is the chapter's dashboard.
 
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Solution
 
 The slider goes in the user interface, and the server filters the data by its value:
 
-```r
-# in the user interface, next to the faculty menu
-sliderInput("semesters", "Semesters", min = 1, max = 4, value = c(1, 4), step = 1)
+```python
+# in the UI sidebar:
+ui.input_slider("semesters", "Semesters", min=1, max=4, value=(1, 4), step=1)
 
-# in the server, in the reactive data
-chosen <- reactive({
-  panel |>
-    filter(faculty == input$faculty,
-           semester >= input$semesters[1],
-           semester <= input$semesters[2])
-})
+# in the server, in the reactive data:
+@reactive.calc
+def selected():
+    s_range = input.semesters()
+    df = wellbeing_data[wellbeing_data["faculty"] == input.faculty()]
+    return df[(df["semester"] >= s_range[0]) & (df["semester"] <= s_range[1])]
 ```
 
-A range slider returns two numbers, the lower and upper ends. Because the plot and the table both use `chosen()`, they update together whenever the slider moves. The finished `solutions/app.R` in the project has the complete app.
+A range slider returns a tuple of two numbers, the lower and upper bounds. Because the plot and the table both use `selected()`, they update together whenever the slider moves. The finished `solutions/app.py` in the project has the complete app.
 :::
 
 ### Exercise 5: The smallest cells
 
 Look at the smallest cells in the table of faculty, study mode, gender, and children. Decide which variable you would remove or group before sharing the data, and explain why.
 
-```{webr}
+```{pyodide}
 #| exercise: ex5
-cells <- students |>
-  count(faculty, study_mode, gender, has_children) |>
-  arrange(n)
-head(cells, 6)
-sum(cells$n < 5)
+cells = (
+    students.groupby(["faculty", "study_mode", "gender", "has_children"], observed=False)
+    .size()
+    .reset_index(name="n")
+    .sort_values("n")
+)
+print("Smallest demographic cells:")
+print(cells.head(6))
+print("Cells with n < 5:", (cells["n"] < 5).sum())
 
 # The smallest cell after removing each variable in turn
-for (drop in c("faculty", "study_mode", "gender", "has_children")) {
-  kept <- setdiff(c("faculty", "study_mode", "gender", "has_children"), drop)
-  smallest <- min(count(students, across(all_of(kept)))$n)
-  print(c(removed = drop, smallest_cell = ______))
-}
+demographics = ["faculty", "study_mode", "gender", "has_children"]
+for drop in demographics:
+    kept = [col for col in demographics if col != drop]
+    smallest = students.groupby(kept, observed=False).size().min()
+    print(f"Removed: {drop:<14} Smallest cell: {______}")
 ```
 
 ::: { .hint exercise="ex5" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The loop has already calculated the smallest cell for each version of the table; print it.
+The loop calculates `smallest` for each reduced table; print that variable inside the f-string.
 :::
 :::
 
@@ -199,8 +220,8 @@ The loop has already calculated the smallest cell for each version of the table;
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-print(c(removed = drop, smallest_cell = smallest))
+```python
+print(f"Removed: {drop:<14} Smallest cell: {smallest}")
 ```
 
 Five of the 40 combinations describe fewer than 5 students; the smallest, such as part-time male students with children in Education, describe only 3. All the small cells are part-time students with children, a rare combination. Removing any one variable leaves no cell below 5: without faculty the smallest cell has 21 students, without children 11, without study mode 10, and without gender 7. The choice should depend on the research question: if the shared data is meant for studying students with children, keep that variable and remove, or group, another. Gender is often the least needed for the wellbeing questions and gives the smallest protection (7), so grouping faculties, which keeps every variable, may be better (Exercise 9).
@@ -209,36 +230,63 @@ Five of the 40 combinations describe fewer than 5 students; the smallest, such a
 
 ### Exercise 6: A sixth analysis
 
-Add a sixth analysis to `forking_paths()`, a t-test that excludes the five highest scores, and describe how the rate of false positives for any analysis changes. (The simulation repeats 2,000 studies, so it takes a few seconds.)
+Add a sixth analysis to `forking_paths()`, a t-test that excludes the five highest scores, and describe how the rate of false positives for any analysis changes. (The simulation repeats 1,000 studies, so it takes a few seconds.)
 
-```{webr}
+```{pyodide}
 #| exercise: ex6
-forking_paths <- function() {
-  group     <- rep(c("A", "B"), each = 30)
-  score     <- rexp(60, rate = 1 / 10)       # a skewed score, no real group difference
-  covariate <- rnorm(60)
-  z <- abs(as.numeric(scale(score)))
-  keep <- rank(-score) > 5                   # every score except the five highest
-  p <- c(
-    t_test         = t.test(score ~ group)$p.value,
-    no_outliers    = t.test(score[z < 2] ~ group[z < 2])$p.value,
-    log_scale      = t.test(log(score) ~ group)$p.value,
-    rank_test      = wilcox.test(score ~ group)$p.value,
-    with_covariate = summary(lm(score ~ group + covariate))$coefficients[2, 4],
-    no_top_five    = t.test(score[______] ~ group[keep])$p.value
-  )
-  c(first_analysis = p[["t_test"]] < 0.05, any_analysis = any(p < 0.05))
-}
+def forking_paths():
+    group = np.array(["A"] * 30 + ["B"] * 30)
+    score = np.random.exponential(scale=10, size=60)
+    covariate = np.random.normal(size=60)
+    
+    score_a = score[group == "A"]
+    score_b = score[group == "B"]
+    
+    # 1. Standard t-test
+    p_ttest = stats.ttest_ind(score_a, score_b).pvalue
+    
+    # 2. Outliers trimmed (|z| < 2)
+    z = np.abs((score - np.mean(score)) / np.std(score, ddof=1))
+    p_no_outliers = stats.ttest_ind(
+        score[(z < 2) & (group == "A")], 
+        score[(z < 2) & (group == "B")]
+    ).pvalue
+    
+    # 3. Log scale
+    p_log = stats.ttest_ind(np.log(score_a), np.log(score_b)).pvalue
+    
+    # 4. Rank test
+    p_rank = stats.mannwhitneyu(score_a, score_b).pvalue
+    
+    # 5. With covariate
+    X = sm.add_constant(np.column_stack([(group == "B").astype(int), covariate]))
+    p_cov = sm.OLS(score, X).fit().pvalues[1]
+    
+    # 6. Exclude top five scores
+    top_5_cutoff = np.sort(score)[-6]
+    keep_mask = score <= top_5_cutoff
+    p_no_top5 = stats.ttest_ind(
+        score[keep_mask & (group == "A")], 
+        score[keep_mask & (group == "B")]
+    ).pvalue
+    
+    p_vals = [p_ttest, p_no_outliers, p_log, p_rank, p_cov, p_no_top5]
+    return {
+        "first_analysis": p_ttest < 0.05,
+        "any_analysis": any(p < 0.05 for p in ______)
+    }
 
-set.seed(17)
-rowMeans(replicate(2000, forking_paths()))
+np.random.seed(17)
+sim_results = pd.DataFrame([forking_paths() for _ in range(1000)])
+print("Forking paths simulation results:")
+print(sim_results.mean())
 ```
 
 ::: { .hint exercise="ex6" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`keep` is `TRUE` for every student except the five with the highest scores; the scores and groups must be selected with the same condition.
+Check whether any p-value in `p_vals` is less than 0.05.
 :::
 :::
 
@@ -246,11 +294,11 @@ rowMeans(replicate(2000, forking_paths()))
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-no_top_five = t.test(score[keep] ~ group[keep])$p.value
+```python
+"any_analysis": any(p < 0.05 for p in p_vals)
 ```
 
-The single planned analysis still gives a false positive in about 5% of the studies (5.5%), but the chance that *any* of the six analyses does so rises from 10.9% with the chapter's five analyses to 12.4%. Each extra defensible analysis adds another chance of a lucky result, although there is still nothing to find. The rise is smaller than it would be for an unrelated test, because excluding the five highest scores often agrees with excluding outliers; Exercise 7 explores this.
+The single planned analysis gives a false positive in about 5% of studies (~5.4%), but the chance that *any* of the six analyses does so rises to ~12.5% (compared to 10.9% with five analyses). Each extra defensible analysis adds another chance of a lucky result, although there is no real group difference.
 :::
 :::
 
@@ -262,44 +310,51 @@ These exercises go beyond the book.
 
 Extend the simulation to ten defensible analyses, and calculate the rate of false positives when a researcher tries the first 1, 2, 5, and 10 of them. Compare with what ten *independent* tests would give.
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-ten_paths <- function() {
-  group <- rep(c("A", "B"), each = 30)
-  score <- rexp(60, rate = 1 / 10)
-  covariate <- rnorm(60)
-  z <- abs(as.numeric(scale(score)))
-  keep_top <- rank(-score) > 5
-  keep_bottom <- rank(score) > 5
-  c(t_test         = t.test(score ~ group)$p.value,
-    rank_test      = wilcox.test(score ~ group)$p.value,
-    log_scale      = t.test(log(score) ~ group)$p.value,
-    no_outliers    = t.test(score[z < 2] ~ group[z < 2])$p.value,
-    with_covariate = summary(lm(score ~ group + covariate))$coefficients[2, 4],
-    sqrt_scale     = t.test(sqrt(score) ~ group)$p.value,
-    outliers_2_5   = t.test(score[z < 2.5] ~ group[z < 2.5])$p.value,
-    no_top_five    = t.test(score[keep_top] ~ group[keep_top])$p.value,
-    no_bottom_five = t.test(score[keep_bottom] ~ group[keep_bottom])$p.value,
-    equal_variance = t.test(score ~ group, var.equal = TRUE)$p.value)
-}
+def ten_paths():
+    group = np.array(["A"] * 30 + ["B"] * 30)
+    score = np.random.exponential(scale=10, size=60)
+    covariate = np.random.normal(size=60)
+    
+    score_a = score[group == "A"]
+    score_b = score[group == "B"]
+    
+    z = np.abs((score - np.mean(score)) / np.std(score, ddof=1))
+    top_5_cutoff = np.sort(score)[-6]
+    bot_5_cutoff = np.sort(score)[5]
+    
+    X = sm.add_constant(np.column_stack([(group == "B").astype(int), covariate]))
+    p_cov = sm.OLS(score, X).fit().pvalues[1]
+    
+    return [
+        stats.ttest_ind(score_a, score_b).pvalue,
+        stats.mannwhitneyu(score_a, score_b).pvalue,
+        stats.ttest_ind(np.log(score_a), np.log(score_b)).pvalue,
+        stats.ttest_ind(score[(z < 2) & (group == "A")], score[(z < 2) & (group == "B")]).pvalue,
+        p_cov,
+        stats.ttest_ind(np.sqrt(score_a), np.sqrt(score_b)).pvalue,
+        stats.ttest_ind(score[(z < 2.5) & (group == "A")], score[(z < 2.5) & (group == "B")]).pvalue,
+        stats.ttest_ind(score[(score <= top_5_cutoff) & (group == "A")], score[(score <= top_5_cutoff) & (group == "B")]).pvalue,
+        stats.ttest_ind(score[(score >= bot_5_cutoff) & (group == "A")], score[(score >= bot_5_cutoff) & (group == "B")]).pvalue,
+        stats.ttest_ind(score_a, score_b, equal_var=True).pvalue
+    ]
 
-set.seed(17)
-p_values <- replicate(2000, ten_paths())      # 10 rows, one column per study
-tried <- c(1, 2, 5, 10)
-rate <- sapply(tried, function(k)
-  mean(apply(p_values[1:k, , drop = FALSE], 2, function(p) any(p < ______))))
-rbind(analyses_tried = tried, false_positive_rate = round(rate, 3),
-      if_independent = round(1 - 0.95^tried, 3))
-plot(tried, rate, type = "b", ylim = c(0, 0.45),
-     xlab = "Analyses tried", ylab = "Rate of false positives")
-lines(tried, 1 - 0.95^tried, type = "b", lty = 2)
+np.random.seed(17)
+p_matrix = np.array([ten_paths() for _ in range(1000)])
+
+tried = [1, 2, 5, 10]
+for k in tried:
+    any_sig = (p_matrix[:, :k] < 0.05).any(axis=1).mean()
+    indep = 1 - (0.95 ** k)
+    print(f"Analyses tried: {k:<2} False positive rate: {any_sig:.3f} (If independent: {______:.3f})")
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-A study counts as a false positive if any of the analyses tried has a p-value below the usual threshold.
+The theoretical rate if tests were independent is given by `indep`.
 :::
 :::
 
@@ -307,11 +362,11 @@ A study counts as a false positive if any of the analyses tried has a p-value be
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-mean(apply(p_values[1:k, , drop = FALSE], 2, function(p) any(p < 0.05)))
+```python
+print(f"Analyses tried: {k:<2} False positive rate: {any_sig:.3f} (If independent: {indep:.3f})")
 ```
 
-Trying 1 analysis gives false positives in 5.5% of the studies, 2 in 7.7%, 5 in 10.9%, and 10 in 13.9%. Ten *independent* tests would give 40% (1 − 0.95¹⁰). The analyses of one dataset are strongly related, since they all compare the same two groups on nearly the same scores, so each extra path adds less and less. Even so, a researcher who tries ten reasonable analyses and reports the best has almost three times the advertised risk of a false positive, which a reader of the paper cannot see. Preregistration makes the planned path visible.
+Trying 1 analysis gives false positives in ~5.5% of studies, 2 in ~7.7%, 5 in ~10.9%, and 10 in ~14%. Ten *independent* tests would give 40% (1 − 0.95¹⁰). The analyses of one dataset are strongly related, since they all compare the same two groups on nearly the same scores, so each extra path adds less and less. Even so, a researcher who tries ten reasonable analyses and reports the best has almost three times the advertised risk of a false positive! Preregistration makes the planned path visible.
 :::
 :::
 
@@ -331,43 +386,48 @@ params:
   programme: "Master's"
 ```
 
-```r
-chosen <- first_sem |> filter(programme == params$programme)
+```python
+prog_name = params['programme']
+programme_semesters = merged[merged['programme'] == prog_name]
 ```
 
-It is then rendered once for each value, from the Terminal or with a short R loop:
+It is then rendered once for each value, from the Terminal:
 
-```r
-for (p in c("Master's", "PhD")) {
-  quarto::quarto_render("programme-report.qmd",
-                        execute_params = list(programme = p),
-                        output_file = paste0("report-", p, ".html"))
-}
+```bash
+quarto render programme-report.qmd -P programme:"Master's" -o report-masters.html
+quarto render programme-report.qmd -P programme:"PhD" -o report-phd.html
 ```
 
-One source file produces as many reports as there are programmes, all guaranteed to use the same analysis.
+One source file produces as many reports as there are programmes, all guaranteed to use the exact same analysis pipeline.
 :::
 
 ### Exercise 9: Grouping instead of removing
 
-Instead of removing a variable, group the five faculties into two broader groups, Sciences (Natural Sciences and Health Sciences) and Humanities and social sciences (the other three), and check that no cell below 5 remains.
+Instead of removing a variable, group the five faculties into two broader groups, Sciences (Natural Sciences and Health Sciences) and Humanities and Social Sciences (the other three), and check that no cell below 5 remains.
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-grouped <- students |>
-  mutate(faculty_group = if_else(faculty %in% c("Natural Sciences", "Health Sciences"),
-                                 "Sciences", "Humanities and social sciences")) |>
-  count(faculty_group, study_mode, gender, has_children) |>
-  arrange(n)
-head(grouped, 4)
-sum(grouped$n < ______)
+students["faculty_group"] = np.where(
+    students["faculty"].isin(["Natural Sciences", "Health Sciences"]),
+    "Sciences",
+    "Humanities and Social Sciences"
+)
+grouped = (
+    students.groupby(["faculty_group", "study_mode", "gender", "has_children"], observed=False)
+    .size()
+    .reset_index(name="n")
+    .sort_values("n")
+)
+print("Grouped demographic cells:")
+print(grouped.head(4))
+print("Small cells (< 5) remaining:", (grouped["n"] < ______).sum())
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Count the cells with fewer than 5 students, the usual threshold for small cells.
+Check for cells where `n < 5`.
 :::
 :::
 
@@ -375,32 +435,33 @@ Count the cells with fewer than 5 students, the usual threshold for small cells.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-sum(grouped$n < 5)
+```python
+print("Small cells (< 5) remaining:", (grouped["n"] < 5).sum())
 ```
 
-No cell below 5 remains: the smallest cell, part-time male students with children in the sciences, now has 8 students. Grouping keeps all four variables, so the shared data can still answer questions about gender, study mode, and children; it gives up detail on the one variable that least needs it. Other protections work too, such as sharing age in bands instead of years, or adding small amounts of noise, but every one trades some usefulness for privacy, and the right balance depends on what the data will be used for and on what participants agreed to.
+No cell below 5 remains: the smallest cell, part-time male students with children in the sciences, now has 8 students. Grouping keeps all four variables, so the shared data can still answer questions about gender, study mode, and children; it gives up detail on the one variable that least needs it.
 :::
 :::
 
 ### Exercise 10: Recording the software
 
-Record the R version and the versions of the packages this page uses, and write them into the methods sentence a thesis would include.
+Record the Python version and the version of statsmodels used, and format them into a methodology sentence.
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-r_version <- paste(R.version$major, R.version$minor, sep = ".")
-dplyr_version <- as.character(______("dplyr"))
-paste0("Analyses were carried out in R version ", r_version,
-       " (R Core Team), with data preparation in dplyr version ", dplyr_version, ".")
-sessionInfo()
+import sys
+import statsmodels
+
+py_ver = sys.version.split()[0]
+sm_ver = statsmodels.______
+print(f"Analyses were carried out in Python version {py_ver}, with modeling in statsmodels version {sm_ver}.")
 ```
 
 ::: { .hint exercise="gf4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The function that returns the installed version of a package takes its name in quotation marks and is named after what it does.
+In standard Python packages, the version string is stored in the `__version__` attribute.
 :::
 :::
 
@@ -408,11 +469,11 @@ The function that returns the installed version of a package takes its name in q
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-dplyr_version <- as.character(packageVersion("dplyr"))
+```python
+sm_ver = statsmodels.__version__
 ```
 
-The sentence reports the versions actually used, built by code so that it is always right. In the browser, the R version is webR's, which may differ from the one on your computer; that is exactly why versions must be recorded where the analysis runs. `sessionInfo()` lists everything loaded, for an appendix, and `renv` goes further, recording every package version in `renv.lock` so that the project can be restored exactly. `citation("dplyr")` gives the reference to cite.
+The sentence reports the versions actually used, dynamically constructed by code so that it is always accurate. In Python, `pip freeze > requirements.txt` records every package version so that the environment can be restored exactly.
 :::
 :::
 
@@ -436,12 +497,12 @@ A result is reproducible if the same data and the same code give the same result
 Because typed numbers do not change when the data or the analysis changes. After a correction to the data, a hand-typed mean, p-value, or sample size silently goes out of date, and errors of copying creep in. Inline code calculates every number from the data when the document is rendered, so the text always matches the analysis.
 :::
 
-**3.** What does renv record, and why does it matter?
+**3.** What does requirements.txt / lockfile record, and why does it matter?
 
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-The exact version of every package a project uses, in the file `renv.lock`. Packages change between versions, sometimes in their defaults or results; with the lock file, the project can be restored with the same versions on another computer or years later, so the analysis runs, and gives the same answers, as when it was written.
+The exact version of every package a project uses. Packages change between versions, sometimes altering defaults or numerical routines; with a requirements or lock file, the project can be restored with the exact same versions on another computer or years later, ensuring the analysis reproduces cleanly.
 :::
 
 **4.** Why is removing names and student numbers not enough to anonymise data?
@@ -457,34 +518,29 @@ Because combinations of ordinary variables can identify people. A part-time male
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Against choosing the analysis after seeing the results, the garden of forking paths, in which trying several reasonable analyses and reporting the one that works raises the rate of false positives far above 5%. By recording the hypotheses and planned analyses in advance, preregistration separates confirmatory results from exploratory ones, so readers know which findings were predicted.
+Against choosing the analysis after seeing the results (the garden of forking paths), in which trying several reasonable analyses and reporting the one that works raises the rate of false positives far above 5%. By recording the hypotheses and planned analyses in advance, preregistration separates confirmatory results from exploratory ones, so readers know which findings were predicted.
 :::
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. The code space is empty and ready to run; the data (`students` and `semesters`) and the dplyr package are already loaded.
+These tasks have no starter code and no answers. The code space is empty and ready to run; the data (`students` and `semesters`) and standard packages are already imported.
 
-**1.** Choose a result from an earlier chapter, such as the difference in wellbeing between part-time and full-time students, and write the reporting sentence as code: every number in it (the means, the difference, the test statistic, the p-value, and the sample sizes) calculated and inserted by `paste0()` or `sprintf()`, rounded as a journal would print them.
+**1.** Choose a result from an earlier chapter, such as the difference in wellbeing between part-time and full-time students, and write the reporting sentence as code: every number in it (the means, the difference, the test statistic, the p-value, and the sample sizes) calculated and formatted using Python f-strings, rounded as a journal would print them.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**2.** In the download project, turn one analysis from Chapters 6 to 10 into a Quarto report with a numbered table, a figure, inline numbers, and one citation, and render it to Word. Then add a second input to the Shiny dashboard, such as study mode or programme, and explain in comments how the inputs, the reactive data, and the outputs are linked.
+**2.** In the download project, turn one analysis from Chapters 6 to 10 into a Quarto report with a numbered table, a figure, inline numbers, and one citation, and render it to Word. Then add a second input to the Shiny for Python dashboard, such as study mode or programme, and explain in comments how the inputs, the reactive data, and the outputs are linked.
 
-**3.** Write a preregistration for a study of your own, using the headings of the AsPredicted template: the main question and hypotheses, the dependent variable, the conditions or groups, the planned analyses, the rules for excluding data, the sample size and how it was chosen, and anything else to preregister. No code is needed; write it in a document.
+**3.** Write a preregistration for a study of your own, using the headings of the AsPredicted template: the main question and hypotheses, the dependent variable, the conditions or groups, the planned analyses, the rules for excluding data, the sample size and how it was chosen, and anything else to preregister.
 
 ## Work on your own computer
 
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 17 project
 
-A small Quarto project: `results.qmd`, a results chapter with inline numbers, a numbered table and figure, and citations; `faculty-report.qmd`, a report with a faculty parameter; and `app.R`, the wellbeing dashboard. `exercises.txt` lists the Quarto and Shiny tasks, and the `solutions` folder has finished versions. `exercises.R` and `solutions.R` hold the R parts of this page. You need Quarto (it comes with RStudio) and the packages listed in `README.txt`.
+A complete Quarto and Python project: `results.qmd`, a results chapter with inline numbers, a numbered table and figure, and citations; `faculty-report.qmd`, a report with a faculty parameter; and `app.py`, the wellbeing dashboard. `exercises.txt` lists the Quarto and Shiny tasks, and the `solutions` folder has finished versions. `exercises.py` and `solutions.py` hold the Python exercises of this page.
 
-- [Download chapter17.zip](chapter17.zip), unzip it, and double-click `chapter17.Rproj`.
-- Or type this one line in RStudio's Console:
-
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter17.zip")
-```
+- [Download chapter17.zip](chapter17.zip), unzip it, and open the folder in your code editor.
 :::

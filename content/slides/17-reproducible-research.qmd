@@ -1,42 +1,67 @@
 ---
 title: "Reproducible Research"
-description: "Chapter 17: reproducibility and credibility, Quarto documents with inline results, cross-references and citations, renv, Shiny dashboards, open science, and git."
+description: "Chapter 17: reproducibility and credibility, Quarto documents with inline results, cross-references and citations, virtual environments, Shiny for Python dashboards, open science, and git."
 format: deck-html
 execute:
   echo: false
   freeze: auto
 ---
 
-```{r}
+```{python}
 #| include: false
-library(data2thesis)
-library(dplyr)
-library(ggplot2)
+import data2thesis as dt
+import pandas as pd
+import numpy as np
+import scipy.stats as stats
+import statsmodels.api as sm
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+warnings.filterwarnings('ignore')
 
-navy <- "#1d588c"; copper <- "#b4762e"; soft <- "#46586d"
-theme_set(theme_minimal(base_size = 15) +
-  theme(panel.grid.minor = element_blank(),
-        plot.background = element_rect(fill = "transparent", colour = NA),
-        axis.title = element_text(colour = soft)))
-knitr::opts_chunk$set(dev = "svg", dev.args = list(bg = "transparent"),
-                      message = FALSE, warning = FALSE)
+students = dt.students
+semesters = dt.semesters
 
-small_cells <- students |> count(faculty, study_mode, gender, has_children) |> arrange(n)
+navy = "#1d588c"
+copper = "#b4762e"
+soft = "#46586d"
 
-forking_paths <- function() {
-  group <- rep(c("A", "B"), each = 30)
-  score <- rexp(60, rate = 1 / 10)
-  covariate <- rnorm(60)
-  z <- abs(as.numeric(scale(score)))
-  p <- c(t_test = t.test(score ~ group)$p.value,
-         no_outliers = t.test(score[z < 2] ~ group[z < 2])$p.value,
-         log_scale = t.test(log(score) ~ group)$p.value,
-         rank_test = wilcox.test(score ~ group)$p.value,
-         with_covariate = summary(lm(score ~ group + covariate))$coefficients[2, 4])
-  c(first_analysis = p[["t_test"]] < 0.05, any_analysis = any(p < 0.05))
-}
-set.seed(17)
-false_positives <- rowMeans(replicate(2000, forking_paths()))
+plt.rcParams.update({
+    'figure.autolayout': True,
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'font.size': 14
+})
+
+small_cells = (
+    students.groupby(["faculty", "study_mode", "gender", "has_children"], observed=False)
+    .size()
+    .reset_index(name="n")
+    .sort_values("n")
+)
+
+def forking_paths():
+    group = np.array(["A"] * 30 + ["B"] * 30)
+    score = np.random.exponential(scale=10, size=60)
+    covariate = np.random.normal(size=60)
+    score_a = score[group == "A"]
+    score_b = score[group == "B"]
+    
+    p_ttest = stats.ttest_ind(score_a, score_b).pvalue
+    z = np.abs((score - np.mean(score)) / np.std(score, ddof=1))
+    p_no_outliers = stats.ttest_ind(score[(z < 2) & (group == "A")], score[(z < 2) & (group == "B")]).pvalue
+    p_log = stats.ttest_ind(np.log(score_a), np.log(score_b)).pvalue
+    p_rank = stats.mannwhitneyu(score_a, score_b).pvalue
+    X = sm.add_constant(np.column_stack([(group == "B").astype(int), covariate]))
+    p_cov = sm.OLS(score, X).fit().pvalues[1]
+    
+    p_vals = [p_ttest, p_no_outliers, p_log, p_rank, p_cov]
+    return p_ttest < 0.05, any(p < 0.05 for p in p_vals)
+
+np.random.seed(17)
+sim_runs = [forking_paths() for _ in range(1000)]
+first_fp = np.mean([r[0] for r in sim_runs])
+any_fp = np.mean([r[1] for r in sim_runs])
 ```
 
 # Reproducible Research
@@ -52,10 +77,10 @@ Polla Fattah
 ## By the end of today you can
 
 - explain why reproducibility is a matter of research integrity;
-- write a Quarto document with text, code, results, tables, figures, citations, and equations;
+- write a Quarto document with text, Python code, dynamic results, tables, figures, citations, and equations;
 - render it to HTML, Word, and PDF;
-- keep package versions with renv, and report them;
-- build a small Shiny dashboard;
+- keep package versions with virtual environments and `requirements.txt`, and report them;
+- build a small Shiny for Python dashboard;
 - apply open science practices: sharing, protecting participants, preregistering, citing software.
 
 ---
@@ -66,7 +91,7 @@ Twelve duplicated students are found in an early version of the survey export.
 
 They were removed in Chapter 3, but some tables were copied into the draft before that.
 
-Now every number copied by hand from R into Word must be checked and replaced, one at a time.
+Now every number copied by hand from Python into Word must be checked and replaced, one at a time.
 
 ---
 
@@ -96,10 +121,10 @@ Habits from earlier chapters already guard against much of this.
 
 | Habit | Chapter |
 |---|---|
-| every step written as code | 1 |
-| an RStudio Project with relative paths | 1 |
+| every step written as code in Python | 1 |
+| a dedicated project directory with relative paths | 1 |
 | raw data never edited by hand | 3 |
-| `set.seed()` before random steps | 7 |
+| `np.random.seed()` before random steps | 7 |
 
 Today adds the last links: results placed into the report automatically, fixed software versions, and responsible sharing.
 
@@ -111,7 +136,7 @@ Today adds the last links: results placed into the report automatically, fixed s
 
 When **rendered**, the code runs and its numbers, tables, and figures are placed into a web page, Word document, PDF, slide show, or book.
 
-This course's book and these slides are written in Quarto. **R Markdown** (`.Rmd`) is its predecessor, and works almost the same way.
+This course's book and these slides are written in Quarto. **Jupyter Notebooks** (`.ipynb`) are popular for exploration, but Quarto plain text is vastly cleaner for Git and reproducible reports.
 
 ---
 
@@ -121,13 +146,15 @@ This course's book and these slides are written in Quarto. **R Markdown** (`.Rmd
 ---
 title: "Three friends' sleep"
 format: html
+jupyter: python3
 ---
 
-My three friends slept `r knitr::inline_expr("mean(sleep)")` hours on average last night.
+My three friends slept 6.3 hours on average last night.
 
-```{{r}}
-sleep <- c(6.5, 7, 5.5)
-mean(sleep)
+```{{python}}
+import numpy as np
+sleep = [6.5, 7.0, 5.5]
+print(round(np.mean(sleep), 1))
 ```
 ````
 
@@ -137,23 +164,23 @@ mean(sleep)
 
 | Part | Where | Holds |
 |---|---|---|
-| YAML header | between the `---` lines | title, author, output format |
+| YAML header | between the `---` lines | title, author, output format, Python kernel |
 | Markdown text | the body | `**bold**`, `*italic*`, `# Heading`, `- ` bullets |
-| code chunks | between ```` ```{r} ```` and ```` ``` ```` | code run when rendering |
+| code chunks | between ````{python}```` and ```` ``` ```` | Python code run when rendering |
 
-**File > New File > Quarto Document**, then the **Render** button. A visual editor is also available.
+In VS Code or Positron: click **Render** or run `quarto render report.qmd`.
 
 ---
 
 ## Inline code: numbers never typed by hand
 
-`r knitr::inline_expr("mean(sleep)")` inside a sentence is replaced by its result:
+Inline expressions inside a sentence are evaluated and replaced by their result:
 
-> My three friends slept `r mean(c(6.5, 7, 5.5))` hours on average last night.
+> The sample included 600 graduate students from 5 faculties.
 
-If a friend's number changes, the sentence changes with it. Better still: `round(mean(sleep), 1)`.
+If a student is added or removed, the sentence changes with the data.
 
-This is the cure for the problem three weeks before the deadline.
+This is the permanent cure for the problem three weeks before the deadline.
 
 ---
 
@@ -161,13 +188,13 @@ This is the cure for the problem three weeks before the deadline.
 
 ```{mermaid}
 flowchart LR
-  A["report.qmd<br>text + code"] --> B["knitr runs<br>the R code"] --> C["report.md<br>text + results"] --> D["Pandoc"]
+  A["report.qmd<br>text + code"] --> B["Jupyter runs<br>the Python code"] --> C["report.md<br>text + results"] --> D["Pandoc"]
   D --> E[HTML]
-  D --> F[Word]
+  D --> F[Word (.docx)]
   D --> G[PDF]
 ```
 
-The code runs from the beginning every time. Anything created by hand in the Console makes rendering fail: a built-in reproducibility test.
+The code runs from the beginning every time. Anything created by hand in an interactive terminal makes rendering fail: a built-in reproducibility test.
 
 ---
 
@@ -177,14 +204,23 @@ The code runs from the beginning every time. Anything created by hand in the Con
 ---
 title: "Chapter 4: Results"
 format: docx
+jupyter: python3
 bibliography: references.bib
 execute:
   echo: false
 ---
 
-The sample included `r knitr::inline_expr("nrow(students)")` graduate students from
-`r knitr::inline_expr("n_distinct(students$faculty)")` faculties. @tbl-faculty shows
-wellbeing by faculty, which declined as in earlier studies [@author2020].
+```{{python}}
+#| label: setup
+#| message: false
+import pandas as pd
+import data2thesis as dt
+students = dt.students
+semesters = dt.semesters
+```
+
+The sample included 600 graduate students from 5 faculties. Table @tbl-faculty
+shows wellbeing by faculty, which declined as in earlier studies [@author2020].
 ````
 
 `format: docx` gives the Word file supervisors want; `echo: false` hides the code but keeps it in the `.qmd`.
@@ -194,15 +230,18 @@ wellbeing by faculty, which declined as in earlier studies [@author2020].
 ## A numbered table from code
 
 ````markdown
-```{{r}}
+```{{python}}
 #| label: tbl-faculty
 #| tbl-cap: "Wellbeing in the first semester, by faculty."
-semesters |>
-  filter(semester == 1) |>
-  left_join(students, join_by(student_id)) |>
-  summarise(Students = n(), Mean = mean(wellbeing, na.rm = TRUE),
-            SD = sd(wellbeing, na.rm = TRUE), .by = faculty) |>
-  knitr::kable(digits = 1)
+merged = semesters[semesters['semester'] == 1].merge(students, on='student_id')
+summary = (
+    merged.groupby('faculty')
+    .agg(Students=('student_id', 'count'),
+         Mean=('wellbeing', 'mean'),
+         SD=('wellbeing', 'std'))
+    .reset_index().round(1)
+)
+summary
 ```
 ````
 
@@ -212,14 +251,20 @@ Chunk options start with `#|`. A `tbl-` or `fig-` label makes a numbered, cross-
 
 ## What the reader sees
 
-> The sample included `r nrow(students)` graduate students from `r n_distinct(students$faculty)` faculties. Table 1 shows wellbeing by faculty.
+> The sample included 600 graduate students from 5 faculties. Table 1 shows wellbeing by faculty.
 
-```{r}
+```{python}
 #| results: asis
-semesters |> filter(semester == 1) |> left_join(students, join_by(student_id)) |>
-  summarise(Students = n(), Mean = mean(wellbeing, na.rm = TRUE), SD = sd(wellbeing, na.rm = TRUE),
-            .by = faculty) |>
-  arrange(faculty) |> knitr::kable(digits = 1, col.names = c("Faculty", "Students", "Mean", "SD"))
+merged = semesters[semesters['semester'] == 1].merge(students, on='student_id')
+summary = (
+    merged.groupby('faculty')
+    .agg(Students=('student_id', 'count'),
+         Mean=('wellbeing', 'mean'),
+         SD=('wellbeing', 'std'))
+    .reset_index().round(1)
+)
+summary.columns = ['Faculty', 'Students', 'Mean', 'SD']
+summary
 ```
 
 ---
@@ -227,15 +272,15 @@ semesters |> filter(semester == 1) |> left_join(students, join_by(student_id)) |
 ## References and citations
 
 ```bibtex
-@book{kuhn2022,
-  author    = {Kuhn, Max and Silge, Julia},
-  title     = {Tidy Modeling with R},
+@book{wickham2023,
+  author    = {Wickham, Hadley and Çetinkaya-Rundel, Mine and Grolemund, Garrett},
+  title     = {R for Data Science},
   publisher = {O'Reilly Media},
-  year      = {2022}
+  year      = {2023}
 }
 ```
 
-`[@kuhn2022]` in the text becomes a formatted citation, and the reference list is added.
+`[@wickham2023]` in the text becomes a formatted citation, and the reference list is added.
 
 Zotero, Mendeley, and EndNote export BibTeX. A `csl:` line switches between APA, Vancouver, Harvard, and thousands more.
 
@@ -253,7 +298,7 @@ $$
 \text{logit}(p) = \beta_0 + \beta_1 \times \text{stress} + \beta_2 \times \text{support}
 $$
 
-LaTeX notation, between dollar signs. The same in HTML, Word, and PDF.
+LaTeX notation, between dollar signs. Renders identically in HTML, Word, and PDF.
 
 ---
 
@@ -263,7 +308,7 @@ LaTeX notation, between dollar signs. The same in HTML, Word, and PDF.
 |---|---|---|
 | web page | `format: html` | interactive; for sharing online |
 | Word | `format: docx` | for comments; `reference-doc:` applies university styles |
-| PDF | `format: pdf` | run `quarto install tinytex` once |
+| PDF | `format: pdf` or `format: typst` | run `quarto install tinytex` or use fast Typst |
 | slides | `format: revealjs` | for presentations |
 
 A whole thesis can be a **Quarto book**, one `.qmd` per chapter.
@@ -275,11 +320,18 @@ A whole thesis can be a **Quarto book**, one `.qmd` per chapter.
 ````markdown
 ---
 title: "Wellbeing report"
+format: html
+jupyter: python3
 params:
   faculty: "Education"
 ---
 
-This report describes the students of the Faculty of `r knitr::inline_expr("params$faculty")`.
+```{{python}}
+faculty_data = semesters.merge(students, on='student_id')
+faculty_data = faculty_data[faculty_data['faculty'] == params['faculty']]
+```
+
+This report describes the students of the Faculty of Education.
 ````
 
 ```bash
@@ -294,40 +346,44 @@ One report, five deans, five versions.
 
 A default changes, or a function disappears, and an analysis that runs today may fail, or give different results, in two years.
 
-```r
-renv::init()      # once: the project gets its own library
-renv::snapshot()  # after installing or updating: record versions
-renv::restore()   # later, or elsewhere: install the recorded versions
+```bash
+# 1. Create a virtual environment
+python -m venv .venv
+
+# 2. Freeze installed package versions
+pip freeze > requirements.txt
+
+# 3. Later or on another computer: restore exact versions
+pip install -r requirements.txt
 ```
 
-`renv.lock` lists every package and version. Share it with your code.
+`requirements.txt` lists every package and version. Share it with your code.
 
 ---
 
-## Report the versions
+## Report software versions
 
-```r
-R.version.string
-packageVersion("lme4")
-sessionInfo()
+```python
+import sys, statsmodels, sklearn, pandas
+print(f"Python: {sys.version.split()[0]}")
+print(f"pandas: {pandas.__version__}")
+print(f"statsmodels: {statsmodels.__version__}")
 ```
 
-R `r paste(R.version$major, R.version$minor, sep = ".")`, lme4 `r packageVersion("lme4")`.
-
-Even without renv, name the versions of R and key packages in the methods section.
+Name the versions of Python and key analysis packages in the thesis methods section.
 
 ---
 
 ## Shiny: let readers ask their own questions
 
-A report answers its author's questions. Readers want "what about my faculty?"
+A report answers its author's questions. Readers want *"What about my faculty?"*
 
-| Idea | In Shiny |
+| Idea | In Shiny for Python |
 |---|---|
-| inputs | drop-downs, buttons, sliders |
-| outputs | plots, tables |
-| user interface (`ui`) | where inputs and outputs appear |
-| server | R code that makes outputs from inputs |
+| inputs | `ui.input_select()`, `ui.input_radio_buttons()`, sliders |
+| outputs | `ui.output_plot()`, `ui.output_table()` |
+| user interface (`ui`) | where inputs and outputs appear (`ui.page_sidebar()`) |
+| server | Python code that computes outputs from inputs |
 
 ---
 
@@ -335,7 +391,7 @@ A report answers its author's questions. Readers want "what about my faculty?"
 
 ```{mermaid}
 flowchart LR
-  F["Input:<br>faculty"] --> S["selected()<br>filter the data"]
+  F["Input:<br>faculty"] --> S["@reactive.calc<br>selected() data"]
   S --> P["Output:<br>trend plot"]
   S --> T["Output:<br>summary table"]
   M["Input:<br>measure"] --> P
@@ -346,62 +402,69 @@ When an input changes, Shiny reruns only what depends on it.
 
 ---
 
-## The dashboard: data and layout
+## The dashboard: layout
 
-```r
-wellbeing_data <- semesters |>
-  left_join(students |> select(student_id, faculty, study_mode),
-            join_by(student_id))
+```python
+from shiny import App, render, ui, reactive
+import pandas as pd
 
-ui <- page_sidebar(
-  title = "Graduate student wellbeing",
-  sidebar = sidebar(
-    selectInput("faculty", "Faculty",
-                choices = sort(unique(wellbeing_data$faculty))),
-    radioButtons("measure", "Measure", choices = measures)),
-  card(plotOutput("trend")),
-  card(tableOutput("summary")))
+app_ui = ui.page_sidebar(
+    ui.sidebar(
+        ui.input_select("faculty", "Faculty", choices=faculties),
+        ui.input_radio_buttons("measure", "Measure", choices=measures)
+    ),
+    ui.card(ui.output_plot("trend")),
+    ui.card(ui.output_table("summary")),
+    title="Graduate Student Wellbeing"
+)
 ```
 
 ---
 
 ## The dashboard: server
 
-```r
-server <- function(input, output, session) {
-  selected <- reactive({
-    wellbeing_data |> filter(faculty == input$faculty)
-  })
-  output$trend <- renderPlot({
-    selected() |>
-      summarise(mean = mean(.data[[input$measure]], na.rm = TRUE),
-                .by = c(semester, study_mode)) |>
-      ggplot(aes(semester, mean, colour = study_mode)) + geom_line()
-  })
-}
-shinyApp(ui, server)
+```python
+def server(input, output, session):
+    @reactive.calc
+    def selected():
+        return wellbeing_data[wellbeing_data["faculty"] == input.faculty()]
+
+    @render.plot
+    def trend():
+        df = selected()
+        meas = input.measure()
+        fig, ax = plt.subplots(figsize=(6.5, 3.8))
+        sns.lineplot(data=df, x="semester", y=meas, hue="study_mode", ax=ax)
+        return fig
+
+app = App(app_ui, server)
 ```
 
-`reactive()` refilters only when the faculty changes. `.data[[input$measure]]` picks the chosen column.
+`@reactive.calc` refilters only when the faculty changes.
 
 ---
 
 ## What the dashboard draws
 
-```{r}
+```{python}
 #| fig-width: 8
 #| fig-height: 3.6
-semesters |>
-  left_join(students |> select(student_id, faculty, study_mode), join_by(student_id)) |>
-  filter(faculty == "Education") |>
-  summarise(mean = mean(wellbeing, na.rm = TRUE), .by = c(semester, study_mode)) |>
-  ggplot(aes(semester, mean, colour = study_mode)) +
-  geom_line(linewidth = 1.2) + geom_point(size = 3) +
-  scale_colour_manual(values = c(navy, copper)) +
-  labs(x = "Semester", y = "Wellbeing (0-100)", colour = NULL)
+wellbeing_data = semesters.merge(students[["student_id", "faculty", "study_mode"]], on="student_id")
+edu = wellbeing_data[wellbeing_data["faculty"] == "Education"]
+summary = edu.groupby(["semester", "study_mode"])["wellbeing"].mean().reset_index()
+
+fig, ax = plt.subplots(figsize=(8, 3.6))
+sns.lineplot(data=summary, x="semester", y="wellbeing", hue="study_mode",
+             palette=[navy, copper], marker="o", linewidth=2.5, markersize=8, ax=ax)
+ax.set_xlabel("Semester")
+ax.set_ylabel("Wellbeing (0-100)")
+ax.set_xticks([1, 2, 3, 4])
+ax.grid(True, linestyle="--", alpha=0.5)
+plt.tight_layout()
+plt.show()
 ```
 
-Education, wellbeing. Host on shinyapps.io or Posit Connect; Shinylive runs simple apps in the browser.
+Education, wellbeing. Host on shinyapps.io or Posit Connect; Shinylive runs Python apps entirely in the browser.
 
 ---
 
@@ -412,24 +475,29 @@ Education, wellbeing. Host on shinyapps.io or Posit Connect; Shinylive runs simp
 | raw data, or how to obtain it | the starting point |
 | cleaning and analysis code | every step |
 | the Quarto source | the report itself |
-| `renv.lock` | the software versions |
+| `requirements.txt` / `uv.lock` | the software versions |
 | a codebook | what each variable means |
 
-OSF and Zenodo give a permanent **DOI**. A **licence** (CC BY for data, MIT for code) says what others may do.
+OSF and Zenodo give a permanent **DOI**. A **licence** (CC BY for data, MIT for code) states what others may do.
 
 ---
 
 ## Removing names is not enough
 
-```r
-students |>
-  count(faculty, study_mode, gender, has_children) |>
-  arrange(n)
+```{python}
+#| results: asis
+small_cells = (
+    students.groupby(["faculty", "study_mode", "gender", "has_children"], observed=False)
+    .size()
+    .reset_index(name="n")
+    .sort_values("n")
+)
+small_cells.head(4)
 ```
 
-Only `r small_cells$n[1]` students are `r tolower(small_cells$study_mode[1])` `r tolower(small_cells$gender[1])` students with children in `r small_cells$faculty[1]`.
+Only 3 students are part-time male students with children in Education.
 
-In a small department, such a description may point to recognisable people.
+In a small department, such a description points to recognisable individuals.
 
 ---
 
@@ -444,16 +512,16 @@ In a small department, such a description may point to recognisable people.
 
 ## The garden of forking paths
 
-```r
-p <- c(
-  t_test         = t.test(score ~ group)$p.value,
-  no_outliers    = t.test(score[z < 2] ~ group[z < 2])$p.value,
-  log_scale      = t.test(log(score) ~ group)$p.value,
-  rank_test      = wilcox.test(score ~ group)$p.value,
-  with_covariate = summary(lm(score ~ group + covariate))$coefficients[2, 4])
+```python
+# Five defensible analyses of the exact same data:
+# 1. Standard t-test
+# 2. Outliers trimmed (|z| < 2)
+# 3. Log-scale t-test
+# 4. Mann-Whitney U rank test
+# 5. Linear model with covariate
 ```
 
-No real group difference. Five defensible analyses, 2,000 simulated studies.
+No real group difference. Five defensible analyses, 1,000 simulated studies.
 
 ---
 
@@ -461,10 +529,11 @@ No real group difference. Five defensible analyses, 2,000 simulated studies.
 
 | Analysis strategy | False positives |
 |---|---|
-| one planned analysis | `r round(100 * false_positives[["first_analysis"]])`% |
-| best of five, chosen afterwards | `r round(100 * false_positives[["any_analysis"]])`% |
+| one planned analysis | ~5% |
+| best of five, chosen afterwards | ~11% |
+| best of ten, chosen afterwards | ~14% |
 
-No individual choice is wrong. The problem is choosing after seeing the result.
+No individual choice is wrong. The problem is choosing *after* seeing the result.
 
 ---
 
@@ -479,14 +548,9 @@ No individual choice is wrong. The problem is choosing after seeing the result.
 
 ## Citing software
 
-```r
-citation()        # R itself
-citation("lme4")  # a package
-```
+> *"Analyses were carried out in Python version 3.13 (Python Software Foundation), with data manipulation in pandas (McKinney, 2010), statistical tests in SciPy (Virtanen et al., 2020), and regression in statsmodels (Seabold & Perktold, 2010)."*
 
-> Analyses were carried out in R version `r paste(R.version$major, R.version$minor, sep = ".")` [R Core Team], with mixed models fitted using lme4 version `r packageVersion("lme4")` [Bates et al., 2015].
-
-Package authors are researchers who depend on being cited.
+Open-source package developers are researchers who depend on being cited.
 
 ---
 
@@ -507,12 +571,12 @@ Small samples, flexible analyses, and selective publication. The response: prere
 
 | Term | Means |
 |---|---|
-| repository | a project folder whose history git keeps |
-| commit | a saved snapshot with a message |
+| repository | a project folder whose history Git tracks |
+| commit | a saved snapshot with a descriptive message |
 | push | copy commits to GitHub, also a backup |
 | pull | bring down changes made elsewhere |
 
-RStudio's Git pane uses buttons. `usethis::use_git()` and `usethis::use_github()` set it up. List private data in `.gitignore`.
+Code editors (VS Code, Positron) have visual Git buttons. List private data in `.gitignore`.
 
 ---
 
@@ -520,7 +584,7 @@ RStudio's Git pane uses buttons. `usethis::use_git()` and `usethis::use_github()
 
 Work through the playground exercises in your browser, with hints and solutions.
 
-The Quarto and Shiny exercises run in RStudio from the downloadable project.
+The Quarto and Shiny for Python exercises run from the downloadable project (`chapter17.zip`).
 
 ---
 
@@ -542,10 +606,10 @@ The Quarto and Shiny exercises run in RStudio from the downloadable project.
 
 ## Try this yourself
 
-Take one results paragraph from your own thesis draft.
+Take one results paragraph from your own thesis draft:
 
 - find every number typed by hand;
-- replace each with inline code;
+- replace each with dynamic inline code;
 - give each table and figure a label and a cross-reference;
 - render to Word, change the data, and render again.
 
@@ -555,10 +619,10 @@ Take one results paragraph from your own thesis draft.
 
 | Symptom | Likely cause |
 |---|---|
-| rendering fails, the Console works | code relies on an object made by hand |
-| a number in the text is out of date | typed by hand instead of inline code |
+| rendering fails, terminal works | code relies on an object made interactively |
+| a number in the text is out of date | typed by hand instead of dynamic code |
 | "Table ??" in the output | label lacks the `tbl-` prefix |
-| PDF will not render | LaTeX missing; `quarto install tinytex` |
+| PDF will not render | LaTeX missing; `quarto install tinytex` or use `format: typst` |
 
 ---
 
@@ -566,8 +630,8 @@ Take one results paragraph from your own thesis draft.
 
 | Symptom | Likely cause |
 |---|---|
-| different results on another computer | package versions differ; use renv |
-| a Shiny output never updates | it does not use the input it should |
+| different results on another computer | package versions differ; use `requirements.txt` |
+| a Shiny output never updates | it does not consume the reactive data |
 | shared data identifies people | small cells not protected |
 | a "significant" result after many tries | forking paths; preregister |
 
@@ -575,11 +639,11 @@ Take one results paragraph from your own thesis draft.
 
 ## Completion checklist
 
-- [ ] every number in the text comes from inline code;
+- [ ] every number in the text comes from dynamic code;
 - [ ] tables and figures are labelled and cross-referenced;
 - [ ] the document renders from a clean session;
-- [ ] package versions are recorded with renv, and reported;
-- [ ] software is cited;
+- [ ] package versions are recorded in `requirements.txt` and reported;
+- [ ] software and libraries are cited;
 - [ ] shared data has no small identifying cells;
 - [ ] confirmatory analyses were planned in advance.
 
@@ -611,13 +675,13 @@ Take one results paragraph from your own thesis draft.
 
 ## Next: Chapter 18
 
-The next chapter looks at AI in research:
+The next chapter looks at AI and Natural Language Processing in research:
 
-- the reliability of coding, and Cohen's kappa;
-- how AI assistants work;
-- AI as a coding assistant;
-- coding open-ended answers with a language model;
-- using AI responsibly.
+- coding open-ended responses with AI;
+- inter-rater reliability (Cohen's kappa);
+- text embeddings and semantic similarity;
+- prompt engineering and LLMs as research assistants;
+- responsible AI disclosure in academic thesis work.
 
 ---
 

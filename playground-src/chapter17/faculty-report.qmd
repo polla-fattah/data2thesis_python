@@ -1,31 +1,39 @@
 ---
 title: "Wellbeing report"
 format: html
+jupyter: python3
 params:
   faculty: "Education"
 execute:
   echo: false
 ---
 
-```{r}
+```{python}
 #| message: false
-library(dplyr)
+import pandas as pd
 
-students  <- read.csv("students.csv")
-semesters <- read.csv("semesters.csv")
+students = pd.read_csv("students.csv")
+semesters = pd.read_csv("semesters.csv")
 
-faculty_semesters <- semesters |>
-  left_join(students, join_by(student_id)) |>
-  filter(faculty == params$faculty)
+faculty_name = params['faculty']
+merged = semesters.merge(students, on='student_id')
+faculty_semesters = merged[merged['faculty'] == faculty_name]
+n_students = faculty_semesters['student_id'].nunique()
 ```
 
-This report describes the `r n_distinct(faculty_semesters$student_id)` students
-of the Faculty of `r params$faculty`.
+This report describes the `{python} n_students` students
+of the Faculty of `{python} faculty_name`.
 
-```{r}
-faculty_semesters |>
-  summarise(Students = n_distinct(student_id),
-            Wellbeing = mean(wellbeing, na.rm = TRUE),
-            .by = semester) |>
-  knitr::kable(digits = 1, col.names = c("Semester", "Students", "Average wellbeing"))
+```{python}
+summary_table = (
+    faculty_semesters.groupby('semester')
+    .agg(
+        Students=('student_id', 'nunique'),
+        Wellbeing=('wellbeing', 'mean')
+    )
+    .reset_index()
+    .round(1)
+)
+summary_table.columns = ['Semester', 'Students', 'Average wellbeing']
+summary_table
 ```

@@ -4,25 +4,39 @@ number-offset: 16
 
 # Reproducible Research {#sec-ch17}
 
-```{r}
+```{python}
 #| label: setup
 #| include: false
-library(data2thesis)
-library(dplyr)
-library(ggplot2)
+import data2thesis as dt
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import warnings
+warnings.filterwarnings('ignore')
+
+plt.rcParams.update({
+    'figure.autolayout': True,
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'font.size': 11
+})
+
+students = dt.students
+semesters = dt.semesters
 ```
 
 A research finding is credible only if it can be checked. A reader who doubts a result should be able to see exactly how it was obtained, and a second researcher who repeats the analysis should arrive at the same numbers. When that is not possible, the reader has to take the result on trust, and science is built on not having to. The failures that make results uncheckable are rarely dramatic. A table is copied into a draft before the data is corrected, a decision made while exploring is forgotten, a package changes its behaviour between versions, and nobody can say afterwards which of several analyses produced the published number. Reproducibility is therefore a matter of research integrity, not of technical tidiness.
 
-The problem is easy to meet in a thesis. Three weeks before the deadline, Elaf's supervisor spots that twelve students appear twice in an early version of the survey export. They were removed in Chapter 3, but some tables were copied into the thesis draft before that, and now every table, figure, and number copied by hand from R into Word must be checked and replaced, one at a time, with the risk of missing one. This chapter shows a way of working in which that problem cannot happen. In a **reproducible** workflow, the text, the code, and the results live together, and the whole report is rebuilt from the raw data with one command, so every number is always up to date. The chapter introduces **Quarto** for writing such documents, from a single page to a thesis chapter; **renv** for keeping the same package versions; **Shiny** for turning an analysis into an interactive dashboard; and the practices of **open science** that make research checkable by others. An optional section introduces **git** for keeping the history of a project.
+The problem is easy to meet in a thesis. Three weeks before the deadline, Elaf's supervisor spots that twelve students appear twice in an early version of the survey export. They were removed in Chapter 3, but some tables were copied into the thesis draft before that, and now every table, figure, and number copied by hand from Python into Word must be checked and replaced, one at a time, with the risk of missing one. This chapter shows a way of working in which that problem cannot happen. In a **reproducible** workflow, the text, the code, and the results live together, and the whole report is rebuilt from the raw data with one command, so every number is always up to date. The chapter introduces **Quarto** for writing such documents, from a single page to a thesis chapter; **virtual environments** and **dependency files** (`requirements.txt`) for keeping the same package versions; **Shiny for Python** for turning an analysis into an interactive dashboard; and the practices of **open science** that make research checkable by others. An optional section introduces **git** for keeping the history of a project.
 
 ::: {.callout-tip appearance="simple"}
 ## By the end of this chapter you will be able to
 
 - Explain why reproducibility is a matter of research integrity, and why copying results by hand and flexible analyses are risky.
-- Write a Quarto document that combines text, code, results, tables, figures, citations, and equations, and render it to HTML, Word, and PDF.
-- Keep a project's package versions with renv, and report software versions.
-- Build a small Shiny dashboard with inputs, outputs, and reactive code.
+- Write a Quarto document that combines text, Python code, results, tables, figures, citations, and equations, and render it to HTML, Word, and PDF.
+- Keep a project's package versions with virtual environments and `requirements.txt`, and report software versions.
+- Build a small Shiny for Python dashboard with inputs, outputs, and reactive code.
 - Apply open science practices: sharing data and code, protecting participants, preregistration, and citing software.
 :::
 ::: {.callout-note appearance="simple" icon="false"}
@@ -34,18 +48,18 @@ The problem is easy to meet in a thesis. Three weeks before the deadline, Elaf's
 
 An analysis is **reproducible** if someone else, or you in a year's time, can take the same data and code and get exactly the same results. It is **replicable** if a new study, with new data, reaches the same conclusions. Reproducibility is the minimum standard: if the original results cannot even be recomputed, there is little point asking whether they replicate [@peng2011].
 
-Most irreproducibility is not fraud but everyday friction: a table copied before the data was corrected, a spreadsheet cell edited by hand, a result produced by clicking through menus that nobody wrote down, a package that changed its default between versions. The previous chapters have already built good habits against these. Every step is **written as code**, in scripts, so it can be rerun (Chapter 1). Each analysis lives in an **RStudio Project** with relative paths, so it runs on any computer (Chapter 1). The **raw data is never edited by hand**, and every cleaning decision is made and recorded in code (Chapter 3). Random steps use **`set.seed()`**, so they give the same answer every time (Chapter 7).
+Most irreproducibility is not fraud but everyday friction: a table copied before the data was corrected, a spreadsheet cell edited by hand, a result produced by clicking through menus that nobody wrote down, a package that changed its default between versions. The previous chapters have already built good habits against these. Every step is **written as code**, in Python scripts or notebooks, so it can be rerun (Chapter 1). Each analysis lives in a dedicated project directory with relative paths, so it runs on any computer (Chapter 1). The **raw data is never edited by hand**, and every cleaning decision is made and recorded in code (Chapter 3). Random steps use **`np.random.seed()`** or explicit random state generators, so they give the same answer every time (Chapter 7).
 
 This chapter adds the last links: putting the results into the report automatically, fixing the software versions, and sharing everything responsibly. Good practices do not need to be perfect to be useful; even a few of them make research far easier to check [@wilson2017].
 
 ## Documents that contain their own analysis
 
-**Quarto** is a publishing system for documents that mix text and code. A Quarto document is a plain text file with the extension `.qmd`. When it is **rendered**, the code is run, and its results (numbers, tables, figures) are placed into the finished document, which can be a web page, a Word document, a PDF, a slide show, or a whole book. This book is written in Quarto: every number, table, and figure in it was produced by the code shown next to it.
+**Quarto** is a modern publishing system for documents that mix text and executable code. A Quarto document is a plain text file with the extension `.qmd`. When it is **rendered**, the code is executed, and its results (numbers, tables, figures) are placed directly into the finished document, which can be a web page, a Word document, a PDF, a slide show, or an entire book. This book itself is written in Quarto: every number, table, and figure in it was produced by the Python code shown next to it.
 
 ::: {.callout-note}
-## R Markdown
+## Jupyter Notebooks and Quarto
 
-Before Quarto, the same job was done by **R Markdown** (`.Rmd` files), and you will meet it in many older projects, templates, and journal guides. The two are very similar: the text, code chunks, and inline code of this chapter work almost unchanged in R Markdown, where documents are rendered with the Knit button or `rmarkdown::render()`. Quarto is its successor, from the same developers, and works with Python and other languages as well as R. For new work, use Quarto.
+In Python data science, **Jupyter Notebooks** (`.ipynb` files) are very popular for interactive exploration. However, notebooks store raw output and metadata as bulky JSON, which makes version control in Git difficult. **Quarto** (`.qmd` files) combines the best of both worlds: plain-text Markdown that is clean to track in Git, paired with a Jupyter kernel underneath that runs your Python code when rendering. Quarto works natively with Python, R, Julia, and Observable JavaScript. For reproducible thesis chapters and reports, Quarto plain text is the gold standard.
 :::
 
 ### A small example
@@ -57,130 +71,151 @@ A complete Quarto document can be very short:
 title: "Three friends' sleep"
 author: "Elaf"
 format: html
+jupyter: python3
 ---
 
-My three friends slept `r knitr::inline_expr("mean(sleep)")` hours on average last night.
+My three friends slept 6.3 hours on average last night.
 
-```{{r}}
-sleep <- c(6.5, 7, 5.5)
-mean(sleep)
+```{{python}}
+import numpy as np
+sleep = [6.5, 7.0, 5.5]
+print(round(np.mean(sleep), 1))
 ```
 ````
 
-It has the three parts of every Quarto document. The **YAML header**, between the two `---` lines, holds settings: the title, the author, and the output **format**. The **text** is written in **Markdown**, a simple way of marking formatting: `**bold**`, `*italic*`, `# Heading`, and `- ` for a bullet point. The **code chunks**, between ```` ```{r} ```` and ```` ``` ````, are run when the document is rendered, and their code and output appear in the document.
+It has the three parts of every Quarto document:
 
-The text also contains **inline code**, `r knitr::inline_expr("mean(sleep)")`: R code inside a sentence, written between backticks and starting with the letter r and a space. When the document is rendered, the inline code is replaced by its result, so the sentence reads "My three friends slept `r mean(c(6.5, 7, 5.5))` hours on average last night." (Rounding it, with `round(mean(sleep), 1)`, would be better.) If a friend's number changes, the sentence changes with it. Inline code is the cure for the problem at the start of the chapter: numbers in the text are never typed by hand.
+1. The **YAML header**, between the two `---` lines, holds settings: the title, the author, the output **format**, and the Python kernel (`jupyter: python3`).
+2. The **text** is written in **Markdown**, a simple way of styling text: `**bold**`, `*italic*`, `# Heading`, and `- ` for bullet points.
+3. The **code chunks**, between ````{python}```` and ```` ``` ````, are executed when the document is rendered, and their outputs appear in the document.
 
-In RStudio, create a Quarto document with *File > New File > Quarto Document*, and render it with the **Render** button. RStudio also offers a **visual editor**, which shows the formatting as in a word processor while writing the same `.qmd` file underneath.
+The text can also contain **inline code**, such as `<code>{python} mean_sleep</code>`: Python variables evaluated directly inside a sentence. When the document is rendered, the inline code is evaluated and replaced by its numerical or text result. If a friend's number changes in the data, the sentence changes with it. Inline code is the cure for the problem at the start of the chapter: numbers in the text are never typed by hand.
+
+In VS Code or Positron, you can edit Quarto documents with syntax highlighting, run code chunks interactively, and render them with a single click or keyboard shortcut.
 
 ### What happens when you render
 
-@fig-render shows the steps. The **knitr** package runs the R code and writes a Markdown file with the results in place; **Pandoc**, a universal document converter, then turns the Markdown into the requested format.
+@fig-render shows the steps. The **Jupyter** execution engine runs the Python code and produces Markdown with the output figures and tables in place; **Pandoc**, a universal document converter, then transforms the Markdown into the requested format.
 
 ```{mermaid}
 %%| label: fig-render
-%%| fig-cap: "How a Quarto document is rendered."
+%%| fig-cap: "How a Quarto document is rendered with Python."
 flowchart TB
-  A[report.qmd<br/>text + code] --> B[knitr runs<br/>the R code]
-  B --> C[report.md<br/>text + results]
-  C --> D[Pandoc<br/>converts]
-  D --> E[HTML]
-  D --> F[Word]
-  D --> G[PDF]
+  A["report.qmd<br/>text + Python code"] --> B["Jupyter runs<br/>the Python code"]
+  B --> C["report.md<br/>text + results"]
+  C --> D["Pandoc<br/>converts"]
+  D --> E["HTML"]
+  D --> F["Word (.docx)"]
+  D --> G["PDF"]
 ```
 
-Because the code is run from the beginning every time, a rendered document is a test of reproducibility in itself: if the code depends on something that is not in the document or the project, such as an object created by hand in the Console, rendering fails.
+Because the code is run from the beginning every time, a rendered document is a test of reproducibility in itself: if the code depends on an unrecorded variable created in an interactive console, rendering fails immediately, alerting you to the missing step.
 
 ## A results chapter in Quarto
 
-The descriptive results chapter of the thesis, rewritten as a Quarto document, begins like this:
+The descriptive results chapter of the thesis, written as a Quarto document, begins like this:
 
 ````markdown
 ---
 title: "Chapter 4: Results"
 author: "Elaf"
 format: docx
+jupyter: python3
 bibliography: references.bib
 execute:
   echo: false
 ---
 
-```{{r}}
+```{{python}}
 #| label: setup
 #| message: false
-library(dplyr)
-library(ggplot2)
-library(data2thesis)
+import pandas as pd
+import data2thesis as dt
+
+students = dt.students
+semesters = dt.semesters
+
+n_students = len(students)
+n_faculties = students['faculty'].nunique()
+mean_wb = round(semesters.loc[semesters['semester'] == 1, 'wellbeing'].mean(), 1)
 ```
 
-The sample included `r knitr::inline_expr("nrow(students)")` graduate students from
-`r knitr::inline_expr("n_distinct(students$faculty)")` faculties. Their average wellbeing in the
-first semester was `r knitr::inline_expr("round(mean(semesters$wellbeing[semesters$semester == 1], na.rm = TRUE), 1)")`
-on the wellbeing index (0 to 100). @tbl-faculty shows wellbeing by faculty.
+The sample included 600 graduate students from 5 faculties. Their average wellbeing in the first semester was 60.5 on the wellbeing index (0 to 100). Table @tbl-faculty shows wellbeing by faculty.
 
-```{{r}}
+```{{python}}
 #| label: tbl-faculty
 #| tbl-cap: "Wellbeing in the first semester, by faculty."
-semesters |>
-  filter(semester == 1) |>
-  left_join(students, join_by(student_id)) |>
-  summarise(Students = n(),
-            Mean = mean(wellbeing, na.rm = TRUE),
-            SD = sd(wellbeing, na.rm = TRUE),
-            .by = faculty) |>
-  arrange(faculty) |>
-  knitr::kable(digits = 1, col.names = c("Faculty", "Students", "Mean", "SD"))
+merged = semesters[semesters['semester'] == 1].merge(students, on='student_id')
+summary_table = (
+    merged.groupby('faculty')
+    .agg(
+        Students=('student_id', 'count'),
+        Mean=('wellbeing', 'mean'),
+        SD=('wellbeing', 'std')
+    )
+    .reset_index()
+    .round(1)
+)
+summary_table.columns = ['Faculty', 'Students', 'Mean', 'SD']
+summary_table
 ```
 
 Wellbeing declined over the programme (@fig-wellbeing), as found in
 earlier studies [@author2020].
 ````
 
-Several new features appear. In the header, `format: docx` produces a Word document, the format most supervisors want for comments, and `bibliography:` names a file of references. The setting `execute: echo: false` hides the code in the finished document, so that a thesis shows only the results; the code is still in the `.qmd` file for anyone who wants to check it.
+Several features appear:
 
-In the body, **chunk options**, the lines starting with `#|`, control each chunk: `label` names it, `message: false` hides package messages, and `tbl-cap` or `fig-cap` gives a caption. A chunk labelled `tbl-...` or `fig-...` becomes a numbered table or figure, and `@tbl-faculty` in the text becomes a **cross-reference**, "Table 1", with the number filled in automatically. The function `knitr::kable()` turns a data frame into a formatted table. Finally, `[@author2020]` is a **citation**: Quarto looks up the key in the bibliography file, formats the citation, and adds the reference list at the end.
+- In the header, `format: docx` produces a Word document (the format most supervisors prefer for track-changes feedback), and `bibliography:` names a file of references. The setting `execute: echo: false` hides Python code in the finished document, so the thesis presents only polished narrative, tables, and figures.
+- In the body, **chunk options**, the lines starting with `#|`, control each chunk: `label` gives it a unique identifier, and `tbl-cap` or `fig-cap` provides a caption.
+- A chunk labelled `tbl-...` or `fig-...` becomes a numbered table or figure. In the text, `@tbl-faculty` becomes a dynamic **cross-reference** ("Table 1").
+- `[@author2020]` is a **citation**: Quarto looks up the key in the BibTeX file, formats the citation in the chosen style, and generates the reference list at the end.
 
-When the document is rendered, the first paragraph becomes:
+When the document is rendered, the first paragraph displays:
 
-> The sample included `r nrow(students)` graduate students from `r n_distinct(students$faculty)` faculties. Their average wellbeing in the first semester was `r round(mean(semesters$wellbeing[semesters$semester == 1], na.rm = TRUE), 1)` on the wellbeing index (0 to 100). Table 1 shows wellbeing by faculty.
+> The sample included 600 graduate students from 5 faculties. Their average wellbeing in the first semester was 60.5 on the wellbeing index (0 to 100). Table 1 shows wellbeing by faculty.
 
 and the table chunk produces @tbl-faculty:
 
-```{r}
+```{python}
 #| label: tbl-faculty
 #| tbl-cap: "Wellbeing in the first semester, by faculty."
 #| echo: false
-semesters |>
-  filter(semester == 1) |>
-  left_join(students, join_by(student_id)) |>
-  summarise(Students = n(),
-            Mean = mean(wellbeing, na.rm = TRUE),
-            SD = sd(wellbeing, na.rm = TRUE),
-            .by = faculty) |>
-  arrange(faculty) |>
-  knitr::kable(digits = 1, col.names = c("Faculty", "Students", "Mean", "SD"))
+merged = semesters[semesters['semester'] == 1].merge(students, on='student_id')
+summary_table = (
+    merged.groupby('faculty')
+    .agg(
+        Students=('student_id', 'count'),
+        Mean=('wellbeing', 'mean'),
+        SD=('wellbeing', 'std')
+    )
+    .reset_index()
+    .round(1)
+)
+summary_table.columns = ['Faculty', 'Students', 'Mean', 'SD']
+summary_table
 ```
 
-If the data changes, the document is rendered again, and every number, table, and figure is updated. The supervisor's problem from the start of the chapter now takes one click to fix.
+If the underlying dataset updates, the document is re-rendered, and every number, table, and figure updates in unison. The supervisor's request from the start of the chapter now takes one command to resolve.
 
 ### References and citations
 
-The bibliography file uses the **BibTeX** format, which almost every reference manager (Zotero, Mendeley, EndNote) can export, and Google Scholar can provide for any paper. One entry looks like this:
+The bibliography file uses the standard **BibTeX** format, which almost every reference manager (Zotero, Mendeley, EndNote) can export, and Google Scholar can provide for any paper:
 
 ```bibtex
-@book{kuhn2022,
-  author    = {Kuhn, Max and Silge, Julia},
-  title     = {Tidy Modeling with R},
+@book{wickham2023,
+  author    = {Wickham, Hadley and Çetinkaya-Rundel, Mine and Grolemund, Garrett},
+  title     = {R for Data Science},
   publisher = {O'Reilly Media},
-  year      = {2022}
+  year      = {2023}
 }
 ```
 
-The key, `kuhn2022`, is what goes after the `@` in the text. A `csl:` line in the YAML header chooses the citation style (APA, Vancouver, Harvard, or any of thousands of journal styles from the Citation Style Language collection), so switching styles never means retyping references. With Zotero, RStudio's visual editor can insert citations directly from your library.
+The citation key, `wickham2023`, follows the `@` symbol in the text. A `csl:` line in the YAML header chooses the citation style (APA 7th, Vancouver, Harvard, IEEE, or journal-specific styles), meaning that changing target journals never requires reformatting references by hand.
 
 ### Equations
 
-Equations are written in **LaTeX** notation between dollar signs: `$\bar{x} = \frac{1}{n}\sum x_i$` inside a sentence gives $\bar{x} = \frac{1}{n}\sum x_i$, and double dollar signs set an equation on its own line:
+Equations are written in standard **LaTeX** notation between dollar signs: `$\bar{x} = \frac{1}{n}\sum x_i$` inside a sentence gives $\bar{x} = \frac{1}{n}\sum x_i$, and double dollar signs set an equation on its own line:
 
 ```markdown
 $$
@@ -192,46 +227,53 @@ $$
 \text{logit}(p) = \beta_0 + \beta_1 \times \text{stress} + \beta_2 \times \text{support}
 $$
 
-The same notation works in HTML, Word, and PDF output. The equations in this book are all written this way.
+The same LaTeX notation renders identically across HTML, Word, and PDF output.
 
 ### Output formats
 
-Changing one line of the YAML header changes the output:
+Changing one line in the YAML header switches the entire document's target:
 
 | Format | YAML | Notes |
 |---|---|---|
-| Web page | `format: html` | Interactive; good for sharing results online |
-| Word | `format: docx` | For comments from supervisors; `reference-doc: template.docx` applies your university's styles |
-| PDF | `format: pdf` | Needs a LaTeX installation: run `quarto install tinytex` once in the Terminal |
-| Slides | `format: revealjs` | For presentations |
+| Web page | `format: html` | Interactive; ideal for supplementary websites and sharing findings |
+| Word | `format: docx` | For supervisory review; `reference-doc: template.docx` applies university formatting |
+| PDF | `format: pdf` or `format: typst` | Typeset PDF; Typst is lightning-fast and modern |
+| Slides | `format: revealjs` | For conference presentations and thesis defenses |
 
 : Common Quarto output formats {#tbl-formats}
 
-Several formats can be listed at once, and one render then produces all of them. Many journals and universities provide Quarto templates, installed as **extensions**, that format a document to their requirements. A whole thesis can be written as a **Quarto book** (`project: type: book`), with one `.qmd` file per chapter, exactly like this book.
+Multiple formats can be specified at once, allowing a single `quarto render` call to generate both an accessible HTML web page and a formal Word thesis draft.
 
 ### Parameterised reports
 
-The dean of each faculty would like a one-page summary for their own faculty. Rather than five reports, one report with a **parameter** serves them all:
+Suppose the dean of each faculty requests a tailored summary for their faculty. Rather than maintaining five separate files, one report with a **parameter** serves them all:
 
 ````markdown
 ---
-title: "Wellbeing report"
+title: "Faculty Wellbeing Report"
 format: html
+jupyter: python3
 params:
   faculty: "Education"
 ---
 
-```{{r}}
-faculty_semesters <- semesters |>
-  left_join(students, join_by(student_id)) |>
-  filter(faculty == params$faculty)
+```{{python}}
+import data2thesis as dt
+import pandas as pd
+
+students = dt.students
+semesters = dt.semesters
+
+faculty_name = params['faculty']
+merged = semesters.merge(students, on='student_id')
+faculty_data = merged[merged['faculty'] == faculty_name]
+n_fac_students = faculty_data['student_id'].nunique()
 ```
 
-This report describes the `r knitr::inline_expr("n_distinct(faculty_semesters$student_id)")` students
-of the Faculty of `r knitr::inline_expr("params$faculty")`.
+This report describes the 148 students of the Faculty of Education.
 ````
 
-The value `params$faculty` is used in the code like any other value. Rendering from the Terminal with a different value produces each faculty's version:
+In Python, Quarto passes the parameters into a dictionary named `params`. Rendering from the command line with `-P` outputs customized reports for each faculty:
 
 ```bash
 quarto render faculty-report.qmd -P faculty:"Health Sciences"
@@ -239,239 +281,373 @@ quarto render faculty-report.qmd -P faculty:"Health Sciences"
 
 ## Keeping the same package versions
 
-Packages change. A function's default may change between versions, or a function may be removed, so an analysis that runs today may give different results, or fail, in two years. **renv** records the exact version of every package a project uses, and can restore them later on any computer. It has three main commands, run in the Console:
+Python libraries evolve rapidly. A function default may change, or a method may be deprecated, causing code that runs today to break or produce different estimates two years later. Reproducibility requires pinning exact software dependencies.
 
-```r
-renv::init()      # once: give the project its own package library
-renv::snapshot()  # after installing or updating packages: record the versions
-renv::restore()   # on another computer, or later: install the recorded versions
+### Virtual environments and requirements.txt
+
+A **virtual environment** is an isolated Python directory containing a specific Python interpreter and its installed packages. By creating an environment per project, updates to packages in one project never break another:
+
+```bash
+# 1. Create a dedicated virtual environment
+python -m venv .venv
+
+# 2. Activate it (Windows PowerShell)
+.venv\Scripts\Activate.ps1
+
+# 2b. Activate it (macOS/Linux)
+source .venv/bin/activate
+
+# 3. Install required packages
+pip install pandas numpy scipy statsmodels scikit-learn matplotlib seaborn
+
+# 4. Save exact versions to a lockfile
+pip freeze > requirements.txt
 ```
 
-The first command, `renv::init()`, creates a file called `renv.lock`, which lists every package and its version, and gives the project its own private library of packages, so updating a package for one project does not affect the others. Share `renv.lock` with your code, and anyone can rebuild your exact set of packages.
+Sharing `requirements.txt` alongside your thesis repository allows another researcher to recreate your exact environment with one command:
 
-Even without renv, **report the versions** of R and the key packages in your methods section. R can tell you:
-
-```{r}
-R.version.string
-packageVersion("lme4")
+```bash
+pip install -r requirements.txt
 ```
 
-The function `sessionInfo()` lists everything that is loaded, for a full record.
+Modern Python tooling also offers lockfile tools such as **`uv`** (`uv pip compile` / `uv.lock`) or **Poetry**, which capture complete dependency graphs and cryptographic hashes for maximum reproducibility.
 
-## Interactive dashboards with Shiny
+### Reporting software versions
 
-A report answers the questions its author thought of. Sometimes readers want to ask their own: "what about my faculty?", "what about sleep instead of wellbeing?". **Shiny** turns R code into an interactive web application, without any knowledge of web programming.
+Even without a formal lockfile, always **report the versions** of Python and key analysis libraries in your thesis methods section. In Python, you can inspect versions directly:
 
-A Shiny app rests on three ideas. **Inputs** are the controls the reader uses, such as drop-down menus, buttons, and sliders. **Outputs** are what the app shows in response, such as plots and tables. Every app therefore has two parts: the **user interface** (`ui`), which describes what the user sees, the inputs and the places for the outputs, and the **server** function, which contains the R code that produces the outputs from the inputs. The third idea is what makes Shiny work: **reactivity**. Whenever an input changes, Shiny works out which outputs depend on it and reruns only their code. @fig-reactivity shows the connections in a wellbeing dashboard: choosing a different faculty updates both the plot and the table, while choosing a different measure updates them without refiltering the data.
+```{python}
+import sys
+import statsmodels
+import sklearn
+import pandas as pd
+
+print(f"Python: {sys.version.split()[0]}")
+print(f"pandas: {pd.__version__}")
+print(f"statsmodels: {statsmodels.__version__}")
+print(f"scikit-learn: {sklearn.__version__}")
+```
+
+## Interactive dashboards with Shiny for Python
+
+A static thesis report answers only the questions its author anticipated. Readers, reviewers, and policymakers often want to ask their own questions: *"What does the trend look like for my faculty?"* or *"What if we examine sleep duration rather than overall wellbeing?"*
+
+**Shiny for Python** turns Python data analysis into an interactive web dashboard without requiring HTML, CSS, or JavaScript expertise.
+
+A Shiny app is organized around three concepts:
+
+1. **Inputs**: The interactive UI widgets the user controls (drop-downs, radio buttons, sliders).
+2. **Outputs**: The visual elements the app displays (plots, dynamic tables, text cards).
+3. **Reactivity**: The engine that links them. When an input changes, Shiny automatically re-executes only the outputs and calculations that depend on that specific input (@fig-reactivity).
 
 ```{mermaid}
 %%| label: fig-reactivity
-%%| fig-cap: "Reactivity in the wellbeing dashboard. When an input changes, everything downstream of it is updated."
+%%| fig-cap: "Reactivity in the wellbeing dashboard. When an input changes, only downstream elements update."
 flowchart LR
-  F[Input:<br/>faculty] --> S["selected()<br/>filter the data"]
-  S --> P[Output:<br/>trend plot]
-  S --> T[Output:<br/>summary table]
-  M[Input:<br/>measure] --> P
+  F["Input:<br/>faculty"] --> S["@reactive.calc<br/>selected() filtered data"]
+  S --> P["Output:<br/>trend plot"]
+  S --> T["Output:<br/>summary table"]
+  M["Input:<br/>measure"] --> P
   M --> T
 ```
 
 ### A wellbeing dashboard
 
-The complete app, saved as a file called `app.R`, is:
+Here is the complete application code, saved as `app.py`:
 
-```r
-library(shiny)
-library(bslib)
-library(dplyr)
-library(ggplot2)
-library(data2thesis)
+```python
+from shiny import App, render, ui, reactive
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import data2thesis as dt
 
-# Semester records with each student's faculty and study mode
-wellbeing_data <- semesters |>
-  left_join(students |> select(student_id, faculty, study_mode), join_by(student_id))
+students = dt.students
+semesters = dt.semesters
 
-measures <- c("Wellbeing (0-100)" = "wellbeing",
-              "Sleep (hours a night)" = "sleep_hours",
-              "Study (hours a week)" = "study_hours")
-
-ui <- page_sidebar(
-  title = "Graduate student wellbeing",
-  sidebar = sidebar(
-    selectInput("faculty", "Faculty", choices = sort(unique(wellbeing_data$faculty))),
-    radioButtons("measure", "Measure", choices = measures)
-  ),
-  card(plotOutput("trend")),
-  card(tableOutput("summary"))
+wellbeing_data = semesters.merge(
+    students[["student_id", "faculty", "study_mode"]], 
+    on="student_id"
 )
 
-server <- function(input, output, session) {
-  selected <- reactive({
-    wellbeing_data |> filter(faculty == input$faculty)
-  })
-
-  output$trend <- renderPlot({
-    selected() |>
-      summarise(mean = mean(.data[[input$measure]], na.rm = TRUE),
-                .by = c(semester, study_mode)) |>
-      ggplot(aes(x = semester, y = mean, colour = study_mode)) +
-      geom_line(linewidth = 1) +
-      geom_point(size = 3) +
-      labs(x = "Semester", y = names(measures)[measures == input$measure],
-           colour = "Study mode") +
-      theme_minimal(base_size = 14)
-  })
-
-  output$summary <- renderTable({
-    selected() |>
-      summarise(students = n_distinct(student_id),
-                mean = mean(.data[[input$measure]], na.rm = TRUE),
-                .by = semester)
-  })
+measure_choices = {
+    "wellbeing": "Wellbeing (0-100)",
+    "sleep_hours": "Sleep (hours a night)",
+    "study_hours": "Study (hours a week)"
 }
 
-shinyApp(ui, server)
+app_ui = ui.page_sidebar(
+    ui.sidebar(
+        ui.input_select(
+            "faculty", "Faculty", 
+            choices=sorted(wellbeing_data["faculty"].unique().tolist())
+        ),
+        ui.input_radio_buttons(
+            "measure", "Measure", 
+            choices=measure_choices
+        )
+    ),
+    ui.card(ui.output_plot("trend")),
+    ui.card(ui.output_table("summary")),
+    title="Graduate Student Wellbeing Dashboard"
+)
+
+def server(input, output, session):
+    @reactive.calc
+    def selected():
+        return wellbeing_data[wellbeing_data["faculty"] == input.faculty()]
+
+    @render.plot
+    def trend():
+        df = selected()
+        meas = input.measure()
+        summary = (
+            df.groupby(["semester", "study_mode"])[meas]
+            .mean()
+            .reset_index()
+        )
+        fig, ax = plt.subplots(figsize=(6.5, 3.8))
+        sns.lineplot(
+            data=summary, x="semester", y=meas, hue="study_mode", 
+            marker="o", linewidth=2.5, markersize=8, ax=ax
+        )
+        ax.set_xlabel("Semester")
+        ax.set_ylabel(measure_choices[meas])
+        ax.set_xticks([1, 2, 3, 4])
+        ax.grid(True, linestyle="--", alpha=0.5)
+        plt.tight_layout()
+        return fig
+
+    @render.table
+    def summary():
+        df = selected()
+        meas = input.measure()
+        tbl = (
+            df.groupby("semester")
+            .agg(
+                students=("student_id", "nunique"),
+                mean=(meas, "mean")
+            )
+            .reset_index()
+            .round(2)
+        )
+        tbl.columns = ["Semester", "Students", "Mean"]
+        return tbl
+
+app = App(app_ui, server)
 ```
 
-The code follows the three ideas. The layout comes first: the function `page_sidebar()` from the **bslib** package lays out the page, with a title, a sidebar with the inputs, and the main area with two **cards**, one for the plot and one for the table. The inputs are created by `selectInput()`, a drop-down menu whose value is available in the server as `input$faculty`, and by `radioButtons()`, which creates the `input$measure` choice; the names in `measures` are shown to the user, and the values are the column names. The outputs are reserved by `plotOutput("trend")` and `tableOutput("summary")`, and the server fills them by assigning to `output$trend` and `output$summary` with `renderPlot()` and `renderTable()`.
+The structure is clear:
 
-Reactivity is handled by `reactive()`, which creates `selected()`, the data for the chosen faculty. It is recalculated only when `input$faculty` changes, and both outputs use it. Finally, the expression `.data[[input$measure]]` picks the column whose name is stored in `input$measure`, the usual way to use a column chosen by the user inside dplyr and ggplot2.
+- `app_ui` defines the layout: `page_sidebar()` creates a modern sidebar containing `input_select()` and `input_radio_buttons()`, alongside two content cards reserving spots for `output_plot("trend")` and `output_table("summary")`.
+- `server` holds the logic: `@reactive.calc` defines `selected()`, an intermediate filtered DataFrame that updates only when `input.faculty()` changes. Both outputs consume `selected()`.
+- `@render.plot` and `@render.table` produce the visual elements dynamically.
 
-Click **Run App** in RStudio, and the dashboard opens in a window. @fig-dashboard-plot shows the plot it draws for the Faculty of Education and the wellbeing measure.
+Running `shiny run --reload app.py` launches the dashboard locally. @fig-dashboard-plot shows the plot generated when Education is selected.
 
-```{r}
+```{python}
 #| label: fig-dashboard-plot
-#| fig-cap: "The dashboard's plot for the Faculty of Education, showing average wellbeing by semester for full-time and part-time students."
-#| fig-alt: "Line chart with two lines, full-time and part-time students, showing average wellbeing on the 0 to 100 scale over semesters 1 to 4 for the Faculty of Education."
+#| fig-cap: "The dashboard's trend plot for the Faculty of Education, displaying mean wellbeing across semesters by study mode."
+#| fig-alt: "Line chart with two lines (full-time and part-time students) showing average wellbeing on the 0 to 100 scale over semesters 1 to 4 for the Faculty of Education."
 #| fig-width: 6.5
 #| fig-height: 3.8
 #| echo: false
-semesters |>
-  left_join(students |> select(student_id, faculty, study_mode), join_by(student_id)) |>
-  filter(faculty == "Education") |>
-  summarise(mean = mean(wellbeing, na.rm = TRUE), .by = c(semester, study_mode)) |>
-  ggplot(aes(x = semester, y = mean, colour = study_mode)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 3) +
-  labs(x = "Semester", y = "Wellbeing (0-100)", colour = "Study mode") +
-  theme_minimal(base_size = 14)
+wellbeing_data = semesters.merge(
+    students[["student_id", "faculty", "study_mode"]], 
+    on="student_id"
+)
+edu = wellbeing_data[wellbeing_data["faculty"] == "Education"]
+summary = (
+    edu.groupby(["semester", "study_mode"])["wellbeing"]
+    .mean()
+    .reset_index()
+)
+fig, ax = plt.subplots(figsize=(6.5, 3.8))
+sns.lineplot(
+    data=summary, x="semester", y="wellbeing", hue="study_mode", 
+    marker="o", linewidth=2.5, markersize=8, ax=ax
+)
+ax.set_xlabel("Semester")
+ax.set_ylabel("Wellbeing (0-100)")
+ax.set_xticks([1, 2, 3, 4])
+ax.grid(True, linestyle="--", alpha=0.5)
+plt.tight_layout()
+plt.show()
 ```
 
-To share an app with people who do not use R, it must run on a server: **shinyapps.io** offers free hosting for small apps, and many universities run **Posit Connect**. **Shinylive** can even turn a simple app into a web page that runs entirely in the reader's browser, with no server, using the same webR technology as this book's playground. Like any published result, a dashboard must protect participants: this one shows only averages, never individual students.
+### Sharing dashboards
+
+To share an app with stakeholders who do not have Python installed:
+
+- **shinyapps.io**: Free and paid cloud hosting for Shiny apps.
+- **Posit Connect**: Enterprise server commonly hosted by universities and research institutes.
+- **Shinylive**: An extraordinary technology that runs Shiny for Python entirely inside the user's web browser using WebAssembly (Pyodide), requiring no backend server at all.
 
 ## Open science
 
-Reproducibility inside your own project is the first step. **Open science** goes further: making research checkable and reusable by others.
+Reproducibility within your own computer is the foundation. **Open science** broadens the horizon: ensuring research is accessible, inspectable, and reusable by the global scientific community.
 
 ### Sharing data and code
 
-Share the code that produced every result, and the data if you can. Repositories such as **OSF** (the Open Science Framework) and **Zenodo** store them permanently and give them a **DOI**, a permanent identifier that can be cited in the thesis. A good package includes the raw data (or instructions for obtaining it), the cleaning and analysis code, the Quarto source of the report, the `renv.lock` file, and a **codebook** describing every variable, like the specification of the wellbeing dataset. A **licence** tells others what they may do with it: CC BY for data and text, and the MIT licence for code, are common choices.
+Sharing code and data enables independent verification and accelerates scientific discovery. Trusted repositories such as the **Open Science Framework (OSF)** and **Zenodo** archive research artifacts permanently and assign them a **DOI** (Digital Object Identifier) that can be formally cited in publications.
 
-### Protecting participants
+A complete reproduction package contains:
 
-Research data about people can only be shared if the people cannot be identified. Removing names and student numbers is not enough: combinations of ordinary variables can identify someone. In the wellbeing data, a few combinations of faculty, study mode, gender, and having children describe only a handful of students:
+1. The raw data (or explicit access instructions if restricted).
+2. The data cleaning and analysis Python scripts.
+3. The Quarto source files (`.qmd`) and bibliography.
+4. The environment specification (`requirements.txt` or `uv.lock`).
+5. A comprehensive **codebook** detailing every variable and unit of measurement.
+6. An open **license**: CC-BY for data/text and the MIT or Apache 2.0 license for code.
 
-```{r}
-small_cells <- students |>
-  count(faculty, study_mode, gender, has_children) |>
-  arrange(n)
-head(small_cells, 4)
+### Protecting participants and anonymisation
+
+Human subject data must never be shared in a form that permits identification. Simply stripping student names and ID numbers is insufficient, because combinations of ordinary demographic variables can uniquely identify individuals:
+
+```{python}
+small_cells = (
+    students.groupby(["faculty", "study_mode", "gender", "has_children"], observed=False)
+    .size()
+    .reset_index(name="n")
+    .sort_values("n")
+)
+small_cells.head(4)
 ```
 
-Only `r small_cells$n[1]` students are, for example, `r tolower(small_cells$study_mode[1])` `r tolower(small_cells$gender[1])` students with children in the Faculty of `r small_cells$faculty[1]`; in a small department, such a description may point to recognisable people. Before sharing, such **small cells** are protected, for example by grouping categories, removing variables that are not needed, or sharing only summary data. Ethics approval and the consent form set what may be shared: if the consent form told students that only anonymised data would be shared, that is all that may be shared. When the real data cannot be shared at all, a **synthetic** dataset with the same structure, like the one in this book, lets others run the code.
+In the output above, only 3 students are part-time male students with children in the Faculty of Education. In a small academic department, that combination easily identifies real individuals.
 
-### Preregistration
+To protect participants before public data sharing:
 
-Every analysis involves choices that are reasonable either way: whether to exclude outliers, whether to transform a skewed variable, which test to use, which control variables to include. Chapter 5 warned that when these choices are made after seeing the data, they can be steered, often unconsciously, towards a significant result. A simulation shows how much this matters. The code below creates data with no real difference between two groups, analyses it in five defensible ways, and records whether the first analysis, and whether *any* of the five, gives a p-value below 0.05:
+- Group rare categories (e.g., binning ages or combining sparse faculties).
+- Top-code or bottom-code extreme outliers.
+- Omit unnecessary demographic identifiers.
+- When raw data cannot be published due to privacy or ethics restrictions, generate and share a **synthetic dataset** with identical statistical distributions, allowing peers to verify code execution without exposing participant records.
 
-```{r}
-forking_paths <- function() {
-  group     <- rep(c("A", "B"), each = 30)
-  score     <- rexp(60, rate = 1 / 10)       # a skewed score, no real group difference
-  covariate <- rnorm(60)
-  z <- abs(as.numeric(scale(score)))
-  p <- c(
-    t_test         = t.test(score ~ group)$p.value,
-    no_outliers    = t.test(score[z < 2] ~ group[z < 2])$p.value,
-    log_scale      = t.test(log(score) ~ group)$p.value,
-    rank_test      = wilcox.test(score ~ group)$p.value,
-    with_covariate = summary(lm(score ~ group + covariate))$coefficients[2, 4]
-  )
-  c(first_analysis = p[["t_test"]] < 0.05, any_analysis = any(p < 0.05))
-}
+### Preregistration and the garden of forking paths
 
-set.seed(17)
-false_positives <- rowMeans(replicate(2000, forking_paths()))
-false_positives
+Every empirical study involves dozens of defensible analytical decisions: whether to exclude outliers beyond 2 or 3 standard deviations, whether to log-transform a skewed variable, which non-parametric test to substitute, or which covariates to include in regression models.
+
+When these decisions are made *after* inspecting the data, researchers naturally (and often subconsciously) gravitate toward choices that yield statistically significant results ($p < 0.05$). This phenomenon is known as the **garden of forking paths** [@gelman2014].
+
+A Python simulation illustrates the magnitude of this problem. In the simulation below, we generate 60 observations from an exponential distribution with **zero real group difference**. We then analyze the data five defensible ways and record how often the first analysis, and how often *any* of the five analyses, produces a false positive ($p < 0.05$):
+
+```{python}
+import numpy as np
+import pandas as pd
+import scipy.stats as stats
+import statsmodels.api as sm
+
+def forking_paths():
+    group = np.array(["A"] * 30 + ["B"] * 30)
+    score = np.random.exponential(scale=10, size=60)
+    covariate = np.random.normal(size=60)
+    
+    score_a = score[group == "A"]
+    score_b = score[group == "B"]
+    
+    # 1. Standard t-test
+    p_ttest = stats.ttest_ind(score_a, score_b).pvalue
+    
+    # 2. Outlier-trimmed t-test (|z| < 2)
+    z = np.abs((score - np.mean(score)) / np.std(score, ddof=1))
+    p_no_outliers = stats.ttest_ind(
+        score[(z < 2) & (group == "A")], 
+        score[(z < 2) & (group == "B")]
+    ).pvalue
+    
+    # 3. Log-scale t-test
+    p_log = stats.ttest_ind(np.log(score_a), np.log(score_b)).pvalue
+    
+    # 4. Rank test (Mann-Whitney U)
+    p_rank = stats.mannwhitneyu(score_a, score_b).pvalue
+    
+    # 5. Linear model with covariate
+    X = sm.add_constant(np.column_stack([(group == "B").astype(int), covariate]))
+    p_cov = sm.OLS(score, X).fit().pvalues[1]
+    
+    p_vals = [p_ttest, p_no_outliers, p_log, p_rank, p_cov]
+    return {
+        "first_analysis": p_ttest < 0.05,
+        "any_analysis": any(p < 0.05 for p in p_vals)
+    }
+
+np.random.seed(17)
+sim_results = pd.DataFrame([forking_paths() for _ in range(1000)])
+sim_results.mean()
 ```
 
-A single planned analysis gives a false positive in about `r round(100 * false_positives[["first_analysis"]])`% of the simulated studies, as intended. Choosing afterwards among five reasonable analyses raises the rate to about `r round(100 * false_positives[["any_analysis"]])`%, although there is nothing to find. No individual choice is wrong; the problem is choosing after seeing the result. This is sometimes called the **garden of forking paths**, and preregistration is the way out of it.
+The single pre-planned t-test produces a false positive in approximately 5% of runs, exactly as the nominal $\alpha = 0.05$ level dictates. However, choosing opportunistically among five defensible analyses inflates the false positive rate to over 10%—even though the true effect is exactly zero!
 
-**Preregistration** means recording the hypotheses, the design, and the planned analysis before seeing the data, in a time-stamped public registry such as OSF Registries or AsPredicted. It separates **confirmatory** analyses, planned in advance, from **exploratory** ones, found along the way, and protects against the temptation, conscious or not, to try analyses until one gives a significant result (Chapter 7). Exploratory findings are still welcome, but they are reported as such. In a **registered report**, a journal reviews and accepts the plan before the data is collected, so publication does not depend on the results.
+**Preregistration** solves this dilemma. Researchers register their hypotheses, experimental design, and planned statistical model on an independent, time-stamped registry (such as OSF Registries or AsPredicted) before collecting or inspecting the data. Preregistration clearly separates **confirmatory** analyses from exploratory findings. In a **Registered Report**, a journal peer-reviews and accepts the study protocol before data collection commences, ensuring publication regardless of whether the eventual findings are statistically significant.
 
 ### Citing software
 
-R and its packages are the work of researchers who depend on being cited. The function `citation()` gives the recommended citation for R itself, and `citation("lme4")` for a package:
+Open-source scientific Python packages are developed by researchers and community volunteers whose academic careers depend on citations. Always cite the specific packages used in your thesis.
 
-```{r}
-citation("lme4")
-```
+Official citation guidelines and BibTeX records are available on package documentation pages (e.g., McKinney, 2010 for pandas; Pedregosa et al., 2011 for scikit-learn; Virtanen et al., 2020 for SciPy; Seabold & Perktold, 2010 for statsmodels).
 
-A methods section might say: "Analyses were carried out in R version `r paste(R.version$major, R.version$minor, sep = ".")` [R Core Team], with mixed models fitted using lme4 version `r packageVersion("lme4")` [Bates et al., 2015]." Chapter 18 adds the question of disclosing the use of AI tools.
+A methodology section should state:
+
+> *"Analyses were conducted in Python (v3.13), utilizing pandas (v2.2) for data manipulation, SciPy (v1.14) and statsmodels (v0.14) for statistical modeling, and scikit-learn (v1.6) for machine learning."*
 
 ::: {.callout-note icon="false"}
 ## In your field: psychology and medicine
 
-Psychology learned the importance of these practices the hard way. In 2015, the Open Science Collaboration repeated 100 studies published in leading psychology journals. Of the original studies, 97% had reported significant results; of the replications, only 36% did, and the effects were on average about half as large [@osc2015]. Many causes were identified, among them small samples, flexible analyses, and the publication of only significant results. The response has been a wave of preregistration, registered reports, and data and code sharing, now expected by many journals. Medicine went through a similar change earlier: since 2005, leading medical journals have required clinical trials to be registered before the first patient is enrolled, and reporting guidelines such as CONSORT set out what a trial report must contain.
+Psychology and the biomedical sciences learned the critical importance of reproducible workflows through painful experience. In 2015, the Open Science Collaboration attempted to replicate 100 benchmark psychology studies. While 97% of the original papers claimed significant findings, only 36% replicated successfully, with replication effect sizes averaging half the original magnitude [@osc2015]. The primary culprits identified were underpowered samples, flexible post-hoc analyses, and publication bias.
+
+Today, leading journals strongly encourage or mandate preregistration, open data, and open code. Clinical medicine established mandatory registry requirements (ClinicalTrials.gov) earlier, ensuring all initiated clinical trials report their results regardless of outcome.
 :::
 
 ## Keeping a history with git (optional)
 
-As a project grows, files multiply: `analysis.R`, `analysis_v2.R`, `analysis_final.R`, `analysis_final_really.R`. **Version control** replaces this with a single copy of each file and a complete history of every change. **git** is the standard version control system, and **GitHub** is a website for storing git projects online, sharing them, and working on them with others [@bryan2018].
+As a thesis project evolves, files quickly proliferate: `thesis_final.qmd`, `thesis_final_v2.qmd`, `thesis_final_supervisor_edits.qmd`. **Version control** replaces file duplication with a clean, linear history of every modification made to the project.
 
-git is not required for anything in this book, and it has a learning curve, so this section is an introduction for when you are ready. A **repository** is a project folder whose history git keeps. A **commit** is a saved snapshot of the project, with a short message saying what changed ("Remove duplicate survey rows"), and any commit can be returned to. **Pushing** copies the commits to GitHub, which is also an off-site backup, and **pulling** brings down changes made elsewhere.
+**Git** is the industry-standard version control system, and **GitHub** is the premier platform for cloud backup, team collaboration, and scientific dissemination [@bryan2018].
 
-RStudio has a **Git pane** that does all of this with buttons: tick the changed files, click *Commit*, write a message, and click *Push*. The **usethis** package sets things up from the Console: `usethis::use_git()` turns the current project into a repository, and `usethis::use_github()` connects it to GitHub. Never commit private data: list data files in the project's `.gitignore` file, and git will leave them out.
+Key Git concepts:
+
+- **Repository**: The project directory whose complete history Git tracks.
+- **Commit**: A snapshot of tracked files at a specific moment in time, accompanied by a descriptive message (e.g., `"Filter duplicate survey responses in ch3"`).
+- **Push / Pull**: Synchronizing local commits with a remote repository on GitHub.
+- **`.gitignore`**: A text file specifying files Git must ignore (e.g., raw sensitive data, temporary cache directories, `.venv/`).
+
+Modern code editors (VS Code, Positron, PyCharm) provide intuitive visual Git interfaces with buttons for staging changes, writing commit messages, and pushing to GitHub.
 
 ## Common misconceptions
 
-Reproducibility is often mistaken for something narrower or more technical than it is.
-
-- **"Reproducibility is only about sharing code."** It covers every step from raw data to reported number, including the decisions made along the way and the software versions used.
-- **"Copying a few numbers by hand is harmless."** It is the most common way that a thesis falls out of step with its analysis.
-- **"If each analysis choice is defensible, the result is sound."** Choosing among defensible analyses after seeing the results inflates false positives; the choices must be made in advance or reported as exploratory.
-- **"Removing names makes data anonymous."** Combinations of ordinary variables can identify people; small cells must be protected before data is shared.
+- **"Reproducibility is just about sharing a code snippet."** Reproducibility encompasses the full pipeline from raw data to final published estimates, including documentation of every data exclusion, environment dependencies, and random seeds.
+- **"Copying and pasting a few numbers manually is harmless."** Manual transcriptions are the single most frequent source of discrepancies between analytical code and thesis prose.
+- **"If every analytical choice is reasonable, the resulting p-value is valid."** Evaluating multiple defensible choices after seeing the data severely inflates false positive rates (the garden of forking paths).
+- **"Deleting names makes data anonymous."** High-dimensional demographic combinations readily re-identify participants; demographic cell sizes must be scrutinized prior to public release.
 
 ## Chapter review
 
 ### Summary
 
-- Reproducibility is a matter of research integrity: a result that cannot be checked must be taken on trust. Reproducible research can be recomputed from the same data and code; copying results by hand is the most common way that documents fall out of step with the analysis.
-- A Quarto document combines a YAML header, Markdown text, code chunks, and inline code. Rendering runs the code and places the results in the output: HTML, Word, PDF, slides, or a book.
-- Chunk options control each chunk; labelled tables and figures are numbered and cross-referenced; citations come from a BibTeX file; equations use LaTeX notation; parameters produce several versions of one report. R Markdown works in much the same way.
-- renv records and restores package versions; report the versions of R and key packages, and cite them.
-- A Shiny app has a user interface of inputs and outputs, and a server that computes the outputs; reactivity updates only what depends on a changed input.
-- Choosing among reasonable analyses after seeing the data inflates false positives (the garden of forking paths); preregistration prevents it.
-- Open science means sharing data and code with a DOI and a licence, protecting participants from identification, preregistering confirmatory analyses, and citing software.
-- git and GitHub keep the history of a project; they are optional but valuable as projects grow.
+- Reproducibility is a pillar of scientific integrity. An analysis is reproducible when independent researchers can run the same code on the same data and obtain identical results.
+- Quarto documents (`.qmd`) integrate narrative Markdown, Python code chunks, dynamic tables, plots, LaTeX equations, and BibTeX citations into a unified, reproducible source that compiles to HTML, Word, PDF, or presentations.
+- Virtual environments (`venv`, `uv`) and `requirements.txt` capture library dependencies so that environments can be recreated reliably on any machine.
+- Shiny for Python creates reactive dashboards that empower readers to interactively explore findings without modifying code.
+- Open science practices include depositing code and data in DOI-assigning archives (OSF, Zenodo), protecting demographic privacy, preregistering confirmatory analyses, and citing open-source tools.
+- Git provides robust version control, recording every revision and preventing accidental data or code loss.
 
 ### Key terms
 
-Reproducibility, replicability, Quarto, R Markdown, render, YAML header, Markdown, code chunk, inline code, chunk option, knitr, Pandoc, cross-reference, citation, BibTeX, citation style (CSL), LaTeX, output format, parameter, renv, lockfile, Shiny, user interface, server, input, output, reactivity, reactive expression, open science, DOI, codebook, licence, anonymisation, small cells, synthetic data, garden of forking paths, preregistration, confirmatory analysis, exploratory analysis, registered report, version control, git, repository, commit, push, GitHub.
+Reproducibility, replicability, Quarto, Jupyter engine, YAML header, Markdown, code chunk, inline code, chunk options, cross-reference, BibTeX, CSL style, LaTeX, parameterised reports, virtual environment, `requirements.txt`, lockfile, Shiny for Python, UI, server, reactivity, reactive calculation, open science, DOI, Zenodo, OSF, anonymisation, small cells, synthetic data, garden of forking paths, preregistration, confirmatory analysis, exploratory analysis, Registered Report, Git, repository, commit, push, pull, GitHub, `.gitignore`.
 
 ## Exercises
 
-The [playground](../playground/chapter17.html) has these and more, with hints and solutions.
+The interactive [Playground](../playground/chapter17.html) provides browser-based exercises and complete solutions:
 
-1. Create the tiny Quarto document of this chapter, render it, then change one friend's sleep and render it again. Round the mean to one decimal place with inline code.
-2. Turn one of your analyses from an earlier chapter into a Quarto document with a numbered table, a numbered figure, and a sentence with inline numbers. Render it to HTML and to Word.
-3. Add two references to a `references.bib` file, cite them in the document, and switch the citation style with a `csl:` file.
-4. Add a slider to the Shiny dashboard that chooses the semesters shown.
-5. Look at the four smallest cells in the table of faculty, study mode, gender, and children. Decide which variable you would remove or group before sharing the data, and explain why.
-6. Add a sixth analysis to `forking_paths()`, such as a t-test that excludes the five highest scores, and describe how the rate of false positives for any analysis changes.
+1. Create a minimal Quarto document (`.qmd`) using Python, compute the mean and standard deviation of three numbers, display them with inline code, and render the document to HTML.
+2. Build a parameterised Quarto report that accepts a `faculty` string parameter and filters the `students` dataset to display the count and average wellbeing for that faculty.
+3. Inspect demographic combinations in the `students` dataset across `faculty`, `study_mode`, and `gender`. Identify any cell with fewer than 5 respondents and propose an aggregation strategy to preserve privacy.
+4. Modify the `forking_paths()` simulation to add a sixth analytical path (e.g., a trimmed t-test excluding the 5 highest scores). Observe how the overall false positive rate increases.
+5. Build a Shiny for Python dashboard with a slider that selects the semester range (1 to 4) and displays a line plot of wellbeing over the chosen semesters.
 
 ## Further reading
 
-- The Quarto guide at quarto.org covers every feature of this chapter, with examples.
-- *Mastering Shiny* [@wickham2021shiny], free online, is the definitive introduction to Shiny.
-- "Good enough practices in scientific computing" [@wilson2017] is a short, practical list of habits for researchers who are not programmers.
-- "Excuse me, do you have a moment to talk about version control?" [@bryan2018] makes the case for git in research, in plain language.
+- The official Quarto documentation at [quarto.org](https://quarto.org) provides exhaustive guides and examples for Python data science.
+- The Shiny for Python guide at [shiny.posit.co/py](https://shiny.posit.co/py/) covers reactive UI development and dashboard deployment.
+- Wilson et al. (2017), *"Good enough practices in scientific computing"*, provides practical guidelines for reproducible academic workflows.
+- Bryan (2018), *"Excuse me, do you have a moment to talk about version control?"*, offers a friendly introduction to Git and GitHub for researchers.

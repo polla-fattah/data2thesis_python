@@ -4,41 +4,53 @@ author: "Elaf"
 format:
   html: default
   docx: default
+jupyter: python3
 bibliography: references.bib
 execute:
   echo: false
 ---
 
-```{r}
+```{python}
 #| label: setup
 #| message: false
-library(dplyr)
-library(ggplot2)
+import os
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
-# The solutions folder is one level below the data
-students  <- read.csv("../students.csv")
-semesters <- read.csv("../semesters.csv")
-first_semester <- semesters |> filter(semester == 1)
+data_dir = ".." if os.path.exists("../students.csv") else "."
+students = pd.read_csv(os.path.join(data_dir, "students.csv"))
+semesters = pd.read_csv(os.path.join(data_dir, "semesters.csv"))
+first_semester = semesters[semesters['semester'] == 1]
+
+n_students = len(students)
+n_faculties = students['faculty'].nunique()
+mean_wb = round(first_semester['wellbeing'].mean(), 1)
 ```
 
 ## Sample
 
-The sample included `r nrow(students)` graduate students from
-`r n_distinct(students$faculty)` faculties. Their average wellbeing in the first
-semester was `r sprintf("%.1f", mean(first_semester$wellbeing, na.rm = TRUE))` on the
+The sample included `{python} n_students` graduate students from
+`{python} n_faculties` faculties. Their average wellbeing in the first
+semester was `{python} mean_wb` on the
 wellbeing index (0 to 100). @tbl-faculty shows wellbeing by faculty.
 
-```{r}
+```{python}
 #| label: tbl-faculty
 #| tbl-cap: "Wellbeing in the first semester, by faculty."
-first_semester |>
-  left_join(students, join_by(student_id)) |>
-  summarise(Students = n(),
-            Mean = mean(wellbeing, na.rm = TRUE),
-            SD = sd(wellbeing, na.rm = TRUE),
-            .by = faculty) |>
-  arrange(faculty) |>
-  knitr::kable(digits = 1, col.names = c("Faculty", "Students", "Mean", "SD"))
+merged = first_semester.merge(students, on='student_id')
+summary_table = (
+    merged.groupby('faculty')
+    .agg(
+        Students=('student_id', 'count'),
+        Mean=('wellbeing', 'mean'),
+        SD=('wellbeing', 'std')
+    )
+    .reset_index()
+    .round(1)
+)
+summary_table.columns = ['Faculty', 'Students', 'Mean', 'SD']
+summary_table
 ```
 
 ## Change over the programme
@@ -47,17 +59,18 @@ Wellbeing changed over the four semesters of the programme (@fig-wellbeing).
 Differences are described with standardised effect sizes [@cohen1988], and all
 results can be reproduced from the data and this document [@peng2011].
 
-```{r}
+```{python}
 #| label: fig-wellbeing
 #| fig-cap: "Average wellbeing by semester."
 #| fig-alt: "Line chart of average wellbeing over semesters 1 to 4."
-semesters |>
-  summarise(wellbeing = mean(wellbeing, na.rm = TRUE), .by = semester) |>
-  ggplot(aes(x = semester, y = wellbeing)) +
-  geom_line(linewidth = 1) +
-  geom_point(size = 3) +
-  labs(x = "Semester", y = "Average wellbeing (0 to 100)") +
-  theme_minimal()
-```
+trend = semesters.groupby('semester')['wellbeing'].mean().reset_index()
 
-## References
+plt.figure(figsize=(6, 3.5))
+plt.plot(trend['semester'], trend['wellbeing'], marker='o', linewidth=2, color='#1f77b4')
+plt.xlabel("Semester")
+plt.ylabel("Average wellbeing (0 to 100)")
+plt.xticks([1, 2, 3, 4])
+plt.grid(True, linestyle="--", alpha=0.5)
+plt.tight_layout()
+plt.show()
+```

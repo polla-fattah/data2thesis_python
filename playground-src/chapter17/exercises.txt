@@ -1,10 +1,10 @@
-FROM DATA TO THESIS: Using R for Non-Technical
+FROM DATA TO THESIS: Using Python for Non-Technical
 Playground, Chapter 17: Reproducible Research - Quarto and Shiny tasks
 
 These tasks use the files in this project. The numbers match the exercises on
-the playground page. The R parts of the page (Exercises 1, 5, 6, 7, 9, and 10,
-the questions, and the open tasks) are in exercises.R, with answers in
-solutions.R. Finished versions of the Quarto and Shiny files are in the
+the playground page. The Python parts of the page (Exercises 1, 5, 6, 7, 9, and 10,
+the questions, and the open tasks) are in exercises.py, with answers in
+solutions.py. Finished versions of the Quarto and Shiny files are in the
 solutions folder.
 
 Exercise 1: A sentence that writes itself
@@ -33,8 +33,8 @@ Exercise 3: References and a citation style
    render again.
 
 Exercise 4: A slider in the dashboard
-   Open app.R and click Run App. Then add a slider (sliderInput) that chooses
-   the range of semesters shown in the plot and the table.
+   Open app.py and run it with `shiny run --reload app.py`. Then add a slider
+   (ui.input_slider) that chooses the range of semesters shown in the plot and the table.
 
 Exercise 8: A report for each programme
    Render faculty-report.qmd for another faculty from the Terminal:
