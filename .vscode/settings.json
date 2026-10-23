@@ -1,7 +1,12 @@
 {
     "cSpell.words": [
-        "CRAN",
+        "pyodide",
         "subsetting",
-        "tibble"
+        "pandas",
+        "seaborn",
+        "statsmodels",
+        "scikit",
+        "pyreadstat",
+        "pypdf"
     ]
 }

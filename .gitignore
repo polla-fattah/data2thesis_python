@@ -21,7 +21,7 @@ downloads/*
 !downloads/FROM-DATA-TO-THESIS.pdf
 
 /.quarto/
-**/*.quarto_ipynb
+**/*.quarto_ipynb*
 
 # Temporary Office files
 ~$*

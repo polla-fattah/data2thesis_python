@@ -14,17 +14,17 @@ alternative hypothesis :: The claim that there is an effect or a difference, tes
 annotation :: Text, arrows, or shapes added to a plot to point out something specific.
 anonymisation :: Removing or altering information so that the people in a dataset cannot be identified.
 ANOVA :: Analysis of variance: a test of whether the means of three or more groups differ, by comparing variation between groups with variation within them.
-API :: Application programming interface: a way for one program to send requests to another, such as R sending text to a language model.
-API key :: A secret code that identifies you to an online service's API. Keep it in `.Renviron`, never in a script.
-argument :: A value given to a function inside its brackets, such as `na.rm = TRUE`, that controls what the function does.
+API :: Application programming interface: a way for one program to send requests to another, such as Python sending text to a language model.
+API key :: A secret code that identifies you to an online service's API. Keep it in an environment variable or `.env` file, never hardcoded in a script.
+argument :: A value passed to a function inside its parentheses, such as `dropna=True`, that controls what the function does.
 ARIMA :: A family of time series models that forecast from the autocorrelation of the series and past random shocks.
 artificial intelligence :: Computer systems that perform tasks usually needing human intelligence, such as understanding language; in this book, mainly large language models.
-assignment :: Storing a value in an object with `<-`, as in `x <- 5`.
+assignment :: Storing a value in a variable with `=`, as in `x = 5`.
 attrition :: The loss of participants from a study over time.
 autocorrelation :: The correlation between a time series and itself a number of steps (lags) earlier.
 bar chart :: A plot of counts or values as bars, one per category.
 baseline model :: The simplest possible model, such as predicting the mean for everyone, used as a benchmark for real models.
-Bayesian information criterion (BIC) | BIC :: A criterion for comparing models that rewards fit and penalises complexity. In mclust, higher BIC is better.
+Bayesian information criterion (BIC) | BIC :: A criterion for comparing models that rewards fit and penalises complexity. In scikit-learn Gaussian mixture models, lower BIC indicates a better model.
 benchmark forecast :: A simple forecast, such as the mean or the value a season earlier, that any serious method should beat.
 between-group variation :: How much group means differ from the overall mean; the numerator of the ANOVA F statistic.
 bias :: In a neural network, the constant added to a neuron's weighted total (like an intercept). More generally, a systematic error.
@@ -36,7 +36,7 @@ bootstrap :: Estimating uncertainty by repeatedly resampling the data with repla
 bootstrap sample :: A sample of the same size as the data, drawn from it at random with replacement.
 border point :: In DBSCAN, a case near a core point that belongs to its cluster but is not itself a core point.
 box plot :: A plot that shows the median, the quartiles, and unusual values of a variable.
-broom :: A package that turns model results into tidy data frames, with `tidy()`, `glance()`, and `augment()`.
+summary table :: A tidy table that summarizes model results (coefficients, standard errors, p-values), constructed with pandas from statsmodels or scikit-learn outputs.
 central limit theorem :: The result that the sampling distribution of a mean is approximately normal for large enough samples, whatever the shape of the data.
 centring :: Subtracting the mean from a variable, so that zero means "average"; often used before fitting interactions.
 chi-square test :: A test for categorical data: whether counts fit expected proportions (goodness of fit), or whether two categorical variables are related (independence).
@@ -51,14 +51,14 @@ codebook :: A description of every variable in a dataset or, in qualitative codi
 coefficient path :: A plot of how each coefficient of a regularised model changes as the penalty changes.
 Cohen's *d* :: An effect size for the difference between two means, in standard deviations.
 Cohen's kappa :: A measure of agreement between two coders or classifiers, corrected for the agreement expected by chance.
-comment :: Text in a script after `#`, which R ignores; used to explain the code.
+comment :: Text in a script after `#`, which Python ignores; used to explain the code.
 commit :: In git, a saved snapshot of a project, with a message describing the change.
 confidence interval :: A range of plausible values for a population quantity, calculated from a sample, with a stated level of confidence such as 95%.
 confirmatory analysis :: An analysis planned before seeing the data, to test a specific hypothesis.
 confirmatory factor analysis :: Factor analysis that tests a factor structure specified in advance.
 confounder :: A variable related to both the predictor and the outcome, which can create or hide an apparent effect.
 confusion matrix :: A table of predicted against actual classes, showing true and false positives and negatives.
-Console :: The RStudio pane where R commands are run and results appear.
+terminal | interactive window :: The editor pane or interactive REPL where Python commands are run and results appear.
 convolutional network :: A type of deep neural network designed for images.
 core point :: In DBSCAN, a case with at least `minPts` cases within distance `eps`.
 correlation coefficient :: A number from −1 to 1 measuring the strength and direction of a straight-line relationship between two variables.
@@ -70,9 +70,9 @@ cross-loading :: An item that loads substantially on more than one factor.
 cross-reference :: A reference in a Quarto document, such as `@fig-wellbeing`, that becomes a numbered link.
 cross-validation :: Estimating how well a model predicts new data by repeatedly fitting it on part of the training data and testing it on the rest.
 CSV file :: A plain-text file of comma-separated values, the most common format for sharing data tables.
-data frame :: R's table of data: columns are variables, rows are cases.
+data frame | DataFrame :: A two-dimensional tabular data structure in pandas: columns are variables, rows are cases.
 data leakage :: Information from the test data reaching the model during training, which makes its performance look better than it is.
-data structure :: The way data is organised in R: vector, factor, data frame, matrix, or list.
+data structure :: The way data is organised in Python: list, dictionary, tuple, NumPy array, or pandas DataFrame.
 data type :: The kind of value: numeric, integer, character, or logical.
 DBSCAN :: A clustering method that finds dense regions of cases and labels cases in sparse regions as noise.
 decision tree :: A model that predicts by a series of yes-or-no questions about the predictors.
@@ -98,7 +98,7 @@ elbow method :: Choosing the number of clusters where adding more stops reducing
 ensemble :: A model that combines the predictions of many models, such as a random forest.
 epoch :: One pass through the training data when training a neural network.
 eps :: In DBSCAN, the radius of the neighbourhood around each case.
-error message :: R's message when something goes wrong, which usually says what and where.
+error message | exception :: Python's message when something goes wrong, providing an informative traceback of what occurred and where.
 eta squared :: An effect size for ANOVA: the share of the variation in the outcome explained by the groups.
 expected count :: In a chi-square test, the count expected in a cell if the null hypothesis were true.
 explanation :: Using a model to understand why something happens, rather than to predict new cases.
@@ -108,7 +108,7 @@ external validation :: Checking clusters or predictions against known categories
 F statistic :: In ANOVA, the ratio of between-group to within-group variation.
 F1 score :: A single measure combining precision and recall (their harmonic mean).
 facet :: A small panel of a plot showing one subgroup; `facet_wrap()` makes one panel per group.
-factor :: In R, a categorical variable with a fixed set of levels. In factor analysis, a hidden (latent) variable behind several items.
+factor :: In pandas, a categorical series (`Categorical`) with a fixed set of categories. In factor analysis, a hidden (latent) variable underlying observed items.
 factor analysis :: A method that explains the correlations among items by a smaller number of hidden factors.
 false negative :: A case that belongs to the positive class but is predicted negative.
 false positive :: A case predicted positive that belongs to the negative class.
@@ -119,13 +119,13 @@ Fourier terms :: Pairs of sine and cosine waves used as predictors to describe a
 function :: A named piece of code that takes arguments and returns a result, such as `mean()`.
 Gaussian mixture model :: A model that describes data as a mix of normal distributions, giving each case a probability of belonging to each cluster.
 generalised linear mixed model :: A mixed-effects model for outcomes that are not normal, such as counts or yes/no outcomes.
-geom :: In ggplot2, the geometric shape that represents data, such as points, lines, or bars.
+plot kind :: The geometric visualization representing data in matplotlib/seaborn, such as scatter points, lines, bars, or boxes.
 Gini impurity :: A measure of how mixed the classes are in a group; decision trees choose splits that reduce it.
 git :: The standard version control system, which records the history of a project.
 GitHub :: A website for storing git projects online, sharing them, and working on them together.
 gradient :: The direction and rate at which the error changes as each weight changes.
 gradient descent :: Training a model by repeatedly moving the weights a small step in the direction that reduces the error.
-grammar of graphics :: The idea behind ggplot2: a plot is built from data, aesthetic mappings, and geometric layers.
+grammar of graphics :: The conceptual foundation of statistical plotting: visual representations are built systematically from data, aesthetic mappings, and visual geometries.
 grouped summary :: Summary statistics calculated separately for each group, for example with `summarise(.by = ...)`.
 hallucination :: Plausible but invented content produced by a language model, such as a function or reference that does not exist.
 heat map :: A grid of coloured cells showing values, such as a correlation matrix.
@@ -140,7 +140,7 @@ imputation :: Filling in missing values with estimated ones, such as the median.
 independence :: The assumption that observations do not influence each other; in a chi-square test, the hypothesis that two variables are unrelated.
 index :: In a tsibble, the column that holds time.
 inferential analysis :: Using a sample to draw conclusions about a population.
-inline code :: R code inside a sentence of a Quarto document, replaced by its result when rendered.
+inline code :: Code (such as Python expressions) inside a sentence of a Quarto document, evaluated and replaced by its result when rendered.
 input :: In Shiny, a control such as a menu or slider whose value the user chooses.
 input layer :: The inputs (predictors) of a neural network.
 interaction :: When the effect of one predictor depends on the value of another.
@@ -155,13 +155,13 @@ k-nearest neighbours :: Predicting a case from the *k* most similar cases in the
 k-nearest-neighbour distance plot :: A sorted plot of each case's distance to its *k*-th nearest neighbour, used to choose `eps` for DBSCAN.
 Kaiser rule :: Keeping components with an eigenvalue above 1; a rough guide that often keeps too many.
 kernel :: In a support vector machine, a function that allows curved boundaries between classes.
-knitr :: The R package that runs the code in Quarto and R Markdown documents.
+Jupyter kernel :: The execution engine that runs Python code chunks inside Quarto and Jupyter documents.
 Kruskal-Wallis test :: A non-parametric alternative to one-way ANOVA.
 lag :: The number of time steps between an observation and an earlier one it is compared with.
 large language model :: A neural network trained on huge amounts of text to predict the next token, used in AI assistants.
 lasso :: Regularised regression with a penalty on the absolute size of the coefficients, which sets some of them to exactly zero.
 LaTeX :: A typesetting system whose notation is used to write equations, as in `$\bar{x}$`.
-layer :: In ggplot2, one part of a plot added with `+`, such as a set of points or a trend line. In a neural network, a group of neurons.
+layer :: In data visualization, an overlaid graphical element on an axis. In a neural network, a group of neurons that transforms input data.
 leaf :: A final node of a decision tree, which gives the prediction.
 learning rate :: In boosting and neural networks, how large a step each update takes.
 least squares :: Choosing a regression line that minimises the sum of the squared residuals.
@@ -171,7 +171,7 @@ licence :: A statement of what others may do with shared data or code, such as C
 likelihood ratio test :: A test comparing two nested models by how much better the larger one fits.
 line chart :: A plot of values connected by lines, often over time.
 linear regression :: A model of a numeric outcome as a straight-line function of one or more predictors.
-list :: An R object that can hold elements of different types and sizes, such as the results of a test.
+list :: A standard Python data structure that holds an ordered sequence of items of any type, written with square brackets `[...]`.
 loading :: The correlation between an item and a factor or component.
 local model :: A language model that runs on your own computer, so data does not leave it.
 lockfile :: A file, such as renv's `renv.lock`, that records the exact package versions of a project.
@@ -183,7 +183,7 @@ machine learning :: Methods that learn patterns from data to make predictions or
 MAE :: Mean absolute error: the average size of the prediction errors.
 main effect :: The effect of one factor, averaged over the levels of another.
 Mann-Whitney U test :: A non-parametric test comparing two independent groups.
-mapping | aesthetic mapping :: In ggplot2, linking a variable to a visual property (an aesthetic), such as position or colour.
+mapping | visual mapping :: Linking a dataset column to a visual property, such as x/y position, hue, style, or size.
 margin :: In a support vector machine, the empty band between the classes and the boundary.
 Markdown :: A simple way of formatting text with symbols, such as `**bold**` and `# Heading`.
 matrix :: A two-dimensional table of values of one type.
@@ -197,13 +197,13 @@ missing at random :: Missingness that depends only on observed variables, not on
 missing code :: A value such as `99` or `-9` used in raw data to mark a missing answer.
 missing completely at random :: Missingness unrelated to any variable, observed or not.
 missing not at random :: Missingness that depends on the missing values themselves.
-missing value (`NA`) | NA :: R's marker for a value that is not available.
+missing value (`NA` / `NaN`) | NA | NaN :: A marker for a missing or unrecorded value, represented in Python by `None`, `np.nan`, or `pd.NA`.
 mixed-effects model :: A regression model with both fixed effects and random effects, for repeated or nested data.
 mixing probability :: In a mixture model, the share of cases belonging to a component.
 mixture :: In regularised regression, the mix of lasso and ridge penalties, from 0 (ridge) to 1 (lasso).
 mixture component :: One of the normal distributions in a Gaussian mixture model.
 mode :: The most common value.
-model specification :: In tidymodels, the description of a model (type, engine, mode) before it is fitted.
+model specification :: Initializing an estimator with chosen hyperparameters in scikit-learn or specifying a formula in statsmodels before fitting.
 `mtry` | mtry :: In a random forest, the number of predictors each split may choose from.
 multicollinearity :: Strong correlation among predictors, which makes regression coefficients unstable.
 multilayer perceptron :: A neural network with one or more hidden layers of neurons.
@@ -220,7 +220,7 @@ non-parametric test :: A test that does not assume a particular distribution, of
 normal distribution :: The symmetric, bell-shaped distribution described by a mean and a standard deviation.
 normalisation :: Rescaling variables, usually to z-scores, so that they are on the same scale.
 null hypothesis :: The claim of no effect or no difference, which a test tries to reject.
-object :: A named value stored in R, such as a number, a vector, or a data frame.
+object :: An entity in Python (such as a number, string, list, or DataFrame) that has a data type, identity, and methods.
 oblique rotation :: A factor rotation that allows the factors to correlate.
 odds :: The probability of an event divided by the probability of it not happening.
 odds ratio :: The ratio of the odds in two groups; in logistic regression, the multiplicative change in odds per unit of a predictor.
@@ -235,12 +235,12 @@ output layer :: The final layer of a neural network, which produces the predicti
 overfitting :: A model learning the noise in its training data, so it performs well there and poorly on new data.
 overplotting :: Points drawn on top of each other in a plot, hiding how many there are.
 p-value :: The probability of results at least as extreme as those observed, if the null hypothesis were true.
-package :: A collection of R functions, data, and documentation that adds features to R.
+package | library :: A collection of Python modules, functions, and classes (such as pandas or seaborn) installed via `pip`.
 paired t-test :: A test comparing two measurements on the same cases.
 Pandoc :: The document converter that Quarto uses to produce HTML, Word, PDF, and other formats.
 parallel analysis :: Choosing the number of factors by comparing eigenvalues with those from random data.
 parameter :: A quantity describing a population (Chapter 7); a value learned by a model, such as a coefficient (Chapter 11); or an input to a Quarto report (Chapter 17).
-patchwork :: A package that combines ggplot2 plots into one figure.
+subplots :: Matplotlib's system (`plt.subplots()`) for combining multiple plot axes into a single coordinated figure.
 penalty (lambda) | penalty | lambda :: In regularised regression or a neural network, the strength of the penalty on large coefficients or weights.
 permutation importance :: A predictor's importance measured by how much shuffling its values reduces a model's accuracy.
 pipe :: The operator `|>`, which passes the result on its left to the function on its right.
@@ -258,7 +258,7 @@ preregistration :: Publicly recording hypotheses and planned analyses before see
 pretrained model :: A model already trained by others on large datasets, used as it is or adapted.
 principal component :: A combination of variables that captures as much of their variation as possible.
 principal component analysis :: A method that summarises many correlated variables with a few principal components.
-project structure :: The organisation of a project's folders and files, such as `data-raw/`, `R/`, and `output/`.
+project structure :: The systematic organisation of a research project's directories and files, such as `data/`, `scripts/`, and `output/`.
 prompt :: The text given to a language model.
 push :: In git, copying commits to an online repository such as GitHub.
 Q-Q plot :: A plot comparing a variable's values with those expected from a normal distribution.
@@ -266,8 +266,8 @@ quadratic term :: A squared predictor in a regression model, which allows a curv
 qualitative coding :: Assigning themes or categories to texts such as open-ended answers.
 quartile :: The values that divide sorted data into four equal parts.
 Quarto :: A publishing system that turns documents with text and code into reports, books, websites, and slides.
-R :: The programming language and environment for statistics used in this book.
-R Markdown :: The predecessor of Quarto: documents (`.Rmd`) that combine text and R code.
+Python :: The open-source, general-purpose programming language and scientific computing environment used in this book.
+Jupyter Notebook :: An interactive document format (`.ipynb`) combining executable Python code, explanatory markdown, and rich output.
 R-squared | R² :: The share of the variation in the outcome that a model explains, from 0 to 1.
 radial basis function :: A common kernel for support vector machines, which allows curved, rounded boundaries.
 random effect :: In a mixed model, variation between groups (such as students) described by a distribution rather than a separate estimate for each group.
@@ -280,7 +280,7 @@ raw data :: Data as it was collected or exported, before any cleaning; never edi
 reactive expression :: In Shiny, a calculation, made with `reactive()`, that is updated automatically when its inputs change.
 reactivity :: Shiny's system for updating outputs automatically when inputs change.
 recall | sensitivity :: The share of truly positive cases that a model predicts as positive.
-recipe :: In tidymodels, a list of data preparation steps, such as imputation and normalisation.
+pipeline :: In scikit-learn, a sequence of data preprocessing steps and estimators chained together into a single reproducible unit.
 reference category :: The category of a categorical predictor that the others are compared with.
 registered report :: A publication format in which a journal accepts a study's plan before the data is collected.
 regression | Regression (prediction) :: Modelling or predicting a numeric outcome. In machine learning, regression means predicting a number rather than a category.
@@ -305,25 +305,25 @@ RMSE :: Root mean squared error: the square root of the average squared predicti
 ROC AUC :: The area under the ROC curve: how often a model ranks a positive case above a negative one; 0.5 is chance, 1 is perfect.
 ROC curve :: A plot of sensitivity against the false positive rate across all classification thresholds.
 rotation :: In factor analysis, turning the factors to make the loadings easier to interpret.
-RStudio :: The most widely used editor for R, used throughout this book.
-RStudio Project :: A folder that RStudio treats as the home of one piece of work, setting the working directory.
+VS Code :: Visual Studio Code: a modern, extensible code editor with rich Python support, used throughout this book.
+project workspace :: A project root directory opened in VS Code that defines the home of your research scripts and relative file paths.
 sample :: The part of a population that is observed.
 sample description ("Table 1") | sample description :: A table describing the participants, usually the first table of a results chapter.
 sampling distribution :: The distribution of a statistic over many possible samples.
-scale :: In ggplot2, the control of how data values are turned into positions, colours, or sizes.
+scale :: The mapping of continuous or discrete data values to physical coordinates, color maps, or visual sizes.
 scale score :: A score combining several questionnaire items, usually their mean.
 scaling :: Converting variables to a common scale, usually z-scores, before calculating distances.
 scatter plot :: A plot of two numeric variables as points.
 scree plot :: A plot of eigenvalues, used to choose the number of components or factors.
-script :: A file of R code that can be saved and rerun.
+script :: A text file containing Python code (`.py`) that can be executed sequentially and rerun at any time.
 seasonal naive method :: A benchmark forecast that repeats the value from the same season a cycle earlier.
 seasonal period :: The length of a repeating pattern, such as 52 weeks or 12 months.
 seasonal plot :: A plot that overlays the cycles of a time series to show its seasonal pattern.
 seasonality :: A pattern in a time series that repeats at a fixed period.
 seasonally adjusted series :: A time series with the seasonal component removed.
 server :: In Shiny, the function that computes the outputs from the inputs.
-setting :: In ggplot2, giving a visual property a fixed value, such as `colour = "blue"`, rather than mapping it to a variable.
-Shiny :: An R package for building interactive web applications and dashboards.
+setting :: Giving a plot parameter a fixed visual constant (such as `color="blue"`) rather than mapping it to a data column.
+Streamlit :: A Python framework for rapidly creating interactive data applications and research dashboards in pure Python.
 shrinkage :: Pulling coefficients towards zero, as regularisation does.
 sigmoid :: The S-shaped function that turns any number into a value between 0 and 1.
 significance level :: The threshold (usually 0.05) below which a p-value counts as statistically significant.
@@ -353,9 +353,9 @@ temperature :: A setting of a language model that controls how random its answer
 test set :: Data set aside to evaluate a final model once, at the end.
 theme :: In ggplot2, the non-data appearance of a plot, such as fonts and background. In qualitative coding, a category of meaning.
 threshold :: The probability above which a classifier predicts the positive class.
-tibble :: The tidyverse's version of a data frame, which prints more neatly.
+Series :: A one-dimensional labeled pandas array representing a single column of data in a DataFrame.
 tidy data :: Data with one variable per column, one observation per row, and one value per cell.
-tidyverse :: A collection of R packages, such as dplyr and ggplot2, that share one way of working.
+scientific Python ecosystem :: The cohesive suite of foundational libraries (pandas, NumPy, SciPy, Matplotlib, Seaborn, Scikit-Learn, Statsmodels) that power modern data science.
 time plot :: A plot of a time series against time.
 time series :: Observations of one quantity at regular intervals over time.
 token :: A word or part of a word, the unit of text a language model reads and writes.
@@ -387,21 +387,21 @@ value label :: A label attached to a coded value, such as 1 = "Strongly disagree
 variable label :: A longer description attached to a variable, as in SPSS files.
 variable selection :: Choosing which predictors to keep in a model; the lasso does it automatically.
 variance :: The average squared distance from the mean; the square of the standard deviation.
-vector :: R's basic structure: a sequence of values of the same type.
+array | vector :: A one-dimensional homogeneous sequence of numbers in NumPy (`np.array`) or pandas Series.
 vector format :: An image format, such as PDF or SVG, that stays sharp at any size.
-verb :: A dplyr function that does one thing to a data frame, such as `filter()` or `mutate()`.
+DataFrame method :: A pandas method that performs an operation on a DataFrame, such as `.query()`, `.assign()`, or `.groupby()`.
 version control :: Keeping a history of every change to a project's files.
 Ward's method :: A way of merging clusters in hierarchical clustering that keeps them as compact as possible.
 weak learner :: A simple model, such as a small tree, that is only slightly better than chance on its own; boosting combines many.
 weight :: In a neural network, the number by which an input is multiplied; learned during training.
 weight decay :: A penalty on large weights in a neural network, which prevents overfitting.
-Welch test :: The version of the two-sample t-test that does not assume equal variances; R's default.
+Welch t-test :: A two-sample t-test that does not assume equal population variances, calculated in Python with `scipy.stats.ttest_ind(..., equal_var=False)`.
 wide format :: Data with repeated measurements side by side in columns, one row per case.
 Wilcoxon signed-rank test :: A non-parametric test comparing two measurements on the same cases.
 within-group variation :: How much values vary around their own group mean; the denominator of the ANOVA F statistic.
-workflow :: In tidymodels, a recipe and a model specification combined.
-workflow set :: In tidymodels, several workflows fitted and compared together.
-working directory :: The folder R reads files from and saves files to by default.
+Pipeline :: In scikit-learn, a composite estimator combining transformers and a predictor model.
+model comparison grid :: Systematically evaluating multiple candidate models and preprocessing pipelines across cross-validation folds.
+working directory :: The filesystem directory from which Python scripts resolve relative file paths by default.
 XGBoost :: Extreme gradient boosting: a fast, widely used boosting method.
 YAML header :: The settings at the top of a Quarto document, between two `---` lines.
 z-score :: A value expressed as the number of standard deviations from the mean.
