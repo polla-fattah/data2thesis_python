@@ -2,79 +2,81 @@
 number-sections: false
 ---
 
-# Appendix C: R Packages {#sec-app-packages}
+# Appendix C: Python Packages {#sec-app-packages}
 
-```{r}
+```{python}
 #| label: setup
 #| include: false
-# The table is built from packages.txt, next to this file. Chapters are found
-# automatically in each chapter's text; the version is the one installed when
-# the book was built.
-chapter_files <- sort(list.files(pattern = "^[0-9]{2}-.*\\.qmd$|^_17-.*\\.qmd$"))
-chapter_number <- as.integer(sub("^_?([0-9]{2}).*", "\\1", chapter_files))
-chapter_text <- lapply(chapter_files, function(f) paste(readLines(f, encoding = "UTF-8", warn = FALSE), collapse = "\n"))
+import glob
+import re
+import importlib.metadata
+import pandas as pd
 
-lines <- readLines("packages.txt", encoding = "UTF-8", warn = FALSE)
-lines <- lines[nzchar(trimws(lines)) & !startsWith(lines, "#")]
-fields <- lapply(strsplit(lines, "|", fixed = TRUE), trimws)
-packages <- data.frame(
-  group = vapply(fields, `[`, character(1), 1),
-  package = vapply(fields, `[`, character(1), 2),
-  purpose = vapply(fields, `[`, character(1), 3),
-  extra = vapply(fields, function(f) if (length(f) >= 4) f[4] else "", character(1))
-)
+chapter_files = sorted(glob.glob("[0-9][0-9]-*.qmd"))
+code_chunks = {}
+for cf in chapter_files:
+    ch_num = int(re.search(r"(\d+)", cf).group(1))
+    with open(cf, "r", encoding="utf-8") as f:
+        code_chunks[ch_num] = f.read()
 
-find_chapters <- function(pkg, extra) {
-  p <- gsub(".", "\\.", pkg, fixed = TRUE)
-  patterns <- c(paste0("library\\(", p, "\\)"), paste0("(^|[^A-Za-z0-9_.])", p, "::"),
-                paste0("set_engine\\(\"", p, "\""), paste0("package = \"", p, "\""))
-  hit <- vapply(chapter_text, function(x) any(vapply(patterns, grepl, logical(1), x = x)), logical(1))
-  ch <- chapter_number[hit]
-  if (nzchar(extra)) ch <- c(ch, as.integer(strsplit(extra, ",")[[1]]))
-  ch <- sort(unique(ch))
-  if (length(ch) > 6) paste0(paste(ch[1:5], collapse = ", "), ", and later") else paste(ch, collapse = ", ")
-}
-packages$chapters <- mapply(find_chapters, packages$package, packages$extra)
-packages$version <- vapply(packages$package, function(p) {
-  if (requireNamespace(p, quietly = TRUE)) as.character(packageVersion(p)) else "-"
-}, character(1))
+with open("packages.txt", "r", encoding="utf-8") as f:
+    pkg_lines = [l.strip() for l in f if l.strip() and not l.startswith("#")]
+
+pkg_rows = []
+for line in pkg_lines:
+    parts = [p.strip() for p in line.split("|")]
+    area, pkg, purpose = parts[0], parts[1], parts[2]
+    extra = parts[3] if len(parts) > 3 else ""
+    
+    p_name = pkg.split(".")[0]
+    hits = [ch for ch, text in code_chunks.items() if re.search(r"\b" + re.escape(p_name) + r"\b", text)]
+    if extra:
+        extra_chs = [int(x.strip()) for x in extra.split(",") if x.strip()]
+        hits = sorted(list(set(hits + extra_chs)))
+    
+    try:
+        ver = importlib.metadata.version(p_name)
+    except Exception:
+        ver = "-"
+    
+    if len(hits) > 6:
+        chs_str = f"{hits[0]}, {hits[1]}, {hits[2]}, and later"
+    elif hits:
+        chs_str = ", ".join(str(h) for h in hits)
+    else:
+        chs_str = "-"
+    
+    pkg_rows.append({
+        "Area": area,
+        "Package": f"`{pkg}`",
+        "What it is for": purpose,
+        "Chapters": chs_str,
+        "Version": ver
+    })
+
+pkg_df = pd.DataFrame(pkg_rows)
 ```
 
-This appendix lists every R package used in the book: what it is for, the chapters that use it, and the version used when the book was built. Appendix A shows how to install them all with one command. A dash in the Version column marks a package that is recommended to readers but was not needed to build the book itself.
+This appendix lists every Python scientific library used across the book: what it is for, the chapters that apply it, and the package version used when compiling this edition. Appendix A shows how to install all of them into a project virtual environment using `pip`.
 
-A package is a collection of functions, data, and documentation that someone has written and shared. R comes with a set of **base packages**, such as stats (`t.test()`, `lm()`) and utils (`read.csv()`), which are always available; everything else is installed once with `install.packages()` and loaded in each session with `library()` (Chapter 1).
+In Python, a library (or package) is a reusable collection of modules, functions, classes, and documentation shared via the Python Package Index (PyPI). Python includes a robust standard library (`sys`, `os`, `math`, `json`, `datetime`) available without installation; third-party scientific packages are installed once via `pip install <package>` and imported into your analysis sessions using `import <package>`.
 
 ## The packages in this book
 
-```{r}
+@tbl-packages-all summarizes the packages used in this book.
+
+```{python}
 #| label: tbl-packages-all
-#| tbl-cap: "The R packages used in this book."
+#| tbl-cap: "The Python scientific packages used in this book."
 #| echo: false
-knitr::kable(
-  packages[, c("group", "package", "purpose", "chapters", "version")],
-  col.names = c("Area", "Package", "What it is for", "Chapters", "Version"),
-  row.names = FALSE
-)
+pkg_df
 ```
 
-Two entries are collections rather than single packages. **tidyverse** installs and loads dplyr, tidyr, stringr, readr, ggplot2, purrr, and a few others; **tidymodels** does the same for the modelling packages of Chapters 11 to 15 (rsample, recipes, parsnip, workflows, tune, and yardstick, among others). Several model packages (ranger, kknn, kernlab, glmnet, xgboost, nnet) are rarely loaded by name: tidymodels calls them as **engines**, as in `set_engine("ranger")`, but they must be installed.
+### The core scientific stack
 
-## Finding and choosing packages
+Rather than requiring dozens of disparate packages, scientific Python is built on a coherent, tightly integrated stack:
 
-CRAN, R's official package archive, holds more than 20,000 packages, and many more are shared on GitHub. A few ways to find the right one:
-
-- **CRAN Task Views** ([cran.r-project.org/web/views](https://cran.r-project.org/web/views/)) are curated lists of packages by topic, such as psychometrics, survival analysis, or time series, maintained by experts in each field.
-- A package's **vignettes**, long-form tutorials that come with it, are the best introduction: `browseVignettes("dplyr")` lists them. Many packages also have a website with examples.
-- Methods papers in journals such as the *Journal of Statistical Software* and *The R Journal* describe many packages in depth.
-
-Before relying on a package for your thesis, a few signs show whether it is trustworthy: it is on CRAN (which checks that packages install and run); it was updated in the last year or two; it has documentation and examples; it is described in a published paper or widely used in your field; and its authors are known in the area. The packages in this book meet all or most of these.
-
-## Citing packages
-
-Package authors are researchers too, and citing their work is how they receive credit. `citation()` gives the recommended reference for R itself, and `citation("package")` for a package:
-
-```{r}
-citation("psych")
-```
-
-Cite the packages that did substantial work in your analysis, and give their version numbers (Chapter 17). `packageVersion("psych")` shows the version installed on your computer.
+1. **`pandas` and `numpy`**: The foundation for tabular data structures and numerical operations. A DataFrame is the Python counterpart of a spreadsheet or database table, with support for filtering, grouping, joining, and missing-value imputation.
+2. **`matplotlib` and `seaborn`**: The standard libraries for visualization. Matplotlib provides low-level graphical rendering and layout control, while Seaborn offers high-level statistical plotting routines (histograms, regression plots, and boxplots).
+3. **`scipy` and `statsmodels`**: The statistical modeling core. Scipy provides probability distributions and classical hypothesis testing ($t$-tests, chi-square, Mann-Whitney), while Statsmodels handles econometric and regression models with comprehensive diagnostic tables (OLS, logistic regression, ANOVA, and linear mixed-effects).
+4. **`scikit-learn`**: The premier machine learning toolkit for empirical research, providing consistent APIs (`fit`, `transform`, `predict`) for supervised classification, regression, clustering, and cross-validation pipelines.

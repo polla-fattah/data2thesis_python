@@ -29,10 +29,10 @@ data2thesis/
 |---|---|
 | `content/book/` | The book chapters and appendices (`.qmd`) |
 | `content/playground/` | Practical interactive exercises and datasets (`.qmd`, `.zip`, `.csv`) |
-| `content/slides/` | Lecture presentation decks (`.md`, `.qmd`) |
+| `content/slides/` | Lecture presentation decks (`.qmd`) |
 | `styles/` | Custom SCSS styling (light and dark mode) |
 | `downloads/` | Built case-study data files and `data2thesis` package |
-| `_freeze/` | Cached execution results so rebuilding requires no R run |
+| `_freeze/` | Cached execution results for fast rendering without re-executing code |
 | `index.qmd` | The landing page of the website |
 | `_quarto.yml` | Unified Quarto configuration |
 | `build.ps1` | The PowerShell build and preview script |
@@ -208,16 +208,16 @@ Chapters whose code has not changed are not re-executed: their results are store
 ### **Chapter 15: Neural Networks**
 
 - How a neural network works: neurons, layers, weights, and activation functions.
-- Fitting and tuning a neural network with tidymodels (`mlp()` with the `nnet` engine) on the dropout question.
+- Fitting and evaluating neural networks with scikit-learn (`MLPClassifier`) and PyTorch on the dropout question.
 - Comparing it fairly with the models of Chapters 11 and 12.
-- Deep learning: what it is, when it helps, and where to go next (`keras3`, `torch`).
+- Deep learning: what it is, when it helps, and where to go next (PyTorch, TensorFlow/Keras).
 
 ### **Chapter 16: Time Series Forecasting**
 
-- Time series data in R with `tsibble`, and time plots.
-- Trend and seasonality: decomposition and seasonal plots with `feasts`.
-- Simple benchmark forecasts, exponential smoothing (ETS), and ARIMA with `fable`.
-- Judging forecasts: training and test periods, accuracy measures, and prediction intervals.
+- Time series data in Python with pandas datetime indexing, and time plots.
+- Trend and seasonality: decomposition and autocorrelation plots with statsmodels.
+- Simple benchmark forecasts, exponential smoothing (ETS), and ARIMA modeling.
+- Judging forecasts: training and test periods, accuracy measures (MAE, RMSE), and prediction intervals.
 - Case study: forecasting next year's weekly visits to the university counselling service.
 
 ## **Part 4: Reproducible Research and Applications**
@@ -225,17 +225,17 @@ Chapters whose code has not changed are not re-executed: their results are store
 ### **Chapter 17: Reproducible Research**
 
 - What reproducible research is, and why copying results by hand goes wrong.
-- Quarto documents: YAML header, Markdown text, code chunks, inline code, chunk options, numbered tables and figures, citations from a BibTeX file, and LaTeX equations; rendering to HTML, Word, and PDF; parameterised reports. A note on R Markdown for older projects.
-- Keeping package versions with renv, and reporting and citing software.
-- Shiny: inputs, outputs, and reactivity, with a complete wellbeing dashboard.
+- Quarto documents: YAML header, Markdown text, Python code chunks, inline code, chunk options, numbered tables and figures, citations from a BibTeX file, and LaTeX equations; rendering to HTML, Word, and PDF.
+- Keeping package versions with virtual environments and dependency locks, and reporting and citing software.
+- Shiny for Python: inputs, outputs, and reactivity, with a complete wellbeing dashboard.
 - Open science: sharing data and code with a DOI and a licence, protecting participants (small cells), preregistration and registered reports.
-- Optional: keeping a project's history with git and GitHub.
+- Keeping a project's history with git and GitHub.
 
 ### **Chapter 18: Using AI with Python**
 
 - How large language models work, and why they make confident mistakes (hallucinations, outdated knowledge).
-- Using AI assistants to write, explain, and debug R code, and checking what they produce; AI inside RStudio and Positron.
-- Coding Elaf's open-ended answers: a keyword dictionary as a baseline, then a language model called from R with `ellmer` (system prompt with a codebook, structured output, `parallel_chat_structured()`).
+- Using AI assistants to write, explain, and debug Python code, and checking what they produce; AI inside VS Code and Positron.
+- Coding Elaf's open-ended answers: a keyword dictionary as a baseline, then a language model called from Python (system prompt with a codebook, structured output, batching).
 - Validating AI coding against human coding: accuracy, confusion matrix, Cohen's kappa, reading disagreements, and consistency between runs.
 - Responsible use: checking, data privacy and local models, reproducibility (models, prompts, saved outputs), disclosure, and bias.
 
@@ -243,14 +243,14 @@ Chapters whose code has not changed are not re-executed: their results are store
 
 - The path of a research project, and how to organise one: read-only raw data, numbered scripts, relative paths, a README, and a Quarto results document.
 - Elaf's complete pipeline, from the raw survey export to clean data (checked against the package), a sample table, and three research questions answered with the methods of the book.
-- Reporting: helper functions for means, percentages, and p-values; broom for model tables; reporting sentences with inline numbers; combined figures with patchwork.
+- Reporting: helper functions for means, percentages, and p-values; model summary tables; reporting sentences with inline numbers; combined figures.
 - Choosing a method: a decision guide and a map of Elaf's research questions to the chapters.
-- Challenges every researcher meets, and where to go next (further methods, free books, and the R community).
+- Challenges every researcher meets, and where to go next (further methods, free books, and the Python scientific community).
 
 ### **Appendices:**
 
-- **Appendix A:** Installation and Setup: R on Windows, macOS, and Linux; RStudio (and Positron); recommended settings; the book's packages and the data2thesis package; common problems and keeping R up to date.
-- **Appendix B:** Glossary: every key term from the chapter reviews with a plain-language definition and chapter references, and a table of frequently used R functions.
-- **Appendix C:** Python Packages: every package used in the book, what it is for, the chapters that use it, and its version; finding, judging, and citing packages.
-- **Appendix D:** Common Errors and How to Fix Them: real messages (errors, warnings, and silent mistakes) from starting out, files, data, plots, tests and models, and machine learning, with what each means and how to fix it; what to do when stuck.
-- **Appendix E:** Further Learning Resources: free books by topic (including Tyson Barrett's *R for Researchers*), courses and practice, and communities.
+- **Appendix A:** Installation and Setup: Python 3.12 on Windows, macOS, and Linux; VS Code (and Positron); virtual environments; installing packages with pip; the data2thesis package; common problems and environment maintenance.
+- **Appendix B:** Glossary: every key term from the chapter reviews with a plain-language definition and chapter references, plus a reference table of essential Python data science functions and methods.
+- **Appendix C:** Python Packages: every scientific package used in the book (pandas, numpy, seaborn, scipy, statsmodels, scikit-learn, etc.), what it is for, chapters that use it, and finding/citing packages.
+- **Appendix D:** Common Errors and How to Fix Them: real Python exceptions and silent pitfalls (SyntaxError, IndentationError, KeyError, IndexError, TypeError, ValueError, AttributeError, NameError), what each means, and how to fix it.
+- **Appendix E:** Further Learning Resources: free books by topic, online interactive courses, practice sandboxes, and documentation communities.

@@ -4,7 +4,7 @@
 _site/
 .quarto/
 **/site_libs/
-# ...except inside _freeze, which Quarto needs to rebuild without R
+# ...except inside _freeze, which Quarto needs to rebuild without re-executing code
 !**/_freeze/site_libs/
 *_files/
 *.html
@@ -22,9 +22,6 @@ downloads/*
 
 /.quarto/
 **/*.quarto_ipynb
-
-# Stray plot files from running R scripts outside an interactive session
-Rplots.pdf
 
 # Temporary Office files
 ~$*

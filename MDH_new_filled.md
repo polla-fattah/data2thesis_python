@@ -4,34 +4,34 @@
 
 | Field | Information |
 |---|---|
-| Module Title | Applied Data Analysis and Reproducible Research with R |
+| Module Title | Applied Data Analysis and Reproducible Research with Python |
 | Module Code | To be confirmed |
 | ECTS Number | 6 |
 | Module Level | MSc / Level 11 |
 | Semester | To be confirmed |
 | Administering Department | Department of Data Science |
-| Module Leader | To be confirmed |
+| Module Leader | Dr. Polla Fattah |
 | Module Tutors | To be confirmed |
 | Core Programme | MSc Data Science |
 | Elective Programmes | Other MSc programmes subject to approval |
 | Date Approved | To be confirmed |
-| Version Number | July 2026 |
+| Version Number | 2026 |
 
 ## Relation with Other Modules
 
 - **Co-requisites:** None. Basic familiarity with research methods is recommended.
-- **Pre-requisites:** No prior R programming required; basic computer literacy assumed.
+- **Pre-requisites:** No prior Python programming required; basic computer literacy assumed.
 
 ## Module Aim
 
-The module develops students' ability to plan, conduct, analyse, visualise, model, and communicate research using R. Students progress from a research question and raw data to a defensible, reproducible, and thesis-ready analysis, with emphasis on appropriate method selection, uncertainty, research integrity, and clear reporting.
+The module develops students' ability to plan, conduct, analyse, visualise, model, and communicate research using Python. Students progress from a research question and raw data to a defensible, reproducible, and thesis-ready analysis, with emphasis on appropriate method selection, uncertainty, research integrity, and clear reporting.
 
 ## Module Learning Outcomes
 
 On successful completion of this module, students will be able to:
 
 1. Formulate focused research questions, hypotheses, variables, and analysis plans.
-2. Import, clean, document, transform, and explore research data in R.
+2. Import, clean, document, transform, and explore research data in Python.
 3. Select, apply, diagnose, and interpret appropriate statistical, predictive, multivariate, and time-series methods.
 4. Produce clear tables, figures, forecasts, and thesis-style results.
 5. Build reproducible Quarto workflows and apply responsible open-science practices.
@@ -39,16 +39,16 @@ On successful completion of this module, students will be able to:
 
 ## Indicative Contents
 
-R and RStudio; data structures and codebooks; data cleaning and transformation; data visualisation; research questions and study design; descriptive statistics and exploratory analysis; hypothesis testing and statistical inference; ANOVA and regression; multivariate methods; predictive regression and model validation; advanced clustering; time-series forecasting; reproducible research with Quarto, package management, dashboards, and open science; integrated research project.
+Python and VS Code; data structures and pandas DataFrames; data cleaning and transformation; data visualisation with seaborn and matplotlib; research questions and study design; descriptive statistics and exploratory analysis; hypothesis testing and statistical inference; ANOVA and regression with statsmodels; multivariate methods; predictive regression and model validation with scikit-learn; advanced clustering; time-series forecasting; reproducible research with Quarto, virtual environments, dashboards, and open science; integrated research project.
 
 ## Learning and Teaching Strategies
 
-Short lectures are combined with guided R demonstrations, laboratory practice, formative quizzes, discussion of published research, and an applied project. Students progressively develop one research project through four milestones and a final reproducible report.
+Short lectures are combined with guided Python demonstrations, laboratory practice, formative quizzes, discussion of published research, and an applied project. Students progressively develop one research project through four milestones and a final reproducible report.
 
 ## Module Delivery
 
 - **Lectures:** 13 lecture sessions
-- **Tutorial/Lab:** 26 hours of guided R laboratory practice
+- **Tutorial/Lab:** 26 hours of guided Python laboratory practice
 - **Seminars:** 10 hours of seminars and project consultations
 - **Student self-study:** 101 hours
 
@@ -71,20 +71,20 @@ Short lectures are combined with guided R demonstrations, laboratory practice, f
 
 ### Final Project
 
-Students submit and present a complete research analysis using R. The project must connect the research question, data preparation, exploratory analysis, selected methods, results, visualisations, uncertainty, limitations, and conclusion in one reproducible Quarto report.
+Students submit and present a complete research analysis using Python. The project must connect the research question, data preparation, exploratory analysis, selected methods, results, visualisations, uncertainty, limitations, and conclusion in one reproducible Quarto report.
 
 ## Learning and Teaching Resources
 
-- **Required text:** *From Data to Thesis* selected chapters and practical exercises.
-- **Recommended texts:** *R for Data Science*, R4DS online resources, a department-approved research methods or statistics text, and selected journal articles.
+- **Required text:** *From Data to Thesis: Using Python for Non-Technical* selected chapters and practical exercises.
+- **Recommended texts:** *Python for Data Analysis* (3rd ed.) by Wes McKinney, *Python Data Science Handbook* by Jake VanderPlas, and selected journal articles.
 
 ## Delivery Plan
 
 | Week | Topic | Reading and materials | Learning outcomes | Assessment |
 |---:|---|---|---|---|
-| 1 | Getting started with R and data structures | Chapters 1-2; slides and R lab | LO1, LO2 | Project topic selection |
+| 1 | Getting started with Python and data structures | Chapters 1-2; slides and Python lab | LO1, LO2 | Project topic selection |
 | 2 | Data manipulation and cleaning | Chapter 3; data-cleaning lab | LO2 | Project dataset and initial data audit |
-| 3 | Data visualisation | Chapter 4; ggplot2 lab | LO2, LO4 | Visualisation practice |
+| 3 | Data visualisation | Chapter 4; seaborn and matplotlib lab | LO2, LO4 | Visualisation practice |
 | 4 | From research question to data | Chapter 5; study-design workshop | LO3, LO6 | Milestone 1: proposal and analysis plan |
 | 5 | Descriptive statistics and exploratory data analysis | Chapter 6; EDA lab | LO2, LO4, LO6 | Sample description exercise |
 | 6 | Hypothesis testing and statistical inference | Chapter 7; inference lab | LO3, LO6 | Quiz 1 |

@@ -1,53 +1,18 @@
-# R packages for Appendix C.
-# One entry per line:  group | package | what it is for | chapters used without being named
-# Chapters are found automatically from each chapter's text: library(pkg), pkg::,
-# set_engine("pkg"), and data(..., package = "pkg"). The last field lists extra
-# chapters for packages that work behind the scenes (leave it empty otherwise).
+# Python scientific libraries for Appendix C.
+# One entry per line:  Area | Package | What it is for | Extra chapters
 
-Data | data2thesis | Elaf's Graduate Wellbeing Study: the case-study data of this book |
-Data | modeldata | Example datasets for modelling, such as credit applications, concrete strength, and penguins |
-Importing and exporting | readr | Reading and writing CSV and other text files, and `parse_number()` |
-Importing and exporting | readxl | Reading Excel files |
-Importing and exporting | haven | Reading and writing SPSS, Stata, and SAS files, with their labels |
-Importing and exporting | writexl | Writing Excel files |
-Importing and exporting | here | File paths relative to the project folder |
-Data handling | tidyverse | Installs and loads the core tidyverse packages in one go |
-Data handling | dplyr | Filtering, selecting, creating, summarising, and joining data |
-Data handling | tidyr | Reshaping data between wide and long formats |
-Data handling | stringr | Working with text: detecting, replacing, and counting patterns |
-Data handling | purrr | Applying a function to each element of a list or vector |
-Visualisation | ggplot2 | Plots built from data, mappings, and layers |
-Visualisation | scales | Formatting axis labels, such as percentages |
-Visualisation | patchwork | Combining several plots into one figure |
-Visualisation | corrplot | Plotting correlation matrices |
-Statistics | psych | Descriptive statistics, factor analysis, and Cronbach's alpha |
-Statistics | GPArotation | Factor rotations, such as oblimin, used by psych | 9
-Statistics | car | Regression tools, including Levene's test |
-Statistics | broom | Model results as tidy data frames |
-Statistics | lme4 | Linear and generalised linear mixed-effects models |
-Statistics | lmerTest | p-values for mixed-effects models |
-Multivariate and clustering | factoextra | Plots for PCA and cluster analysis |
-Multivariate and clustering | cluster | Clustering tools, including the silhouette |
-Multivariate and clustering | mclust | Gaussian mixture models |
-Multivariate and clustering | dbscan | Density-based clustering (DBSCAN) and related methods |
-Machine learning | tidymodels | Installs and loads the tidymodels packages: rsample, recipes, parsnip, workflows, tune, yardstick, and others |
-Machine learning | yardstick | Measures of model performance, such as accuracy, ROC AUC, and kappa (part of tidymodels) | 11, 12, 13, 15
-Machine learning | rpart | Decision trees |
-Machine learning | ranger | Fast random forests |
-Machine learning | kknn | k-nearest neighbours, the default engine for `nearest_neighbor()` | 11, 12
-Machine learning | kernlab | Support vector machines |
-Machine learning | themis | Resampling steps for imbalanced outcomes, such as upsampling and SMOTE |
-Machine learning | glmnet | Ridge, lasso, and elastic net regression |
-Machine learning | xgboost | Gradient boosting (XGBoost) |
-Machine learning | nnet | Neural networks with one hidden layer |
-Time series | tsibble | Data frames for time series |
-Time series | fable | Forecasting models: benchmarks, ETS, and ARIMA |
-Time series | feasts | Time series features, decomposition (STL), and autocorrelation |
-Time series | urca | Unit-root tests, needed by `ARIMA()` | 16
-Reporting and sharing | knitr | Running the code in Quarto documents, and `kable()` tables |
-Reporting and sharing | rmarkdown | R Markdown documents, the predecessor of Quarto |
-Reporting and sharing | shiny | Interactive web applications and dashboards |
-Reporting and sharing | bslib | Modern page layouts for Shiny apps |
-Reporting and sharing | renv | Recording and restoring package versions |
-Reporting and sharing | usethis | Project setup tasks, such as editing `.Renviron` and connecting to git |
-AI | ellmer | Calling large language models from R |
+Data | data2thesis | Graduate Wellbeing Study case-study datasets and package utilities |
+Core & Computing | numpy | Multidimensional arrays, numerical routines, and vectorized linear algebra |
+Data Handling | pandas | Foundational tabular data structures (DataFrames, Series, grouping, joining, reshaping) |
+Data Formats | openpyxl | Reading and writing Microsoft Excel (.xlsx) files with pandas |
+Data Formats | pyreadstat | Reading SPSS (.sav), Stata, and SAS datasets with labels and metadata |
+Visualisation | matplotlib | Foundational scientific plotting engine, layout control, and image export |
+Visualisation | seaborn | Statistical visualization: histograms, scatter plots, boxplots, violin plots, and heatmaps |
+Statistics | scipy | Probability distributions, hypothesis testing (t-test, Mann-Whitney, chi-square), and scientific algorithms |
+Statistical Modeling | statsmodels | Classical statistical models: OLS regression, ANOVA tables, GLM, and linear mixed-effects (MixedLM) |
+Machine Learning | scikit-learn | Machine learning: preprocessing, pipelines, classification, regression, clustering, and metrics | 11, 12, 13, 14, 15
+Machine Learning | xgboost | Scalable and accurate gradient boosted decision trees | 12, 13
+Deep Learning | torch | PyTorch deep learning framework for multilayer perceptrons and neural network architectures | 15
+Time Series | statsmodels.tsa | Time series analysis, seasonal decomposition (STL), autocorrelation, and ARIMA forecasting | 16
+Reporting & Apps | shiny | Shiny for Python: reactive web applications, interactive dashboards, and widgets | 17
+AI & Automation | requests | HTTP requests for connecting to local and remote language model APIs | 18

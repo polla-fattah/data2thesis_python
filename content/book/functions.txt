@@ -1,80 +1,60 @@
-# R functions for Appendix B.
-# One entry per line:  group | function | package | description
-# The chapters are found automatically, by searching the code chunks of each
-# chapter for the function name followed by "(".
+# Python scientific functions and methods for Appendix B.
+# One entry per line:  Task | Function | Library | What it does
 
-Getting started | install.packages | base R | Install a package from CRAN (once)
-Getting started | library | base R | Load an installed package (every session)
-Getting started | c | base R | Combine values into a vector
-Getting started | round | base R | Round numbers to a number of decimal places
-Getting started | head | base R | Show the first rows of a data frame or first values of a vector
-Getting started | str | base R | Show the structure of an object
-Getting started | summary | base R | Summarise a data frame or a model
-Getting started | here | here | Build a file path from the project's folder
-Importing and exporting | read.csv | base R | Read a CSV file
-Importing and exporting | read_excel | readxl | Read an Excel file
-Importing and exporting | read_sav | haven | Read an SPSS file, with its labels
-Importing and exporting | write_csv | readr | Save a data frame as a CSV file
-Importing and exporting | factor | base R | Create a categorical variable with levels
-Cleaning and reshaping | filter | dplyr | Keep the rows that meet a condition
-Cleaning and reshaping | select | dplyr | Keep or drop columns
-Cleaning and reshaping | arrange | dplyr | Sort rows
-Cleaning and reshaping | mutate | dplyr | Create or change columns
-Cleaning and reshaping | summarise | dplyr | Calculate summaries, optionally by group (`.by`)
-Cleaning and reshaping | count | dplyr | Count the rows in each group
-Cleaning and reshaping | case_when | dplyr | Recode values with a series of conditions
-Cleaning and reshaping | left_join | dplyr | Add columns from another table by matching a key
-Cleaning and reshaping | distinct | dplyr | Remove duplicate rows
-Cleaning and reshaping | pivot_longer | tidyr | Reshape from wide to long format
-Cleaning and reshaping | pivot_wider | tidyr | Reshape from long to wide format
-Cleaning and reshaping | str_detect | stringr | Test whether text matches a pattern
-Cleaning and reshaping | parse_number | readr | Extract a number from text
-Visualising | ggplot | ggplot2 | Start a plot from data and aesthetic mappings
-Visualising | geom_histogram | ggplot2 | Draw a histogram
-Visualising | geom_point | ggplot2 | Draw points (a scatter plot)
-Visualising | geom_boxplot | ggplot2 | Draw box plots
-Visualising | geom_smooth | ggplot2 | Add a trend line
-Visualising | facet_wrap | ggplot2 | Split a plot into panels by group
-Visualising | labs | ggplot2 | Set titles and axis labels
-Visualising | ggsave | ggplot2 | Save a plot to a file
-Describing | mean | base R | Mean
-Describing | median | base R | Median
-Describing | sd | base R | Standard deviation
-Describing | quantile | base R | Quantiles, such as quartiles
-Describing | cor | base R | Correlation coefficients
-Describing | scale | base R | Convert to z-scores
-Testing | set.seed | base R | Make random results repeatable
-Testing | t.test | base R | One-sample, two-sample, and paired t-tests
-Testing | chisq.test | base R | Chi-square tests
-Testing | wilcox.test | base R | Mann-Whitney and Wilcoxon signed-rank tests
-Modelling | aov | base R | Analysis of variance
-Modelling | TukeyHSD | base R | Tukey's post-hoc comparisons
-Modelling | lm | base R | Linear regression
-Modelling | glm | base R | Logistic and other generalised linear models
-Modelling | confint | base R | Confidence intervals for model coefficients
-Modelling | predict | base R | Predictions from a model
-Modelling | tidy | broom | Model results as a data frame
-Modelling | lmer | lme4 | Linear mixed-effects model
-Modelling | glmer | lme4 | Generalised linear mixed-effects model
-Many variables | prcomp | base R | Principal component analysis
-Many variables | fa | psych | Exploratory factor analysis
-Many variables | kmeans | base R | k-means clustering
-Many variables | hclust | base R | Hierarchical clustering
-Many variables | Mclust | mclust | Gaussian mixture model
-Many variables | dbscan | dbscan | DBSCAN clustering
-Machine learning | initial_split | rsample (tidymodels) | Split data into training and test sets
-Machine learning | vfold_cv | rsample (tidymodels) | Create cross-validation folds
-Machine learning | recipe | recipes (tidymodels) | Start a data preparation recipe
-Machine learning | workflow | workflows (tidymodels) | Combine a recipe and a model
-Machine learning | fit | parsnip (tidymodels) | Fit a model or workflow
-Machine learning | tune_grid | tune (tidymodels) | Tune hyperparameters with cross-validation
-Machine learning | last_fit | tune (tidymodels) | Fit on the training set and evaluate once on the test set
-Machine learning | roc_auc | yardstick (tidymodels) | Area under the ROC curve
-Machine learning | conf_mat | yardstick (tidymodels) | Confusion matrix
-Time series | as_tsibble | tsibble | Create a time series data frame
-Time series | model | fabletools | Fit one or more forecasting models
-Time series | forecast | fabletools | Forecast from fitted models
-Reporting and sharing | kable | knitr | Format a table for a report
-Reporting and sharing | citation | base R | How to cite R or a package
-Reporting and sharing | shinyApp | shiny | Create a Shiny app from a user interface and server
-Reporting and sharing | chat_anthropic | ellmer | Start a chat with a language model (Claude)
+Getting started | print | Python built-in | Output text or variables to the console
+Getting started | type | Python built-in | Inspect the data type of an object
+Getting started | len | Python built-in | Return the number of items in a list, string, or DataFrame
+Getting started | round | Python built-in | Round numbers to a specified number of decimal places
+Getting started | help | Python built-in | Display documentation for a function or object
+Importing and data loading | pd.read_csv | pandas | Read a CSV file into a DataFrame
+Importing and data loading | pd.read_excel | pandas | Read an Excel spreadsheet into a DataFrame
+Importing and data loading | pd.read_spss | pandas | Read an SPSS dataset (.sav) into a DataFrame
+Importing and data loading | df.to_csv | pandas | Save a DataFrame to a CSV file
+Cleaning and transforming | df.query | pandas | Filter rows matching a boolean expression
+Cleaning and transforming | df.drop | pandas | Drop specified rows or columns
+Cleaning and transforming | df.rename | pandas | Rename DataFrame columns or index labels
+Cleaning and transforming | df.sort_values | pandas | Sort rows by one or more column values
+Cleaning and transforming | df.assign | pandas | Assign new columns to a DataFrame
+Cleaning and transforming | df.groupby | pandas | Group DataFrame rows by categorical variables for aggregation
+Cleaning and transforming | df.agg | pandas | Compute multiple summary statistics on grouped data
+Cleaning and transforming | df.value_counts | pandas | Return frequency counts of unique values
+Cleaning and transforming | df.merge | pandas | Merge (join) two DataFrames on a key column
+Cleaning and transforming | df.drop_duplicates | pandas | Remove duplicate rows from a DataFrame
+Cleaning and transforming | df.melt | pandas | Unpivot a DataFrame from wide to long format
+Cleaning and transforming | df.pivot | pandas | Reshape a DataFrame from long to wide format
+Cleaning and transforming | df.isna | pandas | Detect missing values (NaN or None)
+Cleaning and transforming | df.dropna | pandas | Remove rows or columns containing missing values
+Cleaning and transforming | df.fillna | pandas | Fill missing values with a constant or computed statistic
+Data Exploration | df.head | pandas | Preview the first rows of a DataFrame
+Data Exploration | df.tail | pandas | Preview the last rows of a DataFrame
+Data Exploration | df.info | pandas | Print summary of DataFrame columns, types, and non-null counts
+Data Exploration | df.describe | pandas | Generate descriptive summary statistics for numerical columns
+Data Exploration | df.mean | pandas | Calculate arithmetic mean across rows or columns
+Data Exploration | df.std | pandas | Calculate standard deviation
+Data Exploration | df.median | pandas | Calculate median value
+Data Exploration | df.quantile | pandas | Calculate percentiles and quantiles
+Visualisation | plt.figure | matplotlib | Create a new figure for plotting
+Visualisation | plt.show | matplotlib | Display the active figure
+Visualisation | plt.savefig | matplotlib | Save the current plot to an image file
+Visualisation | sns.histplot | seaborn | Plot a histogram with optional kernel density estimate (KDE)
+Visualisation | sns.scatterplot | seaborn | Plot a bivariate scatter plot
+Visualisation | sns.boxplot | seaborn | Draw a box-and-whisker plot
+Visualisation | sns.regplot | seaborn | Plot data and a linear regression model fit
+Visualisation | sns.heatmap | seaborn | Plot rectangular data as a color-encoded matrix
+Statistical Inference | stats.ttest_ind | scipy.stats | Independent two-sample Student's t-test
+Statistical Inference | stats.ttest_rel | scipy.stats | Paired (repeated measures) t-test
+Statistical Inference | stats.chi2_contingency | scipy.stats | Chi-square test of independence in a contingency table
+Statistical Inference | stats.mannwhitneyu | scipy.stats | Non-parametric Mann-Whitney U test
+Statistical Inference | smf.ols | statsmodels | Fit an ordinary least squares (OLS) linear regression model
+Statistical Inference | smf.mixedlm | statsmodels | Fit a linear mixed-effects model (hierarchical / multilevel)
+Predictive Modeling | train_test_split | scikit-learn | Split arrays or matrices into random train and test subsets
+Predictive Modeling | StandardScaler | scikit-learn | Standardize features by removing the mean and scaling to unit variance
+Predictive Modeling | LogisticRegression | scikit-learn | Logistic regression classifier for binary or multiclass outcomes
+Predictive Modeling | RandomForestClassifier | scikit-learn | Random Forest ensemble classifier
+Predictive Modeling | KMeans | scikit-learn | K-Means clustering algorithm
+Predictive Modeling | DBSCAN | scikit-learn | Density-Based Spatial Clustering of Applications with Noise
+Predictive Modeling | cross_val_score | scikit-learn | Evaluate a model score by cross-validation
+Predictive Modeling | classification_report | scikit-learn | Build a text report showing main classification metrics (precision, recall, F1)
+Predictive Modeling | confusion_matrix | scikit-learn | Compute confusion matrix to evaluate classification accuracy
+Time Series | seasonal_decompose | statsmodels | Decompose a time series into trend, seasonal, and residual components
+Time Series | ARIMA | statsmodels | Fit an AutoRegressive Integrated Moving Average model

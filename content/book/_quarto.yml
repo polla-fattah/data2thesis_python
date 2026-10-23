@@ -48,8 +48,10 @@ book:
 
 bibliography: references.bib
 
+jupyter: python3
+
 execute:
-  freeze: true
+  freeze: auto
 
 format:
   typst:

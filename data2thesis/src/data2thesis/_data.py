@@ -117,7 +117,7 @@ def example_file(name: Optional[str] = None) -> Path | List[str]:
     return target
 
 
-# Alias matching R package function name for ease of transition
+# Backward compatibility alias
 data2thesis_example = example_file
 
 

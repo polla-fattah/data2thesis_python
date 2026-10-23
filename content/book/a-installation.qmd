@@ -4,188 +4,193 @@ number-sections: false
 
 # Appendix A: Installation and Setup {#sec-app-installation}
 
-```{r}
+```{python}
 #| label: setup
 #| include: false
-library(data2thesis)
+import sys
+import data2thesis as dt
+import pandas as pd
 ```
 
-This appendix explains how to install everything the book uses, and how to fix the problems that most often get in the way. If you only want to start, the short version is: install **R**, then **RStudio**, then run the package installation command in @sec-install-packages. If you are not ready to install anything yet, every chapter's exercises also run in your web browser, in the [playground](../playground/index.html).
+This appendix explains how to install everything the book uses, how to configure your working environment, and how to resolve the issues that most often arise. If you want to get started immediately, the short version is: install **Python**, install **Visual Studio Code**, create a virtual environment, and install the companion packages with `pip`. If you are not ready to install anything locally yet, every chapter's exercises can also be run directly in your web browser in the [interactive playground](../playground/index.html).
 
-Installers and websites change their appearance from year to year, so this appendix describes each step in words rather than with screenshots. The choices that matter are the same in every version.
+Software installers and websites update their appearance over time, so this appendix describes each step in clear terms. The essential configuration choices remain consistent across versions.
 
 ## What you need
 
 | Software | What it is | Required? |
 |---|---|---|
-| **R** | The programming language and the engine that runs your code | Yes |
-| **RStudio Desktop** | The program you work in: editor, console, plots, and help in one window | Yes (or Positron) |
-| **Positron** | A newer editor from the makers of RStudio, an alternative to it | Optional |
-| **Quarto** | Turns documents with code into reports and books (Chapter 17) | Comes with RStudio |
-| **R packages** | Add-ons for specific tasks, installed from within R | Yes, as needed |
-| **Rtools** (Windows) or **Xcode command line tools** (macOS) | Compilers for building packages from source | Only if asked |
+| **Python** (3.10+) | The programming language and computation engine | Yes |
+| **VS Code** | Code editor with integrated terminal, plot viewer, and notebook support | Yes (or Positron) |
+| **Positron** | Modern data science IDE by Posit, designed for Python and R | Optional |
+| **Quarto** | Authoring tool that compiles research code into papers, books, and slides | Yes |
+| **Scientific packages** | Libraries (`pandas`, `seaborn`, `scipy`, etc.) installed via `pip` | Yes |
+| **data2thesis** | Companion package containing all Graduate Wellbeing Study datasets | Yes |
 
 : The software used in this book {#tbl-software}
 
-All of it is free. R must be installed first, because RStudio and Positron are programs *for* R: they need R to run your code. Install R, then the editor.
+All of these tools are free and open source. Python should be installed first so that editors and tools can discover your Python interpreter automatically.
 
-## Installing R
+## Installing Python
 
-R is downloaded from **CRAN**, the Comprehensive R Archive Network, at [cran.r-project.org](https://cran.r-project.org). Always download the latest release. This book was built with R `r paste(R.version$major, R.version$minor, sep = ".")`; any later version works.
+Python is downloaded from the official Python Software Foundation website at [python.org/downloads](https://www.python.org/downloads/). Always download the latest stable release (version 3.10 or newer; 3.12 is recommended).
 
 ### Windows
 
-1. On the CRAN page, choose *Download R for Windows*, then *base*, then the link to download the latest version (a file such as `R-4.x.y-win.exe`).
-2. Run the downloaded file. If Windows asks whether to allow the app to make changes, choose *Yes*. If you have no administrator rights on a university computer, the installer offers to install for your user only, which works just as well.
-3. Accept the default settings on every screen. The defaults install R in `C:\Program Files\R\` and register it so that RStudio finds it automatically.
+1. On [python.org](https://www.python.org/downloads/windows/), download the **Windows installer (64-bit)**.
+2. Run the installer. On the very first screen, **make sure to check the box: "Add python.exe to PATH"**. This is essential: it enables your terminal and code editor to find Python.
+3. Click **Install Now**. If prompted with "Disable path length limit" at the end of the installation, click it to avoid Windows file-path truncation issues.
 
 ### macOS
 
-1. On the CRAN page, choose *Download R for macOS*.
-2. Choose the right package for your Mac's processor. Newer Macs (from late 2020) have **Apple silicon** (M1, M2, and later): use the file marked *arm64*. Older Macs have **Intel** processors: use the file marked *x86_64*. The Apple menu, *About This Mac*, shows which you have.
-3. Open the downloaded `.pkg` file and follow the installer, accepting the defaults.
+1. On [python.org](https://www.python.org/downloads/macos/), download the macOS 64-bit universal installer (`.pkg`).
+2. Run the package installer and accept the standard defaults.
+3. After installation completes, navigate to your Applications folder, open the `Python 3.x` folder, and double-click `Install Certificates.command` to ensure secure network connections (SSL) function properly when downloading datasets and packages.
+4. Alternatively, if you use Homebrew, you can install Python directly from Terminal:
+   ```bash
+   brew install python
+   ```
 
 ### Linux
 
-R is available in the package manager of every major Linux distribution, but the version there is often out of date. CRAN's *Download R for Linux* page gives up-to-date instructions for Ubuntu, Debian, Fedora, and others. On Ubuntu, for example, the instructions add CRAN's repository and then install R with `sudo apt install r-base r-base-dev`. Follow the page for your distribution, because the exact commands change with each release.
+Python comes pre-installed on most modern Linux distributions. On Debian/Ubuntu distributions, ensure the development packages and package manager are installed:
+
+```bash
+sudo apt update
+sudo apt install python3 python3-pip python3-venv
+```
 
 ### Checking the installation
 
-Open R (from the Start menu on Windows or the Applications folder on macOS) and type:
+Open your system terminal (Command Prompt or PowerShell on Windows; Terminal on macOS and Linux) and type:
 
-```{r}
-R.version.string
+```bash
+python --version
 ```
 
-If it prints a version number, R is working. You will rarely open R on its own again; from now on you will work in RStudio.
+If it prints `Python 3.12.x` (or any version 3.10+), Python is installed and accessible.
 
-## Installing RStudio
+## Installing VS Code
 
-1. Go to [posit.co/download/rstudio-desktop](https://posit.co/download/rstudio-desktop/). The page detects your operating system; step 1 on the page (installing R) is already done.
-2. Download **RStudio Desktop** (the free version) and install it like any other program, accepting the defaults. On macOS, drag RStudio into the Applications folder.
-3. Open RStudio. It finds R automatically and shows the R version in the Console pane, in the lower left (Chapter 1 takes you on a tour of the panes).
+1. Download **Visual Studio Code** from [code.visualstudio.com](https://code.visualstudio.com/) for your operating system.
+2. Install the application using default settings. On Windows, check the boxes to add "Open with Code" to the context menu.
+3. Open VS Code. On the left sidebar, click the **Extensions** icon (four square blocks, or press `Ctrl+Shift+X` / `Cmd+Shift+X`).
+4. Search for and install:
+   - **Python** (by Microsoft)
+   - **Jupyter** (by Microsoft)
+   - **Quarto** (by Posit PBC)
 
-RStudio includes **Quarto**, so the reports of Chapter 17 work without installing anything else. For PDF output, Quarto also needs LaTeX; install a small version once by typing `quarto install tinytex` in RStudio's **Terminal** tab.
+### Positron: A Dedicated Data Science Alternative
 
-### Positron, an alternative
+**Positron** ([positron.posit.co](https://positron.posit.co)) is a specialized code editor built by Posit for scientific data analysis in Python and R. It provides dedicated panes for Variables, DataFrames, and Plots out of the box. Everything taught in this book works identically in VS Code and Positron.
 
-**Positron** ([positron.posit.co](https://positron.posit.co)) is a newer editor from Posit, the company behind RStudio, built for both R and Python. Everything in this book works in Positron as well. RStudio is used in the book's instructions because it is still the most widely used, and most tutorials and university courses assume it.
+## Managing projects with virtual environments
 
-### No installation at all
+In empirical research, package versions evolve. To prevent package updates from inadvertently altering your thesis calculations months later, create a **virtual environment** for your research project. A virtual environment is an isolated directory containing its own Python interpreter and set of installed libraries.
 
-If you cannot install software, for example on a locked-down computer, two options need only a web browser:
+In your research project folder:
 
-- The book's [playground](../playground/index.html) runs R in your browser, with exercises for every chapter.
-- **Posit Cloud** ([posit.cloud](https://posit.cloud)) offers RStudio in the browser, with a free plan that is limited but enough to follow most chapters.
+```bash
+# 1. Create a virtual environment named .venv
+python -m venv .venv
 
-## Recommended RStudio settings
+# 2. Activate the virtual environment
+# Windows (PowerShell):
+.venv\Scripts\Activate.ps1
+# Windows (Command Prompt):
+.venv\Scripts\activate.bat
+# macOS / Linux:
+source .venv/bin/activate
+```
 
-A few settings make RStudio work the way this book recommends. Open *Tools > Global Options*:
-
-- **General > Basic**: untick *Restore .RData into workspace at startup*, and set *Save workspace to .RData on exit* to **Never**. Every session then starts clean, and your scripts, not a hidden saved workspace, hold your work. This is the single most important setting for reproducible work (Chapter 17).
-- **Code > Editing**: tick *Use native pipe operator, \|>*, so that the pipe shortcut (Ctrl+Shift+M, or Cmd+Shift+M on a Mac) inserts the pipe used in this book (Chapter 3).
-- **Code > Display**: tick *Show margin* and *Highlight R function calls*, which make code easier to read.
-- **Appearance**: choose a font size and theme that are comfortable for you; dark themes are popular for long sessions.
+When activated, `(.venv)` appears at the start of your terminal command line. In VS Code, press `Ctrl+Shift+P` (or `Cmd+Shift+P`), type `Python: Select Interpreter`, and choose the interpreter inside your `.venv` directory.
 
 ## Installing the book's packages {#sec-install-packages}
 
-Packages are installed once, with `install.packages()`, and loaded in every session with `library()` (Chapter 1). Each chapter lists the packages it uses at the start; @tbl-packages collects them all.
+Scientific libraries are installed using Python's package manager, `pip`. Each chapter in the book uses specific packages; @tbl-packages summarizes the primary libraries used across chapters.
 
-| Chapters | Packages |
+| Chapters | Libraries |
 |---|---|
-| 1-3 | here, readxl, haven, writexl, dplyr, tidyr, stringr, readr (or the whole tidyverse) |
-| 4, 6-7 | ggplot2, psych |
-| 8 | broom, car |
-| 9 | psych, GPArotation, corrplot, factoextra |
-| 10 | lme4, lmerTest |
-| 11-13 | tidymodels, kknn, ranger, kernlab, themis, glmnet, xgboost |
-| 14 | mclust, dbscan, factoextra, cluster |
-| 15 | tidymodels (nnet comes with R) |
-| 16 | tsibble, fable, feasts, urca |
-| 17 | rmarkdown, knitr, shiny, bslib, renv, usethis |
-| 18 | ellmer, stringr, yardstick |
-| 19 | patchwork, broom, lme4 |
+| 1–3 | `pandas`, `numpy`, `openpyxl`, `pyreadstat` |
+| 4 | `matplotlib`, `seaborn` |
+| 5–7 | `scipy`, `statsmodels` |
+| 8–10 | `statsmodels` (OLS, GLM, MixedLM) |
+| 11–13 | `scikit-learn`, `xgboost` |
+| 14 | `scikit-learn` (K-Means, DBSCAN, GMM, PCA) |
+| 15 | `scikit-learn`, `torch` (PyTorch) |
+| 16 | `statsmodels` (ARIMA, seasonal decomposition) |
+| 17 | `quarto`, `shiny`, `matplotlib` |
+| 18 | `requests`, `openai` / `ollama` |
+| 19 | `pandas`, `statsmodels`, `seaborn` |
 
-: Packages used in each chapter {#tbl-packages}
+: Python packages used across book chapters {#tbl-packages}
 
-To install everything at once, copy this command into the Console. It downloads a few hundred megabytes and can take ten minutes or more, so it is best done on a good connection:
+To install all required packages into your virtual environment in a single command, run:
 
-```r
-install.packages(c(
-  "tidyverse", "here", "readxl", "haven", "writexl",
-  "psych", "GPArotation", "corrplot", "factoextra", "broom", "car",
-  "lme4", "lmerTest",
-  "tidymodels", "kknn", "ranger", "kernlab", "themis", "glmnet", "xgboost",
-  "mclust", "dbscan", "patchwork",
-  "tsibble", "fable", "feasts", "urca",
-  "rmarkdown", "shiny", "bslib", "renv", "usethis",
-  "ellmer"
-))
+```bash
+pip install pandas numpy openpyxl pyreadstat matplotlib seaborn scipy statsmodels scikit-learn xgboost torch shiny requests
 ```
 
-The **tidyverse** package installs dplyr, tidyr, stringr, readr, ggplot2, and several others in one go. The first time you install packages, R may ask you to choose a **CRAN mirror** (choose *0-Cloud*, which is fast everywhere) and whether to use a personal library (answer *Yes*).
+### The student wellbeing data: the `data2thesis` package
 
-### The student wellbeing data: the data2thesis package
+The case-study data for Elaf's research is bundled in the companion package **`data2thesis`**. You can install it directly via `pip`:
 
-Elaf's data is in the **data2thesis** package, which is installed from this book's website rather than from CRAN:
-
-```r
-install.packages("https://polla-fattah.github.io/data2thesis_r/downloads/data2thesis_1.1.0.tar.gz",
-                 repos = NULL, type = "source")
+```bash
+pip install data2thesis
 ```
 
-The package contains only data, so it installs on every system without compiling anything. Check that it works:
+Verify that the package and dataset load properly:
 
-```{r}
-library(data2thesis)
-nrow(students)
+```{python}
+import data2thesis as dt
+
+students = dt.load_students()
+print(f"Loaded {students.shape[0]} students and {students.shape[1]} variables.")
 ```
 
-The same data is also available as ordinary files (CSV, Excel, and SPSS) on the book's website, for readers who prefer to import files, as Chapter 2 does.
+All datasets are also available as direct CSV, Excel, and SPSS downloads on the [book website](https://polla-fattah.github.io/data2thesis_python/).
 
-### The versions used in this book
+### Software versions used in this book
 
-The results in this book were produced with these versions. Newer versions usually give the same results, but if a number in your output differs slightly from the book, a different package version is a likely reason.
+The analyses in this edition were executed with the following package versions:
 
-```{r}
+```{python}
 #| echo: false
-key_packages <- c("dplyr", "tidyr", "ggplot2", "lme4", "tidymodels", "fable", "ellmer", "data2thesis")
-tibble::tibble(
-  Software = c("R", key_packages),
-  Version  = c(paste(R.version$major, R.version$minor, sep = "."),
-               vapply(key_packages, \(p) as.character(packageVersion(p)), character(1)))
-) |>
-  knitr::kable()
+import numpy as np
+import pandas as pd
+import scipy
+import sklearn
+import statsmodels
+
+versions = [
+    ("Python", sys.version.split()[0]),
+    ("pandas", pd.__version__),
+    ("numpy", np.__version__),
+    ("scipy", scipy.__version__),
+    ("statsmodels", statsmodels.__version__),
+    ("scikit-learn", sklearn.__version__),
+    ("data2thesis", dt.__version__),
+]
+pd.DataFrame(versions, columns=["Software", "Version"])
 ```
 
 ## Common problems and solutions
 
-**"There is no package called ..."**
-: The package is not installed, or the name is misspelled (names are case-sensitive: `GPArotation`, not `gparotation`). Install it with `install.packages("name")`, then load it with `library(name)`.
+**`'python' is not recognized as an internal or external command`**
+: Python was installed without checking "Add python.exe to PATH". Re-run the Python Windows installer, select **Modify**, and check the PATH option, or add your Python installation folder (e.g., `C:\Users\Username\AppData\Local\Programs\Python\Python312\`) to your system Environment Variables.
 
-**"Package ... is not available for this version of R"**
-: Either the name is misspelled, or your R is too old for the current version of the package. Update R (see below). A few packages are not on CRAN at all; their documentation says how to install them.
+**`ModuleNotFoundError: No module named '...'`**
+: The library is not installed in the currently active Python environment, or VS Code is pointing to a different Python interpreter. Open the VS Code Command Palette (`Ctrl+Shift+P`), select `Python: Select Interpreter`, and choose your project's `.venv`. Then run `pip install <package-name>`.
 
-**"Do you want to install from sources the package which needs compilation?"**
-: A newer version exists as source code than as a ready-made (binary) package. Answer *No* to install the slightly older binary version, which is fine for this book. Answering *Yes* needs **Rtools** on Windows (from CRAN's *Download R for Windows* page, choosing the Rtools version that matches your R) or the **Xcode command line tools** on macOS (run `xcode-select --install` in the macOS Terminal).
+**`Execution of scripts is disabled on this system (Windows PowerShell)`**
+: PowerShell on Windows restricts script execution by default. Open PowerShell as Administrator and run:
+  ```powershell
+  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+  ```
+  This allows activating local virtual environment scripts.
 
-**"Lib ... is not writable" or permission errors**
-: R cannot write to the system's package folder, which is common on university computers. When R offers to create a personal library, answer *Yes*.
+**`File not found` when loading datasets**
+: In research scripts, always use relative paths starting from the project root (e.g., `data/students.csv`), or use the helper function `dt.load_students()`. Avoid absolute paths like `C:\Users\Elaf\Desktop\data.csv`, which fail when shared with supervisors or collaborators.
 
-**Problems with folder names on Windows**
-: If your Windows user name or project path contains non-English characters, or your files are in a synchronised folder such as OneDrive, installation and file reading can fail in confusing ways. Keeping R projects in a simple local folder, such as `C:\research\`, avoids most of these problems.
-
-**Downloads fail at the university**
-: Some networks block or slow down downloads. Try the *0-Cloud* mirror (`chooseCRANmirror()`), another network, or ask your IT service whether a proxy must be set.
-
-**RStudio cannot find R**
-: Install R before RStudio, or reinstall R with the default settings. On Windows, *Tools > Global Options > General* lets you choose the R version RStudio uses.
-
-**Everything worked yesterday, and today nothing does**
-: Restart R (*Session > Restart R*), then run your script from the top. Many problems come from objects left over from earlier work, which a clean start removes (see the settings above).
-
-## Keeping R up to date
-
-Update your packages every few months with `update.packages()`, or the *Update* button in RStudio's Packages pane. Update R itself once or twice a year by installing the new version exactly as the first time; your scripts keep working, but packages must be reinstalled for the new version, which the command in @sec-install-packages does in one go. Tools such as **rig** ([github.com/r-lib/rig](https://github.com/r-lib/rig)) can install and switch between several R versions, useful if an old project needs an old version. For projects that must keep exactly the same package versions, use **renv** (Chapter 17).
-
-Two things do not belong in any script. API keys for AI services (Chapter 18) go in your personal `.Renviron` file, opened with `usethis::edit_r_environ()`; and passwords never go into code at all.
+**Restarting a clean session**
+: If variables from earlier interactive runs are causing unexpected errors, restart the Python interactive kernel. In VS Code, click the **Restart** button at the top of the Interactive Window or notebook.

@@ -4,343 +4,230 @@ number-sections: false
 
 # Appendix D: Common Errors and How to Fix Them {#sec-app-errors}
 
-```{r}
+```{python}
 #| label: setup
 #| include: false
-library(data2thesis)
-library(dplyr)
-library(ggplot2)
-library(lme4)
+import numpy as np
+import pandas as pd
+import data2thesis as dt
+
+students = dt.load_students()
 ```
 
-Everyone who writes R code sees error messages every day, experts included. An error is not a sign that you are doing badly; it is R telling you, as precisely as it can, what it could not do. This appendix collects the messages that readers of this book are most likely to meet, what each one means, and how to fix it. The messages below are real: each example was run when the book was built, so the wording is what your R will show (it can differ slightly between versions).
+Everyone who writes Python code encounters error messages on a regular basis—experts included. An error is not a sign of failure; it is Python explaining, as precisely as possible, what went wrong and where execution stopped. 
 
-## Reading a message
+This appendix collects the exceptions and pitfalls that researchers are most likely to encounter in empirical analysis, what each message means, and how to fix it. The examples below are live: each was executed when compiling the book, so the tracebacks match exactly what your Python environment will display.
 
-R produces three kinds of messages:
+## Anatomy of a Python traceback
 
-- An **error** stops the code: nothing after it runs. It starts with `Error`.
-- A **warning** lets the code finish but tells you something may be wrong. It starts with `Warning`. Never ignore a warning without understanding it: several below mean your results contain missing values or were calculated differently from what you intended.
-- A **message** is information only, such as a package telling you it has loaded.
+When Python cannot execute an instruction, it raises an **exception** and prints a **traceback**. 
 
-When a long message appears, read it from the end: the last lines usually say what went wrong, and lines starting with `ℹ` point to where. Newer packages (dplyr, ggplot2, tidymodels) write especially helpful messages, often with a suggestion (`Did you mean ...?`).
+1. **Read from bottom to top:** The very last line of the traceback displays the exception type and the specific message explaining what failed (for example, `KeyError: 'age_years'`).
+2. **Find your code:** Look upward through the traceback to find the last line that points to your script file (e.g., `analysis.py, line 24`). That is the exact line where execution halted.
+3. **Warnings vs. Exceptions:** An exception terminates execution immediately. A **warning** (such as pandas' `SettingWithCopyWarning` or `FutureWarning`) allows the script to continue running, but alerts you to a potential issue or deprecated syntax.
 
-## Starting out
+## Variable and naming errors
 
-### object '...' not found
+### `NameError: name '...' is not defined`
 
-```{r}
+```{python}
 #| error: true
-mean(sleep_hours)
+average = sum(sleep_hours) / len(sleep_hours)
 ```
 
-R does not know the name. The usual causes: a typing mistake (names are case-sensitive: `Sleep_hours` is not `sleep_hours`); the object was never created, because the line that creates it was not run; or the name is a column inside a data frame, which must be reached through the data frame, as in `mean(semesters$sleep_hours)` or inside a dplyr verb. If a document fails to render with this error although the code works in the Console, the object was created in the Console but not in the document (Chapter 17).
+**What it means:** Python searched your computer's memory for an object or variable named `sleep_hours` and found nothing.
 
-### could not find function "..."
+**Common causes:**
+- **Typing mistake:** Variable names in Python are strictly case-sensitive. `Sleep_hours` and `sleep_hours` are two completely different names.
+- **Unexecuted line:** In an interactive session or notebook, the cell where the variable was defined was not run, or was run in a previous session that has since been restarted.
+- **Missing quotes around text:** Writing `faculty = Education` instead of `faculty = "Education"` causes Python to look for a variable named `Education`.
 
-```{r}
+### `AttributeError: '...' object has no attribute '...'`
+
+```{python}
 #| error: true
-Mean(c(6.5, 7, 5.5))
+scores = [78, 85, 92, 64, 88]
+scores.mean()
 ```
 
-Either the function name is misspelled (here, `mean` with a capital M), or it belongs to a package that is not loaded. Load the package with `library()`, or write `package::function()`. The pipe `%>%` from older code gives the same error until dplyr or magrittr is loaded; the native pipe `|>` needs no package.
+**What it means:** You attempted to call a method or access a property that does not exist on that object type. Here, standard Python `list` objects have methods like `.append()` and `.sort()`, but no `.mean()` method.
 
-### there is no package called '...'
+**How to fix it:**
+- If working with a list, use Python's built-in `sum(scores) / len(scores)` or numpy's `np.mean(scores)`.
+- If you intended to use pandas methods, convert the collection to a pandas Series: `pd.Series(scores).mean()`.
+- Check spelling: writing `df.val_counts()` instead of `df.value_counts()`.
 
-```{r}
+## Data structure and indexing errors
+
+### `KeyError: '...'`
+
+```{python}
 #| error: true
-library(ggplot)
+students["faculty_name"]
 ```
 
-The package is not installed, or its name is misspelled (the package is ggplot2). Install it once with `install.packages("ggplot2")`, then load it with `library(ggplot2)`. Appendix A lists every package the book uses.
+**What it means:** In pandas or dictionaries, you requested a column name or key that does not exist.
 
-### unexpected symbol, unexpected ')', unexpected string constant
+**How to fix it:**
+- Check the exact spelling and casing of your DataFrame columns by running `list(students.columns)`.
+- In the wellbeing dataset, the column is named `faculty`, not `faculty_name`.
+- Check for hidden whitespace in column names (e.g. `'age '` instead of `'age'`), which often occurs when importing messy Excel or survey exports. Clean them with `df.columns = df.columns.str.strip()`.
 
-```{r}
+### `IndexError: list index out of range`
+
+```{python}
 #| error: true
-mean(c(6.5, 7) na.rm = TRUE)
+faculties = ["Health Sciences", "Education", "Social Sciences"]
+print(faculties[3])
 ```
 
-A **syntax error**: R cannot read the line at all. The `^` marks where R got lost; the mistake is usually just before it. Here a comma is missing before `na.rm`. Other common causes are an extra or missing bracket (`unexpected ')'`), a missing comma between two pieces of text (`unexpected string constant`), and a missing quotation mark. RStudio highlights matching brackets and marks syntax errors with a red cross in the margin before you even run the code.
+**What it means:** You attempted to access an item at an index position that does not exist.
 
-### The Console shows `+` and nothing happens
+**How to fix it:**
+- Python uses **0-based indexing**. In a list of three elements, the items are at positions `0`, `1`, and `2`. Accessing index `3` asks for a fourth item.
+- To access the last item of any list or array safely, use negative indexing: `faculties[-1]`.
 
-R is waiting for the rest of an unfinished command, usually because a bracket or quotation mark is not closed. Press **Esc** to cancel, fix the line, and run it again.
+## Data type and value errors
 
-### argument "..." is missing, with no default
+### `TypeError: unsupported operand type(s)`
 
-```{r}
+```{python}
 #| error: true
-rnorm()
+total_participants = 600 + " students"
 ```
 
-A required argument was not given. The help page (`?rnorm`) lists the arguments; those without a default value (here `n`, the number of values) must be supplied.
+**What it means:** You attempted an operation on incompatible data types—here, adding a number (`int`) and text (`str`).
 
-### A misspelled argument, with no error at all
+**How to fix it:**
+- If you want to combine numbers and text for reporting, convert the number to a string using an f-string:
+  ```python
+  f"{600} students"
+  ```
+- If a numerical column was imported as strings (for example, containing numbers mixed with `"N/A"`), convert the column with `pd.to_numeric(df['col'], errors='coerce')`.
 
-```{r}
-mean(c(6.5, NA, 7), na_rm = TRUE)
-```
+### `ValueError: could not convert string to float`
 
-Not every mistake produces a message. The argument is `na.rm`, not `na_rm`, and because `mean()` accepts extra arguments, the misspelled one is silently ignored: the missing value is not removed, and the answer is `NA`. When a result looks wrong, check the spelling of every argument against the help page.
-
-## Files and folders
-
-### cannot open file ...: No such file or directory
-
-```{r}
+```{python}
 #| error: true
-#| warning: true
-read.csv("studnets.csv")
+float("29.5 years")
 ```
 
-R looked for the file in the **working directory** and did not find it. Check the spelling of the file name (here `studnets`), check that the file is in the project folder, and build paths with `here::here()` inside an RStudio Project (Chapter 1), so they work on any computer. `list.files()` shows the files R can see.
+**What it means:** A function expected data in a specific format, but the received value could not be parsed. `float()` cannot convert `"29.5 years"` because of the trailing text characters.
 
-### cannot change working directory
+**How to fix it:**
+- Strip extraneous text characters before numeric conversion:
+  ```python
+  float("29.5 years".replace(" years", ""))
+  ```
+- In pandas, use regular expression extraction: `df['age'].str.extract(r'(\d+\.?\d*)').astype(float)`.
 
-```{r}
+## Syntax and indentation errors
+
+### `SyntaxError: invalid syntax`
+
+```python
+if students['age'].mean() > 25
+    print("Mature cohort")
+```
+
+```text
+SyntaxError: expected ':'
+```
+
+**What it means:** Python could not parse your code because the grammar rules of the language were violated.
+
+**Common causes:**
+- Forgetting the colon `:` at the end of an `if`, `for`, `while`, or `def` line.
+- Unmatched parentheses, brackets, or quotes: opening `(` without a matching `)`.
+- Using assignment `=` where a comparison `==` was required (e.g. `if x = 5:`).
+
+### `IndentationError: expected an indented block`
+
+```python
+def calculate_bmi(weight_kg, height_m):
+return weight_kg / (height_m ** 2)
+```
+
+```text
+IndentationError: expected an indented block after function definition
+```
+
+**What it means:** Unlike R or C++ which use curly braces `{}` to group code blocks, Python relies strictly on indentation (usually 4 spaces).
+
+**How to fix it:**
+- Indent all statements inside functions, loops, and conditional blocks by 4 spaces:
+  ```python
+  def calculate_bmi(weight_kg, height_m):
+      return weight_kg / (height_m**2)
+  ```
+- Never mix tabs and spaces in the same file. In VS Code, ensure your indentation setting is set to "Spaces: 4".
+
+## File and environment errors
+
+### `FileNotFoundError: [Errno 2] No such file or directory`
+
+```{python}
 #| error: true
-setwd("C:/Users/Elaf/Documents/thesis")
+df = pd.read_csv("data/non_existent_survey.csv")
 ```
 
-The folder does not exist on this computer, which is exactly why `setwd()` with a full path breaks as soon as a script is shared or moved. Use an RStudio Project and relative paths instead (Chapter 1).
+**What it means:** Python searched the file system at the specified path and found no file with that name.
 
-## Data
+**How to fix it:**
+- Check your current working directory by running:
+  ```python
+  import os
 
-### non-numeric argument to binary operator
+  print(os.getcwd())
+  ```
+- Relative file paths start from the current working directory. If your script is in `scripts/` and your data is in `data/`, writing `"data/students.csv"` will fail if the working directory is already inside `scripts/`. Use paths relative to the project root or use `pathlib.Path(__file__).parent` for portable path resolution.
 
-```{r}
-#| error: true
-"7" + 1
+### `ModuleNotFoundError: No module named '...'`
+
+**What it means:** You ran `import <package>`, but Python could not find that library in the active environment.
+
+**How to fix it:**
+- Ensure the library is installed in your terminal using `pip install <package>`.
+- In VS Code, verify that the active Python interpreter corresponds to the environment where you installed the package (`Ctrl+Shift+P` -> `Python: Select Interpreter`).
+
+## Silent data pitfalls
+
+Some mistakes in data analysis produce no error message at all, but generate incorrect numbers. Watch out for these three pitfalls:
+
+### 1. Missing value comparisons (`NaN == NaN`)
+
+In scientific Python, floating-point missing values (`NaN`) follow the IEEE 754 standard: a missing value is never equal to anything, not even itself:
+
+```{python}
+np.nan == np.nan
 ```
 
-Arithmetic on text. The quotation marks make `"7"` a piece of text, not a number. In real data, this happens when a numeric column was imported as text, often because of one stray value such as `"7 hrs"` or a missing-value code. Check with `str()` or `glimpse()`, and convert with `as.numeric()` or `readr::parse_number()` (Chapters 2 and 3).
+Writing `students[students['age'] == np.nan]` will return an empty table! Always use pandas' `.isna()` or `.notna()`:
 
-### argument is not numeric or logical: returning NA
-
-```{r}
-#| warning: true
-mean(c("6.5", "7"))
+```{python}
+missing_count = students["age"].isna().sum()
+print(f"Students with missing age: {missing_count}")
 ```
 
-A **warning**, not an error, and the result is `NA`: the same problem as above, a numeric column stored as text. Convert the column first.
+### 2. Exponentiation (`^` vs. `**`)
 
-### NAs introduced by coercion
+In Python, the caret symbol `^` is the bitwise XOR operator, **not** the mathematical power operator:
 
-```{r}
-#| warning: true
-as.numeric(c("6.5", "7 hrs", "six"))
+```{python}
+print("2 ^ 3 evaluates to:", 2 ^ 3)  # Bitwise XOR!
+print("2 ** 3 evaluates to:", 2**3)  # Mathematical power (2 cubed)
 ```
 
-Values that could not be converted to numbers became `NA`. Look at which ones (`"7 hrs"` and `"six"` here) before going on: `parse_number()` can rescue `"7 hrs"`, but `"six"` needs a decision (Chapter 3). Losing data silently through this warning is one of the most common problems in real analyses.
+Always use `**` for powers (e.g. `(1 + r) ** t`).
 
-### The result is NA
+### 3. Modifying a slice (`SettingWithCopyWarning`)
 
-```{r}
-mean(c(6.5, NA, 7))
+When you filter a DataFrame with `sub = df[df['faculty'] == 'Education']` and then try to create a new column with `sub['new_col'] = 1`, pandas warns you that it cannot tell whether `sub` is an independent copy or a view into the original DataFrame.
+
+**How to fix it:**
+Always make an explicit copy when creating a working subset:
+
+```python
+sub = df[df["faculty"] == "Education"].copy()
+sub["new_col"] = 1
 ```
-
-Not an error: any calculation that includes a missing value gives `NA`, because the true answer is unknown. Add `na.rm = TRUE` to calculate from the available values, and report how many were missing (Chapter 6).
-
-### object '...' not found, inside dplyr
-
-```{r}
-#| error: true
-students |> filter(facultty == "Education")
-```
-
-A column name is misspelled. dplyr says in which argument the problem is (`ℹ In argument: ...`) and which name it could not find. `names(students)` lists the correct names.
-
-### arguments imply differing number of rows; replacement has ... rows
-
-```{r}
-#| error: true
-data.frame(student = 1:3, sleep = c(6.5, 7))
-```
-
-Every column of a data frame must have the same length. The data behind a new column has more or fewer values than the data frame has rows; check the lengths with `length()` and `nrow()`.
-
-### $ operator is invalid for atomic vectors
-
-```{r}
-#| error: true
-x <- c(sleep = 6.5, study = 30)
-x$sleep
-```
-
-`$` works on data frames and lists, but `x` is a vector. Use `x["sleep"]` for a vector, and check what kind of object you have with `class()` or `str()`.
-
-### subscript out of bounds
-
-```{r}
-#| error: true
-results <- list(6.5, 7)
-results[[3]]
-```
-
-You asked for an element that does not exist: the third element of a list with two. Check the length with `length()`, and the names with `names()`.
-
-### invalid factor level, NA generated
-
-```{r}
-#| warning: true
-answer <- factor(c("Yes", "No"))
-answer[1] <- "Maybe"
-answer
-```
-
-A factor accepts only its existing levels (Chapter 2); any other value becomes `NA`. Add the level first with `levels()`, or work with the column as text and convert it to a factor at the end.
-
-### Detected an unexpected many-to-many relationship
-
-```{r}
-#| warning: true
-students_small <- data.frame(id = c(1, 1), group = c("A", "B"))
-scores_small <- data.frame(id = c(1, 1), score = c(3.2, 4.1))
-left_join(students_small, scores_small, join_by(id))
-```
-
-A **join** (Chapter 3) found identifiers that appear more than once in *both* tables, so every copy was matched with every other, multiplying rows. Usually one of the tables should have had one row per identifier: check for duplicates with `count(id) |> filter(n > 1)`, and remove them or join by more columns.
-
-### Can't combine ... <integer> and ... <character>
-
-```{r}
-#| error: true
-tidyr::pivot_longer(students, cols = c(age, gender))
-```
-
-`pivot_longer()` puts the chosen columns into one column, so they must be of the same type: here a number and a text column. Reshape only columns of the same type, or convert them first.
-
-## Plots
-
-### Cannot use `+` with a single argument
-
-```{r}
-#| error: true
-plot <- ggplot(students, aes(x = age))
-+ geom_histogram()
-```
-
-In ggplot2, the `+` must come at the *end* of a line, not the start of the next one. Otherwise R thinks the first line is complete, and the second line starts with a stray `+`. The message even asks: "Did you accidentally put `+` on a new line?"
-
-### `mapping` must be created by `aes()` ... Did you use `%>%` or `|>` instead of `+`?
-
-```{r}
-#| error: true
-ggplot(students, aes(x = age)) |> geom_histogram()
-```
-
-Layers of a ggplot are added with `+`, not with the pipe. The pipe passes data *into* `ggplot()`; after that, it is `+` all the way.
-
-### object '...' not found, in a plot
-
-```{r}
-#| error: true
-ggplot(students) + geom_point(x = age, y = financial_worry)
-```
-
-Columns must be mapped inside `aes()`: `geom_point(aes(x = age, y = financial_worry))`. Outside `aes()`, R looks for objects called `age` and `financial_worry` and does not find them (Chapter 4 on mapping versus setting).
-
-### `stat_count()` must only have an x or y aesthetic
-
-```{r}
-#| error: true
-ggplot(students, aes(x = faculty, y = age)) + geom_bar()
-```
-
-`geom_bar()` counts the rows in each category, so it takes only `x`. To plot a value you have calculated, such as a mean per faculty, use `geom_col()`.
-
-## Statistical tests and models
-
-### grouping factor must have exactly 2 levels
-
-```{r}
-#| error: true
-t.test(age ~ faculty, data = students)
-```
-
-A two-sample t-test compares exactly two groups, but `faculty` has five. Use ANOVA for more than two groups (Chapter 8), or filter the data to the two groups you want to compare.
-
-### not enough 'x' observations
-
-```{r}
-#| error: true
-t.test(c(6.5))
-```
-
-The test needs more data than it was given, often because filtering or missing values left too few cases. Check the number of cases with `nrow()` or `sum(!is.na(x))`.
-
-### contrasts can be applied only to factors with 2 or more levels
-
-```{r}
-#| error: true
-lm(age ~ gender, data = filter(students, gender == "Female"))
-```
-
-A categorical predictor has only one value in the data used, here because the data was filtered to women only, so there is nothing to compare. Remove the predictor, or check the filtering.
-
-### Chi-squared approximation may be incorrect
-
-```{r}
-#| warning: true
-chisq.test(matrix(c(3, 1, 2, 4), nrow = 2))
-```
-
-Some expected counts are below 5, so the chi-square test's p-value may be inaccurate (Chapter 7). Use Fisher's exact test (`fisher.test()`), or combine small categories.
-
-### glm.fit: fitted probabilities numerically 0 or 1 occurred; algorithm did not converge
-
-```{r}
-#| warning: true
-#| results: hide
-glm(passed ~ hours, family = binomial,
-    data = data.frame(hours = 1:10, passed = c(0, 0, 0, 0, 0, 1, 1, 1, 1, 1)))
-```
-
-In a logistic regression, a predictor separates the outcomes perfectly (here, everyone above 5 hours passed), so the coefficients become enormous and meaningless, and the fitting algorithm may also report that it did not converge. With real data, this usually means a very small group or a predictor that is almost the outcome itself. Check the cross-table of the outcome and the predictor, and consider simplifying the model.
-
-### boundary (singular) fit: see help('isSingular')
-
-```{r}
-#| message: true
-#| results: hide
-lmer(wellbeing ~ semester + (semester | supervisor_id),
-     data = left_join(semesters, students, join_by(student_id)))
-```
-
-A mixed-effects model estimated some random-effect variance as zero, or a correlation as exactly ±1: the random effects part is too complex for the data (Chapter 10). Simplify it, for example by removing the random slope: `(1 | supervisor_id)`.
-
-### Observations deleted due to missingness
-
-Not an error, but a line in the output of `summary()` for `lm()` and `glm()`: rows with a missing value in any variable of the model are left out. Check how many with `nobs(model)`, report the number used, and think about whether the missing rows differ from the others (Chapters 6 and 8).
-
-## Machine learning
-
-### For a classification model, the outcome should be a <factor>
-
-```{r}
-#| error: true
-library(tidymodels)
-fit(logistic_reg(), considering_dropout ~ age, data = students)
-```
-
-tidymodels needs a categorical outcome to be a factor. Convert it first, and set the event of interest as the first level (Chapter 11): `mutate(considering_dropout = factor(considering_dropout, levels = c("Yes", "No")))`.
-
-### Can't select columns that don't exist ... `.pred_Yes`
-
-```{r}
-#| error: true
-tibble(truth = factor(c("Yes", "No")), probability = c(0.2, 0.8)) |>
-  roc_auc(truth, .pred_Yes)
-```
-
-A column name does not exist in the data given to a yardstick function. The prediction columns created by `augment()` are named after the outcome's levels (`.pred_Yes`, `.pred_No`), so check the names with `names()`, and check that the predictions were added to the data.
-
-## When you are stuck
-
-1. **Read the message**, from the end, and look at the line it points to.
-2. **Restart R and run the script from the top** (*Session > Restart R*). Many mysterious errors come from objects left over from earlier work.
-3. **Check your data** with `str()`, `glimpse()`, or `summary()`: wrong types and unexpected missing values cause most errors in real analyses.
-4. **Make the problem small.** Reproduce it with a few rows of data or a tiny example, like those at the start of every chapter. Often the cause becomes obvious; if not, a small example is what others need to help you. The reprex package formats such an example for sharing.
-5. **Search for the message** in quotation marks, or ask an AI assistant, including the code, the full message, and a description of your data (Chapter 18). Check the answer before trusting it.
-6. **Ask a person**: a colleague, your supervisor, the Posit Community forum, or Stack Overflow. A clear question with a small example usually gets a quick answer.
