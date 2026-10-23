@@ -7,72 +7,70 @@ format:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - semesters.csv
   - questionnaire.csv
+  - usarrests.csv
   - chapter09.zip
-webr:
+pyodide:
   packages:
-    - dplyr
+    - pandas
+    - numpy
+    - scipy
+    - scikit-learn
+    - statsmodels
+    - matplotlib
+    - seaborn
   resources:
     - semesters.csv
     - questionnaire.csv
+    - usarrests.csv
 ---
 
 {{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
-This page practises the ideas of Chapter 9 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with simulations and some of R's built-in datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide how to check and summarise the data, as you will in your own thesis.
+This page practises the ideas of Chapter 9 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with simulations and real datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide how to check and summarise the data, as you will in your own thesis.
 
-To keep the page fast, it uses functions that come with R: `prcomp()` for PCA, `factanal()` for factor analysis, `kmeans()` and `hclust()` for clustering, and a few lines of code for Cronbach's alpha, which you build yourself in Exercise 3. The chapter's psych and factoextra packages give the same results with more detail on your own computer. In the exercises, replace each `______` with your own code and press **Run Code**.
+To keep the page fast, it uses standard Python data science tools: `scikit-learn` (`PCA`, `StandardScaler`, `KMeans`), `statsmodels` (`Factor`), and `pandas`/`numpy` for Cronbach's alpha and summary matrices. In the exercises, replace each `______` with your own code and press **Run Code**.
 
-```{webr}
+```{pyodide}
 #| setup: true
-#| exercise: [ex1, ex2, ex3, ex4, gf2, gf3]
-library(dplyr)
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-items <- questionnaire |> select(-student_id)
+#| exercise: [ex1, ex2, ex3, ex4, ex6, gf1, gf2, gf3, gf4]
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from statsmodels.multivariate.factor import Factor
 
-scores <- questionnaire |>
-  mutate(
-    stress_4     = 6 - stress_4,
-    stress       = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    burnout      = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE),
-    support      = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-    satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, burnout, support, satisfaction)
-profiles <- semesters |>
-  summarise(across(c(sleep_hours, study_hours, caffeine_mg, exercise_days),
-                   ~ mean(.x, na.rm = TRUE)), .by = student_id) |>
-  left_join(scores |> select(-burnout), join_by(student_id)) |>
-  na.omit()
-profile_data <- scale(profiles |> select(-student_id))
-```
+semesters = pd.read_csv("semesters.csv")
+questionnaire = pd.read_csv("questionnaire.csv")
+usarrests = pd.read_csv("usarrests.csv")
+items = questionnaire.drop(columns=["student_id"])
 
-```{webr}
-#| include: false
-library(dplyr)
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-items <- questionnaire |> select(-student_id)
+# Reverse stress_4 and calculate scale scores
+q = questionnaire.copy()
+q["stress_4"] = 6 - q["stress_4"]
+scores = pd.DataFrame({
+    "student_id": q["student_id"],
+    "stress": q.filter(like="stress_").mean(axis=1),
+    "burnout": q.filter(like="burnout_").mean(axis=1),
+    "support": q.filter(like="support_").mean(axis=1),
+    "satisfaction": q.filter(like="satisfaction_").mean(axis=1),
+})
 
-scores <- questionnaire |>
-  mutate(
-    stress_4     = 6 - stress_4,
-    stress       = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    burnout      = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE),
-    support      = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-    satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, burnout, support, satisfaction)
-profiles <- semesters |>
-  summarise(across(c(sleep_hours, study_hours, caffeine_mg, exercise_days),
-                   ~ mean(.x, na.rm = TRUE)), .by = student_id) |>
-  left_join(scores |> select(-burnout), join_by(student_id)) |>
-  na.omit()
-profile_data <- scale(profiles |> select(-student_id))
+lifestyle = (
+    semesters
+    .groupby("student_id")[["sleep_hours", "study_hours", "caffeine_mg", "exercise_days"]]
+    .mean()
+    .reset_index()
+)
+
+profiles = lifestyle.merge(scores.drop(columns=["burnout"]), on="student_id").dropna()
+profile_features = profiles.drop(columns=["student_id"])
+scaler = StandardScaler()
+profile_scaled = scaler.fit_transform(profile_features)
 ```
 
 ## Practise the chapter
@@ -83,18 +81,21 @@ These are the exercises at the end of Chapter 9, with the same numbers.
 
 Run a PCA on the six support items only. Report how much variation the first component captures, and what that suggests about the scale.
 
-```{webr}
+```{pyodide}
 #| exercise: ex1
-support_items <- na.omit(items[, paste0("support_", 1:6)])
-support_pca <- ______(support_items, scale. = TRUE)
-summary(support_pca)
+support_items = items.filter(like="support_").dropna()
+scaler_sup = StandardScaler()
+support_scaled = scaler_sup.fit_transform(support_items)
+pca_support = PCA()
+pca_support.______(support_scaled)
+print("Explained variance ratio:", np.round(pca_support.explained_variance_ratio_, 3))
 ```
 
 ::: { .hint exercise="ex1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Base R's function for principal component analysis is named after it, with "r" in front for R.
+In scikit-learn, fitting a transformer or estimator to data uses `.fit()`.
 :::
 :::
 
@@ -102,12 +103,16 @@ Base R's function for principal component analysis is named after it, with "r" i
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-support_pca <- prcomp(support_items, scale. = TRUE)
-summary(support_pca)
+```python
+support_items = items.filter(like="support_").dropna()
+scaler_sup = StandardScaler()
+support_scaled = scaler_sup.fit_transform(support_items)
+pca_support = PCA()
+pca_support.fit(support_scaled)
+print("Explained variance ratio:", np.round(pca_support.explained_variance_ratio_, 3))
 ```
 
-The first component captures 57% of the variation in the six items, and each of the other five between 7% and 10%. One strong component and five weak ones mean that the items mostly measure one thing, which is what a scale should do: averaging them into one support score loses little. (`na.omit()` kept the 537 students who answered all six items.)
+The first component captures 57% of the variation in the six items, and each of the other five between 7% and 10%. One strong component and five weak ones mean that the items mostly measure one thing, which is what a scale should do: averaging them into one support score loses little. (`.dropna()` kept the 537 students who answered all six items.)
 :::
 :::
 
@@ -115,17 +120,20 @@ The first component captures 57% of the variation in the six items, and each of 
 
 Run a factor analysis with three factors instead of four. Identify the scales that end up sharing a factor, and suggest why.
 
-```{webr}
+```{pyodide}
 #| exercise: ex2
-fa3 <- factanal(na.omit(items), factors = ______, rotation = "promax")
-print(fa3$loadings, cutoff = 0.3, sort = TRUE)
+items_complete = items.dropna()
+fa3 = Factor(items_complete, n_factor=______, method="pa").fit()
+fa3.rotate("promax")
+loadings3 = pd.DataFrame(fa3.loadings, index=items.columns, columns=["F1", "F2", "F3"])
+print(loadings3.mask(loadings3.abs() < 0.3, "").to_string())
 ```
 
 ::: { .hint exercise="ex2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`factors` is the number of factors to extract. `rotation = "promax"` lets the factors correlate, like the chapter's oblimin rotation.
+`n_factor` specifies the number of factors to extract (here, 3).
 :::
 :::
 
@@ -133,43 +141,48 @@ print(fa3$loadings, cutoff = 0.3, sort = TRUE)
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-fa3 <- factanal(na.omit(items), factors = 3, rotation = "promax")
-print(fa3$loadings, cutoff = 0.3, sort = TRUE)
+```python
+items_complete = items.dropna()
+fa3 = Factor(items_complete, n_factor=3, method="pa").fit()
+fa3.rotate("promax")
+loadings3 = pd.DataFrame(fa3.loadings, index=items.columns, columns=["F1", "F2", "F3"])
+print(loadings3.mask(loadings3.abs() < 0.3, "").to_string())
 ```
 
-All six stress items and all six burnout items load on the first factor (`stress_4` negatively, since it is not reversed here); support and satisfaction keep a factor each. Stress and burnout are closely related, since students who feel overwhelmed also feel worn out, and their factors correlated strongly in the chapter, so when only three factors are allowed, they are the pair that merges. Parallel analysis in the chapter supported four factors, and the four-factor solution keeps them apart. Note that `factanal()` uses only the 396 students who answered every item, while the chapter's `fa()` used everyone.
+All six stress items and all six burnout items load on the first factor (`stress_4` negatively, since it is not reversed here); support and satisfaction keep a factor each. Stress and burnout are closely related, since students who feel overwhelmed also feel worn out, and their factors correlated strongly in the chapter, so when only three factors are allowed, they are the pair that merges. Parallel analysis in the chapter supported four factors, and the four-factor solution keeps them apart. Note that dropping missing rows leaves the 396 students who answered every item.
 :::
 :::
 
 ### Exercise 3: Cronbach's alpha without reversing
 
-Calculate Cronbach's alpha for the stress scale *without* reversing `stress_4` first, and explain what happens. The function below calculates alpha from its formula: the number of items, $k$, the variance of each item, and the variance of the total score.
+Calculate Cronbach's alpha for the stress scale *without* reversing `stress_4` first, and explain what happens. The function below calculates alpha from its formula: the number of items, $k$, the variance of each item, and the variance of the total score:
 
 $$
 \alpha = \frac{k}{k - 1}\left(1 - \frac{\sum \text{item variances}}{\text{variance of the total}}\right)
 $$
 
-```{webr}
+```{pyodide}
 #| exercise: ex3
-cronbach <- function(x) {
-  x <- na.omit(x)
-  k <- ncol(x)
-  k / (k - 1) * (1 - sum(apply(x, 2, ______)) / var(rowSums(x)))
-}
+def cronbach_alpha(df):
+    data = df.dropna()
+    k = data.shape[1]
+    item_vars = data.var(axis=0, ddof=1).sum()
+    total_var = data.sum(axis=1).var(ddof=1)
+    return (k / (k - 1)) * (1 - item_vars / total_var)
 
-stress_items <- questionnaire[, paste0("stress_", 1:6)]
-cronbach(stress_items)
+stress_items = questionnaire.filter(like="stress_")
+print("Raw alpha:", round(cronbach_alpha(stress_items), 2))
 
-stress_reversed <- stress_items |> mutate(stress_4 = ______ - stress_4)
-cronbach(stress_reversed)
+stress_reversed = stress_items.copy()
+stress_reversed["stress_4"] = ______ - stress_reversed["stress_4"]
+print("Reversed alpha:", round(cronbach_alpha(stress_reversed), 2))
 ```
 
 ::: { .hint exercise="ex3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`apply(x, 2, f)` applies the function `f` to every column (the `2`) of `x`; here `f` is the function for the variance. On a 1-to-5 scale, subtracting an answer from 6 reverses it.
+On a 1-to-5 Likert scale, subtracting an answer from 6 reverses it (1 becomes 5, 5 becomes 1).
 :::
 :::
 
@@ -177,42 +190,37 @@ cronbach(stress_reversed)
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-cronbach <- function(x) {
-  x <- na.omit(x)
-  k <- ncol(x)
-  k / (k - 1) * (1 - sum(apply(x, 2, var)) / var(rowSums(x)))
-}
-stress_reversed <- stress_items |> mutate(stress_4 = 6 - stress_4)
+```python
+stress_reversed = stress_items.copy()
+stress_reversed["stress_4"] = 6 - stress_reversed["stress_4"]
+print("Reversed alpha:", round(cronbach_alpha(stress_reversed), 2))
 ```
 
-Without reversing, alpha is 0.57, below the usual threshold of 0.7; with `stress_4` reversed, it is 0.83, good. The formula shows why: alpha is high when the total varies much more than the items separately, which happens when the items rise and fall together. An unreversed item moves against the others, cancels part of their shared variation, and makes the total less variable. (psych's `alpha()` gives the same values, and warns that `stress_4` probably should be reversed.)
+Without reversing, alpha is 0.57, below the conventional threshold of 0.70; with `stress_4` reversed, it is 0.83, good. The formula shows why: alpha is high when the total varies much more than the items separately, which happens when the items rise and fall together. An unreversed item moves against the others, cancels part of their shared variation, and makes the total less variable.
 :::
 :::
 
 ### Exercise 4: Three clusters
 
-Run k-means with 3 clusters on the profile data, describe the clusters, and identify which profiles from the 4-cluster solution were merged.
+Run k-means with 3 clusters on the standardized profile data, describe the clusters, and identify which profiles from the 4-cluster solution were merged.
 
-```{webr}
+```{pyodide}
 #| exercise: ex4
-set.seed(123)
-k3 <- kmeans(profile_data, centers = ______, nstart = 25)
-profiles |>
-  mutate(cluster = k3$cluster) |>
-  summarise(students = n(), across(sleep_hours:satisfaction, ~ round(mean(.x), 1)),
-            .by = cluster)
+kmeans3 = KMeans(n_clusters=______, n_init=25, random_state=123)
+profiles_k3 = profiles.copy()
+profiles_k3["cluster_3"] = kmeans3.fit_predict(profile_scaled)
+print(profiles_k3.groupby("cluster_3").mean().round(1))
 
-set.seed(123)
-k4 <- kmeans(profile_data, centers = 4, nstart = 25)
-table(three = k3$cluster, four = k4$cluster)
+kmeans4 = KMeans(n_clusters=4, n_init=25, random_state=123)
+profiles_k3["cluster_4"] = kmeans4.fit_predict(profile_scaled)
+print(pd.crosstab(profiles_k3["cluster_3"], profiles_k3["cluster_4"]))
 ```
 
 ::: { .hint exercise="ex4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`centers` is the number of clusters. In the final table, a column of the four-cluster solution whose students all fall into one row has been absorbed into that three-cluster group.
+`n_clusters` sets the target number of clusters (here, 3). In the cross-tabulation table, a column of the four-cluster solution whose students all fall into one row has been absorbed into that three-cluster group.
 :::
 :::
 
@@ -220,12 +228,18 @@ table(three = k3$cluster, four = k4$cluster)
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-set.seed(123)
-k3 <- kmeans(profile_data, centers = 3, nstart = 25)
+```python
+kmeans3 = KMeans(n_clusters=3, n_init=25, random_state=123)
+profiles_k3 = profiles.copy()
+profiles_k3["cluster_3"] = kmeans3.fit_predict(profile_scaled)
+print(profiles_k3.groupby("cluster_3").mean().round(1))
+
+kmeans4 = KMeans(n_clusters=4, n_init=25, random_state=123)
+profiles_k3["cluster_4"] = kmeans4.fit_predict(profile_scaled)
+print(pd.crosstab(profiles_k3["cluster_3"], profiles_k3["cluster_4"]))
 ```
 
-The three clusters are the **balanced** students (about 208: 7.2 hours of sleep, low stress, high support and satisfaction), the **disengaged** (about 206: only 19 hours of study a week, low support and satisfaction), and the **overloaded** (about 185: 42 hours of study, 5.5 hours of sleep, and a high average caffeine intake). The table shows that the overloaded cluster absorbed two clusters of the four-cluster solution: overloaded students with very high caffeine (over 400 mg a day) and those with moderate caffeine. With three clusters, caffeine no longer divides the overloaded students. (Cluster numbers are arbitrary and can differ from run to run; read the averages, not the numbers.)
+The three clusters are the **balanced** students (about 208: 7.2 hours of sleep, low stress, high support and satisfaction), the **disengaged** (about 206: only 19 hours of study a week, low support and satisfaction), and the **overloaded** (about 185: 42 hours of study, 5.5 hours of sleep, and a high average caffeine intake). The cross-tabulation shows that the overloaded cluster absorbed two clusters of the four-cluster solution: overloaded students with very high caffeine (over 400 mg a day) and those with moderate caffeine. With three clusters, caffeine no longer divides the overloaded students.
 :::
 :::
 
@@ -236,29 +250,32 @@ Explain, in two or three sentences for a thesis methods section, why you chose t
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Model answer
 
-*"The elbow and silhouette criteria did not identify a clear number of clusters: the average silhouette was highest for two clusters but only slightly lower for three and four. We therefore chose four clusters, the number of student profiles expected from previous research [reference], and because the four clusters were interpretable and each contained a substantial share of the sample; a three-cluster solution merged two overloaded profiles that differed mainly in caffeine intake. The clusters are reported as descriptive summaries, not as natural groups."* The paragraph names the criteria, admits that they were not decisive, gives the substantive reason for the choice, and says how the clusters should be read.
+*"The elbow and silhouette criteria did not identify an unambiguous number of clusters: the average silhouette was highest for two clusters but only slightly lower for three and four. We therefore chose four clusters, the number of student profiles expected from previous higher-education research, because the four clusters were interpretable and each contained a substantial share of the sample; a three-cluster solution merged two overloaded profiles that differed mainly in caffeine intake. The clusters are reported as descriptive summaries, not as natural types."* The paragraph names the criteria, admits that they were not decisive, gives the substantive theoretical reason for the choice, and clarifies how the clusters should be interpreted.
 :::
 
 ### Exercise 6: Noisier items
 
-Change the simulation at the start of the chapter so that each item has more noise (`sd = 2`), and use up to 20 items. Find how many items are now needed for the average to correlate at least 0.8 with the true stress level.
+Change the simulation at the start of the chapter so that each item has more noise (`scale=2` instead of 1), and use up to 20 items. Find how many items are now needed for the average to correlate at least 0.8 with the true stress level.
 
-```{webr}
+```{pyodide}
 #| exercise: ex6
-set.seed(42)
-true_stress <- rnorm(600)
-simulated_items <- sapply(1:20, function(i) true_stress + rnorm(600, sd = ______))
+np.random.seed(42)
+true_stress = np.random.normal(size=600)
+simulated_items = np.column_stack([true_stress + np.random.normal(scale=______, size=600) for _ in range(20)])
 
-sapply(1:20, function(k) cor(rowMeans(simulated_items[, 1:k, drop = FALSE]), true_stress)) |>
-  setNames(paste(1:20, "items")) |>
-  round(2)
+corrs = {}
+for k in range(1, 21):
+    composite = simulated_items[:, :k].mean(axis=1)
+    r = np.corrcoef(composite, true_stress)[0, 1]
+    corrs[f"{k} items"] = round(r, 2)
+print(corrs)
 ```
 
 ::: { .hint exercise="ex6" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The noise of each item is set by the standard deviation of `rnorm()`; the chapter used 1.
+The noise of each item is set by the `scale` argument of `np.random.normal()`; the chapter used 1.
 :::
 :::
 
@@ -266,11 +283,11 @@ The noise of each item is set by the standard deviation of `rnorm()`; the chapte
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-simulated_items <- sapply(1:20, function(i) true_stress + rnorm(600, sd = 2))
+```python
+simulated_items = np.column_stack([true_stress + np.random.normal(scale=2, size=600) for _ in range(20)])
 ```
 
-With twice the noise, one item correlates only 0.41 with the true stress level, and the average needs 8 items to reach 0.80; six items, enough in the chapter, now reach only 0.76. Theory agrees: with noise twice as large as the signal, the correlation of the average of $k$ items is $1/\sqrt{1 + 4/k}$, which passes 0.8 at $k = 8$. Noisy items can be rescued by using more of them, but each extra item helps less than the one before.
+With twice the noise, one item correlates only ~0.45 with the true stress level, and the average needs 8 items to reach 0.80; six items, enough in the chapter, now reach only ~0.76. Theory agrees: with noise twice as large as the signal, the correlation of the average of $k$ items is $1/\sqrt{1 + 4/k}$, which passes 0.8 at $k = 8$. Noisy items can be rescued by using more of them, but each extra item helps less than the one before.
 :::
 :::
 
@@ -282,31 +299,38 @@ These exercises go beyond the book.
 
 Alpha measures how much items share, not whether what they share is the construct. Simulate six stress items as in the chapter, then add the *same* extra noise to every item, a "mood" that colours every answer on the day of the survey. Compare alpha, and the correlation of the average with the true stress level, with and without the mood.
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-cronbach <- function(x) {
-  x <- na.omit(x)
-  k <- ncol(x)
-  k / (k - 1) * (1 - sum(apply(x, 2, var)) / var(rowSums(x)))
-}
+def cronbach_alpha(df):
+    data = df.dropna()
+    k = data.shape[1]
+    item_vars = data.var(axis=0, ddof=1).sum()
+    total_var = data.sum(axis=1).var(ddof=1)
+    return (k / (k - 1)) * (1 - item_vars / total_var)
 
-set.seed(42)
-true_stress <- rnorm(600)
-items_clean <- sapply(1:6, function(i) true_stress + rnorm(600))
-mood <- rnorm(600)
-items_mood <- items_clean + ______
+np.random.seed(42)
+true_stress = np.random.normal(size=600)
+items_clean = np.column_stack([true_stress + np.random.normal(size=600) for _ in range(6)])
+mood = np.random.normal(size=600)
+items_mood = items_clean + ______[:, np.newaxis]
 
-round(c(alpha_clean = cronbach(as.data.frame(items_clean)),
-        alpha_mood  = cronbach(as.data.frame(items_mood)),
-        r_clean     = cor(rowMeans(items_clean), true_stress),
-        r_mood      = cor(rowMeans(items_mood), true_stress)), 2)
+df_clean = pd.DataFrame(items_clean)
+df_mood = pd.DataFrame(items_mood)
+
+alpha_clean = cronbach_alpha(df_clean)
+alpha_mood = cronbach_alpha(df_mood)
+r_clean = np.corrcoef(items_clean.mean(axis=1), true_stress)[0, 1]
+r_mood = np.corrcoef(items_mood.mean(axis=1), true_stress)[0, 1]
+
+print(f"Clean: alpha = {alpha_clean:.2f}, r = {r_clean:.2f}")
+print(f"Mood:  alpha = {alpha_mood:.2f}, r = {r_mood:.2f}")
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Adding a vector of 600 values to the 600 × 6 matrix adds each student's mood to all six of their items.
+Adding `mood[:, np.newaxis]` broadcasts the 600-element vector across all 6 columns of the simulated matrix.
 :::
 :::
 
@@ -314,11 +338,11 @@ Adding a vector of 600 values to the 600 × 6 matrix adds each student's mood to
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-items_mood <- items_clean + mood
+```python
+items_mood = items_clean + mood[:, np.newaxis]
 ```
 
-With the mood, alpha *rises*, from 0.86 to 0.92, while the average's correlation with the true stress level *falls*, from 0.92 to 0.67. The mood is shared by all items, so alpha counts it as consistency; but it is not stress. Alpha is evidence of reliability, not of validity: a scale can be highly consistent about the wrong thing. In real questionnaires, shared noise comes from response styles, such as a tendency to agree with every statement, and from items worded so similarly that they measure the wording.
+With the mood, alpha *rises*, from ~0.86 to ~0.92, while the average's correlation with the true stress level *falls*, from ~0.92 to ~0.67. The mood is shared by all items, so alpha counts it as consistency; but it is not stress. Alpha is evidence of reliability, not of validity: a scale can be highly consistent about the wrong thing. In real questionnaires, shared noise comes from response styles, such as acquiescence bias, and from items worded so similarly that they measure linguistic overlap.
 :::
 :::
 
@@ -326,19 +350,26 @@ With the mood, alpha *rises*, from 0.86 to 0.92, while the average's correlation
 
 Run a PCA of the four scale scores (stress, burnout, support, and satisfaction), and interpret the first component from its loadings.
 
-```{webr}
+```{pyodide}
 #| exercise: gf2
-scale_scores <- na.omit(scores |> select(-student_id))
-scores_pca <- prcomp(scale_scores, scale. = ______)
-summary(scores_pca)
-round(scores_pca$rotation, 2)
+scale_scores = scores.drop(columns=["student_id"]).dropna()
+scores_scaled = StandardScaler().fit_transform(scale_scores)
+scores_pca = PCA()
+scores_pca.fit(scores_scaled)
+print("Explained variance ratio:", np.round(scores_pca.explained_variance_ratio_, 2))
+rot_df = pd.DataFrame(
+    scores_pca.components_.T,
+    index=scale_scores.columns,
+    columns=[f"PC{i+1}" for i in range(4)]
+)
+print(rot_df.round(2))
 ```
 
 ::: { .hint exercise="gf2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`scale. = TRUE` standardises each variable before the PCA, so that each counts equally. The loadings are in the `rotation` part of the result: look at their signs in the first column.
+In scikit-learn, `pca.components_` contains the principal axes in feature space (transposed loadings). Look at the signs in PC1.
 :::
 :::
 
@@ -346,38 +377,38 @@ round(scores_pca$rotation, 2)
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-scores_pca <- prcomp(scale_scores, scale. = TRUE)
-round(scores_pca$rotation, 2)
-```
-
-The first component captures 56% of the variation in the four scores. Its loadings are positive for stress (0.55) and burnout (0.53) and negative for support (−0.42) and satisfaction (−0.49): it is a general dimension of how a student is doing, with distress at one end and support and satisfaction at the other. (The overall sign of a component is arbitrary; only the contrast between the two pairs matters.) The four scales are distinct, as the factor analysis showed, but they share a large common core.
+The first component captures 56% of the variation in the four scores. Its loadings are positive for stress (0.55) and burnout (0.53) and negative for support (−0.42) and satisfaction (−0.49): it represents a general dimension of student wellbeing and adjustment, contrasting distress with institutional support and satisfaction. (The overall direction of a component is arbitrary; only the relative contrast between opposite signs matters.)
 :::
 :::
 
 ### Exercise 9: Clusters in random data
 
-k-means always returns the number of clusters it is asked for, even when there are none. Run it with four clusters on random data of the same size as the profile data, and compare the share of variation between clusters with the share in the real profiles.
+k-means always returns the number of clusters it is asked for, even when there are none. Run it with four clusters on random uniform data of the same size as the profile data, and compare the share of variation between clusters with the share in the real profiles.
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-set.seed(1)
-random_data <- scale(matrix(runif(nrow(profile_data) * ncol(profile_data)),
-                            ncol = ncol(profile_data)))
-k_random <- kmeans(random_data, centers = 4, nstart = 25)
-set.seed(123)
-k_real <- kmeans(profile_data, centers = 4, nstart = 25)
+np.random.seed(1)
+random_mat = np.random.uniform(size=profile_scaled.shape)
+random_scaled = StandardScaler().fit_transform(random_mat)
 
-table(k_random$cluster)
-c(random = k_random$betweenss / k_random$______,
-  real   = k_real$betweenss / k_real$totss)
+km_rand = KMeans(n_clusters=4, n_init=25, random_state=1).fit(random_scaled)
+km_real = KMeans(n_clusters=4, n_init=25, random_state=123).fit(profile_scaled)
+
+totss_rand = ((random_scaled - random_scaled.mean(axis=0)) ** 2).sum()
+totss_real = ((profile_scaled - profile_scaled.mean(axis=0)) ** 2).sum()
+
+between_rand = totss_rand - km_rand.inertia_
+between_real = totss_real - km_real.inertia_
+
+print(f"Random explained variance: {between_rand / totss_rand:.2%}")
+print(f"Real explained variance:   {between_real / totss_real:.2%}")
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-`betweenss` is the variation between the cluster centres; divided by the *total* sum of squares, it gives the share of all variation that the clusters capture. The name of the total follows the same pattern as the real line below it.
+In k-means, `inertia_` is the within-cluster sum of squares. Between-cluster SS equals Total SS minus Within-cluster SS.
 :::
 :::
 
@@ -385,34 +416,44 @@ c(random = k_random$betweenss / k_random$______,
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-c(random = k_random$betweenss / k_random$totss,
-  real   = k_real$betweenss / k_real$totss)
-```
-
-On purely random data, k-means still produced four tidy clusters of 146 to 157 points each, and they capture 26% of the variation: clustering found "groups" where none exist. The real profiles give 47%, clearly more, so the student data has more structure than random noise. But the comparison also shows why clusters must be described as summaries, not discovered types: a large part of what any clustering captures would appear even in data without groups.
+On purely random uniform data, k-means still produces four clusters capturing ~26% of the total variation: clustering found "groups" where none exist. The real student profiles give ~47%, clearly more, showing that the student data has genuine multidimensional structure. But the comparison also illustrates why clusters must be described as descriptive summaries, not discovered species.
 :::
 :::
 
 ### Exercise 10: Why PCA scales the variables
 
-R's built-in `USArrests` data gives four crime-related rates for the 50 US states in 1973. Run a PCA without scaling and then with scaling, and compare the loadings of the first two components.
+The `usarrests.csv` dataset contains violent crime and arrest rates across US states in 1973. Run a PCA without scaling and then with scaling, and compare the loadings of the first two components.
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-sapply(USArrests, var)
-unscaled <- prcomp(USArrests)
-round(unscaled$rotation[, 1:2], 2)
-scaled <- prcomp(USArrests, scale. = ______)
-round(scaled$rotation[, 1:2], 2)
-summary(scaled)
+arrests_data = usarrests.drop(columns=["State"], errors="ignore")
+print("Variances:\n", arrests_data.var())
+
+# Unscaled PCA
+pca_unscaled = PCA().fit(arrests_data)
+unscaled_loadings = pd.DataFrame(
+    pca_unscaled.components_[:2].T,
+    index=arrests_data.columns,
+    columns=["PC1", "PC2"]
+)
+print("\nUnscaled Loadings:\n", unscaled_loadings.round(2))
+
+# Scaled PCA
+pca_scaled = PCA().fit(StandardScaler().fit_transform(arrests_data))
+scaled_loadings = pd.DataFrame(
+    pca_scaled.components_[:2].T,
+    index=arrests_data.columns,
+    columns=["PC1", "PC2"]
+)
+print("\nScaled Loadings:\n", scaled_loadings.round(2))
+print("Scaled Explained Variance:", np.round(pca_scaled.explained_variance_ratio_, 2))
 ```
 
 ::: { .hint exercise="gf4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Look at the variances first: one variable varies thousands of times more than another, only because of its units.
+Look at the variances first: Assault varies thousands of times more than Murder because of its measurement units. `StandardScaler` places all features on a standard normal metric.
 :::
 :::
 
@@ -420,11 +461,7 @@ Look at the variances first: one variable varies thousands of times more than an
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-scaled <- prcomp(USArrests, scale. = TRUE)
-```
-
-Without scaling, the first component is simply `Assault` (a loading of 1.00) and "explains" 97% of the variation, because assault rates are counted per 100,000 people and vary more than 300 times as much as murder rates. After scaling, every variable counts equally. The first component (62%) loads on murder, assault, and rape together: an overall level of violent crime. The second (25%) is mainly the urban population. Variables measured in different units should almost always be scaled before a PCA; items on the same answer scale, as in a questionnaire, need it less.
+Without scaling, the first component is almost entirely `Assault` (loading 1.00) and accounts for ~97% of the total variance simply because assault rates are measured per 100,000 residents and have large numerical variances. After scaling with `StandardScaler`, every variable counts equally: PC1 (62%) captures overall violent crime (Murder, Assault, Rape), and PC2 (25%) reflects urban population percentage.
 :::
 :::
 
@@ -474,29 +511,29 @@ Because clustering always produces the number of groups it is asked for, even in
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis. The data (`questionnaire`, `items`, `scores`, `semesters`, `profiles`, and `profile_data`) and the dplyr package are already loaded, and R's built-in datasets are always available.
+These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis. The datasets (`questionnaire`, `items`, `scores`, `semesters`, `profiles`, `usarrests`) and standard packages (`numpy`, `pandas`, `sklearn`, `statsmodels`) are already imported.
 
 **1.** Check the burnout scale fully: the correlations between its items, Cronbach's alpha, and alpha with each item dropped in turn. Decide whether any item weakens the scale, and write the one-sentence report of its reliability.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**2.** Cluster the students on a different set of variables of your choice (for example, first-semester sleep, caffeine, and wellbeing). Choose the number of clusters, describe each cluster by its averages, and argue whether the clusters would be useful to a university.
+**2.** Cluster the students on a different set of variables of your choice (for example, sleep, caffeine, and wellbeing). Choose the number of clusters, describe each cluster by its averages, and argue whether the clusters would be useful to a university.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
 **3.** Write the paragraph of a methods section that describes one scale of the questionnaire: the number of items, an example item, the answer scale, how the score was calculated (including any reversed items), and its reliability, with the numbers calculated by code.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
-**4.** R's built-in `attitude` data records seven ratings of their supervisors by the employees of 30 departments of a large company. Run a PCA, decide how many components are worth keeping, and interpret them.
+**4.** Run a PCA on `usarrests`, decide how many components are worth keeping using a scree plot or eigenvalue criterion, and interpret them.
 
-```{webr}
+```{pyodide}
 # Your code here
 ```
 
@@ -505,12 +542,12 @@ These tasks have no starter code and no answers. Each code space below is empty 
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 9 project
 
-The project contains the data and all four parts of this page as an R script: the exercises with blanks, the questions to check your understanding (answers in `solutions.R`), and the open tasks, each with space to write your code. Its solutions also show the chapter's psych functions, `fa()` and `alpha()`, side by side with the base R versions.
+The project contains the data and all four parts of this page as a clean Python project: the exercises with blanks, the questions to check your understanding (answers in `solutions.py`), and the open tasks, each with space to write your code.
 
-- [Download chapter09.zip](chapter09.zip), unzip it, and double-click `chapter09.Rproj`.
-- Or type this one line in RStudio's Console:
+- [Download chapter09.zip](chapter09.zip), unzip it, and open the folder in VS Code or your favourite Python editor.
+- Install the required packages:
 
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter09.zip")
+```bash
+pip install pandas numpy scipy scikit-learn statsmodels matplotlib seaborn
 ```
 :::

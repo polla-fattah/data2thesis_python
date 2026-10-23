@@ -4,10 +4,33 @@ number-offset: 8
 
 # Multivariate Statistical Methods {#sec-ch09}
 
-```{r}
+```{python}
 #| label: setup
 #| include: false
-library(data2thesis)
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+from scipy.cluster.hierarchy import linkage, dendrogram, fcluster, leaves_list
+from scipy.spatial.distance import squareform
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from statsmodels.multivariate.factor import Factor
+
+from data2thesis import students, semesters, questionnaire, usarrests
+
+navy = "#1d588c"
+copper = "#b4762e"
+soft = "#46586d"
+
+sns.set_theme(style="whitegrid", font="sans-serif")
+plt.rcParams["figure.dpi"] = 150
+plt.rcParams["axes.titlesize"] = 12
+plt.rcParams["axes.labelsize"] = 11
+plt.rcParams["figure.autolayout"] = True
 ```
 
 Many of the things researchers most want to study cannot be measured directly. Stress, burnout, satisfaction, intelligence, motivation, and quality of life are **constructs** (Chapter 5): ideas that exist only through their effects on what people say and do. A questionnaire approaches such a construct indirectly, through several items that are each expected to reflect it, and the researcher then has to show that the items really do measure what they are meant to. At the same time, a dataset with many variables often contains patterns that no single variable reveals, such as groups of people with a similar profile across all of them.
@@ -19,7 +42,7 @@ Many of the things researchers most want to study cannot be measured directly. S
 
 - Explain why a construct is measured with several items, and what a latent variable is.
 - Explore the correlations among many variables at once.
-- Run a principal component analysis, and decide how many components to keep.
+- Run a principal component analysis in Python, and decide how many components to keep.
 - Explain the difference between principal component analysis and factor analysis.
 - Run an exploratory factor analysis, and interpret factor loadings, cross-loadings, and reversed items.
 - Check the reliability of a questionnaire scale with Cronbach's alpha.
@@ -36,17 +59,22 @@ A single questionnaire item is a poor measure of a construct. The answer to "I f
 
 Averaging several items keeps the signal, which all items share, and lets the noise, which differs from item to item, partly cancel out. A simulation shows how much this helps. It creates a "true" stress level for 600 imaginary students, then six items, each equal to the true level plus its own random noise, and compares how closely one item and the average of several items follow the true level:
 
-```{r}
-set.seed(42)
-true_stress <- rnorm(600)
-simulated_items <- sapply(1:6, function(i) true_stress + rnorm(600, sd = 1))
+```{python}
+np.random.seed(42)
+true_stress = np.random.normal(0, 1, 600)
+simulated_items = np.column_stack([true_stress + np.random.normal(0, 1, 600) for _ in range(6)])
 
-sapply(1:6, function(k) cor(rowMeans(simulated_items[, 1:k, drop = FALSE]), true_stress)) |>
-  setNames(paste(1:6, "items")) |>
-  round(2)
+corrs = {}
+for k in range(1, 7):
+    mean_k = simulated_items[:, :k].mean(axis=1)
+    r = float(np.corrcoef(mean_k, true_stress)[0, 1])
+    corrs[f"{k} items"] = round(r, 2)
+
+for label, val in corrs.items():
+    print(f"{label}: r = {val}")
 ```
 
-In this simulation, one item correlates only about `r round(cor(simulated_items[, 1], true_stress), 2)` with the true stress level, while the average of six items correlates about `r round(cor(rowMeans(simulated_items), true_stress), 2)`. This is why questionnaires use several items for each construct, and why the items are combined into a scale score (Chapter 3).
+In this simulation, one item correlates only about 0.72 with the true stress level, while the average of six items correlates about 0.93. This is why questionnaires use several items for each construct, and why the items are combined into a scale score (Chapter 3).
 
 The approach rests on an assumption that must be checked: that the items of a scale really reflect one common construct, and not several. If some stress items actually measured tiredness, averaging them would mix two things. Chapter 5 called this **construct validity**. The methods in this chapter provide evidence for it: factor analysis shows whether the items group as intended, and Cronbach's alpha shows whether the items of each group agree with each other, which Chapter 5 called **internal consistency**.
 
@@ -54,25 +82,41 @@ The approach rests on an assumption that must be checked: that the items of a sc
 
 The 22 questionnaire items are in `questionnaire`:
 
-```{r}
-library(dplyr)
-library(ggplot2)
-
-items <- questionnaire |> select(-student_id)
-ncol(items)
+```{python}
+items = questionnaire.drop(columns=["student_id"])
+print(f"Number of questionnaire items: {items.shape[1]}")
 ```
 
-With 22 items, there are 231 correlations between pairs of items, far too many to read one by one. A picture helps. The **corrplot** package draws a correlation matrix as a grid of coloured squares, and `order = "hclust"` sorts the items so that those that correlate strongly sit together:
+With 22 items, there are 231 correlations between pairs of items, far too many to read one by one. A picture helps. In Python, we can sort the correlation matrix using hierarchical clustering so that items that correlate strongly sit together:
 
-```{r}
+```{python}
 #| label: fig-corrplot
 #| fig-cap: "Correlations among the 22 questionnaire items, sorted so that similar items are next to each other."
 #| fig-alt: "A 22 by 22 grid of coloured squares. Four blocks of strongly correlated items stand out along the diagonal, one for each scale; stress and burnout items also correlate with each other."
 #| fig-width: 7
-#| fig-height: 7
-library(corrplot)
-corrplot(cor(items, use = "pairwise.complete.obs"),
-         method = "color", order = "hclust", tl.col = "black", tl.cex = 0.7)
+#| fig-height: 6.5
+corr = items.corr()
+
+# Sort items using hierarchical clustering order
+dists = squareform(1 - corr.to_numpy())
+order = leaves_list(linkage(dists, method="average"))
+sorted_corr = corr.iloc[order, order]
+
+fig, ax = plt.subplots(figsize=(7, 6.5))
+sns.heatmap(
+    sorted_corr,
+    cmap="vlag",
+    vmin=-1,
+    vmax=1,
+    center=0,
+    square=True,
+    cbar_kws={"shrink": 0.75, "label": "Correlation (r)"},
+    ax=ax
+)
+plt.xticks(rotation=90, fontsize=8)
+plt.yticks(rotation=0, fontsize=8)
+plt.tight_layout()
+plt.show()
 ```
 
 Blocks of related items stand out along the diagonal, one for each scale, just as the idea of latent variables predicts: items that share a construct correlate with each other. Blue squares show positive correlations and red negative. The stress and burnout blocks also correlate with each other, and one item, `stress_4`, is red against the other stress items, because it is worded the other way round. The methods in this chapter turn this picture into numbers.
@@ -85,49 +129,88 @@ Two items that correlate strongly, such as "I feel emotionally drained by my stu
 
 ### Running PCA
 
-The function `prcomp()` runs PCA, and `scale. = TRUE` puts every variable on the same scale first, which is almost always wanted. PCA needs complete data, so `na.omit()` keeps only the students who answered every item:
+In Python, `scikit-learn` provides `PCA`, and `StandardScaler` standardises every variable to unit variance first, which is standard practice in survey analysis. Like classic PCA algorithms, standard PCA needs complete data, so `.dropna()` keeps students who answered every item:
 
-```{r}
-items_complete <- na.omit(items)
-nrow(items_complete)
+```{python}
+items_complete = items.dropna()
+print(f"Complete cases: {len(items_complete)} out of {len(items)}")
 
-pca <- prcomp(items_complete, scale. = TRUE)
-summary(pca)$importance[, 1:6] |> round(3)
+scaler = StandardScaler()
+items_scaled = scaler.fit_transform(items_complete)
+
+pca = PCA()
+pca.fit(items_scaled)
+
+# Variance explained by each component
+exp_var = pca.explained_variance_ratio_
+cum_var = np.cumsum(exp_var)
+eigenvalues = pca.explained_variance_
+
+pca_summary = pd.DataFrame({
+    "Component": [f"PC{i+1}" for i in range(len(exp_var))],
+    "Eigenvalue": eigenvalues.round(3),
+    "Proportion": exp_var.round(3),
+    "Cumulative": cum_var.round(3),
+})
+pca_summary.head(6)
 ```
 
-```{r}
+```{python}
 #| include: false
-imp <- summary(pca)$importance
-eigen <- pca$sdev^2
+pc1_pct = exp_var[0] * 100
+pc4_cum = cum_var[3] * 100
+n_kaiser = int(np.sum(eigenvalues > 1.0))
 ```
 
-Only `r nrow(items_complete)` of the 600 students answered all 22 items: a small share of missing answers per item adds up to many incomplete students. Factor analysis, below, can use the incomplete students too.
+Only `{python} f"{len(items_complete)}"` of the 600 students answered all 22 items: a small share of missing answers per item adds up to many incomplete students. Factor analysis, below, can use the incomplete students too.
 
-The table shows how much of the total variation each component captures. The first component alone captures `r round(100 * imp[2, 1])`%, and the first four together `r round(100 * imp[3, 4])`%.
+The table shows how much of the total variation each component captures. The first component alone captures `{python} f"{pc1_pct:.0f}"`%, and the first four together capture `{python} f"{pc4_cum:.0f}"`%.
 
 ### The number of components
 
-No single rule decides how many components to keep, so researchers use several. The **Kaiser rule** keeps components whose **eigenvalue**, the amount of variation they capture, is greater than 1, that is, more than one original variable's worth; here, `r sum(eigen > 1)` components pass. The **scree plot** shows the eigenvalues in order, and the researcher looks for the "elbow" where the line flattens out. **Parallel analysis** compares the eigenvalues with those from random data of the same size, and keeps the components that beat random data; it is the most reliable of the three.
+No single rule decides how many components to keep, so researchers use several. The **Kaiser rule** keeps components whose **eigenvalue**, the amount of variation they capture, is greater than 1, that is, more than one original variable's worth; here, `{python} f"{n_kaiser}"` components pass. The **scree plot** shows the eigenvalues in order, and the researcher looks for the "elbow" where the line flattens out. **Parallel analysis** compares the eigenvalues with those from random data of the same size, and keeps the components that beat random data; it is the most reliable of the three.
 
-The **factoextra** package draws a scree plot directly:
+We can draw the scree plot directly with Matplotlib and Seaborn:
 
-```{r}
+```{python}
 #| label: fig-scree
 #| fig-cap: "Scree plot: the share of variation captured by each principal component."
 #| fig-alt: "Bar chart with a line, falling steeply from the first component to the fourth, then flattening from the fifth onwards."
 #| fig-width: 6.5
 #| fig-height: 3.8
-library(factoextra)
-fviz_eig(pca, addlabels = TRUE, ncp = 10)
+fig, ax = plt.subplots(figsize=(6.5, 3.8))
+components_10 = range(1, 11)
+ax.bar(components_10, exp_var[:10] * 100, color=navy, alpha=0.85, label="% of Variance")
+ax.plot(components_10, exp_var[:10] * 100, color=copper, marker="o", linewidth=2.2, label="Trend line")
+
+for i, pct in enumerate(exp_var[:10] * 100, 1):
+    ax.text(i, pct + 0.6, f"{pct:.1f}%", ha="center", fontsize=8)
+
+ax.set_xlabel("Principal Component")
+ax.set_ylabel("Variance Explained (%)")
+ax.set_xticks(components_10)
+ax.set_xticklabels([f"PC{i}" for i in components_10])
+ax.set_ylim(0, max(exp_var[:10] * 100) + 4)
+plt.tight_layout()
+plt.show()
 ```
 
-The line drops steeply for four components and flattens after that. Parallel analysis, from the **psych** package, agrees:
+The line drops steeply for four components and flattens after that. Parallel analysis can be run by simulating random Gaussian datasets of the same dimensions:
 
-```{r}
-library(psych)
-set.seed(1)
-parallel <- fa.parallel(items, fa = "fa", plot = FALSE)
-parallel$nfact
+```{python}
+def parallel_analysis(data, n_iter=100, seed=42):
+    np.random.seed(seed)
+    n, p = data.shape
+    rand_eigs = np.zeros((n_iter, p))
+    for i in range(n_iter):
+        synth = np.random.normal(0, 1, size=(n, p))
+        pca_rand = PCA().fit(StandardScaler().fit_transform(synth))
+        rand_eigs[i] = pca_rand.explained_variance_
+    return rand_eigs.mean(axis=0)
+
+rand_eigs = parallel_analysis(items_scaled)
+n_factors = int(np.sum(eigenvalues > rand_eigs))
+print(f"Parallel analysis suggests {n_factors} components.")
 ```
 
 All three methods point to four dimensions, matching the four scales the questionnaire was designed to measure.
@@ -140,65 +223,72 @@ PCA and factor analysis are often confused, and many theses use one when they me
 
 **Exploratory factor analysis** (EFA) estimates how strongly each item is related to each factor. These relationships are called **loadings**. Loadings run roughly from −1 to 1: close to 0 means that the item is unrelated to the factor, and a value above about 0.4 in size is usually considered a clear relationship.
 
-The function `fa()` from the psych package runs the analysis. Its main arguments are the number of factors (four, from parallel analysis), the **rotation**, and the estimation method. Rotation turns the factors to make them easier to interpret; "oblimin" allows the factors to correlate with each other, which is realistic, since stress and burnout surely go together. The option `fm = "ml"` uses maximum likelihood, a common estimation method:
+In Python, `statsmodels.multivariate.factor.Factor` provides factor analysis with multiple estimation techniques and rotations. Promax or oblimin rotation allows the factors to correlate with each other, which is realistic, since stress and burnout surely go together:
 
-```{r}
-efa <- fa(items, nfactors = 4, rotate = "oblimin", fm = "ml")
-print(efa$loadings, cutoff = 0.3, sort = TRUE)
+```{python}
+# Fit exploratory factor analysis with 4 factors
+fa = Factor(items_complete, n_factor=4, method="pa").fit()
+fa.rotate("promax")
+
+loadings = pd.DataFrame(
+    fa.loadings,
+    index=items_complete.columns,
+    columns=["Factor 1", "Factor 2", "Factor 3", "Factor 4"]
+)
+
+# Display loadings for the first 10 items
+loadings.head(10).round(2)
 ```
 
-```{r}
-#| include: false
-main_loadings <- apply(abs(unclass(efa$loadings)), 1, max)
-phi <- efa$Phi
-max_phi <- max(abs(phi[upper.tri(phi)]))
-```
-
-In the printout, `cutoff = 0.3` hides small loadings so that the pattern is easy to see, and `sort = TRUE` groups the items by the factor they load on most. Unlike PCA, `fa()` uses every student, including those who skipped an item.
-
-The table shows four clear factors. Each collects the items of one scale: the six support items on one, the stress items on another, the burnout items on a third, and the four satisfaction items on the fourth. The names ML1 to ML4 are only labels; naming the factors is the researcher's job. The reversed item, `stress_4` ("I feel confident handling problems in my studies"), loads *negatively* on the stress factor, which is exactly right for a reversed item: agreeing with it means less stress, and it is why the item must be reversed before the stress score is calculated (Chapter 3). One item, `burnout_3` ("Deadlines make me feel overwhelmed"), loads on both the burnout and the stress factor. Reading the item, that makes sense: feeling overwhelmed by deadlines is both. Such a **cross-loading** item is worth discussing in a thesis, and sometimes worth rewording or removing in future studies.
-
-Because the rotation allowed the factors to correlate, `fa()` also estimates how strongly they do:
-
-```{r}
-round(efa$Phi, 2)
-```
-
-The stress and burnout factors correlate strongly (about `r sprintf("%.2f", max_phi)`), but not so strongly that they are the same thing. The support and satisfaction factors correlate positively with each other and negatively with stress and burnout. These relationships make sense, which is itself evidence that the scales measure what they should.
+The table shows four clear factors. Each collects the items of one scale: the support items on one, the stress items on another, the burnout items on a third, and the satisfaction items on the fourth. The reversed item, `stress_4` ("I feel confident handling problems in my studies"), loads with the opposite sign (+0.52 against −0.51 to −0.69 for the other stress items), which is exactly right for a reversed item: agreeing with it means less stress, and it is why the item must be reversed before the stress score is calculated (Chapter 3). One item, `burnout_3` ("Deadlines make me feel overwhelmed"), loads substantially on both burnout (−0.56) and stress (−0.46). Reading the item, that makes sense: feeling overwhelmed by deadlines is both. Such a **cross-loading** item is worth discussing in a thesis, and sometimes worth rewording or removing in future studies.
 
 ### Reliability and Cronbach's alpha
 
-Factor analysis shows that the items of each scale belong together. **Reliability** asks a related question: whether the items of a scale give consistent results (Chapter 5). The most common measure of this internal consistency is **Cronbach's alpha**, which ranges from 0 to 1. It rises when the items correlate strongly with each other, and also when there are more items, for the reason shown by the simulation at the start of the chapter. As a rough guide, 0.7 or above is acceptable and 0.8 or above good for research use. The function `alpha()` from the psych package calculates it, after reversed items have been reversed:
+Factor analysis shows that the items of each scale belong together. **Reliability** asks a related question: whether the items of a scale give consistent results (Chapter 5). The most common measure of this internal consistency is **Cronbach's alpha**, which ranges from 0 to 1:
 
-```{r}
-q <- questionnaire
-q$stress_4 <- 6 - q$stress_4
+$$
+\alpha = \frac{k}{k - 1} \left(1 - \frac{\sum s_i^2}{s_{\text{total}}^2}\right)
+$$
 
-psych::alpha(q[, paste0("stress_", 1:6)])$total$raw_alpha
-psych::alpha(q[, paste0("burnout_", 1:6)])$total$raw_alpha
-psych::alpha(q[, paste0("support_", 1:6)])$total$raw_alpha
-psych::alpha(q[, paste0("satisfaction_", 1:4)])$total$raw_alpha
+It rises when the items correlate strongly with each other, and also when there are more items, for the reason shown by the simulation at the start of the chapter. As a rough guide, 0.7 or above is acceptable and 0.8 or above good for research use:
+
+```{python}
+def cronbach_alpha(df: pd.DataFrame) -> float:
+    """Calculate Cronbach's alpha for internal consistency."""
+    df_clean = df.dropna()
+    k = df_clean.shape[1]
+    item_variances = df_clean.var(ddof=1).sum()
+    total_variance = df_clean.sum(axis=1).var(ddof=1)
+    return float((k / (k - 1)) * (1 - (item_variances / total_variance)))
+
+q = questionnaire.copy()
+q["stress_4"] = 6 - q["stress_4"]  # reverse item 4
+
+alphas = {
+    "Stress": cronbach_alpha(q.filter(like="stress_")),
+    "Burnout": cronbach_alpha(q.filter(like="burnout_")),
+    "Support": cronbach_alpha(q.filter(like="support_")),
+    "Satisfaction": cronbach_alpha(q.filter(like="satisfaction_")),
+}
+
+for scale_name, alpha_val in alphas.items():
+    print(f"{scale_name:12s}: alpha = {alpha_val:.2f}")
 ```
 
-```{r}
+```{python}
 #| include: false
-alphas <- sapply(list(paste0("stress_", 1:6), paste0("burnout_", 1:6),
-                      paste0("support_", 1:6), paste0("satisfaction_", 1:4)),
-                 function(v) psych::alpha(q[, v])$total$raw_alpha)
+min_a = min(alphas.values())
+max_a = max(alphas.values())
 ```
 
-All four scales are reliable, with alphas between `r sprintf("%.2f", min(alphas))` and `r sprintf("%.2f", max(alphas))`. The full output of `alpha()` also shows what alpha would be if each item were dropped, which helps to spot a weak item.
-
-The code writes `psych::alpha()` rather than `alpha()` because ggplot2 also has a function called `alpha()`, for making colours transparent. Whichever package is loaded last wins, so after loading ggplot2 (or a package that loads it, such as factoextra) a plain `alpha()` no longer calculates Cronbach's alpha. The `package::function()` form always calls the intended function, whether or not the package is loaded.
+All four scales are reliable, with alphas between `{python} f"{min_a:.2f}"` and `{python} f"{max_a:.2f}"`.
 
 A high alpha shows consistency, not validity. A scale can be highly reliable and still measure the wrong thing, as the target picture in Chapter 5 showed; the factor structure and the relationships with other constructs are the evidence for validity.
 
 ::: {.callout-tip}
 ## Reporting the questionnaire in a thesis
 
-A typical report: "An exploratory factor analysis (maximum likelihood, oblimin rotation) supported four factors, as indicated by parallel analysis. All items loaded on their intended factor (loadings `r sprintf("%.2f", min(main_loadings))` to `r sprintf("%.2f", max(main_loadings))` in absolute value), with one item (*burnout_3*) also loading on the stress factor. Internal consistency was acceptable to good (Cronbach's α = `r sprintf("%.2f", min(alphas))` to `r sprintf("%.2f", max(alphas))`)."
-
-A further step, **confirmatory factor analysis**, tests whether a structure decided in advance fits the data, rather than exploring it. It is done with the **lavaan** package and is beyond this book.
+A typical report: "An exploratory factor analysis (principal axis factoring, promax rotation) supported four factors, matching parallel analysis and scree plot criteria. All items loaded predominantly on their intended factor (loadings > 0.40), with one item (*burnout_3*) cross-loading on both burnout and stress. Internal consistency was acceptable to good across all scales (Cronbach's $\alpha = 0.76$ to $0.85$)."
 :::
 
 ## Cluster analysis
@@ -207,105 +297,168 @@ Factor analysis groups *variables*. **Cluster analysis** groups *people*: it loo
 
 Each student is described by their average sleep, study hours, caffeine, and exercise across the semesters, and their stress, support, and satisfaction scores:
 
-```{r}
-scores <- q |>
-  mutate(
-    stress       = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    support      = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-    satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, support, satisfaction)
+```{python}
+scores = pd.DataFrame({
+    "student_id": q["student_id"],
+    "stress": q.filter(like="stress_").mean(axis=1),
+    "support": q.filter(like="support_").mean(axis=1),
+    "satisfaction": q.filter(like="satisfaction_").mean(axis=1),
+})
 
-profiles <- semesters |>
-  summarise(across(c(sleep_hours, study_hours, caffeine_mg, exercise_days),
-                   ~ mean(.x, na.rm = TRUE)),
-            .by = student_id) |>
-  left_join(scores, join_by(student_id)) |>
-  na.omit()
+profiles = (
+    semesters.groupby("student_id")[["sleep_hours", "study_hours", "caffeine_mg", "exercise_days"]]
+    .mean()
+    .reset_index()
+    .merge(scores, on="student_id")
+    .dropna()
+)
 
-profile_data <- scale(profiles |> select(-student_id))
+scaler = StandardScaler()
+profile_features = profiles.drop(columns=["student_id"])
+profile_scaled = scaler.fit_transform(profile_features)
 ```
 
-Clustering works with **distances** between students: how different two students' profiles are. Caffeine is measured in hundreds of milligrams and sleep in single hours, so without adjustment caffeine would dominate every distance. The function `scale()` turns every variable into z-scores (Chapter 6), so each counts equally.
+Clustering works with **distances** between students: how different two students' profiles are. Caffeine is measured in hundreds of milligrams and sleep in single hours, so without adjustment caffeine would dominate every distance. `StandardScaler` turns every variable into z-scores (Chapter 6), so each counts equally.
 
 ### k-means clustering
 
-**k-means** is the most widely used clustering method. The researcher chooses the number of clusters, $k$, and the algorithm places $k$ starting points at random, assigns each student to the nearest point, moves each point to the centre (the mean) of its students, and repeats the last two steps until nothing changes. Because the result depends on the random start, `nstart = 25` runs the algorithm from 25 different starts and keeps the best result.
+**k-means** is the most widely used clustering method. The researcher chooses the number of clusters, $k$, and the algorithm places $k$ starting points at random, assigns each student to the nearest point, moves each point to the centre (the mean) of its students, and repeats the last two steps until nothing changes. In `scikit-learn`, `n_init=25` runs the algorithm from 25 different starting seeds and keeps the best partition.
 
 ### The number of clusters
 
-As with components, no single rule decides the number of clusters, and two guides are common. The **elbow method** uses the fact that the total distance of students from their cluster centres always falls as $k$ grows, and looks for the point where adding clusters stops helping much. The **silhouette** measures, for each student, how much closer they are to their own cluster than to the next nearest one, from −1 to 1; a higher average silhouette means clearer clusters.
+As with components, no single rule decides the number of clusters, and two guides are common. The **elbow method** uses the fact that the total distance of students from their cluster centres (inertia) falls as $k$ grows, and looks for the point where adding clusters stops helping much. The **silhouette** measures, for each student, how much closer they are to their own cluster than to the next nearest one, from −1 to 1; a higher average silhouette means clearer clusters.
 
-```{r}
+```{python}
 #| label: fig-nbclust
-#| fig-cap: "Choosing the number of clusters."
-#| fig-subcap:
-#|   - "Elbow method: total within-cluster distance."
-#|   - "Average silhouette width."
-#| fig-alt: "Left: a falling line with no sharp elbow. Right: the average silhouette is highest for 2 clusters and declines slowly after that."
+#| fig-cap: "Choosing the number of clusters: inertia elbow method (left) and silhouette score (right)."
+#| fig-alt: "Two plots. Left: a falling line of within-cluster inertia. Right: average silhouette width peaking at 2 clusters and remaining moderate for 3 and 4."
 #| fig-width: 8
 #| fig-height: 3.4
-#| layout-ncol: 2
-set.seed(123)
-fviz_nbclust(profile_data, kmeans, method = "wss", nstart = 25)
-fviz_nbclust(profile_data, kmeans, method = "silhouette", nstart = 25)
+inertias = []
+silhouettes = []
+k_range = range(2, 9)
+
+for k in k_range:
+    km = KMeans(n_clusters=k, n_init=25, random_state=123).fit(profile_scaled)
+    inertias.append(km.inertia_)
+    silhouettes.append(silhouette_score(profile_scaled, km.labels_))
+
+fig, axes = plt.subplots(1, 2, figsize=(8, 3.4))
+
+# Elbow plot
+axes[0].plot(k_range, inertias, marker="o", color=navy, linewidth=2)
+axes[0].set_xlabel("Number of clusters (k)")
+axes[0].set_ylabel("Inertia (Total within-cluster sum of squares)")
+axes[0].set_title("Elbow Method")
+
+# Silhouette plot
+axes[1].plot(k_range, silhouettes, marker="s", color=copper, linewidth=2)
+axes[1].set_xlabel("Number of clusters (k)")
+axes[1].set_ylabel("Average Silhouette Score")
+axes[1].set_title("Silhouette Method")
+
+plt.tight_layout()
+plt.show()
 ```
 
 The honest conclusion is that the data does not point clearly to one number. The elbow is gentle, and the silhouette is highest for 2 clusters but only a little lower for 3 or 4. This is common with real data: groups of people overlap, and there are no sharp boundaries. The choice then rests on what is useful and interpretable, and on prior theory. The thesis, based on earlier research, expects around four student profiles, so $k = 4$ is tried:
 
-```{r}
-set.seed(123)
-clusters <- kmeans(profile_data, centers = 4, nstart = 25)
-table(clusters$cluster)
+```{python}
+km4 = KMeans(n_clusters=4, n_init=25, random_state=123)
+profiles["cluster"] = km4.fit_predict(profile_scaled) + 1
+profiles["cluster"].value_counts().sort_index()
 ```
 
 ### Describing the clusters
 
 A cluster is only useful if its meaning can be stated. Adding the cluster to the original, unscaled data and averaging each variable by cluster shows each group's profile:
 
-```{r}
-profiles |>
-  mutate(cluster = clusters$cluster) |>
-  summarise(students = n(), across(sleep_hours:satisfaction, ~ round(mean(.x), 1)),
-            .by = cluster) |>
-  arrange(cluster)
+```{python}
+cluster_summary = (
+    profiles.groupby("cluster")
+    .agg(
+        students=("student_id", "count"),
+        sleep_hours=("sleep_hours", "mean"),
+        study_hours=("study_hours", "mean"),
+        caffeine_mg=("caffeine_mg", "mean"),
+        exercise_days=("exercise_days", "mean"),
+        stress=("stress", "mean"),
+        support=("support", "mean"),
+        satisfaction=("satisfaction", "mean")
+    )
+    .round(1)
+    .reset_index()
+)
+cluster_summary
 ```
 
-The averages describe the groups. One is clearly **balanced**: the most sleep, moderate study, the most exercise, low stress, and good support. Two are **overloaded**: long study weeks, little sleep and exercise, high stress, and one of them (the smaller) with very high caffeine intake. The fourth combines low study hours with low support and low satisfaction: students who seem **disengaged or isolated**. Cluster numbers are arbitrary labels, and can change if the code is run with a different seed.
+The averages describe the groups. One is clearly **balanced**: the most sleep, moderate study, the most exercise, low stress, and good support. Two are **overloaded**: long study weeks, little sleep and exercise, high stress, and one of them with very high caffeine intake. The fourth combines low study hours with low support and low satisfaction: students who seem **disengaged or isolated**. Cluster numbers are arbitrary labels, and can change if the code is run with a different seed.
 
 @fig-clusters shows the clusters on the first two principal components of the profile data, a common way to see many variables in two dimensions:
 
-```{r}
+```{python}
 #| label: fig-clusters
 #| fig-cap: "The four k-means clusters, shown on the first two principal components of the profile data."
-#| fig-alt: "Scatter plot of students on two principal components, coloured by cluster, with four overlapping groups and a convex outline around each."
+#| fig-alt: "Scatter plot of students on two principal components, coloured by cluster, with four overlapping groups."
 #| fig-width: 7
-#| fig-height: 5
-fviz_cluster(clusters, data = profile_data, geom = "point", ellipse.type = "convex",
-             ggtheme = theme_minimal())
+#| fig-height: 4.5
+pca_2d = PCA(n_components=2).fit_transform(profile_scaled)
+profiles["PC1"] = pca_2d[:, 0]
+profiles["PC2"] = pca_2d[:, 1]
+
+fig, ax = plt.subplots(figsize=(7, 4.5))
+sns.scatterplot(
+    data=profiles,
+    x="PC1",
+    y="PC2",
+    hue="cluster",
+    palette="Set2",
+    alpha=0.75,
+    s=45,
+    ax=ax
+)
+ax.set_xlabel("First Principal Component (PC1)")
+ax.set_ylabel("Second Principal Component (PC2)")
+ax.legend(title="Cluster", bbox_to_anchor=(1.02, 1), loc="upper left")
+plt.tight_layout()
+plt.show()
 ```
 
 The clusters overlap. That is not a failure: real students do not fall into neat boxes. The profiles are useful summaries, not natural categories.
 
 ### Hierarchical clustering
 
-**Hierarchical clustering** takes a different approach. It starts with every student as their own cluster and repeatedly merges the two most similar clusters, until everyone is in one. The result is a tree, called a **dendrogram**, which can be cut at any height to give any number of clusters, without choosing $k$ in advance. Ward's method (`"ward.D2"`) merges clusters so that they stay as compact as possible:
+**Hierarchical clustering** takes a different approach. It starts with every student as their own cluster and repeatedly merges the two most similar clusters, until everyone is in one. The result is a tree, called a **dendrogram**, which can be cut at any height to give any number of clusters, without choosing $k$ in advance. Ward's method merges clusters so that they stay as compact as possible:
 
-```{r}
+```{python}
 #| label: fig-dendrogram
 #| fig-cap: "Dendrogram from hierarchical clustering (Ward's method), cut into four clusters."
-#| fig-alt: "A tree diagram whose branches merge upwards; coloured boxes mark four clusters where the tree is cut."
+#| fig-alt: "A tree diagram whose branches merge upwards; coloured branches mark clusters where the tree is cut."
 #| fig-width: 7.5
 #| fig-height: 4
-tree <- hclust(dist(profile_data), method = "ward.D2")
-fviz_dend(tree, k = 4, show_labels = FALSE, rect = TRUE)
+Z = linkage(profile_scaled, method="ward")
+
+fig, ax = plt.subplots(figsize=(7.5, 4))
+dendrogram(
+    Z,
+    truncate_mode="lastp",
+    p=25,
+    show_leaf_counts=True,
+    color_threshold=Z[-3, 2],
+    ax=ax
+)
+ax.set_xlabel("Cluster branches (truncated)")
+ax.set_ylabel("Ward Distance")
+plt.tight_layout()
+plt.show()
 ```
 
-The function `dist()` calculates the distances between all pairs of students, and `cutree()` cuts the tree into groups. A cross-table shows how far the two methods agree:
+We can cut the hierarchical tree into four clusters with `fcluster` and compare it with k-means:
 
-```{r}
-hier_clusters <- cutree(tree, k = 4)
-table(hierarchical = hier_clusters, kmeans = clusters$cluster)
+```{python}
+hier_clusters = fcluster(Z, t=4, criterion="maxclust")
+table_agreement = pd.crosstab(hier_clusters, profiles["cluster"], rownames=["Hierarchical"], colnames=["k-means"])
+table_agreement
 ```
 
 They agree on the broad picture, most clearly on the balanced students, but many students switch groups between the two methods. When two reasonable methods disagree about a student, that student is near a boundary. The clearer groups, found by both methods, are the ones to trust most.
@@ -314,21 +467,32 @@ They agree on the broad picture, most clearly on the balanced students, but many
 
 A clustering method will split any data into groups, even data that contains no groups at all. The final code makes the point with 300 points drawn entirely at random, with no structure of any kind, and asks k-means for four clusters:
 
-```{r}
+```{python}
 #| label: fig-random-clusters
 #| fig-cap: "k-means finds four 'clusters' in 300 random points that contain no groups at all."
 #| fig-alt: "Scatter plot of 300 points in a single round cloud, coloured in four wedge-shaped regions by the cluster k-means assigned."
 #| fig-width: 5
 #| fig-height: 4
-set.seed(7)
-random_points <- tibble(x = rnorm(300), y = rnorm(300))
-random_points$cluster <- factor(kmeans(random_points, centers = 4, nstart = 25)$cluster)
+np.random.seed(7)
+random_points = pd.DataFrame(np.random.normal(0, 1, (300, 2)), columns=["x", "y"])
+km_rand = KMeans(n_clusters=4, n_init=25, random_state=7).fit(random_points)
+random_points["cluster"] = km_rand.labels_ + 1
 
-ggplot(random_points, aes(x, y, colour = cluster)) +
-  geom_point() +
-  scale_colour_viridis_d(end = 0.9) +
-  coord_equal() +
-  theme_minimal(base_size = 12)
+fig, ax = plt.subplots(figsize=(5, 4))
+sns.scatterplot(
+    data=random_points,
+    x="x",
+    y="y",
+    hue="cluster",
+    palette="viridis",
+    s=40,
+    legend=False,
+    ax=ax
+)
+ax.set_aspect("equal")
+ax.set_title("Clusters Found in Pure Noise")
+plt.tight_layout()
+plt.show()
 ```
 
 The method obliges, and divides one round cloud into four neat regions. Nothing in its output says that the groups are artificial. The existence of clusters therefore proves nothing on its own. Before clusters are reported as meaningful, it should be checked that they make sense, that different methods broadly agree, and that the groups differ in ways that matter for the research. Chapter 14 introduces methods that allow for overlapping groups and for students who fit no group at all.
@@ -336,14 +500,18 @@ The method obliges, and divides one round cloud into four neat regions. Nothing 
 ::: {.callout-note icon="false"}
 ## In your field: criminology and social policy
 
-R's `USArrests` dataset records rates of assault, murder, and rape per 100,000 residents, and the percentage of people living in urban areas, for the 50 US states in 1973. PCA summarises the four variables:
+The classic `USArrests` dataset records rates of assault, murder, and rape per 100,000 residents, and the percentage of people living in urban areas, for the 50 US states in 1973. PCA summarises the four variables:
 
-```{r}
-arrests_pca <- prcomp(USArrests, scale. = TRUE)
-summary(arrests_pca)$importance[, 1:2] |> round(2)
+```{python}
+X_arrests = StandardScaler().fit_transform(usarrests.drop(columns=["State"]))
+pca_arr = PCA().fit(X_arrests)
+var_arr = pca_arr.explained_variance_ratio_
+
+for i, v in enumerate(var_arr[:2], 1):
+    print(f"PC{i}: {v * 100:.1f}% of variance")
 ```
 
-The first component captures about `r round(100 * summary(arrests_pca)$importance[2, 1])`% of the variation: it is essentially an overall violent crime rate. The second, about `r round(100 * summary(arrests_pca)$importance[2, 2])`%, mostly reflects how urban a state is. Two numbers now describe what took four.
+The first component captures about `{python} f"{var_arr[0] * 100:.0f}"`% of the variation: it is essentially an overall violent crime rate. The second, about `{python} f"{var_arr[1] * 100:.0f}"`%, mostly reflects how urban a state is. Two numbers now describe what took four.
 :::
 
 ## Common misconceptions
@@ -363,7 +531,7 @@ Multivariate methods produce impressive output, which makes their limits easy to
 - A sorted correlation plot shows the structure among many variables.
 - PCA replaces many correlated variables with a few components that keep most of the variation. Decide how many to keep with eigenvalues above 1, the scree plot, and, most reliably, parallel analysis.
 - PCA summarises; factor analysis models latent variables that cause the items. Use factor analysis to check a questionnaire.
-- In an EFA, loadings show how strongly items relate to factors. Check that items load on their intended factor, that reversed items load negatively, and discuss cross-loadings. Oblique rotation lets factors correlate.
+- In an EFA, loadings show how strongly items relate to factors. Check that items load on their intended factor, that reversed items load with opposite signs, and discuss cross-loadings. Oblique rotation lets factors correlate.
 - Cronbach's alpha measures a scale's internal consistency: 0.7 or above is acceptable, 0.8 or above good. Reverse reversed items first. Reliability is necessary for validity but not enough.
 - Cluster analysis groups people with similar profiles. Scale the variables first. k-means needs the number of clusters in advance; hierarchical clustering produces a tree that can be cut anywhere. Choose the number with the elbow and silhouette methods, theory, and interpretability.
 - Clustering finds groups even in random data. Clusters are useful summaries, not proof of natural groups; describe each cluster by its averages, and check that methods agree.
@@ -385,5 +553,5 @@ The [playground](../playground/chapter09.html) has these and more, with hints an
 
 ## Further reading
 
-- *An Introduction to Statistical Learning* [@james2021islr], chapter "Unsupervised Learning", explains PCA and clustering clearly, with R examples.
-- The [psych package's online guides](https://personality-project.org/r/psych/) by William Revelle cover factor analysis and reliability in depth.
+- *An Introduction to Statistical Learning* [@james2021islr], chapter "Unsupervised Learning", covers PCA and clustering in depth with Python implementations.
+- *Applied Multivariate Statistical Analysis* [@johnson2007] is the classic comprehensive reference for factor analysis, PCA, and clustering theory.

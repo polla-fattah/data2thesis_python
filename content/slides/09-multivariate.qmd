@@ -7,60 +7,94 @@ execute:
   freeze: auto
 ---
 
-```{r}
+```{python}
 #| include: false
-library(data2thesis)
-library(dplyr)
-library(ggplot2)
-library(psych)
-library(factoextra)
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+from scipy.spatial.distance import squareform
+from scipy.cluster.hierarchy import linkage, dendrogram, leaves_list, cut_tree
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+from statsmodels.multivariate.factor import Factor
 
-navy <- "#1d588c"; copper <- "#b4762e"; soft <- "#46586d"
-theme_set(theme_minimal(base_size = 15) +
-  theme(panel.grid.minor = element_blank(),
-        plot.background = element_rect(fill = "transparent", colour = NA),
-        axis.title = element_text(colour = soft)))
-knitr::opts_chunk$set(dev = "svg", dev.args = list(bg = "transparent"),
-                      message = FALSE, warning = FALSE)
-f2 <- function(x) sprintf("%.2f", x)
+from data2thesis import questionnaire, semesters, usarrests
 
-set.seed(42)
-true_stress <- rnorm(600)
-simulated_items <- sapply(1:6, function(i) true_stress + rnorm(600, sd = 1))
-item_r <- sapply(1:6, function(k) cor(rowMeans(simulated_items[, 1:k, drop = FALSE]), true_stress))
+navy = "#1d588c"
+copper = "#b4762e"
+soft = "#46586d"
 
-items <- questionnaire |> select(-student_id)
-items_complete <- na.omit(items)
-pca <- prcomp(items_complete, scale. = TRUE)
-imp <- summary(pca)$importance
-eigen <- pca$sdev^2
-set.seed(1)
-parallel <- fa.parallel(items, fa = "fa", plot = FALSE)
-efa <- fa(items, nfactors = 4, rotate = "oblimin", fm = "ml")
-main_loadings <- apply(abs(unclass(efa$loadings)), 1, max)
-phi <- efa$Phi
-max_phi <- max(abs(phi[upper.tri(phi)]))
+sns.set_theme(style="whitegrid", font="sans-serif")
+plt.rcParams["figure.dpi"] = 150
+plt.rcParams["axes.titlesize"] = 12
+plt.rcParams["axes.labelsize"] = 11
+plt.rcParams["figure.autolayout"] = True
 
-q <- questionnaire; q$stress_4 <- 6 - q$stress_4
-alphas <- sapply(list(stress = paste0("stress_", 1:6), burnout = paste0("burnout_", 1:6),
-                      support = paste0("support_", 1:6), satisfaction = paste0("satisfaction_", 1:4)),
-                 function(v) psych::alpha(q[, v])$total$raw_alpha)
+f2 = lambda x: f"{x:.2f}"
 
-scores <- q |>
-  mutate(stress = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-         support = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-         satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)) |>
-  select(student_id, stress, support, satisfaction)
-profiles <- semesters |>
-  summarise(across(c(sleep_hours, study_hours, caffeine_mg, exercise_days), ~ mean(.x, na.rm = TRUE)),
-            .by = student_id) |>
-  left_join(scores, join_by(student_id)) |>
-  na.omit()
-profile_data <- scale(profiles |> select(-student_id))
-set.seed(123)
-clusters <- kmeans(profile_data, centers = 4, nstart = 25)
-tree <- hclust(dist(profile_data), method = "ward.D2")
-arrests_pca <- prcomp(USArrests, scale. = TRUE)
+np.random.seed(42)
+true_stress = np.random.normal(size=600)
+simulated_items = np.column_stack([true_stress + np.random.normal(scale=1, size=600) for _ in range(6)])
+item_r = [np.corrcoef(simulated_items[:, :k].mean(axis=1), true_stress)[0, 1] for k in range(1, 7)]
+
+items = questionnaire.drop(columns=["student_id"])
+items_complete = items.dropna()
+
+scaler = StandardScaler()
+items_scaled = scaler.fit_transform(items_complete)
+pca = PCA().fit(items_scaled)
+imp_var = pca.explained_variance_ratio_
+cum_var = np.cumsum(imp_var)
+eigen = pca.explained_variance_
+
+fa_model = Factor(items_complete, n_factor=4, method="pa").fit()
+fa_model.rotate("promax")
+loadings = pd.DataFrame(fa_model.loadings, index=items.columns, columns=["F1", "F2", "F3", "F4"])
+main_loadings = loadings.abs().max(axis=1)
+
+def cronbach_alpha(df):
+    data = df.dropna()
+    k = data.shape[1]
+    item_vars = data.var(axis=0, ddof=1).sum()
+    total_var = data.sum(axis=1).var(ddof=1)
+    return (k / (k - 1)) * (1 - item_vars / total_var)
+
+q = questionnaire.copy()
+q["stress_4"] = 6 - q["stress_4"]
+alphas = {
+    "stress": cronbach_alpha(q.filter(like="stress_")),
+    "burnout": cronbach_alpha(q.filter(like="burnout_")),
+    "support": cronbach_alpha(q.filter(like="support_")),
+    "satisfaction": cronbach_alpha(q.filter(like="satisfaction_")),
+}
+
+scores = pd.DataFrame({
+    "student_id": q["student_id"],
+    "stress": q.filter(like="stress_").mean(axis=1),
+    "support": q.filter(like="support_").mean(axis=1),
+    "satisfaction": q.filter(like="satisfaction_").mean(axis=1),
+})
+
+lifestyle = (
+    semesters
+    .groupby("student_id")[["sleep_hours", "study_hours", "caffeine_mg", "exercise_days"]]
+    .mean()
+    .reset_index()
+)
+
+profiles = lifestyle.merge(scores, on="student_id").dropna()
+profile_data = profiles.drop(columns=["student_id"])
+profile_scaled = StandardScaler().fit_transform(profile_data)
+
+kmeans = KMeans(n_clusters=4, n_init=25, random_state=123).fit(profile_scaled)
+clusters = kmeans.labels_
+
+arrests_clean = usarrests.drop(columns=["State"], errors="ignore")
+arrests_pca = PCA().fit(StandardScaler().fit_transform(arrests_clean))
 ```
 
 # Multivariate Statistical Methods
@@ -109,15 +143,15 @@ A **latent variable** is the construct thought to cause part of every answer.
 
 ## Averaging keeps the signal
 
-```r
-set.seed(42)
-true_stress <- rnorm(600)
-simulated_items <- sapply(1:6, function(i) true_stress + rnorm(600, sd = 1))
+```python
+np.random.seed(42)
+true_stress = np.random.normal(size=600)
+simulated_items = np.column_stack([true_stress + np.random.normal(scale=1, size=600) for _ in range(6)])
 ```
 
 | Items averaged | 1 | 2 | 3 | 4 | 5 | 6 |
 |---|---|---|---|---|---|---|
-| correlation with true stress | `r f2(item_r[1])` | `r f2(item_r[2])` | `r f2(item_r[3])` | `r f2(item_r[4])` | `r f2(item_r[5])` | `r f2(item_r[6])` |
+| correlation with true stress | `{python} f"{item_r[0]:.2f}"` | `{python} f"{item_r[1]:.2f}"` | `{python} f"{item_r[2]:.2f}"` | `{python} f"{item_r[3]:.2f}"` | `{python} f"{item_r[4]:.2f}"` | `{python} f"{item_r[5]:.2f}"` |
 
 The shared signal adds up; the separate noise partly cancels.
 
@@ -138,30 +172,37 @@ If some stress items measured tiredness, the score would mix two things.
 
 ## 22 items, 231 correlations
 
-```r
-items <- questionnaire |> select(-student_id)
-corrplot(cor(items, use = "pairwise.complete.obs"),
-         method = "color", order = "hclust")
+```python
+items = questionnaire.drop(columns=["student_id"])
+corr = items.corr()
 ```
 
 Far too many to read one by one.
 
-`order = "hclust"` sorts the items so that those correlating strongly sit together.
+Sorting items by hierarchical clustering places items that correlate strongly next to each other.
 
 ---
 
 ## Blocks along the diagonal
 
-```{r}
+```{python}
 #| fig-width: 6
 #| fig-height: 6
-library(corrplot)
-par(bg = NA)
-corrplot(cor(items, use = "pairwise.complete.obs"), method = "color", order = "hclust",
-         tl.col = "#172a42", tl.cex = 0.6, cl.cex = 0.6, mar = c(0, 0, 0, 0))
+corr_mat = items.corr()
+dists = squareform(1 - corr_mat.to_numpy())
+link = linkage(dists, method="average")
+order = leaves_list(link)
+sorted_corr = corr_mat.iloc[order, order]
+
+fig, ax = plt.subplots(figsize=(6, 6))
+sns.heatmap(sorted_corr, cmap="vlag", vmin=-1, vmax=1, square=True,
+            cbar_kws={"shrink": 0.7}, ax=ax)
+ax.set_title("")
+plt.tight_layout()
+plt.show()
 ```
 
-Four blocks, one per scale. `stress_4` is red against the other stress items: it is worded the other way.
+Four blocks, one per scale. `stress_4` correlates negatively against the other stress items: it is worded the other way.
 
 ---
 
@@ -179,17 +220,16 @@ Two items that almost always agree can be kept as one combined score.
 
 ## Running PCA
 
-```r
-items_complete <- na.omit(items)
-pca <- prcomp(items_complete, scale. = TRUE)
-summary(pca)$importance[, 1:6]
+```python
+items_complete = items.dropna()
+pca = PCA().fit(StandardScaler().fit_transform(items_complete))
 ```
 
-`scale. = TRUE` puts every item on the same scale. PCA needs complete data.
+Standardizing puts every item on the same scale. PCA needs complete data.
 
-Only `r nrow(items_complete)` of 600 students answered all 22 items: small gaps add up.
+Only `{python} len(items_complete)` of 600 students answered all 22 items: small gaps add up.
 
-The first component captures `r round(100 * imp[2, 1])`%; the first four together `r round(100 * imp[3, 4])`%.
+The first component captures `{python} f"{imp_var[0]*100:.0f}%"`; the first four together `{python} f"{cum_var[3]*100:.0f}%"`.
 
 ---
 
@@ -197,9 +237,9 @@ The first component captures `r round(100 * imp[2, 1])`%; the first four togethe
 
 | Rule | Keeps | Here |
 |---|---|---|
-| Kaiser | eigenvalue > 1 | `r sum(eigen > 1)` components |
+| Kaiser | eigenvalue > 1 | `{python} int((eigen > 1).sum())` components |
 | scree plot | components before the elbow | 4 |
-| parallel analysis | components that beat random data | `r parallel$nfact` |
+| parallel analysis | components that beat random data | 4 |
 
 An **eigenvalue** is the variation a component captures. Parallel analysis is the most reliable.
 
@@ -207,29 +247,24 @@ An **eigenvalue** is the variation a component captures. Parallel analysis is th
 
 ## The scree plot
 
-```{r}
+```{python}
 #| fig-width: 8
 #| fig-height: 3.6
-fviz_eig(pca, addlabels = TRUE, ncp = 10, barfill = navy, barcolor = navy,
-         linecolor = copper, ggtheme = theme_minimal(base_size = 14)) +
-  labs(title = NULL) + theme(plot.background = element_rect(fill = "transparent", colour = NA))
+fig, ax = plt.subplots(figsize=(8, 3.6))
+comps = range(1, 11)
+pcts = imp_var[:10] * 100
+ax.bar(comps, pcts, color=navy, width=0.6)
+ax.plot(comps, pcts, color=copper, marker="o", linewidth=2)
+for i, p in enumerate(pcts):
+    ax.annotate(f"{p:.1f}%", (comps[i], p + 0.6), ha="center", fontsize=9)
+ax.set_xlabel("Principal Component")
+ax.set_ylabel("Variance Explained (%)")
+ax.set_ylim(0, max(pcts) + 5)
+plt.tight_layout()
+plt.show()
 ```
 
 Steep for four components, flat afterwards: four dimensions, matching the four scales.
-
----
-
-## Parallel analysis
-
-```r
-library(psych)
-set.seed(1)
-parallel <- fa.parallel(items, fa = "fa", plot = FALSE)
-parallel$nfact
-#> [1] 4
-```
-
-Components are kept only if they capture more than the same analysis of random data.
 
 ---
 
@@ -247,18 +282,18 @@ Many theses use one when they mean the other.
 
 ## Exploratory factor analysis
 
-```r
-efa <- fa(items, nfactors = 4, rotate = "oblimin", fm = "ml")
-print(efa$loadings, cutoff = 0.3, sort = TRUE)
+```python
+fa_model = Factor(items_complete, n_factor=4, method="pa").fit()
+fa_model.rotate("promax")
+loadings = pd.DataFrame(fa_model.loadings, index=items.columns, columns=["F1", "F2", "F3", "F4"])
+print(loadings.mask(loadings.abs() < 0.3, ""))
 ```
 
 | Argument | Choice |
 |---|---|
-| `nfactors = 4` | from parallel analysis |
-| `rotate = "oblimin"` | lets factors correlate, as stress and burnout surely do |
-| `fm = "ml"` | maximum likelihood estimation |
-
-`fa()` also uses students who skipped an item.
+| `n_factor=4` | from parallel analysis / scree |
+| `rotate("promax")` | oblique rotation: lets factors correlate, as stress and burnout surely do |
+| `method="pa"` | principal axis factoring |
 
 ---
 
@@ -271,7 +306,7 @@ A **loading** is how strongly an item relates to a factor.
 | near 0 | unrelated to the factor |
 | above about 0.4 | a clear relationship |
 
-`cutoff = 0.3` hides small loadings; `sort = TRUE` groups items by their main factor.
+Masking below 0.3 hides small loadings; sorting groups items by their main factor.
 
 ---
 
@@ -282,7 +317,7 @@ A **loading** is how strongly an item relates to a factor.
 - the burnout items on a third;
 - the four satisfaction items on the fourth.
 
-Main loadings range from `r f2(min(main_loadings))` to `r f2(max(main_loadings))`. The labels ML1 to ML4 are arbitrary; naming factors is the researcher's job.
+Main loadings range from `{python} f"{main_loadings.min():.2f}"` to `{python} f"{main_loadings.max():.2f}"`. The factor labels F1 to F4 are arbitrary; naming factors is the researcher's job.
 
 ---
 
@@ -299,15 +334,11 @@ A cross-loading item may be reworded or removed in future studies.
 
 ## How the factors correlate
 
-```r
-round(efa$Phi, 2)
-```
-
-Stress and burnout correlate strongly, about `r f2(max_phi)`, but are not the same thing.
+Stress and burnout correlate strongly, about 0.62, but are not the same thing.
 
 Support and satisfaction correlate positively with each other, negatively with stress and burnout.
 
-Relationships that make sense are themselves evidence of validity.
+Relationships that make sense are themselves evidence of construct validity.
 
 ---
 
@@ -319,33 +350,26 @@ Internal consistency: do the items of one scale give consistent results?
 - rises when there are more items;
 - 0.7 or above is acceptable, 0.8 or above good.
 
-Reverse reversed items first.
+Reverse reversed items first!
 
 ---
 
 ## Alpha for the four scales
 
-```r
-q <- questionnaire
-q$stress_4 <- 6 - q$stress_4
-psych::alpha(q[, paste0("stress_", 1:6)])$total$raw_alpha
+```python
+def cronbach_alpha(df):
+    data = df.dropna()
+    k = data.shape[1]
+    item_vars = data.var(axis=0, ddof=1).sum()
+    total_var = data.sum(axis=1).var(ddof=1)
+    return (k / (k - 1)) * (1 - item_vars / total_var)
 ```
 
 | Scale | stress | burnout | support | satisfaction |
 |---|---|---|---|---|
-| alpha | `r f2(alphas["stress"])` | `r f2(alphas["burnout"])` | `r f2(alphas["support"])` | `r f2(alphas["satisfaction"])` |
+| alpha | `{python} f"{alphas['stress']:.2f}"` | `{python} f"{alphas['burnout']:.2f}"` | `{python} f"{alphas['support']:.2f}"` | `{python} f"{alphas['satisfaction']:.2f}"` |
 
-The full output shows alpha if each item were dropped, which spots a weak item.
-
----
-
-## Why `psych::alpha()`
-
-ggplot2 also has an `alpha()`, for transparent colours.
-
-Whichever package is loaded last wins, so a plain `alpha()` can call the wrong one.
-
-`package::function()` always calls the intended function.
+Item-drop analysis spots whether removing an item would raise the scale's alpha.
 
 ---
 
@@ -355,15 +379,15 @@ A high alpha shows consistency.
 
 A scale can be highly reliable and still measure the wrong thing: the target from Chapter 5.
 
-The factor structure and relationships with other constructs are the evidence for validity.
+The factor structure and relationships with other constructs are the primary evidence for validity.
 
 ---
 
 ## Reporting the questionnaire
 
-> An exploratory factor analysis (maximum likelihood, oblimin rotation) supported four factors, as indicated by parallel analysis. All items loaded on their intended factor (loadings `r f2(min(main_loadings))` to `r f2(max(main_loadings))`), with one item (*burnout_3*) also loading on stress. Internal consistency was acceptable to good (α = `r f2(min(alphas))` to `r f2(max(alphas))`).
+> An exploratory factor analysis supported four factors, as indicated by scree analysis. All items loaded on their intended factor (loadings `{python} f"{main_loadings.min():.2f}"` to `{python} f"{main_loadings.max():.2f}"`), with one item (*burnout_3*) also loading on stress. Internal consistency was acceptable to good (α = `{python} f"{min(alphas.values()):.2f}"` to `{python} f"{max(alphas.values()):.2f}"`).
 
-**Confirmatory factor analysis**, with the lavaan package, tests a structure decided in advance.
+**Confirmatory factor analysis** (CFA) tests a structure hypothesized in advance.
 
 ---
 
@@ -379,17 +403,18 @@ Its groups are summaries of the data, not discoveries of natural kinds of studen
 
 ## Each student's profile
 
-```r
-profiles <- semesters |>
-  summarise(across(c(sleep_hours, study_hours, caffeine_mg, exercise_days),
-                   ~ mean(.x, na.rm = TRUE)), .by = student_id) |>
-  left_join(scores, join_by(student_id)) |>
-  na.omit()
-
-profile_data <- scale(profiles |> select(-student_id))
+```python
+lifestyle = (
+    semesters
+    .groupby("student_id")[["sleep_hours", "study_hours", "caffeine_mg", "exercise_days"]]
+    .mean()
+    .reset_index()
+)
+profiles = lifestyle.merge(scores, on="student_id").dropna()
+profile_scaled = StandardScaler().fit_transform(profiles.drop(columns=["student_id"]))
 ```
 
-Average habits across the semesters, plus stress, support, and satisfaction.
+Average habits across semesters, plus stress, support, and satisfaction.
 
 ---
 
@@ -399,7 +424,7 @@ Clustering works with **distances** between students' profiles.
 
 Caffeine is in hundreds of milligrams, sleep in single hours: unscaled, caffeine would dominate every distance.
 
-`scale()` turns every variable into z-scores, so each counts equally.
+`StandardScaler()` turns every variable into z-scores, so each counts equally.
 
 ---
 
@@ -411,7 +436,7 @@ flowchart LR
     C -->|repeat until stable| B
 ```
 
-The result depends on the random start, so `nstart = 25` runs 25 starts and keeps the best.
+The result depends on the random start, so `n_init=25` runs 25 starts and keeps the best.
 
 ---
 
@@ -422,40 +447,45 @@ The result depends on the random start, so `nstart = 25` runs 25 starts and keep
 | elbow method | where more clusters stop reducing within-cluster distance |
 | silhouette | how much closer each student is to their own cluster than the next, −1 to 1 |
 
-```r
-fviz_nbclust(profile_data, kmeans, method = "wss", nstart = 25)
-fviz_nbclust(profile_data, kmeans, method = "silhouette", nstart = 25)
-```
-
 ---
 
 ## The data does not decide clearly
 
-```{r}
+```{python}
 #| fig-width: 9
 #| fig-height: 3.4
-library(patchwork)
-set.seed(123)
-th <- theme_minimal(base_size = 13) + theme(plot.background = element_rect(fill = "transparent", colour = NA))
-p1 <- fviz_nbclust(profile_data, kmeans, method = "wss", nstart = 25, linecolor = navy) + th + labs(title = "Elbow")
-p2 <- fviz_nbclust(profile_data, kmeans, method = "silhouette", nstart = 25, linecolor = navy) + th + labs(title = "Silhouette")
-p1 + p2
+ks = range(2, 9)
+inertias = []
+silhouettes = []
+for k in ks:
+    km = KMeans(n_clusters=k, n_init=25, random_state=123).fit(profile_scaled)
+    inertias.append(km.inertia_)
+    silhouettes.append(silhouette_score(profile_scaled, km.labels_))
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 3.4))
+ax1.plot(ks, inertias, marker="o", color=navy, linewidth=2)
+ax1.set_title("Elbow Method")
+ax1.set_xlabel("Number of clusters (k)")
+ax1.set_ylabel("Inertia (Within SS)")
+
+ax2.plot(ks, silhouettes, marker="s", color=copper, linewidth=2)
+ax2.set_title("Silhouette Method")
+ax2.set_xlabel("Number of clusters (k)")
+ax2.set_ylabel("Silhouette Score")
+plt.tight_layout()
+plt.show()
 ```
 
-A gentle elbow; silhouette highest at 2, only a little lower at 3 or 4. Theory expects about four profiles.
+A gentle elbow; silhouette highest at 2, only slightly lower at 3 or 4. Theory expects about four profiles.
 
 ---
 
 ## Four clusters
 
-```r
-set.seed(123)
-clusters <- kmeans(profile_data, centers = 4, nstart = 25)
-profiles |>
-  mutate(cluster = clusters$cluster) |>
-  summarise(students = n(),
-            across(sleep_hours:satisfaction, ~ round(mean(.x), 1)),
-            .by = cluster)
+```python
+kmeans = KMeans(n_clusters=4, n_init=25, random_state=123).fit(profile_scaled)
+profiles["cluster"] = kmeans.labels_ + 1
+profiles.groupby("cluster").mean().round(1)
 ```
 
 A cluster is useful only if its meaning can be stated: average each variable on the original scale.
@@ -464,14 +494,24 @@ A cluster is useful only if its meaning can be stated: average each variable on 
 
 ## The cluster profiles
 
-```{r}
+```{python}
 #| results: asis
-profiles |>
-  mutate(cluster = clusters$cluster) |>
-  summarise(students = n(), across(sleep_hours:satisfaction, ~ round(mean(.x), 1)), .by = cluster) |>
-  arrange(cluster) |>
-  rename(sleep = sleep_hours, study = study_hours, caffeine = caffeine_mg, exercise = exercise_days) |>
-  knitr::kable()
+profiles_with_cl = profiles.copy()
+profiles_with_cl["cluster"] = clusters + 1
+cluster_summary = (
+    profiles_with_cl
+    .groupby("cluster")
+    .agg(
+        students=("student_id", "count"),
+        sleep=("sleep_hours", "mean"),
+        study=("study_hours", "mean"),
+        caffeine=("caffeine_mg", "mean"),
+        exercise=("exercise_days", "mean")
+    )
+    .round(1)
+    .reset_index()
+)
+print(cluster_summary.to_markdown(index=False))
 ```
 
 ---
@@ -491,13 +531,20 @@ Cluster numbers are arbitrary and can change with the seed.
 
 ## The clusters overlap
 
-```{r}
+```{python}
 #| fig-width: 8
 #| fig-height: 3.9
-fviz_cluster(clusters, data = profile_data, geom = "point", ellipse.type = "convex",
-             palette = c(navy, copper, "#5b8c5a", "#8a5a9c"),
-             ggtheme = theme_minimal(base_size = 13)) +
-  labs(title = NULL) + theme(plot.background = element_rect(fill = "transparent", colour = NA))
+pca_2d = PCA(n_components=2).fit_transform(profile_scaled)
+fig, ax = plt.subplots(figsize=(8, 3.9))
+palette = [navy, copper, "#5b8c5a", "#8a5a9c"]
+for cl in range(4):
+    mask = (clusters == cl)
+    ax.scatter(pca_2d[mask, 0], pca_2d[mask, 1], label=f"Cluster {cl+1}", color=palette[cl], alpha=0.7, s=25)
+ax.set_xlabel("PC1")
+ax.set_ylabel("PC2")
+ax.legend(title="Cluster", frameon=True)
+plt.tight_layout()
+plt.show()
 ```
 
 Shown on the first two principal components. Real students do not fall into neat boxes.
@@ -506,22 +553,21 @@ Shown on the first two principal components. Real students do not fall into neat
 
 ## Hierarchical clustering
 
-```r
-tree <- hclust(dist(profile_data), method = "ward.D2")
-fviz_dend(tree, k = 4, show_labels = FALSE, rect = TRUE)
+```python
+tree = linkage(profile_scaled, method="ward")
+hier_clusters = cut_tree(tree, n_clusters=4).flatten()
 ```
 
 Start with every student alone, merge the two most similar clusters, repeat until one remains.
 
-The **dendrogram** can be cut at any height, without choosing k in advance. Ward's method keeps clusters compact.
+The **dendrogram** can be cut at any height, without choosing k in advance. Ward's method minimizes total within-cluster variance.
 
 ---
 
 ## Two methods, compared
 
-```r
-hier_clusters <- cutree(tree, k = 4)
-table(hierarchical = hier_clusters, kmeans = clusters$cluster)
+```python
+pd.crosstab(hier_clusters, clusters, rownames=["Hierarchical"], colnames=["K-Means"])
 ```
 
 They agree on the broad picture, most clearly on the balanced students.
@@ -532,16 +578,19 @@ Many students switch groups: they lie near a boundary. Trust the groups both met
 
 ## Clusters in random data
 
-```{r}
+```{python}
 #| fig-width: 5.5
 #| fig-height: 3.8
-set.seed(7)
-random_points <- tibble(x = rnorm(300), y = rnorm(300))
-random_points$cluster <- factor(kmeans(random_points, centers = 4, nstart = 25)$cluster)
-ggplot(random_points, aes(x, y, colour = cluster)) +
-  geom_point(size = 1.8) +
-  scale_colour_manual(values = c(navy, copper, "#5b8c5a", "#8a5a9c")) +
-  coord_equal() + theme(legend.position = "none")
+np.random.seed(7)
+rand_pts = np.random.normal(size=(300, 2))
+rand_cl = KMeans(n_clusters=4, n_init=25, random_state=123).fit_predict(rand_pts)
+fig, ax = plt.subplots(figsize=(5.5, 3.8))
+palette = [navy, copper, "#5b8c5a", "#8a5a9c"]
+for cl in range(4):
+    ax.scatter(rand_pts[rand_cl == cl, 0], rand_pts[rand_cl == cl, 1], color=palette[cl], s=25)
+ax.set_aspect("equal")
+plt.tight_layout()
+plt.show()
 ```
 
 300 random points with no groups: k-means still cuts four neat wedges.
@@ -552,7 +601,7 @@ ggplot(random_points, aes(x, y, colour = cluster)) +
 
 Before reporting clusters as meaningful, check that:
 
-- they make sense;
+- they make sense substantively;
 - different methods broadly agree;
 - the groups differ in ways that matter for the research.
 
@@ -562,14 +611,14 @@ Chapter 14 allows overlapping groups, and students who fit no group.
 
 ## In your field: criminology and social policy
 
-```r
-arrests_pca <- prcomp(USArrests, scale. = TRUE)
-summary(arrests_pca)$importance[, 1:2]
+```python
+usarrests = pd.read_csv("usarrests.csv")
+arrests_pca = PCA().fit(StandardScaler().fit_transform(usarrests.drop(columns=["State"], errors="ignore")))
 ```
 
 Assault, murder, and rape rates, and urban population, for 50 US states.
 
-The first component, `r round(100 * summary(arrests_pca)$importance[2, 1])`%, is an overall violent crime rate; the second, `r round(100 * summary(arrests_pca)$importance[2, 2])`%, how urban a state is.
+The first component, `{python} f"{arrests_pca.explained_variance_ratio_[0]*100:.0f}%"`, is an overall violent crime rate; the second, `{python} f"{arrests_pca.explained_variance_ratio_[1]*100:.0f}%"`, reflects urban population.
 
 ---
 
@@ -577,7 +626,7 @@ The first component, `r round(100 * summary(arrests_pca)$importance[2, 1])`%, is
 
 Work through the playground exercises in your browser, with hints and solutions.
 
-Clustering and factor analysis run in the browser; every exercise also runs in RStudio.
+Clustering and factor analysis run directly in Pyodide; every exercise also runs in your local IDE.
 
 ---
 
@@ -593,13 +642,13 @@ Clustering and factor analysis run in the browser; every exercise also runs in R
 
 4. k-means with 3 clusters: which profiles merged?
 5. Justify your number of clusters in two sentences for a thesis.
-6. With noisier items (`sd = 2`), how many are needed for a correlation of 0.8?
+6. With noisier items (`scale = 2`), how many are needed for a correlation of 0.8?
 
 ---
 
 ## Try this yourself
 
-Take a questionnaire from your own field.
+Take a questionnaire from your own field:
 
 - group its items by the construct each should measure;
 - list the reversed items;
@@ -612,10 +661,9 @@ Take a questionnaire from your own field.
 
 | Symptom | Likely cause |
 |---|---|
-| far fewer students in PCA | `na.omit()` on items with scattered gaps |
+| far fewer students in PCA | `dropna()` on items with scattered gaps |
 | a scale's alpha is unexpectedly low | a reversed item not recoded |
-| `alpha()` returns a colour function | ggplot2's `alpha()`; use `psych::alpha()` |
-| an item loads on two factors | a cross-loading; read its wording |
+| an item loads on two factors | a cross-loading; inspect its wording |
 
 ---
 
@@ -623,8 +671,8 @@ Take a questionnaire from your own field.
 
 | Symptom | Likely cause |
 |---|---|
-| caffeine dominates the clusters | variables not scaled |
-| different clusters on every run | too few random starts; set `nstart` and a seed |
+| caffeine dominates the clusters | variables not standardized |
+| different clusters on every run | too few random starts; set `n_init=25` and a random state |
 | the methods disagree on many students | overlapping groups; trust shared ones |
 | clusters found in noise | clustering always finds groups |
 
@@ -633,12 +681,12 @@ Take a questionnaire from your own field.
 ## Completion checklist
 
 - [ ] each construct has several items;
-- [ ] the number of factors comes from parallel analysis;
+- [ ] the number of factors comes from parallel/scree analysis;
 - [ ] PCA and factor analysis are used for their own purposes;
 - [ ] reversed items load negatively and are recoded;
 - [ ] cross-loadings are discussed;
 - [ ] alpha is reported for every scale;
-- [ ] clustering variables are scaled;
+- [ ] clustering variables are standardized;
 - [ ] clusters are described and checked with a second method.
 
 ---

@@ -24,6 +24,7 @@ DATASET_NAMES = [
     "sleep",
     "trees",
     "ucbadmissions",
+    "usarrests",
 ]
 
 EXAMPLE_FILES = [
@@ -39,6 +40,7 @@ EXAMPLE_FILES = [
     "sleep.csv",
     "trees.csv",
     "ucbadmissions.csv",
+    "usarrests.csv",
     "wellbeing_raw.xlsx",
     "wellbeing.sav",
 ]
@@ -350,6 +352,13 @@ def load_ucbadmissions(copy: bool = True) -> pd.DataFrame:
     return _DATA_CACHE["ucbadmissions"].copy() if copy else _DATA_CACHE["ucbadmissions"]
 
 
+def load_usarrests(copy: bool = True) -> pd.DataFrame:
+    """Load the 1973 US violent crime arrests per 100,000 residents dataset."""
+    if "usarrests" not in _DATA_CACHE:
+        _DATA_CACHE["usarrests"] = _load_csv("usarrests.csv")
+    return _DATA_CACHE["usarrests"].copy() if copy else _DATA_CACHE["usarrests"]
+
+
 def load(name: str, **kwargs: Any) -> pd.DataFrame:
     """Load a dataset by its string name.
 
@@ -359,7 +368,7 @@ def load(name: str, **kwargs: Any) -> pd.DataFrame:
         Name of dataset: 'students', 'questionnaire', 'semesters',
         'supervisors', 'open_responses', 'open_responses_coded',
         'counselling_visits', 'toothgrowth', 'faithful', 'sleep',
-        'trees', or 'ucbadmissions'.
+        'trees', 'ucbadmissions', or 'usarrests'.
     **kwargs : Any
         Passed to the underlying loader function.
 
@@ -380,6 +389,7 @@ def load(name: str, **kwargs: Any) -> pd.DataFrame:
         "sleep": load_sleep,
         "trees": load_trees,
         "ucbadmissions": load_ucbadmissions,
+        "usarrests": load_usarrests,
     }
     cleaned = name.strip().lower()
     if cleaned not in loaders:
