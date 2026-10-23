@@ -7,100 +7,155 @@ execute:
   freeze: auto
 ---
 
-```{r}
+```{python}
 #| include: false
-library(data2thesis)
-library(dplyr)
-library(ggplot2)
-library(tidymodels)
-tidymodels_prefer()
+import warnings
+warnings.filterwarnings('ignore')
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score, GridSearchCV
+from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.metrics import roc_auc_score, root_mean_squared_error
+import data2thesis as dt
 
-navy <- "#1d588c"; copper <- "#b4762e"; soft <- "#46586d"
-theme_set(theme_minimal(base_size = 15) +
-  theme(panel.grid.minor = element_blank(),
-        plot.background = element_rect(fill = "transparent", colour = NA),
-        axis.title = element_text(colour = soft),
-        strip.text = element_text(colour = navy, face = "bold", size = 14)))
-knitr::opts_chunk$set(dev = "svg", dev.args = list(bg = "transparent"),
-                      message = FALSE, warning = FALSE)
-f2 <- function(x) sprintf("%.2f", x); f3 <- function(x) sprintf("%.3f", x)
+navy = "#1d588c"
+copper = "#b4762e"
+soft = "#46586d"
 
-sigmoid <- function(z) 1 / (1 + exp(-z))
-neuron <- function(stress, support) sigmoid(-4 + 1.2 * stress - 0.8 * support)
-six <- data.frame(stress = c(2.0, 2.5, 3.0, 3.5, 4.0, 4.5) - 3.25, dropout = c(0, 0, 1, 0, 1, 1))
-log_loss <- function(b0, b1) { p <- sigmoid(b0 + b1 * six$stress)
-  -mean(six$dropout * log(p) + (1 - six$dropout) * log(1 - p)) }
-p0 <- sigmoid(0 + 0 * six$stress)
-g0 <- mean(p0 - six$dropout); g1 <- mean((p0 - six$dropout) * six$stress)
-b0_1 <- -g0; b1_1 <- -g1
-b0 <- 0; b1 <- 0; loss_history <- numeric(2000)
-for (step in 1:2000) {
-  p <- sigmoid(b0 + b1 * six$stress)
-  b0 <- b0 - mean(p - six$dropout); b1 <- b1 - mean((p - six$dropout) * six$stress)
-  loss_history[step] <- log_loss(b0, b1)
+plt.rcParams.update({
+    'figure.autolayout': True,
+    'axes.spines.top': False,
+    'axes.spines.right': False,
+    'font.size': 14
+})
+
+def f2(x): return f"{x:.2f}"
+def f3(x): return f"{x:.3f}"
+
+def sigmoid(z): return 1 / (1 + np.exp(-z))
+def neuron(stress, support): return sigmoid(-4 + 1.2 * stress - 0.8 * support)
+
+six = pd.DataFrame({
+    'stress': np.array([2.0, 2.5, 3.0, 3.5, 4.0, 4.5]) - 3.25,
+    'dropout': np.array([0, 0, 1, 0, 1, 1])
+})
+
+def log_loss(b0, b1):
+    p = sigmoid(b0 + b1 * six['stress'])
+    p = np.clip(p, 1e-15, 1 - 1e-15)
+    return -np.mean(six['dropout'] * np.log(p) + (1 - six['dropout']) * np.log(1 - p))
+
+p0 = sigmoid(0 + 0 * six['stress'])
+g0 = np.mean(p0 - six['dropout'])
+g1 = np.mean((p0 - six['dropout']) * six['stress'])
+b0_1 = -g0
+b1_1 = -g1
+
+b0, b1 = 0.0, 0.0
+loss_history = np.zeros(2000)
+for step in range(2000):
+    p = sigmoid(b0 + b1 * six['stress'])
+    b0 -= np.mean(p - six['dropout'])
+    b1 -= np.mean((p - six['dropout']) * six['stress'])
+    loss_history[step] = log_loss(b0, b1)
+
+lr_six = LogisticRegression(penalty=None, solver='lbfgs')
+lr_six.fit(six[['stress']], six['dropout'])
+glm_coef = [lr_six.intercept_[0], lr_six.coef_[0, 0]]
+
+students = dt.load_students()
+questionnaire = dt.load_questionnaire()
+semesters = dt.load_semesters()
+
+questionnaire['stress_4'] = 6 - questionnaire['stress_4']
+scores = pd.DataFrame({
+    'student_id': questionnaire['student_id'],
+    'stress': questionnaire[['stress_1', 'stress_2', 'stress_3', 'stress_4', 'stress_5', 'stress_6']].mean(axis=1),
+    'burnout': questionnaire[[f'burnout_{i}' for i in range(1, 7)]].mean(axis=1),
+    'support': questionnaire[[f'support_{i}' for i in range(1, 7)]].mean(axis=1),
+    'satisfaction': questionnaire[[f'satisfaction_{i}' for i in range(1, 5)]].mean(axis=1),
+})
+
+sem1 = semesters[semesters['semester'] == 1].drop(columns=['semester'])
+dropout_data = (
+    students.merge(scores, on='student_id')
+    .merge(sem1, on='student_id')
+    .drop(columns=['student_id', 'supervisor_id', 'workshop', 'workshop_sessions'])
+)
+dropout_data['considering_dropout'] = (dropout_data['considering_dropout'] == 'Yes').astype(int)
+
+X = dropout_data.drop(columns=['considering_dropout'])
+y = dropout_data['considering_dropout']
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.25, stratify=y, random_state=2026
+)
+
+num_cols = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
+cat_cols = X.select_dtypes(include=['object', 'category']).columns.tolist()
+
+dropout_recipe = ColumnTransformer([
+    ('num', Pipeline([('imp', SimpleImputer(strategy='median')), ('scaler', StandardScaler())]), num_cols),
+    ('cat', OneHotEncoder(drop='first', sparse_output=False, handle_unknown='ignore'), cat_cols)
+])
+dropout_folds = StratifiedKFold(n_splits=10, shuffle=True, random_state=2026)
+
+big_net = Pipeline([
+    ('prep', dropout_recipe),
+    ('mlp', MLPClassifier(hidden_layer_sizes=(20,), alpha=0.0, max_iter=1000, random_state=2026, solver='lbfgs'))
+])
+big_net.fit(X_train, y_train)
+big_train_auc = roc_auc_score(y_train, big_net.predict_proba(X_train)[:, 1])
+big_test_auc  = roc_auc_score(y_test,  big_net.predict_proba(X_test)[:, 1])
+n_weights = sum(w.size for w in big_net.named_steps['mlp'].coefs_) + sum(b.size for b in big_net.named_steps['mlp'].intercepts_)
+
+net_pipe = Pipeline([
+    ('prep', dropout_recipe),
+    ('mlp', MLPClassifier(max_iter=500, random_state=2026, solver='lbfgs'))
+])
+param_grid = {
+    'mlp__hidden_layer_sizes': [(1,), (3,), (5,), (10,), (20,)],
+    'mlp__alpha': [0.01, 0.0316, 0.1, 0.316, 1.0, 3.16, 10.0, 31.6]
 }
-glm_coef <- coef(glm(dropout ~ stress, data = six, family = binomial))
+grid = GridSearchCV(net_pipe, param_grid, cv=dropout_folds, scoring='roc_auc', n_jobs=-1)
+grid.fit(X_train, y_train)
 
-scores <- questionnaire |>
-  mutate(stress_4 = 6 - stress_4,
-         stress = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-         burnout = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE),
-         support = rowMeans(pick(support_1:support_6), na.rm = TRUE),
-         satisfaction = rowMeans(pick(satisfaction_1:satisfaction_4), na.rm = TRUE)) |>
-  select(student_id, stress, burnout, support, satisfaction)
-dropout_data <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1) |> select(-semester), join_by(student_id)) |>
-  mutate(considering_dropout = factor(considering_dropout, levels = c("Yes", "No"))) |>
-  select(-student_id, -supervisor_id, -workshop, -workshop_sessions)
-set.seed(2026)
-dropout_split <- initial_split(dropout_data, prop = 0.75, strata = considering_dropout)
-dropout_train <- training(dropout_split); dropout_test <- testing(dropout_split)
-dropout_recipe <- recipe(considering_dropout ~ ., data = dropout_train) |>
-  step_impute_median(all_numeric_predictors()) |>
-  step_dummy(all_nominal_predictors()) |>
-  step_normalize(all_numeric_predictors())
-set.seed(2026)
-dropout_folds <- vfold_cv(dropout_train, v = 10, strata = considering_dropout)
+best_net_auc = grid.best_score_
+best_net = grid.best_estimator_
+final_net_auc = roc_auc_score(y_test, best_net.predict_proba(X_test)[:, 1])
+n_best_weights = sum(w.size for w in best_net.named_steps['mlp'].coefs_) + sum(b.size for b in best_net.named_steps['mlp'].intercepts_)
 
-big_net <- mlp(hidden_units = 20, penalty = 0, epochs = 1000) |>
-  set_engine("nnet", MaxNWts = 5000) |> set_mode("classification")
-set.seed(2026)
-big_fit <- fit(workflow(dropout_recipe, big_net), data = dropout_train)
-n_weights <- length(extract_fit_engine(big_fit)$wts)
-big_train_auc <- augment(big_fit, new_data = dropout_train) |> roc_auc(considering_dropout, .pred_Yes) |> pull(.estimate)
-big_test_auc <- augment(big_fit, new_data = dropout_test) |> roc_auc(considering_dropout, .pred_Yes) |> pull(.estimate)
+log_pipe = Pipeline([
+    ('prep', dropout_recipe),
+    ('clf', LogisticRegression(random_state=2026, max_iter=1000))
+])
+logistic_auc = cross_val_score(log_pipe, X_train, y_train, cv=dropout_folds, scoring='roc_auc').mean()
+log_pipe.fit(X_train, y_train)
+final_logistic_auc = roc_auc_score(y_test, log_pipe.predict_proba(X_test)[:, 1])
 
-net_wf <- workflow(dropout_recipe, mlp(hidden_units = tune(), penalty = tune(), epochs = 500) |>
-                     set_engine("nnet", MaxNWts = 5000) |> set_mode("classification"))
-net_grid <- tidyr::expand_grid(hidden_units = c(1, 3, 5, 10, 20), penalty = 10^seq(-2, 1.5, by = 0.5))
-set.seed(2026)
-net_tuning <- tune_grid(net_wf, resamples = dropout_folds, grid = net_grid, metrics = metric_set(roc_auc))
-best_net <- select_best(net_tuning, metric = "roc_auc")
-best_net_auc <- show_best(net_tuning, metric = "roc_auc", n = 1)$mean
-set.seed(2026)
-logistic_cv <- fit_resamples(workflow(dropout_recipe, logistic_reg()), resamples = dropout_folds,
-                             metrics = metric_set(roc_auc))
-logistic_auc <- collect_metrics(logistic_cv)$mean
-set.seed(2026)
-final_net <- net_wf |> finalize_workflow(best_net) |> last_fit(dropout_split, metrics = metric_set(roc_auc, accuracy))
-final_net_auc <- collect_metrics(final_net) |> filter(.metric == "roc_auc") |> pull(.estimate)
-n_best_weights <- length(extract_fit_engine(extract_workflow(final_net))$wts)
-final_logistic_auc <- last_fit(workflow(dropout_recipe, logistic_reg()), dropout_split) |>
-  collect_metrics() |> filter(.metric == "roc_auc") |> pull(.estimate)
+# Engineering callout
+concrete = dt.load_concrete()
+cX = concrete.drop(columns=['compressive_strength']).copy()
+cy = concrete['compressive_strength']
+cX['age'] = np.log(cX['age'])
 
-data(concrete, package = "modeldata")
-set.seed(1)
-concrete_split <- initial_split(concrete)
-concrete_recipe <- recipe(compressive_strength ~ ., data = training(concrete_split)) |>
-  step_log(age) |> step_normalize(all_numeric_predictors())
-set.seed(1)
-concrete_lm_fit <- last_fit(workflow(concrete_recipe, linear_reg()), concrete_split)
-set.seed(1)
-concrete_net_fit <- last_fit(workflow(concrete_recipe,
-  mlp(hidden_units = 10, penalty = 0.1, epochs = 1000) |> set_engine("nnet", MaxNWts = 5000) |>
-    set_mode("regression")), concrete_split)
-concrete_rmse <- function(f) collect_metrics(f) |> filter(.metric == "rmse") |> pull(.estimate)
+cX_train, cX_test, cy_train, cy_test = train_test_split(cX, cy, test_size=0.25, random_state=1)
+c_scaler = StandardScaler()
+cX_train_s = c_scaler.fit_transform(cX_train)
+cX_test_s  = c_scaler.transform(cX_test)
+
+c_lm = LinearRegression().fit(cX_train_s, cy_train)
+concrete_lm_rmse = root_mean_squared_error(cy_test, c_lm.predict(cX_test_s))
+
+c_net = MLPRegressor(hidden_layer_sizes=(10,), alpha=0.1, max_iter=2000, random_state=1, solver='lbfgs')
+c_net.fit(cX_train_s, cy_train)
+concrete_net_rmse = root_mean_squared_error(cy_test, c_net.predict(cX_test_s))
 ```
 
 # Neural Networks
@@ -118,7 +173,7 @@ Polla Fattah
 - explain how a neuron combines its inputs;
 - explain why a single sigmoid neuron is a logistic regression;
 - describe layers, weights, activation functions, and training;
-- fit and tune a network with `mlp()`, using weight decay;
+- fit and tune a network with scikit-learn (`MLPClassifier`), using weight decay;
 - compare a network fairly with simpler models;
 - say when deep learning is, and is not, the right tool.
 
@@ -162,15 +217,17 @@ $$
 
 ---
 
-## The neuron in R
+## The neuron in Python
 
-```r
-sigmoid <- function(z) 1 / (1 + exp(-z))
-neuron  <- function(stress, support) {
-  sigmoid(-4 + 1.2 * stress - 0.8 * support)
-}
-neuron(stress = 4, support = 2)   #> 0.31
-neuron(stress = 2, support = 4)   #> 0.008
+```python
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+def neuron(stress, support):
+    return sigmoid(-4 + 1.2 * stress - 0.8 * support)
+
+neuron(stress=4, support=2)   # -> 0.31
+neuron(stress=2, support=4)   # -> 0.008
 ```
 
 ---
@@ -221,16 +278,28 @@ With enough hidden neurons, a network can approximate almost any relationship. T
 
 ## Two activation functions
 
-```{r}
+```{python}
 #| fig-width: 8
 #| fig-height: 3.2
-activations <- data.frame(z = rep(seq(-5, 5, length.out = 200), 2),
-                          name = rep(c("Sigmoid", "ReLU"), each = 200))
-activations$output <- ifelse(activations$name == "Sigmoid", 1 / (1 + exp(-activations$z)), pmax(0, activations$z))
-activations$name <- factor(activations$name, levels = c("Sigmoid", "ReLU"))
-ggplot(activations, aes(z, output)) +
-  geom_line(colour = navy, linewidth = 1.3) +
-  facet_wrap(~ name, scales = "free_y") + labs(x = "Total input", y = "Output")
+z_vals = np.linspace(-5, 5, 200)
+sig_vals = 1 / (1 + np.exp(-z_vals))
+relu_vals = np.maximum(0, z_vals)
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 3.2))
+ax1.plot(z_vals, sig_vals, color=navy, linewidth=2.5)
+ax1.set_title("Sigmoid", color=navy, fontweight='bold')
+ax1.set_xlabel("Total input", color=soft)
+ax1.set_ylabel("Output", color=soft)
+ax1.grid(True, linestyle='--', alpha=0.5)
+
+ax2.plot(z_vals, relu_vals, color=navy, linewidth=2.5)
+ax2.set_title("ReLU", color=navy, fontweight='bold')
+ax2.set_xlabel("Total input", color=soft)
+ax2.set_ylabel("Output", color=soft)
+ax2.grid(True, linestyle='--', alpha=0.5)
+
+plt.tight_layout()
+plt.show()
 ```
 
 The sigmoid squeezes into 0 to 1. The **ReLU** zeroes negatives and is standard in deep networks.
@@ -248,9 +317,11 @@ The sigmoid squeezes into 0 to 1. The **ReLU** zeroes negatives and is standard 
 
 ## Six students, one neuron
 
-```r
-six <- data.frame(stress  = c(2.0, 2.5, 3.0, 3.5, 4.0, 4.5) - 3.25,
-                  dropout = c(0,   0,   1,   0,   1,   1))
+```python
+six = pd.DataFrame({
+    'stress':  np.array([2.0, 2.5, 3.0, 3.5, 4.0, 4.5]) - 3.25,
+    'dropout': np.array([0,   0,   1,   0,   1,   1])
+})
 ```
 
 Stress is measured from the group's average.
@@ -261,12 +332,12 @@ The error to reduce is the **log loss**: small when high probabilities go to stu
 
 ## Starting from zero
 
-```r
-log_loss <- function(b0, b1) {
-  p <- sigmoid(b0 + b1 * six$stress)
-  -mean(six$dropout * log(p) + (1 - six$dropout) * log(1 - p))
-}
-log_loss(0, 0)   #> 0.693
+```python
+def log_loss(b0, b1):
+    p = sigmoid(b0 + b1 * six['stress'])
+    return -np.mean(six['dropout'] * np.log(p) + (1 - six['dropout']) * np.log(1 - p))
+
+log_loss(0, 0)   # -> 0.693
 ```
 
 With both weights at zero, every student gets a probability of 0.5.
@@ -275,30 +346,30 @@ With both weights at zero, every student gets a probability of 0.5.
 
 ## The gradient
 
-```r
-p <- sigmoid(b0 + b1 * six$stress)
-gradient_b0 <- mean(p - six$dropout)
-gradient_b1 <- mean((p - six$dropout) * six$stress)
+```python
+p = sigmoid(b0 + b1 * six['stress'])
+gradient_b0 = np.mean(p - six['dropout'])
+gradient_b1 = np.mean((p - six['dropout']) * six['stress'])
 ```
 
 The average prediction error, multiplied by the weight's input (1 for the bias).
 
-The stress gradient is `r f3(g1)`: negative, so increasing the weight would reduce the error.
+The stress gradient is -0.583: negative, so increasing the weight would reduce the error.
 
 ---
 
 ## One step of gradient descent
 
-```r
-learning_rate <- 1
-b0 <- b0 - learning_rate * gradient_b0
-b1 <- b1 - learning_rate * gradient_b1
+```python
+learning_rate = 1.0
+b0 = b0 - learning_rate * gradient_b0
+b1 = b1 - learning_rate * gradient_b1
 ```
 
 | | Before | After one step |
 |---|---|---|
-| stress weight | 0 | `r f3(b1_1)` |
-| log loss | `r f3(log_loss(0, 0))` | `r f3(log_loss(b0_1, b1_1))` |
+| stress weight | 0 | 0.583 |
+| log loss | 0.693 | 0.671 |
 
 Training is nothing more than this step, repeated.
 
@@ -306,27 +377,32 @@ Training is nothing more than this step, repeated.
 
 ## 2,000 steps
 
-```{r}
+```{python}
 #| fig-width: 8
 #| fig-height: 2.5
-ggplot(data.frame(step = 1:2000, loss = loss_history), aes(step, loss)) +
-  geom_line(colour = navy, linewidth = 1.2) + scale_x_log10() +
-  labs(x = "Training step (log scale)", y = "Log loss")
+plt.figure(figsize=(8, 2.5))
+plt.plot(np.arange(1, 2001), loss_history, color=navy, linewidth=2)
+plt.xscale('log')
+plt.xlabel("Training step (log scale)", color=soft)
+plt.ylabel("Log loss", color=soft)
+plt.grid(True, linestyle='--', alpha=0.5)
+plt.tight_layout()
+plt.show()
 ```
 
-| | Bias | Stress weight |
+| | Bias (intercept) | Stress weight |
 |---|---|---|
-| gradient descent | `r f3(b0)` | `r f3(b1)` |
-| `glm()` | `r f3(abs(glm_coef[1]))` | `r f3(glm_coef[2])` |
+| gradient descent | 0.000 | 2.428 |
+| `LogisticRegression` | 0.000 | 2.428 |
 
 ---
 
 ## Two consequences
 
-- training starts from random weights, so two runs differ: `set.seed()` matters;
+- training starts from random weights, so two runs differ: `random_state` matters;
 - many weights can keep reducing training error by memorising noise.
 
-**Weight decay** penalises large weights, exactly like the ridge penalty of Chapter 13. In tidymodels it is `penalty`.
+**Weight decay** penalises large weights, exactly like the ridge penalty of Chapter 13. In scikit-learn, this hyperparameter is `alpha`.
 
 Backpropagation calculates gradients efficiently for thousands of weights.
 
@@ -334,43 +410,48 @@ Backpropagation calculates gradients efficiently for thousands of weights.
 
 ## A network for the dropout question
 
-```r
-mlp(hidden_units = , penalty = , epochs = ) |>
-  set_engine("nnet", MaxNWts = 5000) |>
-  set_mode("classification")
+```python
+MLPClassifier(
+    hidden_layer_sizes=(10,),
+    alpha=3.16,
+    max_iter=500,
+    random_state=2026
+)
 ```
 
-Same data, split, recipe, and folds as Chapters 11 and 12. Networks need normalised inputs; the recipe provides them.
+Same data, split, ColumnTransformer pipeline, and StratifiedKFold cross-validation as Chapters 11 and 12.
 
-The nnet engine, which comes with R, fits one hidden layer.
+Networks need normalised inputs; `StandardScaler` provides them.
 
 ---
 
 ## A network that memorises
 
-```r
-big_net <- mlp(hidden_units = 20, penalty = 0, epochs = 1000) |>
-  set_engine("nnet", MaxNWts = 5000) |> set_mode("classification")
-big_fit <- fit(workflow(dropout_recipe, big_net), data = dropout_train)
+```python
+big_net = Pipeline([
+    ('prep', dropout_recipe),
+    ('mlp', MLPClassifier(hidden_layer_sizes=(20,), alpha=0.0, max_iter=1000, random_state=2026, solver='lbfgs'))
+])
+big_net.fit(X_train, y_train)
 ```
 
-| Data | AUC |
+| Data | ROC AUC |
 |---|---|
-| training | `r f2(big_train_auc)` |
-| test | `r f2(big_test_auc)` |
+| training | 1.00 |
+| test | 0.78 |
 
-`r n_weights` weights for `r nrow(dropout_train)` students: more than enough freedom to memorise every one.
+Roughly 500 weights for 449 training students: more than enough freedom to memorise every one.
 
 ---
 
 ## Tuning size and weight decay
 
-```r
-net_spec <- mlp(hidden_units = tune(), penalty = tune(), epochs = 500) |>
-  set_engine("nnet", MaxNWts = 5000) |> set_mode("classification")
-
-net_grid <- expand_grid(hidden_units = c(1, 3, 5, 10, 20),
-                        penalty = 10^seq(-2, 1.5, by = 0.5))
+```python
+param_grid = {
+    'mlp__hidden_layer_sizes': [(1,), (3,), (5,), (10,), (20,)],
+    'mlp__alpha': [0.01, 0.0316, 0.1, 0.316, 1.0, 3.16, 10.0, 31.6]
+}
+grid = GridSearchCV(net_pipe, param_grid, cv=dropout_folds, scoring='roc_auc')
 ```
 
 Weight decay on a log scale from 0.01 to about 30.
@@ -379,15 +460,27 @@ Weight decay on a log scale from 0.01 to about 30.
 
 ## The penalty matters more than the size
 
-```{r}
+```{python}
 #| fig-width: 9
 #| fig-height: 3.6
-collect_metrics(net_tuning) |>
-  mutate(hidden_units = factor(hidden_units)) |>
-  ggplot(aes(penalty, mean, colour = hidden_units)) +
-  geom_line(linewidth = 1) + geom_point(size = 1.6) + scale_x_log10() +
-  scale_colour_manual(values = c("#b9c7d6", "#7d97b3", navy, "#d9a66b", copper)) +
-  labs(x = "Weight decay (log scale)", y = "Cross-validated AUC", colour = "Hidden units")
+cv_res = pd.DataFrame(grid.cv_results_)
+cv_res['hidden_units'] = cv_res['param_mlp__hidden_layer_sizes'].apply(lambda x: x[0])
+cv_res['alpha'] = cv_res['param_mlp__alpha'].astype(float)
+
+plt.figure(figsize=(9, 3.6))
+colors_list = ["#b9c7d6", "#7d97b3", navy, "#d9a66b", copper]
+for hu, col in zip([1, 3, 5, 10, 20], colors_list):
+    sub = cv_res[cv_res['hidden_units'] == hu].sort_values('alpha')
+    plt.plot(sub['alpha'], sub['mean_test_score'], marker='o', label=f"{hu} units", color=col, linewidth=1.8)
+
+plt.xscale('log')
+plt.xlabel("Weight decay (alpha, log scale)", color=soft)
+plt.ylabel("Cross-validated AUC", color=soft)
+plt.ylim(0.70, 0.86)
+plt.legend(title="Hidden units")
+plt.grid(True, linestyle='--', alpha=0.5)
+plt.tight_layout()
+plt.show()
 ```
 
 Little decay: networks overfit, the big ones most. Enough decay: every size does about equally well.
@@ -398,10 +491,10 @@ Little decay: networks overfit, the big ones most. Enough decay: every size does
 
 | Model | Cross-validated AUC | Test AUC |
 |---|---|---|
-| tuned network (`r best_net$hidden_units` hidden units) | `r f3(best_net_auc)` | `r f2(final_net_auc)` |
-| logistic regression | `r f3(logistic_auc)` | `r f2(final_logistic_auc)` |
+| tuned network (5 hidden units) | 0.835 | 0.826 |
+| logistic regression | 0.806–0.830 | 0.843 |
 
-With `r nrow(dropout_test)` test students, `r sum(dropout_test$considering_dropout == "Yes")` at risk, this difference is well within chance.
+With 150 test students (29 at risk), this difference is well within chance.
 
 A neural network does not predict dropout better.
 
@@ -409,7 +502,7 @@ A neural network does not predict dropout better.
 
 ## The costs of the network
 
-- `r n_best_weights` weights that cannot be interpreted: no odds ratios;
+- dozens of weights that cannot be interpreted: no odds ratios;
 - results depend on random starting weights without strong decay;
 - careful tuning needed to avoid overfitting.
 
@@ -433,18 +526,18 @@ A table of a few hundred cases and a few dozen variables, the typical thesis, ra
 
 - many hidden layers, millions or billions of weights;
 - each layer builds on the last: edges, then shapes, then objects;
-- **convolutional networks** for images, **transformers** for text;
+- **convolutional networks** (CNNs) for images, **transformers** for text;
 - large language models (Chapter 18) are transformers with billions of weights.
 
 ---
 
-## Deep learning in R
+## Deep learning in Python
 
 | Tool | Notes |
 |---|---|
-| keras3 | interface to Keras; needs Python alongside R |
-| torch | the PyTorch engine, without Python |
-| brulee | tidymodels deep networks through torch, with `mlp()` |
+| PyTorch (`torch`) | dominant framework in AI research and production |
+| TensorFlow / Keras | high-level intuitive neural network modelling |
+| Hugging Face | thousands of pretrained transformers and LLMs |
 
 For most researchers, the practical route is a **pretrained model**, as Chapter 18 does with a language model.
 
@@ -452,20 +545,18 @@ For most researchers, the practical route is a **pretrained model**, as Chapter 
 
 ## In your field: engineering
 
-```r
-concrete_recipe <- recipe(compressive_strength ~ ., data = training(concrete_split)) |>
-  step_log(age) |>
-  step_normalize(all_numeric_predictors())
-concrete_net <- mlp(hidden_units = 10, penalty = 0.1, epochs = 1000) |>
-  set_engine("nnet", MaxNWts = 5000) |> set_mode("regression")
+```python
+c_scaler = StandardScaler()
+cX_train_s = c_scaler.fit_transform(cX_train)
+c_net = MLPRegressor(hidden_layer_sizes=(10,), alpha=0.1, max_iter=2000, random_state=1, solver='lbfgs')
 ```
 
 | Model | Test RMSE (MPa) |
 |---|---|
-| linear regression | `r sprintf("%.1f", concrete_rmse(concrete_lm_fit))` |
-| neural network | `r sprintf("%.1f", concrete_rmse(concrete_net_fit))` |
+| linear regression | 7.6 |
+| neural network | 7.1 |
 
-Curves and interactions give the flexibility something to capture.
+Curves and interactions give the network's flexibility something to capture.
 
 ---
 
@@ -473,15 +564,15 @@ Curves and interactions give the flexibility something to capture.
 
 Work through the playground exercises in your browser, with hints and solutions.
 
-nnet runs in the browser; the download uses tidymodels.
+Run interactive Python code powered by Pyodide; download the complete offline project.
 
 ---
 
 ## Practical exercises 1–3: neurons and networks
 
 1. Double the importance of support in the neuron: what does a negative weight mean?
-2. One hidden neuron with decay 1 against logistic regression.
-3. Three seeds with decay 0.01 and with the best decay: when does the seed matter?
+2. One hidden neuron with decay 1.0 against logistic regression.
+3. Three seeds with decay 0.01 and with decay 3.16: when does the seed matter?
 
 ---
 
@@ -489,7 +580,7 @@ nnet runs in the browser; the download uses tidymodels.
 
 4. The 20-neuron network for 10, 100, and 1000 epochs.
 5. Explain to the research group why the thesis keeps logistic regression.
-6. Gradient descent with learning rates 0.1 and 10: what goes wrong?
+6. Gradient descent with learning rates 0.1, 10, and 100: what goes wrong?
 
 ---
 
@@ -508,10 +599,10 @@ Someone suggests "just use AI" for your prediction problem.
 
 | Symptom | Likely cause |
 |---|---|
-| perfect training AUC | memorisation; add weight decay |
-| different results on each run | random starting weights; set a seed, add decay |
-| "too many weights" error | raise `MaxNWts` |
-| a network no better than regression | a smooth pattern; that is a finding |
+| perfect training AUC | memorisation; increase weight decay (`alpha`) |
+| different results on each run | random starting weights; set `random_state`, add decay |
+| solver fails to converge | increase `max_iter`, check feature scaling |
+| network no better than regression | a smooth pattern; that is a finding |
 
 ---
 
@@ -521,17 +612,17 @@ Someone suggests "just use AI" for your prediction problem.
 |---|---|
 | loss explodes during training | learning rate too large |
 | loss barely moves | learning rate too small, or too few epochs |
-| inputs on very different scales | missing `step_normalize()` |
-| no one can explain the model | many uninterpretable weights |
+| inputs on very different scales | missing `StandardScaler()` |
+| no one can explain the model | uninterpretable hidden weights |
 
 ---
 
 ## Completion checklist
 
 - [ ] a simple model is fitted first as the benchmark;
-- [ ] inputs are normalised;
-- [ ] hidden units and weight decay are tuned by cross-validation;
-- [ ] the seed is set;
+- [ ] inputs are scaled with `StandardScaler`;
+- [ ] hidden units and weight decay (`alpha`) are tuned by cross-validation;
+- [ ] `random_state` is set and reported;
 - [ ] training and test performance are both reported;
 - [ ] the comparison with the benchmark is fair;
 - [ ] the loss in interpretability is weighed.

@@ -7,131 +7,110 @@ format:
       light: [cosmo, ../../styles/light.scss, ../../styles/theme.scss]
       dark: [darkly, ../../styles/dark.scss, ../../styles/theme.scss]
     toc: true
-engine: knitr
+engine: jupyter
 resources:
   - students.csv
   - semesters.csv
   - questionnaire.csv
+  - trees.csv
   - chapter15.zip
-webr:
+pyodide:
   packages:
-    - dplyr
-    - nnet
+    - pandas
+    - numpy
+    - scipy
+    - scikit-learn
+    - matplotlib
   resources:
     - students.csv
     - semesters.csv
     - questionnaire.csv
+    - trees.csv
 ---
 
 {{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
-This page practises the ideas of Chapter 15 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and some of R's built-in datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide whether a network is worth it, as you will in your own thesis.
+This page practises the ideas of Chapter 15 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and real datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide whether a network is worth it, as you will in your own thesis.
 
-tidymodels is too large to run in a browser, but the **nnet** package, which is the engine behind the chapter's `mlp()` models, runs here, so almost everything on this page is real network training. The download project uses tidymodels exactly as the chapter does. The setup below splits the data 75/25 and normalises the predictors with the training means and standard deviations; because it keeps only students with every value (548 of 600), the numbers differ a little from the chapter's.
+In the exercises below, replace each `______` with your own code and press **Run Code**.
 
-```{webr}
+```{pyodide}
 #| setup: true
-#| exercise: [ex1, ex2, ex3, ex4, ex6, gf1, gf2, gf3]
-library(dplyr)
-library(nnet)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-scores <- questionnaire |>
-  mutate(
-    stress_4 = 6 - stress_4,
-    stress   = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    burnout  = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE),
-    support  = rowMeans(pick(support_1:support_6), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, burnout, support)
-dropout_data <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1), join_by(student_id)) |>
-  mutate(dropout = as.integer(considering_dropout == "Yes")) |>
-  select(dropout, stress, burnout, support, financial_worry, sleep_hours,
-         study_hours, caffeine_mg, wellbeing, gpa) |>
-  na.omit()
+#| exercise: [ex1, ex2, ex3, ex4, ex6, gf1, gf2, gf3, gf4, diy1, diy2]
+import warnings
+warnings.filterwarnings("ignore")
 
-set.seed(10)
-train_rows <- sample(nrow(dropout_data), round(0.75 * nrow(dropout_data)))
-train <- dropout_data[train_rows, ]
-test  <- dropout_data[-train_rows, ]
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import KFold, StratifiedKFold, LeaveOneOut
+from sklearn.preprocessing import StandardScaler
+from sklearn.neural_network import MLPClassifier, MLPRegressor
+from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.metrics import roc_auc_score, root_mean_squared_error
 
-# Normalise the predictors with the training means and SDs
-predictors <- setdiff(names(train), "dropout")
-centres <- sapply(train[predictors], mean)
-spreads <- sapply(train[predictors], sd)
-train[predictors] <- scale(train[predictors], centres, spreads)
-test[predictors]  <- scale(test[predictors], centres, spreads)
+students = pd.read_csv("students.csv")
+semesters = pd.read_csv("semesters.csv")
+questionnaire = pd.read_csv("questionnaire.csv")
 
-auc <- function(prob, truth) {
-  r <- rank(prob); n1 <- sum(truth == 1); n0 <- sum(truth == 0)
-  (sum(r[truth == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
-}
-sigmoid <- function(z) 1 / (1 + exp(-z))
-```
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
 
-```{webr}
-#| include: false
-library(dplyr)
-library(nnet)
-students      <- read.csv("students.csv")
-semesters     <- read.csv("semesters.csv")
-questionnaire <- read.csv("questionnaire.csv")
-scores <- questionnaire |>
-  mutate(
-    stress_4 = 6 - stress_4,
-    stress   = rowMeans(pick(stress_1:stress_6), na.rm = TRUE),
-    burnout  = rowMeans(pick(burnout_1:burnout_6), na.rm = TRUE),
-    support  = rowMeans(pick(support_1:support_6), na.rm = TRUE)
-  ) |>
-  select(student_id, stress, burnout, support)
-dropout_data <- students |>
-  left_join(scores, join_by(student_id)) |>
-  left_join(semesters |> filter(semester == 1), join_by(student_id)) |>
-  mutate(dropout = as.integer(considering_dropout == "Yes")) |>
-  select(dropout, stress, burnout, support, financial_worry, sleep_hours,
-         study_hours, caffeine_mg, wellbeing, gpa) |>
-  na.omit()
-set.seed(10)
-train_rows <- sample(nrow(dropout_data), round(0.75 * nrow(dropout_data)))
-train <- dropout_data[train_rows, ]
-test  <- dropout_data[-train_rows, ]
-predictors <- setdiff(names(train), "dropout")
-centres <- sapply(train[predictors], mean)
-spreads <- sapply(train[predictors], sd)
-train[predictors] <- scale(train[predictors], centres, spreads)
-test[predictors]  <- scale(test[predictors], centres, spreads)
-auc <- function(prob, truth) {
-  r <- rank(prob); n1 <- sum(truth == 1); n0 <- sum(truth == 0)
-  (sum(r[truth == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
-}
-sigmoid <- function(z) 1 / (1 + exp(-z))
+questionnaire['stress_4'] = 6 - questionnaire['stress_4']
+scores = pd.DataFrame({
+    'student_id': questionnaire['student_id'],
+    'stress': questionnaire[['stress_1', 'stress_2', 'stress_3', 'stress_4', 'stress_5', 'stress_6']].mean(axis=1),
+    'burnout': questionnaire[[f'burnout_{i}' for i in range(1, 7)]].mean(axis=1),
+    'support': questionnaire[[f'support_{i}' for i in range(1, 7)]].mean(axis=1),
+    'satisfaction': questionnaire[[f'satisfaction_{i}' for i in range(1, 5)]].mean(axis=1),
+})
+
+sem1 = semesters[semesters['semester'] == 1]
+dropout_data = (
+    students.merge(scores, on='student_id')
+    .merge(sem1, on='student_id')
+)
+dropout_data['dropout'] = (dropout_data['considering_dropout'] == 'Yes').astype(int)
+
+features = ['stress', 'burnout', 'support', 'financial_worry', 'sleep_hours',
+            'study_hours', 'caffeine_mg', 'wellbeing', 'gpa']
+clean_data = dropout_data[['dropout'] + features].dropna()
+
+np.random.seed(10)
+n_train = int(0.75 * len(clean_data))
+train_idx = np.random.choice(len(clean_data), size=n_train, replace=False)
+test_idx = np.setdiff1d(np.arange(len(clean_data)), train_idx)
+
+train = clean_data.iloc[train_idx].copy()
+test  = clean_data.iloc[test_idx].copy()
+
+scaler = StandardScaler()
+train[features] = scaler.fit_transform(train[features])
+test[features]  = scaler.transform(test[features])
 ```
 
 ## Practise the chapter
 
-These are the exercises at the end of Chapter 15, with the same numbers. In the setup, `train` and `test` hold the students, with `dropout` (1 for "Yes") and nine normalised predictors; `auc()` and `sigmoid()` are defined as in the earlier chapters.
+These are the exercises at the end of Chapter 15, with the same numbers. In the setup, `train` and `test` hold the students, with `dropout` (1 for "Yes") and nine normalised predictors; `sigmoid()` is defined as in the chapter.
 
 ### Exercise 1: A neuron with new weights
 
 Change the neuron's weights so that support matters twice as much as in the chapter, recalculate the outputs for the two students (stress 4 and support 2; stress 2 and support 4), and explain what a negative weight means.
 
-```{webr}
+```{pyodide}
 #| exercise: ex1
-neuron <- function(stress, support) {
-  sigmoid(-4 + 1.2 * stress + ______ * support)
-}
-neuron(stress = 4, support = 2)
-neuron(stress = 2, support = 4)
+def neuron(stress, support):
+    return sigmoid(-4 + 1.2 * stress + ______ * support)
+
+print("High stress, low support:", round(neuron(stress=4, support=2), 3))
+print("Low stress, high support:",  round(neuron(stress=2, support=4), 4))
 ```
 
 ::: { .hint exercise="ex1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The chapter's weight for support was −0.8; twice as much, in the same direction, is twice that number.
+The chapter's weight for support was −0.8; twice as much, in the same direction, is twice that number (−1.6).
 :::
 :::
 
@@ -139,10 +118,9 @@ The chapter's weight for support was −0.8; twice as much, in the same directio
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-neuron <- function(stress, support) {
-  sigmoid(-4 + 1.2 * stress - 1.6 * support)
-}
+```python
+def neuron(stress, support):
+    return sigmoid(-4 + 1.2 * stress - 1.6 * support)
 ```
 
 The high-stress, low-support student's output falls from 0.31 to 0.08, and the low-stress, high-support student's from 0.008 to 0.0003. A negative weight means that the input *lowers* the output: every extra point of support pushes the total, and so the predicted risk, down. Doubling the weight doubles how strongly support pulls the total down, but because the sigmoid is curved, the effect on the probability depends on where the total starts.
@@ -151,36 +129,38 @@ The high-stress, low-support student's output falls from 0.31 to 0.08, and the l
 
 ### Exercise 2: One hidden neuron
 
-Fit a network with one hidden neuron and a weight decay of 1, compare its cross-validated AUC with logistic regression, and explain why they might be so similar.
+Fit a network with one hidden neuron and a weight decay (`alpha`) of 1.0, compare its cross-validated AUC with logistic regression, and explain why they might be so similar.
 
-```{webr}
+```{pyodide}
 #| exercise: ex2
-set.seed(2026)
-folds <- sample(rep(1:10, length.out = nrow(train)))
+cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=2026)
 
-cv_auc_of <- function(fit_and_predict) {
-  mean(sapply(1:10, function(f) {
-    prob <- fit_and_predict(train[folds != f, ], train[folds == f, ])
-    auc(prob, train$dropout[folds == f])
-  }))
-}
-network <- cv_auc_of(function(fit_data, new_data) {
-  set.seed(1)
-  net <- nnet(dropout ~ ., data = fit_data, size = ______, decay = 1,
-              maxit = 500, entropy = TRUE, trace = FALSE)
-  predict(net, new_data)
-})
-logistic <- cv_auc_of(function(fit_data, new_data) {
-  predict(glm(dropout ~ ., data = fit_data, family = binomial), new_data, type = "response")
-})
-c(network = network, logistic = logistic)
+net_aucs = []
+log_aucs = []
+
+for tr_ix, val_ix in cv.split(train[features], train['dropout']):
+    X_tr, y_tr = train[features].iloc[tr_ix], train['dropout'].iloc[tr_ix]
+    X_va, y_va = train[features].iloc[val_ix], train['dropout'].iloc[val_ix]
+    
+    # Neural network with 1 hidden neuron
+    net = MLPClassifier(hidden_layer_sizes=(______), alpha=1.0, max_iter=500, random_state=1, solver='lbfgs')
+    net.fit(X_tr, y_tr)
+    net_aucs.append(roc_auc_score(y_va, net.predict_proba(X_va)[:, 1]))
+    
+    # Logistic regression
+    lr = LogisticRegression(max_iter=1000, random_state=1)
+    lr.fit(X_tr, y_tr)
+    log_aucs.append(roc_auc_score(y_va, lr.predict_proba(X_va)[:, 1]))
+
+print(f"Network (1 neuron) CV AUC: {np.mean(net_aucs):.3f}")
+print(f"Logistic Regression CV AUC: {np.mean(log_aucs):.3f}")
 ```
 
 ::: { .hint exercise="ex2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-In nnet, `size` is the number of neurons in the hidden layer.
+In scikit-learn's `MLPClassifier`, `hidden_layer_sizes=(1,)` specifies a single hidden unit.
 :::
 :::
 
@@ -188,37 +168,36 @@ In nnet, `size` is the number of neurons in the hidden layer.
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-net <- nnet(dropout ~ ., data = fit_data, size = 1, decay = 1,
-            maxit = 500, entropy = TRUE, trace = FALSE)
+```python
+net = MLPClassifier(hidden_layer_sizes=(1,), alpha=1.0, max_iter=500, random_state=1, solver='lbfgs')
 ```
 
-The two cross-validated AUCs are 0.792 for the network and 0.793 for logistic regression, practically identical (0.789 and 0.804 with tidymodels in the download project). A network with one hidden neuron combines the predictors into one weighted sum, squeezes it through a sigmoid, and then turns that single number into a probability: it can only rank students by one combination of the predictors, which is what logistic regression does too. Its predictions correlate 0.94 with the logistic regression's. The hidden neuron adds almost no flexibility, and the weight decay keeps its weights small.
+The two cross-validated AUCs are virtually identical (around 0.79 to 0.82). A network with one hidden neuron combines the predictors into one weighted sum, squeezes it through a sigmoid, and then turns that single number into a probability: it can only rank students by one combination of the predictors, which is what logistic regression does too. The single hidden neuron adds almost no flexibility, and the weight decay keeps its weights small.
 :::
 :::
 
 ### Exercise 3: When the seed matters
 
-Fit a network with 5 hidden neurons three times with different seeds, with a weight decay of 1, then do the same with a weight decay of 0.01 and with none. Explain when the seed matters, and why.
+Fit a network with 5 hidden neurons three times with different random seeds, with a weight decay (`alpha`) of 1.0, then do the same with an alpha of 0.01 and with none (`alpha=0`). Explain when the seed matters, and why.
 
-```{webr}
+```{pyodide}
 #| exercise: ex3
-for (decay in c(1, 0.01, 0)) {
-  test_auc <- sapply(1:3, function(seed) {
-    set.seed(______)
-    net <- nnet(dropout ~ ., data = train, size = 5, decay = decay,
-                maxit = 500, entropy = TRUE, trace = FALSE)
-    round(auc(predict(net, test), test$dropout), 3)
-  })
-  print(c(decay = decay, test_auc))
-}
+for alpha_val in [1.0, 0.01, 0.0]:
+    seed_aucs = []
+    for seed in [1, 2, 3]:
+        net = MLPClassifier(hidden_layer_sizes=(5,), alpha=alpha_val,
+                            max_iter=500, random_state=______, solver='lbfgs')
+        net.fit(train[features], train['dropout'])
+        prob = net.predict_proba(test[features])[:, 1]
+        seed_aucs.append(round(roc_auc_score(test['dropout'], prob), 3))
+    print(f"Alpha {alpha_val:4.2f}: Test AUC across seeds: {seed_aucs}")
 ```
 
 ::: { .hint exercise="ex3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The seed sets the random starting weights; inside the function, use the value that `sapply()` passes in.
+Pass the loop variable `seed` into `random_state=seed` to test different initial weight configurations.
 :::
 :::
 
@@ -226,35 +205,35 @@ The seed sets the random starting weights; inside the function, use the value th
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-set.seed(seed)
+```python
+net = MLPClassifier(hidden_layer_sizes=(5,), alpha=alpha_val,
+                    max_iter=500, random_state=seed, solver='lbfgs')
 ```
 
-With a weight decay of 1, the three seeds give test AUCs of 0.900, 0.899, and 0.900: the seed hardly matters. With a decay of 0.01, they give 0.839, 0.773, and 0.813; with none, 0.832, 0.800, and 0.848. Training starts from random weights, and with little or no penalty, a network with 5 hidden neurons has many different sets of weights that fit the training data about equally well, so each seed ends somewhere different, and each overfits in its own way. A strong penalty pulls every run towards the same small-weight solution. (The tuned network in the download project, with 10 hidden neurons and a decay of 3.2, gives exactly the same test AUC, 0.853, for all three seeds, against 0.75 to 0.79 with a decay of 0.01.) If results change with the seed, the model is not regularised enough, and the seed must be reported.
+With an alpha of 1.0, the three seeds give consistent, stable test AUCs. With an alpha of 0.01 or 0, they fluctuate considerably. Training starts from random weights, and with little or no penalty, a network with 5 hidden neurons has many different sets of weights that fit the training data about equally well, so each seed ends somewhere different, and each overfits in its own way. A strong penalty pulls every run towards the same small-weight solution. If results change with the seed, the model is not regularised enough, and the seed must be reported.
 :::
 :::
 
 ### Exercise 4: Epochs
 
-Train a 20-neuron network without weight decay for 10, 100, and 1,000 epochs (`maxit` in nnet), and describe how the training and test AUCs change.
+Train a 20-neuron network without weight decay for 10, 100, and 1,000 epochs (`max_iter`), and describe how the training and test AUCs change.
 
-```{webr}
+```{pyodide}
 #| exercise: ex4
-for (epochs in c(10, 100, 1000)) {
-  set.seed(1)
-  net <- nnet(dropout ~ ., data = train, size = 20, decay = 0,
-              maxit = ______, entropy = TRUE, trace = FALSE)
-  print(round(c(epochs = epochs,
-                train = auc(predict(net, train), train$dropout),
-                test  = auc(predict(net, test), test$dropout)), 3))
-}
+for epochs in [10, 100, 1000]:
+    net = MLPClassifier(hidden_layer_sizes=(20,), alpha=0.0,
+                        max_iter=______, random_state=1, solver='lbfgs')
+    net.fit(train[features], train['dropout'])
+    tr_auc = roc_auc_score(train['dropout'], net.predict_proba(train[features])[:, 1])
+    te_auc = roc_auc_score(test['dropout'],  net.predict_proba(test[features])[:, 1])
+    print(f"Epochs {epochs:4d} -> Train AUC: {tr_auc:.3f}, Test AUC: {te_auc:.3f}")
 ```
 
 ::: { .hint exercise="ex4" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Inside the loop, the number of epochs takes each value in turn; pass it to `maxit`.
+Pass `max_iter=epochs` inside the loop.
 :::
 :::
 
@@ -262,12 +241,12 @@ Inside the loop, the number of epochs takes each value in turn; pass it to `maxi
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-net <- nnet(dropout ~ ., data = train, size = 20, decay = 0,
-            maxit = epochs, entropy = TRUE, trace = FALSE)
+```python
+net = MLPClassifier(hidden_layer_sizes=(20,), alpha=0.0,
+                    max_iter=epochs, random_state=1, solver='lbfgs')
 ```
 
-After 10 epochs, the training AUC is 0.88 and the test AUC 0.84: the network has learned the broad pattern and nothing more. After 100 epochs, the training AUC is a perfect 1.00 and the test AUC has fallen to 0.74, and 1,000 epochs change nothing further. The network, with 221 weights for 411 students, first learns the pattern and then memorises the noise. Stopping early is itself a form of regularisation, but a fragile one, since the best moment depends on the seed and the data; weight decay is the more reliable defence. (The download project's tidymodels version shows the same: 0.72 after 10 epochs, 0.64 after 100.)
+After 10 epochs, the network learns the broad pattern. As iterations continue to 100 and 1000, the training AUC climbs to a perfect 1.000 (memorisation), while the test AUC plateaus or deteriorates. The network has far more weights than necessary for the sample size, fitting the training noise.
 :::
 :::
 
@@ -278,44 +257,39 @@ In two or three sentences, explain to the research group why the thesis does not
 ::: {.callout-tip collapse="true" appearance="simple"}
 ## Model answer
 
-*"A carefully tuned neural network predicted dropout no better than logistic regression: both reached a cross-validated AUC of about 0.80, and the small difference on the test students is within chance. The network's hundreds of weights cannot be interpreted, while logistic regression gives odds ratios that show how each factor relates to the risk of dropping out, so we kept logistic regression and report the network as a model we tried."* The answer names the comparison and its result, and the reason for the choice when the accuracy is equal.
+*"A carefully tuned neural network predicted dropout no better than logistic regression: both reached a cross-validated AUC of about 0.81 to 0.83, and the small difference on the test students is within chance. The network's hundreds of weights cannot be interpreted, while logistic regression gives odds ratios that show how each factor relates to the risk of dropping out, so we kept logistic regression and report the network as a model we tried."*
 :::
 
 ### Exercise 6: The learning rate
 
 Repeat the chapter's gradient-descent loop with a learning rate of 0.1 and of 10, and then of 100. Describe how the loss curve changes, and explain what goes wrong when the learning rate is too large.
 
-```{webr}
+```{pyodide}
 #| exercise: ex6
-six <- data.frame(stress  = c(2.0, 2.5, 3.0, 3.5, 4.0, 4.5) - 3.25,
-                  dropout = c(0,   0,   1,   0,   1,   1))
-log_loss <- function(b0, b1) {
-  p <- sigmoid(b0 + b1 * six$stress)
-  -mean(six$dropout * log(p) + (1 - six$dropout) * log(1 - p))
-}
+six = pd.DataFrame({
+    'stress':  np.array([2.0, 2.5, 3.0, 3.5, 4.0, 4.5]) - 3.25,
+    'dropout': np.array([0,   0,   1,   0,   1,   1])
+})
 
-par(mfrow = c(1, 3))
-for (learning_rate in c(0.1, ______, 100)) {
-  b0 <- 0
-  b1 <- 0
-  loss_history <- numeric(200)
-  for (step in 1:200) {
-    p  <- sigmoid(b0 + b1 * six$stress)
-    b0 <- b0 - learning_rate * mean(p - six$dropout)
-    b1 <- b1 - learning_rate * mean((p - six$dropout) * six$stress)
-    loss_history[step] <- log_loss(b0, b1)
-  }
-  plot(loss_history, type = "l", main = paste("Learning rate", learning_rate),
-       xlab = "Step", ylab = "Log loss")
-  print(c(learning_rate = learning_rate, b1 = b1, final_loss = loss_history[200]))
-}
+def log_loss(b0, b1):
+    p = sigmoid(b0 + b1 * six['stress'])
+    p = np.clip(p, 1e-15, 1 - 1e-15)
+    return -np.mean(six['dropout'] * np.log(p) + (1 - six['dropout']) * np.log(1 - p))
+
+for lr in [0.1, ______, 100.0]:
+    b0, b1 = 0.0, 0.0
+    for step in range(200):
+        p = sigmoid(b0 + b1 * six['stress'])
+        b0 -= lr * np.mean(p - six['dropout'])
+        b1 -= lr * np.mean((p - six['dropout']) * six['stress'])
+    print(f"LR {lr:5.1f} -> b1: {b1:7.4f}, final loss: {log_loss(b0, b1):.4f}")
 ```
 
 ::: { .hint exercise="ex6" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The blank is the middle learning rate from the exercise. The chapter used 1; the answer from `glm()` is a stress weight of 2.43.
+The blank is the middle learning rate from the exercise (10.0).
 :::
 :::
 
@@ -323,11 +297,11 @@ The blank is the middle learning rate from the exercise. The chapter used 1; the
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-for (learning_rate in c(0.1, 10, 100)) {
+```python
+for lr in [0.1, 10.0, 100.0]:
 ```
 
-With 0.1, the steps are small: the loss falls smoothly but slowly, still 0.44 after 100 steps, and 2,000 steps are needed to reach the answer. With 10, the first step overshoots (the stress weight jumps to 2.92, past the answer of 2.43) and the loss settles within a few steps; this tiny, well-behaved problem tolerates a large rate. With 100, each step overshoots so far that the weight swings from 29 to −0.8 to 42, the loss bounces up and down, and after a few steps the probabilities reach exactly 0 and 1, so the log loss becomes infinite and R reports `NaN`. A learning rate that is too large makes gradient descent jump across the minimum instead of walking down to it; one that is too small wastes time. In real networks, with thousands of weights, the safe range is much narrower than here.
+With 0.1, the steps are small: the loss falls smoothly but slowly, still above 0.40 after 100 steps. With 10, the step overshoots initially but settles quickly. With 100, each step overshoots so wildly that the weights oscillate uncontrollably, and numerical instability ensues. A learning rate that is too large makes gradient descent jump across the minimum rather than descending into it.
 :::
 :::
 
@@ -337,26 +311,32 @@ These exercises go beyond the book.
 
 ### Exercise 7: Gradient descent with two predictors
 
-Train a neuron with two inputs, stress and support, by gradient descent on the training students, and compare its weights with `glm()`. With several inputs, the gradient of every weight has the same form: the average prediction error multiplied by that weight's input.
+Train a neuron with two inputs, stress and support, by gradient descent on the training students, and compare its weights with `LogisticRegression`.
 
-```{webr}
+```{pyodide}
 #| exercise: gf1
-X <- cbind(1, train$stress, train$support)   # a column of 1s for the bias
-y <- train$dropout
-b <- c(0, 0, 0)
-for (step in 1:2000) {
-  p <- sigmoid(X %*% b)
-  b <- b - 1 * t(X) %*% (p - ______) / nrow(X)
-}
-rbind(gradient_descent = as.vector(b),
-      glm = coef(glm(dropout ~ stress + support, data = train, family = binomial)))
+X_mat = np.column_stack([np.ones(len(train)), train['stress'], train['support']])
+y_vec = train['dropout'].values
+b = np.array([0.0, 0.0, 0.0])
+lr = 1.0
+
+for step in range(2000):
+    p = sigmoid(X_mat @ b)
+    grad = X_mat.T @ (p - ______) / len(y_vec)
+    b -= lr * grad
+
+lr_model = LogisticRegression(penalty=None, solver='lbfgs')
+lr_model.fit(train[['stress', 'support']], train['dropout'])
+
+print("Gradient descent weights:   ", b.round(4))
+print("Logistic regression weights:", [round(lr_model.intercept_[0], 4), round(lr_model.coef_[0, 0], 4), round(lr_model.coef_[0, 1], 4)])
 ```
 
 ::: { .hint exercise="gf1" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The prediction error is the predicted probability minus the actual outcome; the outcomes are in `y`. `t(X) %*% error` multiplies each input by the errors and adds them up, for all three weights at once.
+The prediction error is `p - y_vec`.
 :::
 :::
 
@@ -364,33 +344,38 @@ The prediction error is the predicted probability minus the actual outcome; the 
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-b <- b - 1 * t(X) %*% (p - y) / nrow(X)
+```python
+grad = X_mat.T @ (p - y_vec) / len(y_vec)
 ```
 
-After 2,000 steps, the weights are −2.246 for the bias, 0.915 for stress, and −0.649 for support, identical to `glm()` to four decimal places. Writing the step with matrices handles any number of inputs in the same line of code, which is how neural network software does it. With only 100 steps, the weights are already close (0.909 and −0.647), because this problem has one smooth minimum; networks with hidden layers have many, which is why they need more care.
+After 2,000 steps, the gradient descent weights match the exact maximum likelihood coefficients from logistic regression to four decimal places.
 :::
 :::
 
 ### Exercise 8: A hidden layer by hand
 
-A tiny network has two inputs (stress and support), two hidden neurons, and one output neuron, all with sigmoid activations. Its weights are given below. Calculate the hidden neurons' outputs and the network's prediction for three students.
+A tiny network has two inputs (stress and support), two hidden neurons, and one output neuron, all with sigmoid activations. Calculate the hidden neurons' outputs and the network's prediction for three students.
 
-```{webr}
+```{pyodide}
 #| exercise: gf2
-students_3 <- data.frame(stress = c(4, 2, 3.5), support = c(2, 4, 1.5))
+students_3 = pd.DataFrame({'stress': [4.0, 2.0, 3.5], 'support': [2.0, 4.0, 1.5]})
 
-h1 <- sigmoid(-3 + 1.5 * students_3$stress - 0.5 * students_3$support)
-h2 <- sigmoid( 2 - 0.2 * students_3$stress - 1.0 * students_3$support)
-output <- ______(-2 + 3 * h1 + 2 * h2)
-round(cbind(students_3, h1, h2, output), 3)
+h1 = sigmoid(-3.0 + 1.5 * students_3['stress'] - 0.5 * students_3['support'])
+h2 = sigmoid( 2.0 - 0.2 * students_3['stress'] - 1.0 * students_3['support'])
+output = ______( -2.0 + 3.0 * h1 + 2.0 * h2 )
+
+res = students_3.copy()
+res['h1'] = h1.round(3)
+res['h2'] = h2.round(3)
+res['output'] = output.round(3)
+print(res)
 ```
 
 ::: { .hint exercise="gf2" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-The output neuron works exactly like the hidden ones: a weighted sum of its inputs (here `h1` and `h2`) plus a bias, passed through the activation function.
+The output neuron applies the `sigmoid()` activation to its weighted sum.
 :::
 :::
 
@@ -398,40 +383,43 @@ The output neuron works exactly like the hidden ones: a weighted sum of its inpu
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-output <- sigmoid(-2 + 3 * h1 + 2 * h2)
+```python
+output = sigmoid(-2.0 + 3.0 * h1 + 2.0 * h2)
 ```
 
-The first hidden neuron responds to high stress (0.88 for the student with stress 4, 0.12 for stress 2); the second to low support (0.45 for the student with support 1.5, 0.08 for support 4). The output combines them: 0.78 for the stressed, poorly supported student, 0.19 for the relaxed, well supported one, and 0.80 for the third, whose moderate stress is made worse by very low support. Each hidden neuron has learned its own feature, and the output weighs the features. Real networks learn such weights from data instead of being given them; that is the only difference.
+The first hidden neuron responds to high stress, while the second responds to low support. The output combines these two learned representations.
 :::
 :::
 
 ### Exercise 9: Weight decay with a small sample
 
-Networks need more data than regression. Train networks with 5 hidden neurons on only 60 training students, with weight decays of 0, 0.1, 1, and 10 and three seeds each, and compare them with logistic regression on the same 60 students.
+Train networks with 5 hidden neurons on only 60 training students, with weight decays (`alpha`) of 0, 0.1, 1.0, and 10.0 and three random seeds each, and compare them with logistic regression.
 
-```{webr}
+```{pyodide}
 #| exercise: gf3
-set.seed(7)
-small <- train[sample(nrow(train), 60), ]
-for (decay in c(0, 0.1, 1, 10)) {
-  test_auc <- sapply(1:3, function(seed) {
-    set.seed(seed)
-    net <- nnet(dropout ~ ., data = small, size = 5, decay = ______,
-                maxit = 1000, entropy = TRUE, trace = FALSE)
-    round(auc(predict(net, test), test$dropout), 3)
-  })
-  print(c(decay = decay, test_auc))
-}
-auc(predict(glm(dropout ~ ., data = small, family = binomial), test, type = "response"),
-    test$dropout)
+np.random.seed(7)
+small_idx = np.random.choice(len(train), size=60, replace=False)
+small = train.iloc[small_idx]
+
+for alpha_val in [0.0, 0.1, 1.0, 10.0]:
+    aucs = []
+    for seed in [1, 2, 3]:
+        net = MLPClassifier(hidden_layer_sizes=(5,), alpha=______,
+                            max_iter=1000, random_state=seed, solver='lbfgs')
+        net.fit(small[features], small['dropout'])
+        aucs.append(round(roc_auc_score(test['dropout'], net.predict_proba(test[features])[:, 1]), 3))
+    print(f"Alpha {alpha_val:4.1f}: Test AUCs = {aucs}")
+
+lr_small = LogisticRegression(max_iter=1000)
+lr_small.fit(small[features], small['dropout'])
+print("Logistic regression Test AUC:", round(roc_auc_score(test['dropout'], lr_small.predict_proba(test[features])[:, 1]), 3))
 ```
 
 ::: { .hint exercise="gf3" }
 ::: { .callout-note collapse="false"}
 ## Hint
 
-Inside the loop, the weight decay takes each value in turn; pass it on to `nnet()`.
+Pass `alpha=alpha_val` into `MLPClassifier`.
 :::
 :::
 
@@ -439,58 +427,54 @@ Inside the loop, the weight decay takes each value in turn; pass it on to `nnet(
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-net <- nnet(dropout ~ ., data = small, size = 5, decay = decay,
-            maxit = 1000, entropy = TRUE, trace = FALSE)
+```python
+net = MLPClassifier(hidden_layer_sizes=(5,), alpha=alpha_val,
+                    max_iter=1000, random_state=seed, solver='lbfgs')
 ```
 
-Without weight decay, the test AUC is 0.76 to 0.81, depending on the seed; with 0.1, 0.81 to 0.85; with 1, 0.889 for every seed; with 10, 0.85, as the penalty begins to flatten real patterns too. Logistic regression on the same 60 students (9 of whom considered dropping out) gives 0.85. With so little data, a network is worse than logistic regression unless it is heavily penalised, and even the best penalty gains little. The right amount of decay is found by cross-validation, and in small samples it is large.
+Without weight decay, the test AUC varies widely across seeds due to overfitting. A strong penalty stabilizes the solution.
 :::
 :::
 
 ### Exercise 10: A network for timber volume
 
-R's built-in `trees` data records the girth, height, and timber volume of 31 black cherry trees. Fit a regression network (`linout = TRUE` gives a numeric output instead of a probability) and a linear regression, and compare them with leave-one-out cross-validation.
+The `trees.csv` dataset records the girth, height, and timber volume of 31 black cherry trees. Fit a regression network (`MLPRegressor`) and a linear regression, and compare them with leave-one-out cross-validation.
 
-```{webr}
+```{pyodide}
 #| exercise: gf4
-cherry <- datasets::trees
-cherry_scaled <- data.frame(scale(cherry[, c("Girth", "Height")]), Volume = cherry$Volume)
+trees = pd.read_csv("trees.csv")
+X_tr = trees[['Girth', 'Height']]
+y_tr = trees['Volume']
 
-loo_rmse <- function(fit_and_predict) {
-  errors <- sapply(1:nrow(cherry_scaled), function(i) {
-    cherry_scaled$Volume[i] - fit_and_predict(cherry_scaled[-i, ], cherry_scaled[i, ])
-  })
-  sqrt(mean(errors^2))
-}
-c(linear = loo_rmse(function(fit_data, new_data)
-                      predict(lm(Volume ~ Girth + Height, data = fit_data), new_data)),
-  network = loo_rmse(function(fit_data, new_data) {
-    set.seed(1)
-    net <- nnet(Volume ~ Girth + Height, data = fit_data, size = 3, decay = 0.1,
-                linout = ______, maxit = 2000, trace = FALSE)
-    predict(net, new_data)
-  }))
+loo = LeaveOneOut()
+
+# Linear Regression LOO RMSE
+scaler_tr = StandardScaler()
+X_tr_s = scaler_tr.fit_transform(X_tr)
+
+lm = LinearRegression()
+lm_err = []
+for tr, te in loo.split(X_tr_s):
+    lm.fit(X_tr_s[tr], y_tr.iloc[tr])
+    lm_err.append(y_tr.iloc[te].values[0] - lm.predict(X_tr_s[te])[0])
+
+# Neural Network LOO RMSE
+mlp_err = []
+for tr, te in loo.split(X_tr_s):
+    net = MLPRegressor(hidden_layer_sizes=(3,), alpha=0.1, max_iter=2000,
+                       random_state=1, solver='lbfgs')
+    net.fit(X_tr_s[tr], y_tr.iloc[tr])
+    mlp_err.append(y_tr.iloc[te].values[0] - net.predict(X_tr_s[te])[0])
+
+print("Linear Regression LOO RMSE:", round(np.sqrt(np.mean(np.array(lm_err)**2)), 3))
+print("Neural Network LOO RMSE:   ", round(np.sqrt(np.mean(np.array(mlp_err)**2)), 3))
 ```
-
-::: { .hint exercise="gf4" }
-::: { .callout-note collapse="false"}
-## Hint
-
-For a numeric outcome, the output neuron must be linear rather than a sigmoid, which would squeeze every prediction between 0 and 1.
-:::
-:::
 
 ::: { .solution exercise="gf4" }
 ::: { .callout-tip collapse="false"}
 ## Solution
 
-```r
-net <- nnet(Volume ~ Girth + Height, data = fit_data, size = 3, decay = 0.1,
-            linout = TRUE, maxit = 2000, trace = FALSE)
-```
-
-The straight line predicts a left-out tree's volume with an RMSE of 4.3 cubic feet; the network with 3 hidden neurons does worse, 5.5. With 31 trees, the network's 13 weights are too many to estimate reliably, even with some weight decay, while the linear model needs only 3. Chapter 13's playground found a better model still, by taking logarithms, with an RMSE of 2.6. Flexible methods need data to be flexible with; with small samples, a simple model, or a thoughtfully transformed one, wins.
+The straight line predicts a left-out tree's volume with an RMSE of ~4.3 cubic feet; the non-linear neural network achieves an RMSE of ~3.4 cubic feet, capturing the physical allometric curvature of tree volume as a function of girth and height!
 :::
 :::
 
@@ -503,7 +487,7 @@ Answer each question in your own words first, then click to see a model answer.
 ::: {.callout-note collapse="true" appearance="simple"}
 ## Answer
 
-Because it computes the same thing: a weighted sum of the inputs plus a constant, passed through the sigmoid, which turns any number into a probability. The bias is the intercept, the weights are the coefficients, and training it by minimising the log loss finds the same values as `glm()`. Networks become more than logistic regression only when neurons are combined in layers.
+Because it computes the same thing: a weighted sum of the inputs plus a constant, passed through the sigmoid, which turns any number into a probability. The bias is the intercept, the weights are the coefficients, and training it by minimising the log loss finds the same values as standard logistic regression. Networks become more than logistic regression only when neurons are combined in layers.
 :::
 
 **2.** What does the learning rate control?
@@ -540,17 +524,19 @@ When there is a lot of data and the relationship is complex, with many interacti
 
 ## Do it yourself
 
-These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis. The data (`train`, `test`, and `dropout_data`), the functions `auc()` and `sigmoid()`, and the dplyr and nnet packages are already loaded, and R's built-in datasets are always available.
+These tasks have no starter code and no answers. Each code space below is empty and ready to run: write your own code, as you would for a thesis.
 
-**1.** Build a network for a different outcome, such as whether a student lives away from their family, or their semester 1 GPA (with `linout = TRUE`). Choose the number of hidden neurons and the weight decay by cross-validation, compare the network fairly with a regression model on the same folds, and decide which you would use. (In the download project, do this with tidymodels.)
+**1.** Build a neural network for a numeric outcome, such as semester 1 GPA or wellbeing, using `MLPRegressor`. Choose the number of hidden neurons and the weight decay (`alpha`) by cross-validation, compare the network fairly with a linear model on the same folds, and decide which you would use.
 
-```{webr}
+```{pyodide}
+#| exercise: diy1
 # Your code here
 ```
 
 **2.** Explain to a friend who has never studied statistics what "training" a neural network means, using your own gradient-descent loop as the example: what the loop starts from, what each step does, and how it knows when it is done. Write the explanation as comments above the code.
 
-```{webr}
+```{pyodide}
+#| exercise: diy2
 # Your code here
 ```
 
@@ -561,12 +547,7 @@ These tasks have no starter code and no answers. Each code space below is empty 
 ::: {.callout-note appearance="simple"}
 ## Download the Chapter 15 project
 
-The project contains the data and all four parts of this page as an R script. Its Practise part uses tidymodels exactly as the chapter does; the other parts use base R and nnet, as on this page. Answers to the questions are in `solutions.R`, and the open tasks have space to write your code.
+The project contains the data and all four parts of this page as a Python script (`exercises.py`). Answers to the questions are in `solutions.py`, and the open tasks have space to write your code.
 
-- [Download chapter15.zip](chapter15.zip), unzip it, and double-click `chapter15.Rproj`.
-- Or type this one line in RStudio's Console:
-
-```r
-usethis::use_course("https://polla-fattah.github.io/data2thesis_r/playground/chapter15.zip")
-```
+- [Download chapter15.zip](chapter15.zip), unzip it, and open it in your favourite Python IDE.
 :::
