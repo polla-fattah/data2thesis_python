@@ -210,7 +210,7 @@ tukey = pairwise_tukeyhsd(endog=study["stress"], groups=study["faculty"], alpha=
 print(tukey)
 ```
 
-Each row compares two faculties: the difference in average stress (`meandiff`), its 95% confidence interval, an adjusted p-value (`p-adj`), and whether to reject the null hypothesis (`reject`). Only one comparison is significant: Health Sciences students are more stressed than Humanities students, by about 0.35 points on the 1-to-5 scale ($p = 0.002$). All other pair comparisons have adjusted p-values well above 0.05.
+Each row compares two faculties: the difference in average stress (`meandiff`), its 95% confidence interval, an adjusted p-value (`p-adj`), and whether to reject the null hypothesis (`reject`). Only one comparison is significant: Health Sciences students are more stressed than Humanities students, by about 0.34 points on the 1-to-5 scale ($p = 0.004$). All other pair comparisons have adjusted p-values well above 0.05.
 
 ### Assumptions of ANOVA
 
@@ -222,14 +222,14 @@ stat_levene, p_levene = stats.levene(*faculty_groups)
 print(f"Levene's test: F = {stat_levene:.3f}, p = {p_levene:.3f}")
 ```
 
-The p-value is large ($p = 0.697$), so there is no evidence that the spread differs between faculties. When the assumptions fail, the **Kruskal-Wallis test** is the non-parametric alternative, comparing ranks instead of averages:
+The p-value is large ($p = 0.439$), so there is no evidence that the spread differs between faculties. When the assumptions fail, the **Kruskal-Wallis test** is the non-parametric alternative, comparing ranks instead of averages:
 
 ```{python}
 stat_kw, p_kw = stats.kruskal(*faculty_groups)
 print(f"Kruskal-Wallis test: H = {stat_kw:.3f}, p = {p_kw:.4f}")
 ```
 
-It agrees with the ANOVA ($p = 0.003$).
+It agrees with the ANOVA ($p = 0.004$).
 
 ## Two-way ANOVA
 
@@ -272,7 +272,7 @@ aov_2way = sm.stats.anova_lm(model_2way, typ=2)
 print(aov_2way)
 ```
 
-Study mode has a clear effect ($F \approx 13.5, p < .001$). Programme does not ($p = 0.77$), and neither does the interaction ($p = 0.73$): part-time study lowers wellbeing by about the same amount whether a student is doing a Master's or a PhD. When an interaction *is* significant, it should be interpreted before the main effects, because it means that no single "effect of study mode" describes everyone.
+Study mode has a clear effect ($F \approx 11.6, p < .001$). Programme does not ($p = 0.29$), and neither does the interaction ($p = 0.36$): part-time study lowers wellbeing by about the same amount whether a student is doing a Master's or a PhD. When an interaction *is* significant, it should be interpreted before the main effects, because it means that no single "effect of study mode" describes everyone.
 
 ## Linear regression
 
@@ -362,7 +362,7 @@ gpa_simple = smf.ols("gpa ~ sleep_hours", data=study).fit()
 print(gpa_simple.summary())
 ```
 
-The output contains three results that matter for the research question. The **coefficients** table gives the estimate of each coefficient, its standard error, a t statistic, and a p-value testing whether it is zero. The slope for `sleep_hours` is about 0.17: each extra hour of sleep goes with a GPA about 0.17 higher, and the p-value ($p < .001$) shows that this is not chance. **R-squared** ($R^2 = 0.088$) is the share of the variation in GPA that the model explains; here it is about 9%, so sleep explains about 9% of the differences in GPA. Sleep matters, but it is far from the whole story, as the scatter plot suggested. Finally, the scale estimate (square root of MSE) shows the typical residual distance is about 0.46 grade points.
+The output contains three results that matter for the research question. The **coefficients** table gives the estimate of each coefficient, its standard error, a t statistic, and a p-value testing whether it is zero. The slope for `sleep_hours` is about 0.08: each extra hour of sleep goes with a GPA about 0.08 higher, and the p-value ($p < .001$) shows that this is not chance. **R-squared** ($R^2 = 0.064$) is the share of the variation in GPA that the model explains; here it is about 6%, so sleep explains about 6% of the differences in GPA. Sleep matters, but it is far from the whole story, as the scatter plot suggested. Finally, the scale estimate (square root of MSE) shows the typical residual distance is about 0.32 grade points.
 
 ### Multiple regression
 
@@ -373,11 +373,11 @@ gpa_model = smf.ols("gpa ~ sleep_hours + study_hours + stress + support", data=s
 print(gpa_model.summary())
 ```
 
-Each coefficient now means the change in predicted GPA for a one-unit increase in that predictor, **holding the other predictors constant**. Among students with the same study hours, stress, and support, each extra hour of sleep goes with a GPA about 0.15 higher. Each extra hour of study per week adds about 0.013 points, each point of stress lowers GPA by about 0.15 points, and each point of supervisor support raises it by about 0.08 points. All four are significant ($p < .001$).
+Each coefficient now means the change in predicted GPA for a one-unit increase in that predictor, **holding the other predictors constant**. Among students with the same study hours, stress, and support, each extra hour of sleep goes with a GPA about 0.11 higher. Each extra hour of study per week adds about 0.007 points, each point of stress lowers GPA by about 0.08 points, and each point of supervisor support raises it by about 0.11 points. All four are significant ($p < .001$).
 
 Together, the four predictors explain about 25% ($R^2 = 0.252$) of the variation in GPA. That may sound modest, but grades depend on many things no survey measures, from ability to luck on exam day. In social and educational research, models that explain a quarter of the variation are common and useful. The **adjusted R-squared** ($0.247$) is slightly lower, because it corrects for the number of predictors: adding any predictor, even a useless one, raises R-squared a little, but only a useful one raises the adjusted version.
 
-The output shows $N = 589$ (from the 600 original students, 11 had missing values in at least one variable). `statsmodels` automatically drops missing observations from the regression. The number of students each model is based on should always be reported in your thesis.
+The output shows $N = 587$ (from the 600 original students, 13 had missing values in at least one variable). `statsmodels` automatically drops missing observations from the regression. The number of students each model is based on should always be reported in your thesis.
 
 ### Categorical predictors
 
@@ -388,7 +388,7 @@ gpa_gender = smf.ols("gpa ~ sleep_hours + study_hours + stress + support + C(gen
 print(gpa_gender.summary().tables[1])
 ```
 
-Python turns a categorical predictor into a comparison with a **reference category**, by default the first in alphabetical order: here `Female`. The coefficient `C(gender)[T.Male]` is the difference between men and women, holding everything else constant. It is tiny ($0.007$) and far from significant ($p = 0.84$): there is no evidence that gender affects GPA. That is a finding too, and worth reporting.
+Python turns a categorical predictor into a comparison with a **reference category**, by default the first in alphabetical order: here `Female`. The coefficient `C(gender)[T.Male]` is the difference between men and women, holding everything else constant. It is tiny ($0.014$) and far from significant ($p = 0.56$): there is no evidence that gender affects GPA. That is a finding too, and worth reporting.
 
 For a variable with more categories, such as faculty, `C(faculty)` compares each category with the reference. A different reference category can be chosen explicitly using `Treatment`:
 
@@ -431,7 +431,7 @@ fit_caf2 = smf.ols("gpa ~ caffeine_mg + sleep_hours", data=study).fit()
 print(fit_caf2.summary().tables[1])
 ```
 
-Once sleep is held constant, caffeine's coefficient shrinks from $-0.0016$ to almost zero ($-0.0003$) and is no longer significant ($p = 0.44$), while sleep stays strongly significant ($p < .001$). Among students who sleep the same amount, caffeine makes no difference to grades. Caffeine looked harmful only because heavy caffeine users sleep less: sleep was a **confounder**, and the data supports the second explanation.
+Once sleep is held constant, caffeine's coefficient shrinks from $-0.0004$ to almost zero ($-0.00008$) and is no longer significant ($p = 0.51$), while sleep stays strongly significant ($p < .001$). Among students who sleep the same amount, caffeine makes no difference to grades. Caffeine looked harmful only because heavy caffeine users sleep less: sleep was a **confounder**, and the data supports the second explanation.
 
 The general rule is that a confounder is a common cause of the predictor and the outcome. Adjusting for it in a regression compares like with like, students who are the same on the confounder, and removes the misleading part of the association.
 
@@ -635,9 +635,9 @@ odds_table = pd.DataFrame({
 print(odds_table)
 ```
 
-Holding the other predictors constant, each extra point of **stress** multiplies the odds of considering dropout by about 4.0 (OR = 4.05, 95% CI [2.49, 6.59]), and each extra point of **financial worry** by about 1.4 (OR = 1.39, 95% CI [1.13, 1.71]). Each extra point of **supervisor support** multiplies them by about 0.58, which cuts them by about 42%. The hypothesis stated in Chapter 5, that higher stress raises the odds of considering dropout, is strongly supported: the confidence interval for stress lies entirely above 1.
+Holding the other predictors constant, each extra point of **stress** multiplies the odds of considering dropout by about 3.6 (OR = 3.60, 95% CI [2.25, 5.77]), and each extra point of **financial worry** by about 1.6 (OR = 1.57, 95% CI [1.24, 2.00]). Each extra point of **supervisor support** multiplies them by about 0.33 (95% CI [0.22, 0.49]), which cuts them by about 67%. The hypothesis stated in Chapter 5, that higher stress raises the odds of considering dropout, is strongly supported: the confidence interval for stress lies entirely above 1.
 
-Something interesting has happened to **employment**. In Chapter 7, and in the unadjusted odds ratio above, students with full-time jobs had about twice the odds of considering dropping out. In this model, the confidence interval for full-time employment includes 1 (95% CI [0.65, 2.50]): once stress and financial worry are taken into account, having a job adds little on its own. The likely explanation is that a full-time job matters *because* of the stress and money pressure that come with it. This is the kind of insight multiple regression makes possible.
+Something interesting has happened to **employment**. In Chapter 7, and in the unadjusted odds ratio above, students with full-time jobs had about twice the odds of considering dropping out. In this model, the confidence interval for employment includes 1 (comparing None vs Full-time, OR = 0.55, 95% CI [0.24, 1.31]; Part-time vs Full-time, OR = 0.58, 95% CI [0.24, 1.42]): once stress and financial worry are taken into account, having a job adds little on its own. The likely explanation is that a full-time job matters *because* of the stress and money pressure that come with it. This is the kind of insight multiple regression makes possible.
 
 ### Predicted probabilities
 
@@ -656,7 +656,7 @@ for i, prob in enumerate(predicted_probs, 1):
     print(f"Student {i}: {prob * 100:.1f}% chance of considering dropout")
 ```
 
-A student with low stress and good support has about a 4% chance of considering dropout; a stressed student with little support, about a 47% chance. For a thesis's recommendations, that contrast is more persuasive than any coefficient.
+A student with low stress and good support has about a 1% chance of considering dropout; a stressed student with little support, about a 42% chance. For a thesis's recommendations, that contrast is more persuasive than any coefficient.
 
 Whether the model can *predict* who will consider dropping out, and how that should be tested fairly, is a different question, about prediction rather than explanation. It is the subject of Chapters 11 and 12.
 

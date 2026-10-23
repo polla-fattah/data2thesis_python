@@ -230,7 +230,7 @@ print(tukey)
 
 Tukey's HSD compares every pair while keeping the overall false alarm rate at 5%.
 
-Only one pair differs: Health Sciences is **0.35 points** more stressed than Humanities ($p = 0.002$).
+Only one pair differs: Health Sciences is **0.34 points** more stressed than Humanities ($p = 0.004$).
 
 ---
 
@@ -300,7 +300,7 @@ print(sm.stats.anova_lm(model_2way, typ=2))
 
 `C(programme) * C(study_mode)` requests both main effects and their interaction.
 
-Study mode matters ($p < .001$); programme ($p = 0.77$) and interaction ($p = 0.73$) do not.
+Study mode matters ($p < .001$); programme ($p = 0.29$) and interaction ($p = 0.36$) do not.
 
 A significant interaction is always interpreted **before** main effects.
 
@@ -396,9 +396,9 @@ print(gpa_simple.summary())
 
 | Result | Value | Meaning |
 |---|---|---|
-| slope | 0.17 | GPA gain per extra hour of sleep |
-| R-squared ($R^2$) | 0.088 | share of GPA variation explained (~9%) |
-| scale (RMSE) | 0.46 | typical distance from the line |
+| slope | 0.08 | GPA gain per extra hour of sleep |
+| R-squared ($R^2$) | 0.064 | share of GPA variation explained (~6%) |
+| scale (RMSE) | 0.32 | typical distance from the line |
 
 Sleep matters, but it is far from the whole story.
 
@@ -413,10 +413,10 @@ print(gpa_model.summary().tables[1])
 
 | Predictor | Slope ($b$) | Interpretation |
 |---|---|---|
-| sleep (hour) | +0.15 | holding study, stress, and support constant |
-| study (hour a week) | +0.013 | holding others constant |
-| stress (point) | -0.15 | holding others constant |
-| support (point) | +0.08 | holding others constant |
+| sleep (hour) | +0.11 | holding study, stress, and support constant |
+| study (hour a week) | +0.007 | holding others constant |
+| stress (point) | -0.08 | holding others constant |
+| support (point) | +0.11 | holding others constant |
 
 Each coefficient **holds the other predictors constant**.
 
@@ -427,7 +427,7 @@ Each coefficient **holds the other predictors constant**.
 $R^2 = 0.252$ (25%): modest, and normal for human behavior and grades.
 
 - **Adjusted $R^2$** ($0.247$) corrects for the number of predictors;
-- `statsmodels` drops rows with missing values ($N = 589$ here).
+- `statsmodels` drops rows with missing values ($N = 587$ here).
 
 Always report the number of cases each model is based on in your thesis.
 
@@ -445,7 +445,7 @@ print(gpa_gender.summary().tables[1])
 
 Python compares each category with a **reference category**, alphabetically first: `Female`.
 
-`C(gender)[T.Male]` is tiny ($0.007$) and non-significant ($p = 0.84$): no evidence that gender affects GPA.
+`C(gender)[T.Male]` is tiny ($0.014$) and non-significant ($p = 0.56$): no evidence that gender affects GPA.
 
 To choose another reference: `C(faculty, Treatment(reference='Humanities'))`.
 
@@ -478,8 +478,8 @@ smf.ols("gpa ~ caffeine_mg + sleep_hours", data=study).fit()
 
 | Model | Caffeine slope | p-value |
 |---|---|---|
-| caffeine alone | -0.0016 | $p < .001$ |
-| with sleep added | -0.0003 | $p = 0.44$ |
+| caffeine alone | -0.0004 | $p < .001$ |
+| with sleep added | -0.00008 | $p = 0.51$ |
 
 Among students who sleep the same, caffeine makes no difference to grades.
 
@@ -663,11 +663,11 @@ The outcome is 0 or 1. `np.exp()` turns log-odds into odds ratios.
 
 | Predictor (per point) | Odds ratio | 95% CI |
 |---|---|---|
-| stress | 4.05 | 2.49 to 6.59 |
-| financial worry | 1.39 | 1.13 to 1.71 |
-| support | 0.58 | 0.47 to 0.73 |
+| stress | 3.60 | 2.25 to 5.77 |
+| financial worry | 1.57 | 1.24 to 2.00 |
+| support | 0.33 | 0.22 to 0.49 |
 
-Stress multiplies odds by 4; support cuts them by about **42%**. The stress hypothesis is strongly supported.
+Stress multiplies odds by 3.6; support cuts them by about **67%**. The stress hypothesis is strongly supported.
 
 ---
 
@@ -675,7 +675,7 @@ Stress multiplies odds by 4; support cuts them by about **42%**. The stress hypo
 
 Alone, a full-time job about doubled the odds of considering dropout.
 
-In the model, the full-time interval includes 1 (95% CI [0.65, 2.50]).
+In the model, the employment intervals include 1 (comparing None vs Full-time, 95% CI [0.24, 1.31]).
 
 A job likely matters **because** of the stress and money pressure it brings. Multiple regression makes that visible.
 
