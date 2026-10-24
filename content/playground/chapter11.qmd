@@ -1,4 +1,4 @@
-﻿---
+---
 title: "Playground: Chapter 11"
 subtitle: Introduction to Machine Learning in Python
 format:

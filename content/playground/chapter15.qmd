@@ -1,4 +1,4 @@
-﻿---
+---
 title: "Playground: Chapter 15"
 subtitle: Neural Networks
 format:

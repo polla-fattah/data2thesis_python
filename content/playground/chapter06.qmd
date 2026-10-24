@@ -1,4 +1,4 @@
-﻿---
+---
 title: "Playground: Chapter 6"
 subtitle: Descriptive Statistics and Exploratory Data Analysis
 format:

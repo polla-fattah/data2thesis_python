@@ -1,4 +1,4 @@
-﻿---
+---
 title: "Playground: Chapter 5"
 subtitle: From Research Question to Data
 format:

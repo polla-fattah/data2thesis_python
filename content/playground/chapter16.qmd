@@ -1,4 +1,4 @@
-﻿---
+---
 title: "Playground: Chapter 16"
 subtitle: Time Series Forecasting
 format:

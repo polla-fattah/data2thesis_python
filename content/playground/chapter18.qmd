@@ -1,4 +1,4 @@
-﻿---
+---
 title: "Playground: Chapter 18"
 subtitle: Using AI with Python
 format:
