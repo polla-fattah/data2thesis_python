@@ -1,4 +1,4 @@
----
+﻿---
 title: "Playground: Chapter 11"
 subtitle: Introduction to Machine Learning in Python
 format:
@@ -29,7 +29,6 @@ pyodide:
     - titanic.csv
 ---
 
-{{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
 This page practises the ideas of Chapter 11 in four parts. **Practise the chapter** works through the book's exercises with scikit-learn pipelines, starter code, hints, and solutions. **Go further** explores data leakage, manual cross-validation loops, noise simulations, and passenger survival on the Titanic. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you design the test of a model yourself, as you will in your own thesis.
 

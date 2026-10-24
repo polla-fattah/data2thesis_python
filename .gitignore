@@ -36,3 +36,5 @@ __pycache__/
 build/
 dist/
 
+
+**/*.quarto_ipynb

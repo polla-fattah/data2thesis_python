@@ -1,4 +1,4 @@
----
+﻿---
 title: "Playground: Chapter 8"
 subtitle: ANOVA and Regression
 format:
@@ -32,7 +32,6 @@ pyodide:
     - ucbadmissions.csv
 ---
 
-{{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
 This page practises the ideas of Chapter 8 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and real-world datasets. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you build and check the models yourself, as you will in your own thesis.
 

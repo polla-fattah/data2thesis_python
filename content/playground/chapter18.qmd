@@ -1,4 +1,4 @@
----
+﻿---
 title: "Playground: Chapter 18"
 subtitle: Using AI with Python
 format:
@@ -30,7 +30,6 @@ pyodide:
     - ai_coding_results.csv
 ---
 
-{{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
 This page practises the ideas of Chapter 18 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions about agreement and about checking code. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with no answers: you decide how to use and check AI in your own work, as you will in your thesis.
 

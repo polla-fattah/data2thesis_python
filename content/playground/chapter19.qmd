@@ -1,4 +1,4 @@
----
+﻿---
 title: "Playground: Chapter 19"
 subtitle: Putting It All Together
 format:
@@ -26,7 +26,6 @@ pyodide:
     - questionnaire.csv
 ---
 
-{{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
 This page practises the ideas of Chapter 19 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions about reporting and choosing methods. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with no answers, ending with a capstone: a research question of your own, carried from hypothesis to limitation.
 

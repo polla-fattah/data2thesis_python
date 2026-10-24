@@ -1,4 +1,4 @@
----
+﻿---
 title: "Playground: Chapter 12"
 subtitle: Classification Models
 format:
@@ -29,7 +29,6 @@ pyodide:
     - penguins.csv
 ---
 
-{{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
 This page practises the ideas of Chapter 12 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and the Palmer Penguins dataset. **Check your understanding** asks short questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you choose how a classifier is used, as you will in your own thesis.
 

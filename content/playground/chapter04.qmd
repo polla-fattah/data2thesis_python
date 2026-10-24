@@ -1,4 +1,4 @@
----
+﻿---
 title: "Playground: Chapter 4"
 subtitle: Data Visualization with Seaborn and Matplotlib
 format:
@@ -23,7 +23,6 @@ pyodide:
     - semesters.csv
 ---
 
-{{< include ../../_extensions/r-wasm/live/_knitr.qmd >}}
 
 This page practises the ideas of Chapter 4 in four parts. **Practise the chapter** works through the book's exercises, with starter code, hints, and solutions. **Go further** goes beyond the book, with new questions and datasets. **Check your understanding** asks short conceptual questions whose answers open with a click. **Do it yourself** gives open tasks with an empty code space and no answers: you decide which visualization best answers the research question, as you will in your own thesis.
 
